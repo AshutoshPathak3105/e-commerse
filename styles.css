@@ -844,6 +844,703 @@ small {
 }
 
 /* ==========================================================================
+   Main Content Area
+   ========================================================================== */
+.main-content {
+  background: #f0f4f8;
+}
+
+.section-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Section headers shared */
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 28px;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff9700;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.section-label svg {
+  width: 14px;
+  height: 14px;
+  stroke: none;
+  fill: #ff9700;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  color: #12283e;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
+}
+
+.section-subtitle {
+  margin: 2px 0 0;
+  color: #64809a;
+  font-size: 14px;
+}
+
+.section-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: #0878f9;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: gap 160ms ease;
+}
+
+.section-cta svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.2;
+  transition: transform 160ms ease;
+}
+
+.section-cta:hover svg {
+  transform: translateX(4px);
+}
+
+/* ==========================================================================
+   Badges
+   ========================================================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
+
+.badge-deal  { background: #fef3e2; color: #c45f00; border: 1px solid #fad6a1; }
+.badge-hot   { background: #fef2f2; color: #c0182a; border: 1px solid #fecaca; }
+.badge-new   { background: #edfcf2; color: #166534; border: 1px solid #a7f3d0; }
+.badge-limited { background: #f0f0ff; color: #4338ca; border: 1px solid #c7d2fe; }
+
+/* ==========================================================================
+   Shared Product Card Base
+   ========================================================================== */
+.product-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #dce6f0;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
+}
+
+.product-card:hover {
+  border-color: #aac4dc;
+  box-shadow: 0 16px 40px -10px rgba(12, 34, 60, 0.14);
+  transform: translateY(-4px);
+}
+
+.card-badge-group {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 5px;
+}
+
+.card-img-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.card-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 300ms ease;
+}
+
+.product-card:hover .card-img-placeholder {
+  transform: scale(1.04);
+}
+
+.card-img-placeholder svg {
+  width: 52px;
+  height: 52px;
+  stroke: rgba(255,255,255,0.45);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.card-brand {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0878f9;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #12283e;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stars {
+  color: #f59e0b;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.rating-count {
+  color: #7a96b0;
+  font-size: 12px;
+}
+
+.card-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price-current {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0e2139;
+  letter-spacing: -0.4px;
+}
+
+.price-original {
+  font-size: 13px;
+  color: #9aafbf;
+  text-decoration: line-through;
+}
+
+.card-delivery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: #4d7c9a;
+  font-size: 12px;
+}
+
+.card-delivery svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  stroke-width: 1.8;
+}
+
+.card-delivery strong {
+  color: #0c6f45;
+  font-weight: 700;
+}
+
+/* Card action buttons */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: #0878f9;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+  box-shadow: 0 3px 10px rgba(8, 120, 249, 0.3);
+}
+
+.btn-cart svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+
+.btn-cart:hover {
+  background: #0665d0;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(8, 120, 249, 0.4);
+}
+
+.btn-cart:active {
+  transform: translateY(0);
+}
+
+.btn-cart-sm {
+  flex: none;
+  width: 100%;
+  height: 38px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: auto;
+  border-radius: 9px;
+}
+
+.btn-wishlist {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 9px;
+  background: #f0f5fb;
+  border: 1px solid #d5e3ef;
+  color: #6a8eac;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.btn-wishlist svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.85;
+}
+
+.btn-wishlist:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ==========================================================================
+   Section 1 – Featured Product 4-Column Grid
+   ========================================================================== */
+.section-featured {
+  padding: 40px 0 36px;
+  background: linear-gradient(180deg, #eaf1f8 0%, #f0f4f9 100%);
+}
+
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ==========================================================================
+   Section 2 – Horizontal Product Slider
+   ========================================================================== */
+.section-slider {
+  padding: 36px 0 44px;
+  background: #ffffff;
+  border-top: 1px solid #e2ecf5;
+}
+
+.section-slider .section-container {
+  padding-left: 44px;
+  padding-right: 44px;
+}
+
+.slider-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.slider-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-controls {
+  display: none; /* replaced by overlay arrows */
+}
+
+/* Slider wrap – positions the overlay arrow buttons */
+.slider-wrap {
+  position: relative;
+}
+
+/* Shared overlay button base */
+.slider-btn-overlay {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #d5e3ef;
+  color: #1e3a56;
+  box-shadow: 0 4px 16px rgba(10, 30, 60, 0.14);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 200ms ease;
+}
+
+.slider-btn-overlay svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+
+.slider-btn-prev {
+  left: -21px;
+}
+
+.slider-btn-next {
+  right: -21px;
+}
+
+.slider-btn-overlay:hover {
+  background: #0878f9;
+  border-color: #0878f9;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(8, 120, 249, 0.38);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.slider-btn-overlay:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slider-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f0f5fb;
+  border: 1px solid #cddaeb;
+  color: #2d5070;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.slider-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
+}
+
+.slider-btn:hover {
+  background: #0878f9;
+  border-color: #0878f9;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(8, 120, 249, 0.35);
+}
+
+.slider-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Viewport clips the overflow, track scrolls */
+.slider-viewport {
+  overflow: hidden;
+  border-radius: 16px;
+  cursor: grab;
+  user-select: none;
+}
+
+.slider-viewport:active {
+  cursor: grabbing;
+}
+
+.slider-track {
+  display: flex;
+  gap: 18px;
+  transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Slider cards are fixed-width for consistent scroll */
+.slider-card {
+  flex: 0 0 220px;
+  width: 220px;
+}
+
+.slider-card .card-img-wrap {
+  aspect-ratio: 3 / 2;
+}
+
+.slider-card .card-img-placeholder svg {
+  width: 40px;
+  height: 40px;
+}
+
+.slider-card .card-body {
+  padding: 12px 14px 14px;
+  gap: 5px;
+  justify-content: space-between;
+}
+
+.slider-card .card-title {
+  font-size: 13px;
+  -webkit-line-clamp: 2;
+}
+
+.slider-card .price-current {
+  font-size: 16px;
+}
+
+/* Pagination dots */
+.slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.slider-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c5d5e8;
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease;
+  padding: 0;
+}
+
+.slider-dot.is-active {
+  background: #0878f9;
+  width: 22px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Slider hover UX enhancements
+   ========================================================================== */
+
+/* Subtle glow border when hovering over the entire slider area */
+.slider-viewport {
+  transition: box-shadow 240ms ease;
+}
+
+.slider-viewport:hover {
+  box-shadow: 0 0 0 3px rgba(8, 120, 249, 0.12), 0 8px 32px rgba(8, 120, 249, 0.07);
+  cursor: ew-resize; /* east-west resize cursor — signals horizontal scrolling */
+}
+
+.slider-viewport:active {
+  cursor: grabbing;
+}
+
+/* Slightly more pronounced card lift on hover within the slider */
+.slider-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 0 20px 48px -10px rgba(12, 34, 60, 0.18);
+  border-color: #7eb3e0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+/* "Scroll or drag to browse" one-time hint tooltip */
+#slider-hint {
+  position: fixed;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(14, 33, 57, 0.88);
+  color: #e8f1fb;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 40px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  white-space: nowrap;
+}
+
+#slider-hint.is-visible {
+  opacity: 1;
+}
+
+#slider-hint svg {
+  width: 18px;
+  height: 18px;
+  stroke: #7eb3ff;
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Responsive – Product Cards & Slider
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .featured-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .featured-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .slider-card {
+    flex: 0 0 180px;
+    width: 180px;
+  }
+
+  .slider-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .slider-btn-overlay {
+    display: none;
+  }
+
+  .section-slider .section-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* Today's Deals label accent */
+.deals-label {
+  color: #e8000d;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+}
+
+.deals-label svg {
+  fill: #e8000d;
+  stroke: none;
+  width: 13px;
+  height: 13px;
+}
+
+/* Countdown timer */
+.deals-countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.countdown-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5a6d80;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.countdown-units {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0f2133;
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-width: 44px;
+}
+
+.countdown-unit .cnt {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ff3b3b;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.countdown-unit small {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #5a7a99;
+  margin-top: 2px;
+}
+
+.countdown-sep {
+  font-size: 18px;
+  font-weight: 900;
+  color: #5a7a99;
+  line-height: 1;
+  padding-bottom: 6px;
+}
+
+/* ==========================================================================
    Production-Level E-Commerce Footer (Compact & Streamlined)
    ========================================================================== */
 .site-footer {
