@@ -162,4 +162,74 @@
 
   window.addEventListener("resize", () => closeAll());
   document.addEventListener("scroll", () => closeAll(), true);
+
+  /* ==========================================================================
+     Footer Interactivity
+     ========================================================================== */
+  // 1. Smooth Back to Top
+  const backToTopBtn = document.getElementById("back-to-top");
+  backToTopBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // 2. Newsletter Subscription with Validation and State
+  const newsletterForm = document.getElementById("newsletter-form");
+  const newsletterEmail = document.getElementById("newsletter-email");
+  const newsletterSubmitBtn = document.getElementById("newsletter-submit-btn");
+  const newsletterFeedback = document.getElementById("newsletter-feedback");
+
+  if (newsletterForm && newsletterEmail && newsletterFeedback && newsletterSubmitBtn) {
+    const showFeedback = (message, type) => {
+      newsletterFeedback.textContent = message;
+      newsletterFeedback.className = `newsletter-feedback is-${type}`;
+    };
+
+    newsletterForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const email = newsletterEmail.value.trim();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!email) {
+        showFeedback("Please enter your email address.", "error");
+        newsletterEmail.focus();
+        return;
+      }
+
+      if (!emailPattern.test(email)) {
+        showFeedback("Please enter a valid email address (e.g. name@example.com).", "error");
+        newsletterEmail.focus();
+        return;
+      }
+
+      newsletterSubmitBtn.classList.add("is-loading");
+      newsletterSubmitBtn.disabled = true;
+      newsletterEmail.disabled = true;
+
+      // Simulate API call
+      setTimeout(() => {
+        newsletterSubmitBtn.classList.remove("is-loading");
+        newsletterSubmitBtn.disabled = false;
+        newsletterEmail.disabled = false;
+        newsletterEmail.value = "";
+        showFeedback("🎉 Welcome to the Club! Use promo code WELCOME15 for 15% off your next purchase.", "success");
+      }, 650);
+    });
+  }
+
+  // 3. Mobile Footer Accordion
+  const footerCols = [...document.querySelectorAll("[data-footer-accordion]")];
+  footerCols.forEach((col) => {
+    const headerBtn = col.querySelector(".footer-col-header");
+    if (!headerBtn) return;
+
+    headerBtn.addEventListener("click", () => {
+      if (window.innerWidth > 768) return;
+      const isOpen = col.classList.contains("is-open");
+
+      col.classList.toggle("is-open", !isOpen);
+      headerBtn.setAttribute("aria-expanded", String(!isOpen));
+    });
+  });
 })();
+
