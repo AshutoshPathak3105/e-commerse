@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="script.js" defer></script>
   </head>
-  <body>
+  <body id="top">
     <header class="site-header">
       <div class="utility-bar">
         <p class="delivery-message">
@@ -179,5 +179,367 @@
         <a href="#customer-service" class="category-link">Customer Service</a>
       </nav>
     </header>
+
+    <!-- Production-Grade E-Commerce Footer -->
+    <footer class="site-footer" id="site-footer">
+      <!-- 1. Back to Top Bar -->
+      <a href="#top" class="back-to-top" id="back-to-top" aria-label="Back to top of page">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg>
+        <span>Back to top</span>
+      </a>
+
+      <!-- 2. Trust & Value Proposition Ribbon -->
+      <section class="trust-ribbon" aria-label="Why shop with X-Mart">
+        <div class="footer-container trust-grid">
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>Free Express Shipping</strong>
+              <span>On all US orders over $50.00</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>100% Secure Checkout</strong>
+              <span>Bank-grade 256-bit encryption</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>30-Day Free Returns</strong>
+              <span>Hassle-free money back guarantee</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>24/7 Dedicated Support</strong>
+              <span>Instant live chat and phone assistance</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>X-Mart Prime Perks</strong>
+              <span>Earn 5% cashback on every purchase</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Newsletter & Club Card -->
+      <section class="footer-newsletter" aria-labelledby="newsletter-heading">
+        <div class="footer-container">
+          <div class="newsletter-card">
+            <div class="newsletter-content">
+              <div class="newsletter-tag">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span>X-Mart Insider Club</span>
+              </div>
+              <h2 class="newsletter-heading" id="newsletter-heading">Get 15% Off Your First Order + VIP Perks</h2>
+              <p class="newsletter-sub">
+                Subscribe for exclusive drop alerts, flash sale secrets, and personalized recommendations.
+              </p>
+              <div class="newsletter-perks">
+                <span class="perk-badge">✓ Member-Only Flash Deals</span>
+                <span class="perk-badge">✓ Early Access to Mega Sales</span>
+                <span class="perk-badge">✓ Zero Spam Policy</span>
+              </div>
+            </div>
+
+            <div class="newsletter-form-wrapper">
+              <form class="newsletter-form" id="newsletter-form" novalidate>
+                <div class="newsletter-input-group">
+                  <label for="newsletter-email" class="visually-hidden">Email Address</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <input
+                      type="email"
+                      id="newsletter-email"
+                      name="email"
+                      class="newsletter-input"
+                      placeholder="Enter your work or personal email..."
+                      required
+                      autocomplete="email"
+                    />
+                  </div>
+                  <button type="submit" class="newsletter-submit" id="newsletter-submit-btn">
+                    <span class="btn-text">Subscribe</span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                    <svg class="btn-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+                <div class="newsletter-feedback" id="newsletter-feedback" role="alert" aria-live="polite"></div>
+                <p class="newsletter-disclaimer">
+                  By subscribing, you agree to our <a href="#privacy">Privacy Policy</a> and <a href="#terms">Terms</a>. Unsubscribe easily at any time.
+                </p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Multi-Column Directory Navigation -->
+      <section class="footer-directory" aria-label="Footer directory navigation">
+        <div class="footer-container directory-grid">
+          <!-- Column 1: Get to Know Us -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-1">
+              <span>Get to Know Us</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-1">
+              <li><a href="#about" class="footer-link">About X-Mart Superstore</a></li>
+              <li><a href="#careers" class="footer-link">Careers &amp; Culture <span class="link-badge">We're Hiring</span></a></li>
+              <li><a href="#newsroom" class="footer-link">Newsroom &amp; Press Releases</a></li>
+              <li><a href="#sustainability" class="footer-link">Sustainability &amp; Impact</a></li>
+              <li><a href="#investors" class="footer-link">Investor Relations</a></li>
+              <li><a href="#store-locations" class="footer-link">Store Locations &amp; Events</a></li>
+              <li><a href="#leadership" class="footer-link">Leadership &amp; Governance</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 2: Customer Care -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-2">
+              <span>Customer Care</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-2">
+              <li><a href="#help-center" class="footer-link">Help Center &amp; FAQs</a></li>
+              <li><a href="#track-order" class="footer-link">Track Your Package</a></li>
+              <li><a href="#shipping-rates" class="footer-link">Shipping Rates &amp; Delivery Times</a></li>
+              <li><a href="#returns" class="footer-link">Returns &amp; Replacements</a></li>
+              <li><a href="#refund-policy" class="footer-link">Refund Policy</a></li>
+              <li><a href="#warranty" class="footer-link">X-Mart Care &amp; Warranty</a></li>
+              <li><a href="#contact" class="footer-link">Contact Customer Support</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3: Shop Departments -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-3">
+              <span>Shop by Department</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-3">
+              <li><a href="#electronics" class="footer-link">Electronics &amp; Smart Tech</a></li>
+              <li><a href="#fashion" class="footer-link">Men &amp; Women Fashion</a></li>
+              <li><a href="#home-kitchen" class="footer-link">Home Furniture &amp; Kitchen</a></li>
+              <li><a href="#beauty" class="footer-link">Beauty, Health &amp; Grooming</a></li>
+              <li><a href="#grocery" class="footer-link">Grocery, Gourmet &amp; Snacks</a></li>
+              <li><a href="#sports" class="footer-link">Sports &amp; Fitness Equipment</a></li>
+              <li><a href="#gift-cards" class="footer-link">X-Mart Digital Gift Cards</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 4: Make Money & Partner -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-4">
+              <span>Partner &amp; Business</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-4">
+              <li><a href="#sell" class="footer-link">Sell Products on X-Mart</a></li>
+              <li><a href="#affiliate" class="footer-link">Join the Affiliate Program</a></li>
+              <li><a href="#advertise" class="footer-link">Advertise Your Brand</a></li>
+              <li><a href="#fulfillment" class="footer-link">Fulfillment by X-Mart (FBX)</a></li>
+              <li><a href="#wholesale" class="footer-link">X-Mart Business &amp; Wholesale</a></li>
+              <li><a href="#developer-api" class="footer-link">Developer Hub &amp; APIs</a></li>
+              <li><a href="#supplier-hub" class="footer-link">Supplier Responsibility</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 5: Mobile App & Direct Support -->
+          <div class="footer-col footer-col-highlight" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-5">
+              <span>Connect &amp; App</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="footer-app-box" id="footer-col-5">
+              <p class="app-box-title">Shop faster with our mobile app</p>
+              <div class="app-badges">
+                <!-- Apple App Store Badge -->
+                <a href="#app-store" class="app-badge-btn" aria-label="Download X-Mart on the iOS App Store">
+                  <svg class="app-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.13.64-2.79 1.43-.57.67-.99 1.74-.92 2.78 1.07.08 2.15-.55 2.7-1.34Z"/>
+                  </svg>
+                  <span class="app-badge-copy">
+                    <small>Download on the</small>
+                    <strong>App Store</strong>
+                  </span>
+                </a>
+
+                <!-- Google Play Badge -->
+                <a href="#google-play" class="app-badge-btn" aria-label="Get X-Mart on Google Play">
+                  <svg class="app-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="m3.61 2.53 10.37 10.37-3.24 3.24-8.86-11.8c.41-.95 1.07-1.55 1.73-1.81zm11.79 11.79 3.24-3.24L5.13 1.33c-.34-.17-.69-.26-1.04-.26l11.31 13.25zm.71.71L5.34 23.95c.34.02.69-.06 1.03-.23l9.74-8.69zm.7-1.42 3.69-2.11c1.23-.71 1.23-1.87 0-2.58l-3.69-2.11-1.06 1.06 1.06 5.74z"/>
+                  </svg>
+                  <span class="app-badge-copy">
+                    <small>GET IT ON</small>
+                    <strong>Google Play</strong>
+                  </span>
+                </a>
+              </div>
+
+              <!-- Direct Hotline Support Card -->
+              <div class="support-hotline-card">
+                <div class="hotline-icon">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="hotline-details">
+                  <small>Need Immediate Help?</small>
+                  <a href="tel:18005550199" class="hotline-number">1-800-555-0199</a>
+                  <span class="hotline-availability"><span class="status-indicator"></span> 24/7 Live Concierge</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Brand, Social Connectivity & Region Bar -->
+      <section class="footer-mid-bar" aria-label="Brand and social media">
+        <div class="footer-container mid-bar-container">
+          <div class="footer-brand-info">
+            <a class="brand" href="#top" aria-label="X-Mart home">
+              <span class="brand-mark">X</span>
+              <span class="brand-copy">
+                <span class="brand-name footer-brand-name">X-MART<span class="brand-dot">.</span></span>
+                <span class="brand-tagline footer-brand-tagline">SUPERSTORE</span>
+              </span>
+            </a>
+            <p class="brand-mission">
+              Empowering millions with effortless shopping, uncompromising quality, and unparalleled customer satisfaction globally.
+            </p>
+          </div>
+
+          <!-- Social Links -->
+          <div class="footer-social-wrap">
+            <span class="social-label">Follow X-Mart</span>
+            <div class="social-links" aria-label="Social media channels">
+              <!-- X (Twitter) -->
+              <a href="https://twitter.com" class="social-btn" aria-label="Follow us on X (Twitter)" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </a>
+              <!-- Facebook -->
+              <a href="https://facebook.com" class="social-btn" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+              <!-- Instagram -->
+              <a href="https://instagram.com" class="social-btn" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                </svg>
+              </a>
+              <!-- YouTube -->
+              <a href="https://youtube.com" class="social-btn" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor"/>
+                </svg>
+              </a>
+              <!-- LinkedIn -->
+              <a href="https://linkedin.com" class="social-btn" aria-label="Connect on LinkedIn" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.66 1.66 0 1 0 0 3.32 1.66 1.66 0 0 0 0-3.32z"/>
+                </svg>
+              </a>
+              <!-- Pinterest -->
+              <a href="https://pinterest.com" class="social-btn" aria-label="Follow us on Pinterest" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0a12 12 0 0 0-4.37 23.18c-.06-.94-.1-2.38.02-3.41.11-.93 1.25-5.3 1.25-5.3s-.32-.64-.32-1.58c0-1.48.86-2.59 1.93-2.59.91 0 1.35.68 1.35 1.5 0 .91-.58 2.28-.88 3.55-.25 1.06.53 1.93 1.58 1.93 1.9 0 3.36-2 3.36-4.9 0-2.56-1.84-4.35-4.47-4.35-3.05 0-4.84 2.29-4.84 4.65 0 .92.35 1.91.8 2.45.09.11.1.2.07.31-.08.33-.26 1.05-.29 1.2-.05.18-.15.22-.35.13-1.32-.61-2.14-2.54-2.14-4.09 0-3.33 2.42-6.39 6.98-6.39 3.66 0 6.51 2.61 6.51 6.1 0 3.64-2.29 6.57-5.48 6.57-1.07 0-2.08-.56-2.42-1.22l-.66 2.52c-.24.92-.89 2.07-1.32 2.78A12 12 0 1 0 12 0z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Payment, Security & Legal Footer Bottom -->
+      <section class="footer-bottom" aria-label="Legal, payment and compliance">
+        <div class="footer-container">
+          <div class="bottom-top-row">
+            <!-- Payment Badges -->
+            <div class="payment-methods-wrap">
+              <span class="methods-label">We Accept:</span>
+              <div class="payment-badges" aria-label="Accepted payment methods">
+                <span class="pay-badge" title="Visa">
+                  <span class="pay-text pay-visa">VISA</span>
+                </span>
+                <span class="pay-badge" title="Mastercard">
+                  <span class="pay-text pay-mc">
+                    <span class="mc-circle mc-red"></span>
+                    <span class="mc-circle mc-yellow"></span>
+                  </span>
+                </span>
+                <span class="pay-badge" title="American Express">
+                  <span class="pay-text pay-amex">AMEX</span>
+                </span>
+                <span class="pay-badge" title="PayPal">
+                  <span class="pay-text pay-paypal">PayPal</span>
+                </span>
+                <span class="pay-badge" title="Apple Pay">
+                  <span class="pay-text pay-apple"> Pay</span>
+                </span>
+                <span class="pay-badge" title="Google Pay">
+                  <span class="pay-text pay-gpay">G Pay</span>
+                </span>
+                <span class="pay-badge" title="Klarna">
+                  <span class="pay-text pay-klarna">Klarna.</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Security Assurance Badges -->
+            <div class="security-badges" aria-label="Security and encryption guarantees">
+              <div class="security-badge">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>256-Bit SSL Encrypted</span>
+              </div>
+              <div class="security-badge">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span>PCI-DSS Level 1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-divider"></div>
+
+          <div class="bottom-legal-row">
+            <p class="copyright-text">
+              &copy; 2026 X-Mart Superstore, Inc. All rights reserved. Built for ultra-fast, modern commerce.
+            </p>
+            <nav class="legal-links" aria-label="Legal terms and disclosures">
+              <a href="#privacy" class="legal-link">Privacy Center</a>
+              <a href="#terms" class="legal-link">Terms of Service</a>
+              <a href="#cookies" class="legal-link">Cookie Preferences</a>
+              <a href="#accessibility" class="legal-link">Accessibility</a>
+              <a href="#ca-privacy" class="legal-link">Your Privacy Choices</a>
+              <a href="#security" class="legal-link">Security &amp; Bug Bounty</a>
+            </nav>
+          </div>
+        </div>
+      </section>
+    </footer>
   </body>
 </html>
