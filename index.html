@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A high-fidelity X-Mart storefront navigation bar."
+    />
+    <title>X-Mart | Superstore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="utility-bar">
+        <p class="delivery-message">
+          Free delivery on eligible orders over <strong>$50.00</strong>
+        </p>
+
+        <nav class="utility-links" aria-label="Utility navigation">
+          <a href="#store-locator" class="utility-link">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span>Store Locator</span>
+          </a>
+          <a href="#help" class="utility-link">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9.7 9a2.6 2.6 0 0 1 5 1c0 1.8-2.7 2-2.7 3.8"/><path d="M12 17h.01"/></svg>
+            <span>Help</span>
+          </a>
+          <div class="dropdown utility-dropdown">
+            <button class="utility-link utility-button" type="button" aria-label="Select currency" aria-haspopup="menu" aria-expanded="false" aria-controls="currency-menu" data-dropdown-trigger>
+              <span data-dropdown-label>USD ($)</span>
+              <svg class="chevron dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+            </button>
+            <div class="dropdown-menu utility-menu selection-menu" id="currency-menu" role="menu" aria-label="Choose currency" data-dropdown-menu>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="USD ($)">USD ($)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="EUR (€)">EUR (€)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="GBP (£)">GBP (£)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="INR (₹)">INR (₹)</button>
+            </div>
+          </div>
+          <div class="dropdown utility-dropdown">
+            <button class="utility-link utility-button" type="button" aria-label="Select language" aria-haspopup="menu" aria-expanded="false" aria-controls="language-menu" data-dropdown-trigger>
+              <span data-dropdown-label>English</span>
+              <svg class="chevron dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+            </button>
+            <div class="dropdown-menu utility-menu selection-menu" id="language-menu" role="menu" aria-label="Choose language" data-dropdown-menu>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="English">English</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Español">Español</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Français">Français</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="हिन्दी">हिन्दी</button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="main-bar">
+        <a class="brand" href="#top" aria-label="X-Mart home">
+          <span class="brand-mark">X</span>
+          <span class="brand-copy">
+            <span class="brand-name">X-MART<span class="brand-dot">.</span></span>
+            <span class="brand-tagline">SUPERSTORE</span>
+          </span>
+        </a>
+
+        <button class="location-control" type="button" aria-label="Set delivery location">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 9.5c0 4.5-7 10-7 10S5 14 5 9.5a7 7 0 1 1 14 0Z"/><circle cx="12" cy="9.5" r="2.2"/></svg>
+          <span>
+            <small>Deliver to</small>
+            <strong>Select location</strong>
+          </span>
+        </button>
+
+        <form class="search-form" role="search">
+          <div class="dropdown search-dropdown">
+            <button class="search-category" type="button" aria-label="Choose product category" aria-haspopup="menu" aria-expanded="false" aria-controls="search-category-menu" data-dropdown-trigger>
+              <span data-dropdown-label>All</span>
+              <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+            </button>
+            <div class="dropdown-menu search-menu selection-menu" id="search-category-menu" role="menu" aria-label="Choose product category" data-dropdown-menu>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="All">All Categories</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Electronics">Electronics</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fashion">Fashion</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Home">Home &amp; Kitchen</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Beauty">Beauty &amp; Health</button>
+            </div>
+          </div>
+          <label class="visually-hidden" for="product-search">Search X-Mart products</label>
+          <input id="product-search" type="search" placeholder="Search X-Mart products..." />
+          <button class="search-submit" type="submit" aria-label="Search">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          </button>
+        </form>
+
+        <div class="header-actions">
+          <div class="dropdown account-dropdown">
+            <button class="account-action" type="button" aria-label="Account and lists" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-dropdown-trigger>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2.2a5.5 5.5 0 0 1 5.5-5.5h3A5.5 5.5 0 0 1 19 18.8V21"/></svg>
+              <span>
+                <small>Hello, Sign In</small>
+                <strong>Account &amp; Lists</strong>
+              </span>
+              <svg class="down-mark dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg>
+            </button>
+            <div class="dropdown-menu account-menu" id="account-menu" role="menu" aria-label="Account and lists" data-dropdown-menu>
+              <a class="dropdown-item dropdown-item-primary" href="#sign-in" role="menuitem">Sign in or create an account</a>
+              <span class="dropdown-divider" role="separator"></span>
+              <a class="dropdown-item" href="#account" role="menuitem">My Account</a>
+              <a class="dropdown-item" href="#orders" role="menuitem">Your Orders</a>
+              <a class="dropdown-item" href="#wishlist" role="menuitem">Your Wishlist</a>
+            </div>
+          </div>
+
+          <a class="orders-action" href="#orders">
+            <span>
+              <small>Returns</small>
+              <strong>&amp; Orders</strong>
+            </span>
+          </a>
+
+          <a class="wishlist-action" href="#wishlist" aria-label="Wishlist, 0 items">
+            <span class="wishlist-count">0</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.5c0 5.2-8.8 10.5-8.8 10.5S3.2 13.7 3.2 8.5A4.4 4.4 0 0 1 11 5.7L12 7l1-1.3a4.4 4.4 0 0 1 7.8 2.8Z"/></svg>
+          </a>
+
+          <a class="cart-action" href="#cart" aria-label="Cart, 0 items, total $0.00">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 1.9-1.4L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
+            <span class="cart-count">0</span>
+            <span class="cart-copy"><small>Cart</small><strong>$0.00</strong></span>
+          </a>
+        </div>
+      </div>
+
+      <nav class="category-bar" aria-label="Primary navigation">
+        <div class="dropdown department-dropdown">
+          <button class="departments-button" type="button" aria-label="Browse all departments" aria-haspopup="menu" aria-expanded="false" aria-controls="departments-menu" data-dropdown-trigger>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span>All Departments</span>
+          </button>
+          <div class="dropdown-menu department-menu" id="departments-menu" role="menu" aria-label="All departments" data-dropdown-menu>
+            <a class="dropdown-item" href="#electronics" role="menuitem">Electronics</a>
+            <a class="dropdown-item" href="#fashion" role="menuitem">Fashion &amp; Apparel</a>
+            <a class="dropdown-item" href="#home-kitchen" role="menuitem">Home &amp; Kitchen</a>
+            <a class="dropdown-item" href="#beauty-health" role="menuitem">Beauty &amp; Health</a>
+            <a class="dropdown-item" href="#grocery" role="menuitem">Grocery &amp; Gourmet</a>
+            <a class="dropdown-item" href="#sports" role="menuitem">Sports &amp; Outdoors</a>
+          </div>
+        </div>
+        <a href="#deals" class="category-link deals-link">Today's Deals <span class="hot-badge">HOT</span></a>
+        <a href="#best-sellers" class="category-link">Best Sellers</a>
+        <div class="dropdown category-dropdown">
+          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="electronics-menu" data-dropdown-trigger>Electronics <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
+          <div class="dropdown-menu category-menu" id="electronics-menu" role="menu" aria-label="Electronics categories" data-dropdown-menu>
+            <a class="dropdown-item" href="#phones" role="menuitem">Phones &amp; Tablets</a>
+            <a class="dropdown-item" href="#computers" role="menuitem">Computers &amp; Accessories</a>
+            <a class="dropdown-item" href="#tv-audio" role="menuitem">TV &amp; Audio</a>
+            <a class="dropdown-item" href="#cameras" role="menuitem">Cameras</a>
+            <a class="dropdown-item" href="#gaming" role="menuitem">Gaming</a>
+          </div>
+        </div>
+        <div class="dropdown category-dropdown">
+          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="fashion-menu" data-dropdown-trigger>Fashion <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
+          <div class="dropdown-menu category-menu" id="fashion-menu" role="menu" aria-label="Fashion categories" data-dropdown-menu>
+            <a class="dropdown-item" href="#womens-fashion" role="menuitem">Women’s Fashion</a>
+            <a class="dropdown-item" href="#mens-fashion" role="menuitem">Men’s Fashion</a>
+            <a class="dropdown-item" href="#kids-fashion" role="menuitem">Kids’ Fashion</a>
+            <a class="dropdown-item" href="#shoes" role="menuitem">Shoes</a>
+            <a class="dropdown-item" href="#bags" role="menuitem">Bags &amp; Accessories</a>
+          </div>
+        </div>
+        <a href="#home-kitchen" class="category-link">Home &amp; Kitchen</a>
+        <a href="#beauty-health" class="category-link">Beauty &amp; Health</a>
+        <a href="#customer-service" class="category-link">Customer Service</a>
+      </nav>
+    </header>
+  </body>
+</html>
