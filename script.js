@@ -1,7 +1,18 @@
-/* Dynamic API Base: works whether opened via localhost:8000, 127.0.0.1:5500, or file protocol */
-const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8000'
-  ? '/api'
-  : 'http://localhost:8000/api';
+/* ═══════════════════════════════════════════════════════════════
+   DYNAMIC API BASE CONFIGURATION (Localhost + Netlify/Render)
+   ═══════════════════════════════════════════════════════════════ */
+// Deployed Render backend URL (can also be overridden in HTML via window.RENDER_BACKEND_URL)
+const PRODUCTION_BACKEND_URL = window.RENDER_BACKEND_URL || 'https://xmart-superstore-backend.onrender.com';
+
+const isLocalHost = (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.protocol === 'file:'
+);
+
+const API_BASE = isLocalHost
+  ? (window.location.port === '8000' ? '/api' : 'http://localhost:8000/api')
+  : `${PRODUCTION_BACKEND_URL.replace(/\/+$/, '')}/api`;
 
 /* ── Currency Converter (Base: INR ₹) ──────────────────────── */
 const Currency = {
@@ -191,7 +202,7 @@ async function apiFetch(endpoint, options = {}) {
   try {
     res = await fetch(url, options);
   } catch (err) {
-    throw new Error('Cannot connect to backend server at http://localhost:8000. Please start your server with "npm start".');
+    throw new Error(`Cannot connect to backend server at ${API_BASE}. Please ensure your backend is running.`);
   }
 
   const text = await res.text();

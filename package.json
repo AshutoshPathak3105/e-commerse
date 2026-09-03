@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "X-Mart Superstore — Frontend & Backend",
   "scripts": {
+    "build": "npm install --prefix backend",
     "start": "npm start --prefix backend",
     "dev": "npm run dev --prefix backend",
     "seed": "npm run seed --prefix backend"
