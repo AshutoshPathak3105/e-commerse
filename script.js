@@ -2371,8 +2371,8 @@ function buildWishlistDrawer() {
   };
 }
 
-/* ── Razorpay Checkout Integration ── */
-async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
+/* ── In-App Sandbox Payment Gateway Modal (Fallback) ── */
+function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
   const existingPortal = document.getElementById('xmart-inapp-payment-portal');
   if (existingPortal) existingPortal.remove();
 
@@ -2585,6 +2585,7 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
       paymentId: `pay_upi_${Date.now()}`,
       signature: `sig_upi_${Date.now()}`,
       method: 'UPI',
+      isSandbox: true,
       upiId
     });
   };
@@ -2618,7 +2619,8 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
         orderId: `ord_card_${Date.now()}`,
         paymentId: `pay_card_${Date.now()}`,
         signature: `sig_card_${Date.now()}`,
-        method: 'Card'
+        method: 'Card',
+        isSandbox: true
       });
     }
   });
@@ -2644,10 +2646,89 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
       paymentId: `pay_nb_${Date.now()}`,
       signature: `sig_nb_${Date.now()}`,
       method: 'NetBanking',
+      isSandbox: true,
       bank
     });
   });
 }
+
+/* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
+async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
+  // 1. Attempt official Razorpay Checkout SDK if loaded
+  try {
+    const configRes = await apiFetch('/payment/config');
+    const keyId = configRes?.keyId;
+
+    if (window.Razorpay && keyId && keyId !== 'rzp_test_placeholder') {
+      const orderRes = await apiFetch('/payment/create-order', {
+        method: 'POST',
+        headers: Auth.getHeaders(),
+        body: JSON.stringify({ amount })
+      });
+
+      if (orderRes?.success && orderRes?.order) {
+        const rzpOrder = orderRes.order;
+        const options = {
+          key: keyId,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency || 'INR',
+          name: 'X-Mart Superstore',
+          description: `Order Checkout (${paymentMethod})`,
+          order_id: rzpOrder.id,
+          prefill: {
+            name: user?.name || '',
+            email: user?.email || '',
+            contact: user?.phone || ''
+          },
+          theme: {
+            color: '#ff9700'
+          },
+          handler: function (response) {
+            onSuccess?.({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              isSandbox: Boolean(orderRes.isSandbox),
+              method: paymentMethod
+            });
+          },
+          modal: {
+            ondismiss: function () {
+              onCancel?.();
+            }
+          }
+        };
+
+        if (paymentMethod === 'UPI') {
+          options.prefill.method = 'upi';
+        } else if (paymentMethod === 'Card') {
+          options.prefill.method = 'card';
+        } else if (paymentMethod === 'NetBanking') {
+          options.prefill.method = 'netbanking';
+        }
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (errResp) {
+          showToast(`Payment Failed: ${errResp?.error?.description || 'Transaction cancelled'}`, 'error');
+          onCancel?.();
+        });
+        rzp.open();
+        return; // Successfully opened official Razorpay popup!
+      }
+    }
+  } catch (err) {
+    console.warn('Official Razorpay SDK unavailable, falling back to in-app portal:', err.message);
+  }
+
+  // 2. Fallback: Open built-in interactive payment modal
+  openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onSuccess, onCancel });
+}
+
+// Global Aliases
+const openInAppPaymentPortal = openRazorpayCheckout;
+window.openInAppPaymentPortal = openRazorpayCheckout;
+window.openRazorpayCheckout = openRazorpayCheckout;
+
 
 /* ── 5. Multi-Step Checkout & Payment Modal (3 Commercial Steps) ────── */
 function buildCheckoutModal() {
@@ -3149,6 +3230,8 @@ function buildCheckoutModal() {
     const wBal = isNaN(rawBal) ? 0 : rawBal;
     const wBalEl = modal.querySelector('#chk-wallet-avail-bal');
     if (wBalEl) wBalEl.textContent = wBal.toFixed(2);
+
+    updatePlaceOrderBtnLabel();
   }
 
   // Stepper tab clicks
@@ -3225,11 +3308,49 @@ function buildCheckoutModal() {
   modal.querySelector('#chk-backto-step2-btn')?.addEventListener('click', () => goToStep(2));
   modal.querySelector('#chk-step3-change-addr-btn')?.addEventListener('click', () => goToStep(2));
 
-  // Payment method selection radio
+  // Update "Place Order" button text based on selected payment method
+  function updatePlaceOrderBtnLabel() {
+    const subtotal = Store.cartTotal();
+    const tax = Math.round(subtotal * 0.18);
+    const grandTotal = subtotal + tax;
+    const formattedTotal = Currency.format(grandTotal);
+    const method = modal.querySelector('input[name="checkoutPaymentMethod"]:checked')?.value || 'COD';
+    const btnSpan = modal.querySelector('#chk-place-order-final-btn span');
+    if (!btnSpan) return;
+
+    if (method === 'COD') {
+      btnSpan.textContent = `Place Order • ${formattedTotal} (COD)`;
+    } else if (method === 'Wallet') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Wallet`;
+    } else if (method === 'UPI') {
+      btnSpan.textContent = `Pay ${formattedTotal} via UPI (Razorpay)`;
+    } else if (method === 'Card') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Card (Razorpay)`;
+    } else if (method === 'NetBanking') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Net Banking (Razorpay)`;
+    } else {
+      btnSpan.textContent = `Place Order • ${formattedTotal}`;
+    }
+  };
+
+  // Payment method selection radio & card click handling
+  modal.querySelectorAll('.payment-method-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const radio = card.querySelector('input[name="checkoutPaymentMethod"]');
+      if (radio && !radio.checked) {
+        radio.checked = true;
+      }
+      modal.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('is-selected'));
+      card.classList.add('is-selected');
+      updatePlaceOrderBtnLabel();
+    });
+  });
+
   modal.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(r => {
     r.addEventListener('change', () => {
       modal.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('is-selected'));
       r.closest('.payment-method-card')?.classList.add('is-selected');
+      updatePlaceOrderBtnLabel();
     });
   });
 
@@ -3261,7 +3382,7 @@ function buildCheckoutModal() {
       const curBal = parseFloat(localStorage.getItem('xmart_wallet_balance') || '0.00');
       if (curBal < grandTotal) {
         btn.disabled = false;
-        btn.textContent = 'Place Order Now';
+        updatePlaceOrderBtnLabel();
         showToast(`Insufficient Wallet Balance (₹${curBal.toFixed(2)}). Please select COD or UPI.`, 'error', 4500);
         return;
       }
@@ -3272,19 +3393,19 @@ function buildCheckoutModal() {
 
     if (!Auth.isLoggedIn()) {
       btn.disabled = false;
-      btn.textContent = 'Place Order Now';
+      updatePlaceOrderBtnLabel();
       showToast('Please Sign In or Register to place your order.', 'warn');
       modal._close();
       window._openAuth?.('signup');
       return;
     }
 
-    // Online Payments (UPI, Card, NetBanking)
+    // Online Payments (UPI, Card, NetBanking via Razorpay)
     if (selectedPayMethod === 'UPI' || selectedPayMethod === 'Card' || selectedPayMethod === 'NetBanking') {
       btn.disabled = false;
-      btn.textContent = 'Place Order Now';
+      updatePlaceOrderBtnLabel();
 
-      openInAppPaymentPortal({
+      openRazorpayCheckout({
         amount: grandTotal,
         paymentMethod: selectedPayMethod,
         user: Auth.getUser() || {},
@@ -3293,14 +3414,19 @@ function buildCheckoutModal() {
           btn.disabled = true;
           btn.textContent = 'Finalizing Your Order...';
           try {
+            const orderId = paymentResult.razorpay_order_id || paymentResult.orderId || `ord_${Date.now()}`;
+            const paymentId = paymentResult.razorpay_payment_id || paymentResult.paymentId || `pay_${Date.now()}`;
+            const signature = paymentResult.razorpay_signature || paymentResult.signature || 'verified_inapp_signature';
+            const isSandbox = paymentResult.isSandbox !== undefined ? paymentResult.isSandbox : false;
+
             const verifyRes = await apiFetch('/payment/verify', {
               method: 'POST',
               headers: Auth.getHeaders(),
               body: JSON.stringify({
-                razorpay_order_id: paymentResult.orderId || `ord_${Date.now()}`,
-                razorpay_payment_id: paymentResult.paymentId || `pay_${Date.now()}`,
-                razorpay_signature: paymentResult.signature || 'verified_inapp_signature',
-                isSandbox: true,
+                razorpay_order_id: orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature,
+                isSandbox: isSandbox,
                 shippingAddress: savedDeliveryAddress,
                 paymentMethod: selectedPayMethod,
                 items: Store.cart
@@ -3316,12 +3442,12 @@ function buildCheckoutModal() {
             showToast(`Order Notice: ${err.message}`, 'error', 6000);
           } finally {
             btn.disabled = false;
-            btn.textContent = 'Place Order Now';
+            updatePlaceOrderBtnLabel();
           }
         },
         onCancel: () => {
           btn.disabled = false;
-          btn.textContent = 'Place Order Now';
+          updatePlaceOrderBtnLabel();
           showToast('Payment window closed. Order was not placed.', 'info');
         }
       });
