@@ -2,7 +2,7 @@
    DYNAMIC API BASE CONFIGURATION (Localhost + Netlify/Render)
    ═══════════════════════════════════════════════════════════════ */
 // Deployed Render backend URL (can also be overridden in HTML via window.RENDER_BACKEND_URL)
-const PRODUCTION_BACKEND_URL = window.RENDER_BACKEND_URL || 'https://xmart-superstore-backend.onrender.com';
+const PRODUCTION_BACKEND_URL = window.RENDER_BACKEND_URL || 'https://e-commerse-4xlp.onrender.com';
 
 const isLocalHost = (
   window.location.hostname === 'localhost' ||
