@@ -14,14 +14,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=2.4" />
+    <script src="script.js?v=2.4" defer></script>
   </head>
-  <body>
+  <body id="top">
     <header class="site-header">
       <div class="utility-bar">
         <p class="delivery-message">
-          Free delivery on eligible orders over <strong>$50.00</strong>
+          Free delivery on eligible orders over <strong>₹499</strong>
         </p>
 
         <nav class="utility-links" aria-label="Utility navigation">
@@ -35,14 +35,15 @@
           </a>
           <div class="dropdown utility-dropdown">
             <button class="utility-link utility-button" type="button" aria-label="Select currency" aria-haspopup="menu" aria-expanded="false" aria-controls="currency-menu" data-dropdown-trigger>
-              <span data-dropdown-label>USD ($)</span>
+              <span data-dropdown-label>Rupees (&#8377;)</span>
               <svg class="chevron dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
             </button>
             <div class="dropdown-menu utility-menu selection-menu" id="currency-menu" role="menu" aria-label="Choose currency" data-dropdown-menu>
-              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="USD ($)">USD ($)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="EUR (€)">EUR (€)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="GBP (£)">GBP (£)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="INR (₹)">INR (₹)</button>
+              <div class="dropdown-menu-header">Select Currency</div>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="Rupees (&#8377;)"><span class="drop-icon">&#127470;&#127475;</span> Rupees (&#8377;)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="USD ($)"><span class="drop-icon">&#127482;&#127480;</span> USD ($)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="EUR (&euro;)"><span class="drop-icon">&#127466;&#127482;</span> EUR (&euro;)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="GBP (&pound;)"><span class="drop-icon">&#127468;&#127463;</span> GBP (&pound;)</button>
             </div>
           </div>
           <div class="dropdown utility-dropdown">
@@ -51,10 +52,11 @@
               <svg class="chevron dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
             </button>
             <div class="dropdown-menu utility-menu selection-menu" id="language-menu" role="menu" aria-label="Choose language" data-dropdown-menu>
-              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="English">English</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Español">Español</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Français">Français</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="हिन्दी">हिन्दी</button>
+              <div class="dropdown-menu-header">Select Language</div>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="English"><span class="drop-icon">&#127466;&#127475;</span> English</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Espa&ntilde;ol"><span class="drop-icon">&#127466;&#127480;</span> Espa&ntilde;ol</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fran&ccedil;ais"><span class="drop-icon">&#127467;&#127479;</span> Fran&ccedil;ais</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;"><span class="drop-icon">&#127470;&#127475;</span> &#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</button>
             </div>
           </div>
         </nav>
@@ -64,7 +66,7 @@
         <a class="brand" href="#top" aria-label="X-Mart home">
           <span class="brand-mark">X</span>
           <span class="brand-copy">
-            <span class="brand-name">X-MART<span class="brand-dot">.</span></span>
+            <span class="brand-name">X-MART</span>
             <span class="brand-tagline">SUPERSTORE</span>
           </span>
         </a>
@@ -77,26 +79,29 @@
           </span>
         </button>
 
-        <form class="search-form" role="search">
-          <div class="dropdown search-dropdown">
-            <button class="search-category" type="button" aria-label="Choose product category" aria-haspopup="menu" aria-expanded="false" aria-controls="search-category-menu" data-dropdown-trigger>
-              <span data-dropdown-label>All</span>
-              <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
-            </button>
-            <div class="dropdown-menu search-menu selection-menu" id="search-category-menu" role="menu" aria-label="Choose product category" data-dropdown-menu>
-              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="All">All Categories</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Electronics">Electronics</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fashion">Fashion</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Home">Home &amp; Kitchen</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Beauty">Beauty &amp; Health</button>
+        <div class="search-form-wrap">
+          <form class="search-form" role="search">
+            <div class="dropdown search-dropdown">
+              <button class="search-category" type="button" aria-label="Choose product category" aria-haspopup="menu" aria-expanded="false" aria-controls="search-category-menu" data-dropdown-trigger>
+                <span data-dropdown-label>All</span>
+                <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+              </button>
+              <div class="dropdown-menu search-menu selection-menu" id="search-category-menu" role="menu" aria-label="Choose product category" data-dropdown-menu>
+                <div class="dropdown-menu-header">Search In</div>
+                <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="All"><span class="drop-icon">&#127991;&#65039;</span> All Categories</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Electronics"><span class="drop-icon">&#9889;</span> Electronics</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fashion"><span class="drop-icon">&#128087;</span> Fashion</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Home"><span class="drop-icon">&#127969;</span> Home &amp; Kitchen</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Beauty"><span class="drop-icon">&#x2728;</span> Beauty &amp; Health</button>
+              </div>
             </div>
-          </div>
-          <label class="visually-hidden" for="product-search">Search X-Mart products</label>
-          <input id="product-search" type="search" placeholder="Search X-Mart products..." />
-          <button class="search-submit" type="submit" aria-label="Search">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-          </button>
-        </form>
+            <label class="visually-hidden" for="product-search">Search X-Mart products</label>
+            <input id="product-search" type="search" placeholder="Search X-Mart products..." />
+            <button class="search-submit" type="submit" aria-label="Search">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+            </button>
+          </form>
+        </div>
 
         <div class="header-actions">
           <div class="dropdown account-dropdown">
@@ -109,11 +114,18 @@
               <svg class="down-mark dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg>
             </button>
             <div class="dropdown-menu account-menu" id="account-menu" role="menu" aria-label="Account and lists" data-dropdown-menu>
-              <a class="dropdown-item dropdown-item-primary" href="#sign-in" role="menuitem">Sign in or create an account</a>
+              <div class="account-menu-header">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>
+                <div>
+                  <p class="account-menu-hello">Welcome back!</p>
+                  <p class="account-menu-sub">Sign in for a personalised experience</p>
+                </div>
+              </div>
+              <a class="dropdown-item dropdown-item-primary" href="#sign-in" role="menuitem">Sign in or Create account</a>
               <span class="dropdown-divider" role="separator"></span>
-              <a class="dropdown-item" href="#account" role="menuitem">My Account</a>
-              <a class="dropdown-item" href="#orders" role="menuitem">Your Orders</a>
-              <a class="dropdown-item" href="#wishlist" role="menuitem">Your Wishlist</a>
+              <a class="dropdown-item" href="#account" role="menuitem"><span class="menu-item-icon">&#x1F464;</span> My Account</a>
+              <a class="dropdown-item" href="#orders" role="menuitem"><span class="menu-item-icon">&#x1F4E6;</span> Your Orders</a>
+              <a class="dropdown-item" href="#wishlist" role="menuitem"><span class="menu-item-icon">&#x2764;&#xFE0F;</span> Your Wishlist</a>
             </div>
           </div>
 
@@ -129,10 +141,12 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.5c0 5.2-8.8 10.5-8.8 10.5S3.2 13.7 3.2 8.5A4.4 4.4 0 0 1 11 5.7L12 7l1-1.3a4.4 4.4 0 0 1 7.8 2.8Z"/></svg>
           </a>
 
-          <a class="cart-action" href="#cart" aria-label="Cart, 0 items, total $0.00">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 1.9-1.4L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
-            <span class="cart-count">0</span>
-            <span class="cart-copy"><small>Cart</small><strong>$0.00</strong></span>
+          <a class="cart-action" href="#cart" aria-label="Cart, 0 items">
+            <div class="cart-icon-wrap">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 1.9-1.4L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
+              <span class="cart-count">0</span>
+            </div>
+            <span class="cart-copy"><strong>Cart</strong></span>
           </a>
         </div>
       </div>
@@ -144,12 +158,13 @@
             <span>All Departments</span>
           </button>
           <div class="dropdown-menu department-menu" id="departments-menu" role="menu" aria-label="All departments" data-dropdown-menu>
-            <a class="dropdown-item" href="#electronics" role="menuitem">Electronics</a>
-            <a class="dropdown-item" href="#fashion" role="menuitem">Fashion &amp; Apparel</a>
-            <a class="dropdown-item" href="#home-kitchen" role="menuitem">Home &amp; Kitchen</a>
-            <a class="dropdown-item" href="#beauty-health" role="menuitem">Beauty &amp; Health</a>
-            <a class="dropdown-item" href="#grocery" role="menuitem">Grocery &amp; Gourmet</a>
-            <a class="dropdown-item" href="#sports" role="menuitem">Sports &amp; Outdoors</a>
+            <div class="dropdown-menu-header dark">&#x1F6CD;&#xFE0F; Browse Departments</div>
+            <a class="dropdown-item" href="#electronics" role="menuitem"><span class="dept-icon">&#x1F4BB;</span> Electronics</a>
+            <a class="dropdown-item" href="#fashion" role="menuitem"><span class="dept-icon">&#x1F457;</span> Fashion &amp; Apparel</a>
+            <a class="dropdown-item" href="#home-kitchen" role="menuitem"><span class="dept-icon">&#x1F3E0;</span> Home &amp; Kitchen</a>
+            <a class="dropdown-item" href="#beauty-health" role="menuitem"><span class="dept-icon">&#x2728;</span> Beauty &amp; Health</a>
+            <a class="dropdown-item" href="#grocery" role="menuitem"><span class="dept-icon">&#x1F6D2;</span> Grocery &amp; Gourmet</a>
+            <a class="dropdown-item" href="#sports" role="menuitem"><span class="dept-icon">&#x26BD;</span> Sports &amp; Outdoors</a>
           </div>
         </div>
         <a href="#deals" class="category-link deals-link">Today's Deals <span class="hot-badge">HOT</span></a>
@@ -157,21 +172,23 @@
         <div class="dropdown category-dropdown">
           <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="electronics-menu" data-dropdown-trigger>Electronics <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="electronics-menu" role="menu" aria-label="Electronics categories" data-dropdown-menu>
-            <a class="dropdown-item" href="#phones" role="menuitem">Phones &amp; Tablets</a>
-            <a class="dropdown-item" href="#computers" role="menuitem">Computers &amp; Accessories</a>
-            <a class="dropdown-item" href="#tv-audio" role="menuitem">TV &amp; Audio</a>
-            <a class="dropdown-item" href="#cameras" role="menuitem">Cameras</a>
-            <a class="dropdown-item" href="#gaming" role="menuitem">Gaming</a>
+            <div class="dropdown-menu-header">&#x1F4BB; Electronics</div>
+            <a class="dropdown-item" href="#phones" role="menuitem"><span class="menu-item-icon">&#x1F4F1;</span> Phones &amp; Tablets</a>
+            <a class="dropdown-item" href="#computers" role="menuitem"><span class="menu-item-icon">&#x1F5A5;&#xFE0F;</span> Computers &amp; Accessories</a>
+            <a class="dropdown-item" href="#tv-audio" role="menuitem"><span class="menu-item-icon">&#x1F4FA;</span> TV &amp; Audio</a>
+            <a class="dropdown-item" href="#cameras" role="menuitem"><span class="menu-item-icon">&#x1F4F7;</span> Cameras</a>
+            <a class="dropdown-item" href="#gaming" role="menuitem"><span class="menu-item-icon">&#x1F3AE;</span> Gaming</a>
           </div>
         </div>
         <div class="dropdown category-dropdown">
           <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="fashion-menu" data-dropdown-trigger>Fashion <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="fashion-menu" role="menu" aria-label="Fashion categories" data-dropdown-menu>
-            <a class="dropdown-item" href="#womens-fashion" role="menuitem">Women’s Fashion</a>
-            <a class="dropdown-item" href="#mens-fashion" role="menuitem">Men’s Fashion</a>
-            <a class="dropdown-item" href="#kids-fashion" role="menuitem">Kids’ Fashion</a>
-            <a class="dropdown-item" href="#shoes" role="menuitem">Shoes</a>
-            <a class="dropdown-item" href="#bags" role="menuitem">Bags &amp; Accessories</a>
+            <div class="dropdown-menu-header">&#x1F457; Fashion</div>
+            <a class="dropdown-item" href="#womens-fashion" role="menuitem"><span class="menu-item-icon">&#x1F469;</span> Women's Fashion</a>
+            <a class="dropdown-item" href="#mens-fashion" role="menuitem"><span class="menu-item-icon">&#x1F468;</span> Men's Fashion</a>
+            <a class="dropdown-item" href="#kids-fashion" role="menuitem"><span class="menu-item-icon">&#x1F9D2;</span> Kids' Fashion</a>
+            <a class="dropdown-item" href="#shoes" role="menuitem"><span class="menu-item-icon">&#x1F45F;</span> Shoes</a>
+            <a class="dropdown-item" href="#bags" role="menuitem"><span class="menu-item-icon">&#x1F45C;</span> Bags &amp; Accessories</a>
           </div>
         </div>
         <a href="#home-kitchen" class="category-link">Home &amp; Kitchen</a>
@@ -179,5 +196,1391 @@
         <a href="#customer-service" class="category-link">Customer Service</a>
       </nav>
     </header>
+
+    <!-- ========================================================
+         MAIN CONTENT AREA (AMAZON-STYLE COMPLETE REDESIGN)
+         ======================================================== -->
+    <main class="main-content" id="main-content">
+      <div class="body-container">
+
+        <!-- ───────────────────────────────────────────────────
+             0. 5-CATEGORY FULL-WIDTH HERO IMAGE SLIDER
+             ─────────────────────────────────────────────────── -->
+        <section class="hero-slider-section" aria-label="Top Category Deals Carousel">
+          <div class="hero-slider-wrap">
+            <button class="hero-nav-btn hero-nav-prev" id="hero-slider-prev" aria-label="Previous category banner" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="hero-slider-viewport" id="hero-slider-viewport">
+              <div class="hero-slider-track" id="hero-slider-track">
+
+                <!-- Slide 1: Electronics -->
+                <div class="hero-slide" data-slide="0">
+                  <img class="hero-slide-img" src="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80" alt="Electronics Mega Sale" loading="eager">
+                  <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                      <span class="hero-slide-tag">⚡ TECH &amp; ELECTRONICS BONANZA</span>
+                      <h2 class="hero-slide-title">Up to 60% Off Next-Gen Laptops, 4K OLEDs &amp; Audio</h2>
+                      <p class="hero-slide-desc">Explore unbeatable offers on Intel Core Ultra, Apple Silicon, Sony Noise Cancelling &amp; Smart TVs.</p>
+                      <a href="#electronics" class="hero-slide-cta">Shop Electronics Deals <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 2: Fashion -->
+                <div class="hero-slide" data-slide="1">
+                  <img class="hero-slide-img" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80" alt="Fashion Big Trend Festival" loading="lazy">
+                  <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                      <span class="hero-slide-tag">👗 FASHION &amp; APPAREL FESTIVAL</span>
+                      <h2 class="hero-slide-title">Min. 50% - 75% Off Trending Global Styles</h2>
+                      <p class="hero-slide-desc">Top fashion brands, ethnic wear, streetwear, jackets, luxury watches &amp; sneakers for everyone.</p>
+                      <a href="#fashion" class="hero-slide-cta">Explore Fashion Collection <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 3: Home & Kitchen -->
+                <div class="hero-slide" data-slide="2">
+                  <img class="hero-slide-img" src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80" alt="Home & Kitchen Makeover" loading="lazy">
+                  <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                      <span class="hero-slide-tag">🏡 HOME &amp; KITCHEN MAKEOVER</span>
+                      <h2 class="hero-slide-title">Up to 70% Off Modern Furniture &amp; Smart Appliances</h2>
+                      <p class="hero-slide-desc">Upgrade your living space with designer chandeliers, espresso machines, cookware &amp; robotic vacuums.</p>
+                      <a href="#home-kitchen" class="hero-slide-cta">Upgrade Your Home <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 4: Beauty & Wellness -->
+                <div class="hero-slide" data-slide="3">
+                  <img class="hero-slide-img" src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1600&auto=format&fit=crop&q=80" alt="Beauty and Wellness" loading="lazy">
+                  <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                      <span class="hero-slide-tag">✨ BEAUTY &amp; PERSONAL CARE</span>
+                      <h2 class="hero-slide-title">Flat 40% - 60% Off Luxury Skincare &amp; Fragrances</h2>
+                      <p class="hero-slide-desc">Dermatologist-approved skincare, premium serums, salon hair appliances &amp; signature fragrances.</p>
+                      <a href="#beauty-health" class="hero-slide-cta">Shop Beauty Deals <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 5: Gaming & Consoles -->
+                <div class="hero-slide" data-slide="4">
+                  <img class="hero-slide-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80" alt="Gaming & Tech Hub" loading="lazy">
+                  <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                      <span class="hero-slide-tag">🎮 GAMING &amp; HIGH-PERFORMANCE HUB</span>
+                      <h2 class="hero-slide-title">Ultra Gear, Consoles &amp; RTX 50-Series Power</h2>
+                      <p class="hero-slide-desc">Immerse yourself with high-refresh rate monitors, mechanical keyboards, ergonomic chairs &amp; VR headsets.</p>
+                      <a href="#gaming" class="hero-slide-cta">Level Up Your Setup <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <button class="hero-nav-btn hero-nav-next" id="hero-slider-next" aria-label="Next category banner" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <div class="hero-slider-indicators" id="hero-slider-indicators"></div>
+          </div>
+        </section>
+
+        <!-- ───────────────────────────────────────────────────
+             1. TOP HERO BANNERS SHOWCASE ROW
+             ─────────────────────────────────────────────────── -->
+        <section class="hero-banners-section" aria-label="Featured promotions">
+          <div class="hero-banners-row">
+
+            <!-- Banner 1: Big Hero Fresh Finds -->
+            <a href="#fashion-deals" class="hero-banner-card">
+              <div class="hero-card-header">
+                <h3 class="hero-card-badge">Min. 50% off</h3>
+                <p class="hero-card-sub">Fresh finds</p>
+                <div class="hero-card-brand">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span>SYMBOL PREMIUM</span>
+                </div>
+              </div>
+              <div class="hero-card-img-wrap">
+                <img class="hero-card-img" src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=700&auto=format&fit=crop&q=80" alt="Fresh fashion finds" loading="lazy">
+              </div>
+              <div class="hero-card-pill">Save Extra with No Cost EMI &amp; Cashback</div>
+            </a>
+
+            <!-- Banner 2: Smartphone Offer -->
+            <a href="#phones" class="hero-banner-card">
+              <div class="hero-card-header">
+                <h3 class="hero-card-badge"><span style="text-decoration: line-through; color: #94a3b8; font-size: 13px; font-weight: 600;">₹28,999</span> ₹21,499*</h3>
+                <p class="hero-card-sub">Power that lasts up to 2.5 days*</p>
+                <div class="hero-card-brand" style="color: #38bdf8;">
+                  <span>ONEPLUS NORD</span>
+                </div>
+              </div>
+              <div class="hero-card-img-wrap">
+                <img class="hero-card-img" src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80" alt="Latest 5G smartphone" loading="lazy">
+              </div>
+              <div class="hero-card-pill">Unlimited 5% cashback*</div>
+            </a>
+
+            <!-- Banner 3: Classic Jewellery -->
+            <a href="#jewellery" class="hero-banner-card">
+              <div class="hero-card-header">
+                <h3 class="hero-card-badge">Min. 70% off</h3>
+                <p class="hero-card-sub">Men's classic jewellery</p>
+                <div class="hero-card-brand">
+                  <span>SALTY CLARK</span>
+                </div>
+              </div>
+              <div class="hero-card-img-wrap">
+                <img class="hero-card-img" src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80" alt="Classic jewellery collection" loading="lazy">
+              </div>
+              <div class="hero-card-pill">Unlimited 5% cashback*</div>
+            </a>
+
+            <!-- Banner 4: Prime Music -->
+            <a href="#music" class="hero-banner-card">
+              <div class="hero-card-header">
+                <h3 class="hero-card-badge">Listen to music for free</h3>
+                <p class="hero-card-sub">No payment required</p>
+                <div class="hero-card-brand" style="color: #38bdf8;">
+                  <span>PRIME MUSIC</span>
+                </div>
+              </div>
+              <div class="hero-card-img-wrap">
+                <img class="hero-card-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" alt="Listen to free music" loading="lazy">
+              </div>
+              <div class="hero-card-pill">Stream Ad-Free Music</div>
+            </a>
+
+            <!-- Banner 5: New Season Styles -->
+            <a href="#apparel" class="hero-banner-card">
+              <div class="hero-card-header">
+                <h3 class="hero-card-badge">Min. 55% off</h3>
+                <p class="hero-card-sub">New season styles</p>
+                <div class="hero-card-brand" style="color: #a78bfa;">
+                  <span>TRENDING NOW</span>
+                </div>
+              </div>
+              <div class="hero-card-img-wrap">
+                <img class="hero-card-img" src="https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600&auto=format&fit=crop&q=80" alt="New season styles" loading="lazy">
+              </div>
+              <div class="hero-card-pill">Unlimited 5% cashback*</div>
+            </a>
+
+          </div>
+        </section>
+
+        <!-- ───────────────────────────────────────────────────
+             2. MINI QUICK-BROWSING HORIZONTAL STRIP
+             ─────────────────────────────────────────────────── -->
+        <section class="quick-browse-section" aria-label="Recently viewed &amp; suggestions">
+          <div class="quick-browse-track">
+
+            <a href="#saved" class="quick-browse-item">
+              <span class="quick-item-title">For you</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80" alt="For you item" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#hardware" class="quick-browse-item">
+              <span class="quick-item-title">Keep shopping for</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1562976540-1502c2145186?w=300&auto=format&fit=crop&q=80" alt="Computer memory RAM" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#accessories" class="quick-browse-item">
+              <span class="quick-item-title">Buy it again</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&auto=format&fit=crop&q=80" alt="Backpack" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#phones" class="quick-browse-item">
+              <span class="quick-item-title">Keep shopping for</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80" alt="Mobile phone" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#lists" class="quick-browse-item">
+              <span class="quick-item-title">Inspired by your Lists</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80" alt="Red trolley suitcase" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#gadgets" class="quick-browse-item">
+              <span class="quick-item-title">Keep shopping for</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=300&auto=format&fit=crop&q=80" alt="Portable hard drive" loading="lazy">
+              </div>
+            </a>
+
+            <a href="#deals" class="quick-browse-item">
+              <span class="quick-item-title">Deal on saved items</span>
+              <div class="quick-item-img-wrap">
+                <img class="quick-item-img" src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300&auto=format&fit=crop&q=80" alt="Saved laptop item" loading="lazy">
+              </div>
+              <span class="quick-item-badge">42% off</span>
+            </a>
+
+          </div>
+        </section>
+
+        <!-- ───────────────────────────────────────────────────
+             3. 4-QUADRANT CATEGORY GRID CARDS (ROWS 1 - 7)
+             ─────────────────────────────────────────────────── -->
+        <div class="quad-grid-container">
+
+          <!-- ── ROW 1 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 1: Deals for you -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#deals" class="quad-card-title">Deals for you <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80" alt="Smartphones" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">50% off</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80" alt="Mobile Phones" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">40% off</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80" alt="Wireless Mouse" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Best selling</span></div>
+                </a>
+                <a href="#deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80" alt="Slim Keyboard" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#deals" class="quad-card-footer-link">See all deals</a></div>
+            </article>
+
+            <!-- Card 2: Related to your list -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#luggage" class="quad-card-title">Related to your list <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#luggage" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80" alt="Blue Suitcase" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">30% off</span></div>
+                </a>
+                <a href="#luggage" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1581553680321-4fffae59fccd?w=300&auto=format&fit=crop&q=80" alt="Red Trolley" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">35% off</span></div>
+                </a>
+                <a href="#luggage" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&auto=format&fit=crop&q=80" alt="Cabin Luggage" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">25% off</span></div>
+                </a>
+                <a href="#luggage" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80" alt="Travel Bag" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">40% off</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#luggage" class="quad-card-footer-link">See more luggage</a></div>
+            </article>
+
+            <!-- Card 3: 4 stars and above -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#top-rated" class="quad-card-title">4 stars and above <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#top-rated" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&auto=format&fit=crop&q=80" alt="Emergency lantern" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Top rated</span></div>
+                </a>
+                <a href="#top-rated" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80" alt="Table lamp" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#top-rated" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80" alt="Induction cooktop" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span></div>
+                </a>
+                <a href="#top-rated" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=300&auto=format&fit=crop&q=80" alt="Steam iron" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Best seller</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#top-rated" class="quad-card-footer-link">See all 4+ star deals</a></div>
+            </article>
+
+            <!-- Card 4: Frying Pans & Cookware -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#cookware" class="quad-card-title">Frying Pans &amp; Cookware <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#cookware" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80" alt="Non-stick Fry Pan" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Min 40% off</span></div>
+                </a>
+                <a href="#cookware" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=300&auto=format&fit=crop&q=80" alt="Deep Kadhai" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Min 35% off</span></div>
+                </a>
+                <a href="#cookware" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=80" alt="Appe Pan" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span></div>
+                </a>
+                <a href="#cookware" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300&auto=format&fit=crop&q=80" alt="Roti Tawa" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#cookware" class="quad-card-footer-link">Explore cookware</a></div>
+            </article>
+
+          </div><!-- /row 1 -->
+
+          <!-- ── ROW 2 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 5: Explore deals in these categories -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#categories" class="quad-card-title">Explore deals in these categories <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#mouse-pads" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80" alt="Mouse Pads" loading="lazy"></div>
+                  <p class="quad-item-label">Mouse Pads</p>
+                </a>
+                <a href="#suitcases" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80" alt="Suitcases &amp; Trolley Bags" loading="lazy"></div>
+                  <p class="quad-item-label">Suitcases &amp; Trolley Bags</p>
+                </a>
+                <a href="#lanterns" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&auto=format&fit=crop&q=80" alt="Camping Lanterns" loading="lazy"></div>
+                  <p class="quad-item-label">Electric Camping Lanterns</p>
+                </a>
+                <a href="#lamps" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80" alt="Table Lamps" loading="lazy"></div>
+                  <p class="quad-item-label">Table Lamps</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#categories" class="quad-card-footer-link">See more categories</a></div>
+            </article>
+
+            <!-- Card 6: Recommended deals for you -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#recommended" class="quad-card-title">Recommended deals for you <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#lighting" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&auto=format&fit=crop&q=80" alt="Ceiling Chandelier" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">65% off</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#kitchen" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=300&auto=format&fit=crop&q=80" alt="Dinnerware Set" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">55% off</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#smartwatches" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&auto=format&fit=crop&q=80" alt="Smartwatch" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">45% off</span></div>
+                </a>
+                <a href="#accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80" alt="Mousepad" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">40% off</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#recommended" class="quad-card-footer-link">See all recommended</a></div>
+            </article>
+
+            <!-- Card 7: Home improvements -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#home-improvement" class="quad-card-title">Up to 80% off on Home improvements <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#home-improvement" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80" alt="Electrical accessories" loading="lazy"></div>
+                  <p class="quad-item-label">Electrical Extension Boards</p>
+                </a>
+                <a href="#home-improvement" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80" alt="Ladders" loading="lazy"></div>
+                  <p class="quad-item-label">Ladders | Up to 70% off</p>
+                </a>
+                <a href="#home-improvement" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&auto=format&fit=crop&q=80" alt="Security cameras" loading="lazy"></div>
+                  <p class="quad-item-label">Security Cameras | Up to 60% off</p>
+                </a>
+                <a href="#business" class="quad-item" style="background: #e0f2fe; border-radius: 4px; padding: 4px;">
+                  <div class="quad-item-img-wrap" style="background: transparent;"><img class="quad-item-img" style="object-fit: contain;" src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80" alt="Amazon Business" loading="lazy"></div>
+                  <p class="quad-item-label" style="color: #0369a1; font-weight: 800;">For business purchases</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#home-improvement" class="quad-card-footer-link">Shop home improvements</a></div>
+            </article>
+
+            <!-- Card 8: Bathroom fittings & accessories -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#bath" class="quad-card-title">Deals on bathroom fittings &amp; accessories <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#bath" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&auto=format&fit=crop&q=80" alt="Commodes" loading="lazy"></div>
+                  <p class="quad-item-label">Commodes</p>
+                </a>
+                <a href="#bath" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1620626011761-996317b8d101?w=300&auto=format&fit=crop&q=80" alt="Bath Shelves" loading="lazy"></div>
+                  <p class="quad-item-label">Bath Shelves</p>
+                </a>
+                <a href="#bath" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=300&auto=format&fit=crop&q=80" alt="Mirror Cabinets" loading="lazy"></div>
+                  <p class="quad-item-label">Mirror Cabinets</p>
+                </a>
+                <a href="#bath" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80" alt="Health Faucets" loading="lazy"></div>
+                  <p class="quad-item-label">Health Faucets</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#bath" class="quad-card-footer-link">See more bath deals</a></div>
+            </article>
+
+          </div><!-- /row 2 -->
+
+          <!-- ── ROW 3 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 9: Starting ₹149 | Dry fruits & seeds -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#grocery" class="quad-card-title">Starting ₹149 | Dry fruits &amp; seeds <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#grocery" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1508061252966-f72fb4d2f099?w=300&auto=format&fit=crop&q=80" alt="Almonds" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹199 | Almonds</p>
+                </a>
+                <a href="#grocery" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&auto=format&fit=crop&q=80" alt="Dates" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹149 | Dates</p>
+                </a>
+                <a href="#grocery" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&auto=format&fit=crop&q=80" alt="Cashews" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹249 | Cashews</p>
+                </a>
+                <a href="#grocery" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=300&auto=format&fit=crop&q=80" alt="Walnuts" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹299 | Walnuts</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#grocery" class="quad-card-footer-link">See all dry fruits</a></div>
+            </article>
+
+            <!-- Card 10: Bestsellers in electronics for you -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#electronics" class="quad-card-title">Bestsellers in electronics for you <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#electronics" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80" alt="5G Smartphone" loading="lazy"></div>
+                  <p class="quad-item-label">5G Smartphones | ₹2,999*</p>
+                </a>
+                <a href="#electronics" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80" alt="Earphones" loading="lazy"></div>
+                  <p class="quad-item-label">In-Ear Earphones | ₹449*</p>
+                </a>
+                <a href="#electronics" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=300&auto=format&fit=crop&q=80" alt="Power Bank" loading="lazy"></div>
+                  <p class="quad-item-label">Fast Power Banks | ₹899*</p>
+                </a>
+                <a href="#electronics" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80" alt="Fast Charger" loading="lazy"></div>
+                  <p class="quad-item-label">Fast Chargers | ₹299*</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#electronics" class="quad-card-footer-link">See all electronic bestsellers</a></div>
+            </article>
+
+            <!-- Card 11: Deals on keyboard, mouse & more -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#pc-accessories" class="quad-card-title">Deals on keyboard, mouse &amp; more <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#pc-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80" alt="Keyboard" loading="lazy"></div>
+                  <p class="quad-item-label">Keyboards | Starting ₹399</p>
+                </a>
+                <a href="#pc-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80" alt="Mouse" loading="lazy"></div>
+                  <p class="quad-item-label">Mouse | Starting ₹199</p>
+                </a>
+                <a href="#pc-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80" alt="Gaming Mousepad" loading="lazy"></div>
+                  <p class="quad-item-label">Gaming Mousepad | ₹149</p>
+                </a>
+                <a href="#pc-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80" alt="USB Hubs" loading="lazy"></div>
+                  <p class="quad-item-label">USB Hubs | ₹299</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#pc-accessories" class="quad-card-footer-link">See all PC accessories</a></div>
+            </article>
+
+            <!-- Card 12: Starting ₹99 | Delicious snacks & more -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#snacks" class="quad-card-title">Starting ₹99 | Delicious snacks &amp; more <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#snacks" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=300&auto=format&fit=crop&q=80" alt="Chocolates" loading="lazy"></div>
+                  <p class="quad-item-label">Chocolates | Under ₹99</p>
+                </a>
+                <a href="#snacks" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&auto=format&fit=crop&q=80" alt="Biscuits" loading="lazy"></div>
+                  <p class="quad-item-label">Biscuits &amp; snacks | Under ₹149</p>
+                </a>
+                <a href="#snacks" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=300&auto=format&fit=crop&q=80" alt="Namkeen &amp; chips" loading="lazy"></div>
+                  <p class="quad-item-label">Namkeen &amp; Chips</p>
+                </a>
+                <a href="#snacks" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&auto=format&fit=crop&q=80" alt="Cookies" loading="lazy"></div>
+                  <p class="quad-item-label">Fresh Baked Cookies</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#snacks" class="quad-card-footer-link">See all snacks</a></div>
+            </article>
+
+          </div><!-- /row 3 -->
+
+          <!-- ── ROW 4 (from image 2) ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 13: Bulk discounts on Electronics + GST -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#bulk-deals" class="quad-card-title">Bulk discounts on Electronics + Up to 18% GST credit <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#laptops" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&auto=format&fit=crop&q=80" alt="Laptops" loading="lazy"></div>
+                  <p class="quad-item-label">Laptops | Up to 40% off</p>
+                </a>
+                <a href="#audio" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80" alt="Headphones" loading="lazy"></div>
+                  <p class="quad-item-label">Headphones | Up to 60% off</p>
+                </a>
+                <a href="#tablets" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=300&auto=format&fit=crop&q=80" alt="Tablets" loading="lazy"></div>
+                  <p class="quad-item-label">Tablets | Up to 50% off</p>
+                </a>
+                <a href="#business" class="quad-item" style="background: #fef3c7; border-radius: 4px; padding: 4px;">
+                  <div class="quad-item-img-wrap" style="background: transparent;"><img class="quad-item-img" style="object-fit: contain;" src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80" alt="Business Cashback" loading="lazy"></div>
+                  <p class="quad-item-label" style="color: #92400e; font-weight: 800;">10% Assured Cashback</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#bulk-deals" class="quad-card-footer-link">Register for business account</a></div>
+            </article>
+
+            <!-- Card 14: Deals related to your views -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#view-deals" class="quad-card-title">Deals related to your views <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#view-deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=300&auto=format&fit=crop&q=80" alt="Laptop Cooling Pad" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+                <a href="#view-deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80" alt="RGB Gaming Keyboard" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span></div>
+                </a>
+                <a href="#view-deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80" alt="RGB Mouse Pad" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span></div>
+                </a>
+                <a href="#view-deals" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300&auto=format&fit=crop&q=80" alt="Adjustable Laptop Stand" loading="lazy"></div>
+                  <div class="deal-badge-wrap"><span class="deal-red-tag">Deal</span><span class="deal-sub-text">Limited deal</span></div>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#view-deals" class="quad-card-footer-link">See all related deals</a></div>
+            </article>
+
+            <!-- Card 15: Latest styles from top rated brands -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#fashion" class="quad-card-title">Latest styles from top rated brands | 50% - 70% off <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80" alt="Tops &amp; Tees" loading="lazy"></div>
+                  <p class="quad-item-label">Tops &amp; Tees</p>
+                </a>
+                <a href="#fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80" alt="Kurtas &amp; Sets" loading="lazy"></div>
+                  <p class="quad-item-label">Kurtas &amp; Sets</p>
+                </a>
+                <a href="#fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&auto=format&fit=crop&q=80" alt="Jeans" loading="lazy"></div>
+                  <p class="quad-item-label">Jeans</p>
+                </a>
+                <a href="#fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=300&auto=format&fit=crop&q=80" alt="Dresses &amp; Jumpsuits" loading="lazy"></div>
+                  <p class="quad-item-label">Dresses &amp; Jumpsuits</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#fashion" class="quad-card-footer-link">See all fashion styles</a></div>
+            </article>
+
+            <!-- Card 16: Free delivery always + Extra ₹100 cashback -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#bazaar" class="quad-card-title">Free delivery always + Extra ₹100 cashback <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80" alt="Kurtis" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹149</span>
+                  <p class="quad-item-label">Kurtis</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=300&auto=format&fit=crop&q=80" alt="Sarees" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹199</span>
+                  <p class="quad-item-label">Sarees</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80" alt="Beauty Accessories" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹99</span>
+                  <p class="quad-item-label">Beauty accessories</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80" alt="Shop all Bazaar" loading="lazy"></div>
+                  <span class="yellow-price-tag">Shop Bazaar</span>
+                  <p class="quad-item-label">Shop all Bazaar</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#bazaar" class="quad-card-footer-link">Explore Bazaar store</a></div>
+            </article>
+
+          </div><!-- /row 4 -->
+
+          <!-- ── ROW 5 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 17: Everything under ₹299 | Kitchen cookware -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#kitchen-under299" class="quad-card-title">Everything under ₹299 | Kitchen cookware, tools &amp; storage <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#kitchen-under299" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80" alt="Bakeware &amp; Tools" loading="lazy"></div>
+                  <p class="quad-item-label">Bakeware &amp; tools | From ₹99</p>
+                </a>
+                <a href="#kitchen-under299" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=300&auto=format&fit=crop&q=80" alt="Kitchen Storage" loading="lazy"></div>
+                  <p class="quad-item-label">Kitchen storage | Under ₹199</p>
+                </a>
+                <a href="#kitchen-under299" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300&auto=format&fit=crop&q=80" alt="Kitchen Tools" loading="lazy"></div>
+                  <p class="quad-item-label">Kitchen tools &amp; gadgets</p>
+                </a>
+                <a href="#kitchen-under299" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=300&auto=format&fit=crop&q=80" alt="Cookware Sets" loading="lazy"></div>
+                  <p class="quad-item-label">Cookware sets &amp; pans</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#kitchen-under299" class="quad-card-footer-link">See all kitchen deals</a></div>
+            </article>
+
+            <!-- Card 18: Men & Kitchen Bazaar -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#bazaar" class="quad-card-title">Free delivery always + Extra ₹100 cashback <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80" alt="Men's Fashion" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹299</span>
+                  <p class="quad-item-label">Men's Fashion</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80" alt="Kitchen items" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹99</span>
+                  <p class="quad-item-label">Kitchen</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=300&auto=format&fit=crop&q=80" alt="Women's Fashion" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹199</span>
+                  <p class="quad-item-label">Women's Fashion</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80" alt="Shop Bazaar" loading="lazy"></div>
+                  <span class="yellow-price-tag">Shop All</span>
+                  <p class="quad-item-label">Shop all Bazaar</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#bazaar" class="quad-card-footer-link">See all deals</a></div>
+            </article>
+
+            <!-- Card 19: Smartphones curated just for you -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#smartphones" class="quad-card-title">Smartphones curated just for you <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#smartphones" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80" alt="Budget Phones" loading="lazy"></div>
+                  <p class="quad-item-label">Budget | Below ₹10,000</p>
+                </a>
+                <a href="#smartphones" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80" alt="Mid-range Phones" loading="lazy"></div>
+                  <p class="quad-item-label">Mid-range | ₹10k - ₹20k</p>
+                </a>
+                <a href="#smartphones" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=300&auto=format&fit=crop&q=80" alt="Premium Phones" loading="lazy"></div>
+                  <p class="quad-item-label">Premium | ₹20k - ₹50k</p>
+                </a>
+                <a href="#smartphones" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=300&auto=format&fit=crop&q=80" alt="Ultra Premium Phones" loading="lazy"></div>
+                  <p class="quad-item-label">Ultra premium | &gt; ₹50k</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#smartphones" class="quad-card-footer-link">See all phones</a></div>
+            </article>
+
+            <!-- Card 20: Futuristic smart projectors -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#projectors" class="quad-card-title">Futuristic smart projectors | Min 30% off <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#projectors" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=300&auto=format&fit=crop&q=80" alt="Lumina Pro 4K Projector" loading="lazy"></div>
+                  <p class="quad-item-label">Lumina Pro 4K Projector</p>
+                </a>
+                <a href="#projectors" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1535016120720-40c646be5580?w=300&auto=format&fit=crop&q=80" alt="BenQ Laser Portable" loading="lazy"></div>
+                  <p class="quad-item-label">BenQ Laser Portable</p>
+                </a>
+                <a href="#projectors" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=300&auto=format&fit=crop&q=80" alt="Nebula 1080p Smart" loading="lazy"></div>
+                  <p class="quad-item-label">Nebula 1080p Smart</p>
+                </a>
+                <a href="#projectors" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&auto=format&fit=crop&q=80" alt="BenQ 4K OLED" loading="lazy"></div>
+                  <p class="quad-item-label">BenQ 4K OLED Home Cinema</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#projectors" class="quad-card-footer-link">See all smart projectors</a></div>
+            </article>
+
+          </div><!-- /row 5 -->
+
+          <!-- ── ROW 6 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 21: Free delivery always + Extra ₹100 cashback -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#bazaar" class="quad-card-title">Free delivery always + Extra ₹100 cashback <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=300&auto=format&fit=crop&q=80" alt="Women's Saree" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹199</span>
+                  <p class="quad-item-label">Women's Fashion</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80" alt="Men's Polo" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹199</span>
+                  <p class="quad-item-label">Men's Fashion</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80" alt="Home Decor" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹149</span>
+                  <p class="quad-item-label">Home essentials</p>
+                </a>
+                <a href="#bazaar" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80" alt="Shop Bazaar" loading="lazy"></div>
+                  <span class="yellow-price-tag">Shop Now</span>
+                  <p class="quad-item-label">Shop all Bazaar</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#bazaar" class="quad-card-footer-link">See all deals</a></div>
+            </article>
+
+            <!-- Card 22: Starting ₹149 | Must-have home buys -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#home-decor" class="quad-card-title">Starting ₹149 | Must-have home buys <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#home-decor" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=300&auto=format&fit=crop&q=80" alt="Bedding sets" loading="lazy"></div>
+                  <p class="quad-item-label">Min. 50% off | Home furnishing</p>
+                </a>
+                <a href="#home-decor" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=300&auto=format&fit=crop&q=80" alt="Side tables" loading="lazy"></div>
+                  <p class="quad-item-label">Min. 50% off | Furniture</p>
+                </a>
+                <a href="#home-decor" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&auto=format&fit=crop&q=80" alt="Fairy lights" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹199 | Lighting</p>
+                </a>
+                <a href="#home-decor" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80" alt="Decor figurines" loading="lazy"></div>
+                  <p class="quad-item-label">Starting ₹129 | Home decor idols</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#home-decor" class="quad-card-footer-link">See all home buys</a></div>
+            </article>
+
+            <!-- Card 23: Everything under ₹299 | Budget-friendly fashion finds -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#budget-fashion" class="quad-card-title">Everything under ₹299 | Budget-friendly fashion finds <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#budget-fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80" alt="Innerwear" loading="lazy"></div>
+                  <p class="quad-item-label">Under ₹299 | Innerwear</p>
+                </a>
+                <a href="#budget-fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80" alt="Women's tops" loading="lazy"></div>
+                  <p class="quad-item-label">Under ₹299 | Women's tops</p>
+                </a>
+                <a href="#budget-fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80" alt="Men's t-shirts" loading="lazy"></div>
+                  <p class="quad-item-label">Under ₹299 | Men's t-shirts</p>
+                </a>
+                <a href="#budget-fashion" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=300&auto=format&fit=crop&q=80" alt="Socks" loading="lazy"></div>
+                  <p class="quad-item-label">Under ₹179 | Socks</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#budget-fashion" class="quad-card-footer-link">See all budget fashion</a></div>
+            </article>
+
+            <!-- Card 24: Latest launches | Mobile accessories -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#mobile-accessories" class="quad-card-title">Latest launches | Best deals on mobile accessories <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#mobile-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&auto=format&fit=crop&q=80" alt="OnePlus Buds" loading="lazy"></div>
+                  <p class="quad-item-label">OnePlus | Starting ₹1,399</p>
+                </a>
+                <a href="#mobile-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80" alt="Philips Trimmer" loading="lazy"></div>
+                  <p class="quad-item-label">Philips | Starting ₹1,199</p>
+                </a>
+                <a href="#mobile-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80" alt="Wireless Charger" loading="lazy"></div>
+                  <p class="quad-item-label">Oppo Enco | Up to 60% off</p>
+                </a>
+                <a href="#mobile-accessories" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=300&auto=format&fit=crop&q=80" alt="Portronics Power Bank" loading="lazy"></div>
+                  <p class="quad-item-label">Portronics | Starting ₹1,099</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#mobile-accessories" class="quad-card-footer-link">See all mobile accessories</a></div>
+            </article>
+
+          </div><!-- /row 6 -->
+
+          <!-- ── ROW 7 ── -->
+          <div class="quad-cards-row">
+
+            <!-- Card 25: Customers' Most-Loved Fashion for you -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#most-loved-fashion" class="quad-card-title">Customers' Most-Loved Fashion for you <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#shoes" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&auto=format&fit=crop&q=80" alt="Men's Slip-on Shoes" loading="lazy"></div>
+                  <p class="quad-item-label">Men's Slip-ons</p>
+                </a>
+                <a href="#women-tees" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80" alt="Women's Cotton Tees" loading="lazy"></div>
+                  <p class="quad-item-label">Women's Cotton tees</p>
+                </a>
+                <a href="#polo" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=300&auto=format&fit=crop&q=80" alt="Men's Polo Shirts" loading="lazy"></div>
+                  <p class="quad-item-label">Men's Polo shirts</p>
+                </a>
+                <a href="#sneakers" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300&auto=format&fit=crop&q=80" alt="Women's Running Sneakers" loading="lazy"></div>
+                  <p class="quad-item-label">Women's Sneakers</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#most-loved-fashion" class="quad-card-footer-link">See all most-loved</a></div>
+            </article>
+
+            <!-- Card 26: Starting at ₹129 | Innerwear for all -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#innerwear" class="quad-card-title">Starting at ₹129 | Innerwear for all <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#innerwear" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80" alt="Men's Innerwear" loading="lazy"></div>
+                  <p class="quad-item-label">Men's Innerwear</p>
+                </a>
+                <a href="#innerwear" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80" alt="Bras" loading="lazy"></div>
+                  <p class="quad-item-label">Bras</p>
+                </a>
+                <a href="#innerwear" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=300&auto=format&fit=crop&q=80" alt="Kids' Innerwear" loading="lazy"></div>
+                  <p class="quad-item-label">Kids' Innerwear</p>
+                </a>
+                <a href="#innerwear" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80" alt="Women's briefs" loading="lazy"></div>
+                  <p class="quad-item-label">Women's briefs</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#innerwear" class="quad-card-footer-link">See all innerwear</a></div>
+            </article>
+
+            <!-- Card 27: Min. 50% off | Tools & DIY kits -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#tools" class="quad-card-title">Min. 50% off | Tools &amp; DIY kits | Amazon brands &amp; more <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#tools" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=300&auto=format&fit=crop&q=80" alt="Safes &amp; more" loading="lazy"></div>
+                  <p class="quad-item-label">Safes &amp; security</p>
+                </a>
+                <a href="#tools" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80" alt="Ladders" loading="lazy"></div>
+                  <p class="quad-item-label">Ladders</p>
+                </a>
+                <a href="#tools" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80" alt="Kitchen &amp; bath fixtures" loading="lazy"></div>
+                  <p class="quad-item-label">Kitchen &amp; bath fixtures</p>
+                </a>
+                <a href="#tools" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=300&auto=format&fit=crop&q=80" alt="Power &amp; hand tools" loading="lazy"></div>
+                  <p class="quad-item-label">Power &amp; hand tools</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#tools" class="quad-card-footer-link">See all tools</a></div>
+            </article>
+
+            <!-- Card 28: Wholesale prices + Extra ₹100 cashback -->
+            <article class="quad-card">
+              <div class="quad-card-header">
+                <a href="#wholesale" class="quad-card-title">Wholesale prices + Extra ₹100 cashback <span class="arrow">&rsaquo;</span></a>
+              </div>
+              <div class="quad-2x2-grid">
+                <a href="#wholesale" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80" alt="Beauty items" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹99</span>
+                  <p class="quad-item-label">Under ₹99 store</p>
+                </a>
+                <a href="#wholesale" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80" alt="Apparel" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹199</span>
+                  <p class="quad-item-label">Under ₹199 store</p>
+                </a>
+                <a href="#wholesale" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80" alt="Kitchenware" loading="lazy"></div>
+                  <span class="yellow-price-tag">Under ₹299</span>
+                  <p class="quad-item-label">Under ₹299 store</p>
+                </a>
+                <a href="#wholesale" class="quad-item">
+                  <div class="quad-item-img-wrap"><img class="quad-item-img" src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80" alt="Shop all deals" loading="lazy"></div>
+                  <span class="yellow-price-tag">Shop Now</span>
+                  <p class="quad-item-label">Shop all deals</p>
+                </a>
+              </div>
+              <div class="quad-card-footer"><a href="#wholesale" class="quad-card-footer-link">See wholesale deals</a></div>
+            </article>
+
+          </div><!-- /row 7 -->
+
+        </div><!-- /quad-grid-container -->
+
+      </div><!-- /body-container -->
+    </main>
+
+    <!-- Production-Grade E-Commerce Footer -->
+    <footer class="site-footer" id="site-footer">
+      <!-- 1. Back to Top Bar -->
+      <a href="#top" class="back-to-top" id="back-to-top" aria-label="Back to top of page">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg>
+        <span>Back to top</span>
+      </a>
+
+      <!-- 2. Trust & Value Proposition Ribbon -->
+      <section class="trust-ribbon" aria-label="Why shop with X-Mart">
+        <div class="footer-container trust-grid">
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>Free Express Shipping</strong>
+              <span>On all US orders over $50.00</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>100% Secure Checkout</strong>
+              <span>Bank-grade 256-bit encryption</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>30-Day Free Returns</strong>
+              <span>Hassle-free money back guarantee</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>24/7 Dedicated Support</strong>
+              <span>Instant live chat and phone assistance</span>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon-box">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="trust-text">
+              <strong>X-Mart Prime Perks</strong>
+              <span>Earn 5% cashback on every purchase</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Newsletter & Club Card -->
+      <section class="footer-newsletter" aria-labelledby="newsletter-heading">
+        <div class="footer-container">
+          <div class="newsletter-card">
+            <div class="newsletter-content">
+              <div class="newsletter-tag">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span>X-Mart Insider Club</span>
+              </div>
+              <h2 class="newsletter-heading" id="newsletter-heading">Get 15% Off Your First Order + VIP Perks</h2>
+              <p class="newsletter-sub">
+                Subscribe for exclusive drop alerts, flash sale secrets, and personalized recommendations.
+              </p>
+              <div class="newsletter-perks">
+                <span class="perk-badge">✓ Member-Only Flash Deals</span>
+                <span class="perk-badge">✓ Early Access to Mega Sales</span>
+                <span class="perk-badge">✓ Zero Spam Policy</span>
+              </div>
+            </div>
+
+            <div class="newsletter-form-wrapper">
+              <form class="newsletter-form" id="newsletter-form" novalidate>
+                <div class="newsletter-input-group">
+                  <label for="newsletter-email" class="visually-hidden">Email Address</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <input
+                      type="email"
+                      id="newsletter-email"
+                      name="email"
+                      class="newsletter-input"
+                      placeholder="Enter your work or personal email..."
+                      required
+                      autocomplete="email"
+                    />
+                  </div>
+                  <button type="submit" class="newsletter-submit" id="newsletter-submit-btn">
+                    <span class="btn-text">Subscribe</span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                    <svg class="btn-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+                <div class="newsletter-feedback" id="newsletter-feedback" role="alert" aria-live="polite"></div>
+                <p class="newsletter-disclaimer">
+                  By subscribing, you agree to our <a href="#privacy">Privacy Policy</a> and <a href="#terms">Terms</a>. Unsubscribe easily at any time.
+                </p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Multi-Column Directory Navigation -->
+      <section class="footer-directory" aria-label="Footer directory navigation">
+        <div class="footer-container directory-grid">
+          <!-- Column 1: Get to Know Us -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-1">
+              <span>Get to Know Us</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-1">
+              <li><a href="#about" class="footer-link">About X-Mart Superstore</a></li>
+              <li><a href="#careers" class="footer-link">Careers &amp; Culture <span class="link-badge">We're Hiring</span></a></li>
+              <li><a href="#newsroom" class="footer-link">Newsroom &amp; Press Releases</a></li>
+              <li><a href="#sustainability" class="footer-link">Sustainability &amp; Impact</a></li>
+              <li><a href="#investors" class="footer-link">Investor Relations</a></li>
+              <li><a href="#store-locations" class="footer-link">Store Locations &amp; Events</a></li>
+              <li><a href="#leadership" class="footer-link">Leadership &amp; Governance</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 2: Customer Care -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-2">
+              <span>Customer Care</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-2">
+              <li><a href="#help-center" class="footer-link">Help Center &amp; FAQs</a></li>
+              <li><a href="#track-order" class="footer-link">Track Your Package</a></li>
+              <li><a href="#shipping-rates" class="footer-link">Shipping Rates &amp; Delivery Times</a></li>
+              <li><a href="#returns" class="footer-link">Returns &amp; Replacements</a></li>
+              <li><a href="#refund-policy" class="footer-link">Refund Policy</a></li>
+              <li><a href="#warranty" class="footer-link">X-Mart Care &amp; Warranty</a></li>
+              <li><a href="#contact" class="footer-link">Contact Customer Support</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3: Shop Departments -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-3">
+              <span>Shop by Department</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-3">
+              <li><a href="#electronics" class="footer-link">Electronics &amp; Smart Tech</a></li>
+              <li><a href="#fashion" class="footer-link">Men &amp; Women Fashion</a></li>
+              <li><a href="#home-kitchen" class="footer-link">Home Furniture &amp; Kitchen</a></li>
+              <li><a href="#beauty" class="footer-link">Beauty, Health &amp; Grooming</a></li>
+              <li><a href="#grocery" class="footer-link">Grocery, Gourmet &amp; Snacks</a></li>
+              <li><a href="#sports" class="footer-link">Sports &amp; Fitness Equipment</a></li>
+              <li><a href="#gift-cards" class="footer-link">X-Mart Digital Gift Cards</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 4: Make Money & Partner -->
+          <div class="footer-col" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-4">
+              <span>Partner &amp; Business</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul class="footer-link-list" id="footer-col-4">
+              <li><a href="#sell" class="footer-link">Sell Products on X-Mart</a></li>
+              <li><a href="#affiliate" class="footer-link">Join the Affiliate Program</a></li>
+              <li><a href="#advertise" class="footer-link">Advertise Your Brand</a></li>
+              <li><a href="#fulfillment" class="footer-link">Fulfillment by X-Mart (FBX)</a></li>
+              <li><a href="#wholesale" class="footer-link">X-Mart Business &amp; Wholesale</a></li>
+              <li><a href="#developer-api" class="footer-link">Developer Hub &amp; APIs</a></li>
+              <li><a href="#supplier-hub" class="footer-link">Supplier Responsibility</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 5: Mobile App & Direct Support -->
+          <div class="footer-col footer-col-highlight" data-footer-accordion>
+            <button class="footer-col-header" type="button" aria-expanded="false" aria-controls="footer-col-5">
+              <span>Connect &amp; App</span>
+              <svg class="accordion-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="footer-app-box" id="footer-col-5">
+              <p class="app-box-title">Shop faster with our mobile app</p>
+              <div class="app-badges">
+                <!-- Apple App Store Badge -->
+                <a href="#app-store" class="app-badge-btn" aria-label="Download X-Mart on the iOS App Store">
+                  <svg class="app-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.13.64-2.79 1.43-.57.67-.99 1.74-.92 2.78 1.07.08 2.15-.55 2.7-1.34Z"/>
+                  </svg>
+                  <span class="app-badge-copy">
+                    <small>Download on the</small>
+                    <strong>App Store</strong>
+                  </span>
+                </a>
+
+                <!-- Google Play Badge -->
+                <a href="#google-play" class="app-badge-btn" aria-label="Get X-Mart on Google Play">
+                  <svg class="app-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="m3.61 2.53 10.37 10.37-3.24 3.24-8.86-11.8c.41-.95 1.07-1.55 1.73-1.81zm11.79 11.79 3.24-3.24L5.13 1.33c-.34-.17-.69-.26-1.04-.26l11.31 13.25zm.71.71L5.34 23.95c.34.02.69-.06 1.03-.23l9.74-8.69zm.7-1.42 3.69-2.11c1.23-.71 1.23-1.87 0-2.58l-3.69-2.11-1.06 1.06 1.06 5.74z"/>
+                  </svg>
+                  <span class="app-badge-copy">
+                    <small>GET IT ON</small>
+                    <strong>Google Play</strong>
+                  </span>
+                </a>
+              </div>
+
+              <!-- Direct Hotline Support Card -->
+              <div class="support-hotline-card">
+                <div class="hotline-icon">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="hotline-details">
+                  <small>Need Immediate Help?</small>
+                  <a href="tel:18005550199" class="hotline-number">1-800-555-0199</a>
+                  <span class="hotline-availability"><span class="status-indicator"></span> 24/7 Live Concierge</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Brand, Social Connectivity & Region Bar -->
+      <section class="footer-mid-bar" aria-label="Brand and social media">
+        <div class="footer-container mid-bar-container">
+          <div class="footer-brand-info">
+            <a class="brand" href="#top" aria-label="X-Mart home">
+              <span class="brand-mark">X</span>
+              <span class="brand-copy">
+                <span class="brand-name footer-brand-name">X-MART</span>
+                <span class="brand-tagline footer-brand-tagline">SUPERSTORE</span>
+              </span>
+            </a>
+            <p class="brand-mission">
+              Empowering millions with effortless shopping, uncompromising quality, and unparalleled customer satisfaction globally.
+            </p>
+          </div>
+
+          <!-- Social Links -->
+          <div class="footer-social-wrap">
+            <span class="social-label">Follow X-Mart</span>
+            <div class="social-links" aria-label="Social media channels">
+              <!-- X (Twitter) -->
+              <a href="https://twitter.com" class="social-btn" aria-label="Follow us on X (Twitter)" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </a>
+              <!-- Facebook -->
+              <a href="https://facebook.com" class="social-btn" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+              <!-- Instagram -->
+              <a href="https://instagram.com" class="social-btn" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                </svg>
+              </a>
+              <!-- YouTube -->
+              <a href="https://youtube.com" class="social-btn" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor"/>
+                </svg>
+              </a>
+              <!-- LinkedIn -->
+              <a href="https://linkedin.com" class="social-btn" aria-label="Connect on LinkedIn" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.66 1.66 0 1 0 0 3.32 1.66 1.66 0 0 0 0-3.32z"/>
+                </svg>
+              </a>
+              <!-- Pinterest -->
+              <a href="https://pinterest.com" class="social-btn" aria-label="Follow us on Pinterest" target="_blank" rel="noopener noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0a12 12 0 0 0-4.37 23.18c-.06-.94-.1-2.38.02-3.41.11-.93 1.25-5.3 1.25-5.3s-.32-.64-.32-1.58c0-1.48.86-2.59 1.93-2.59.91 0 1.35.68 1.35 1.5 0 .91-.58 2.28-.88 3.55-.25 1.06.53 1.93 1.58 1.93 1.9 0 3.36-2 3.36-4.9 0-2.56-1.84-4.35-4.47-4.35-3.05 0-4.84 2.29-4.84 4.65 0 .92.35 1.91.8 2.45.09.11.1.2.07.31-.08.33-.26 1.05-.29 1.2-.05.18-.15.22-.35.13-1.32-.61-2.14-2.54-2.14-4.09 0-3.33 2.42-6.39 6.98-6.39 3.66 0 6.51 2.61 6.51 6.1 0 3.64-2.29 6.57-5.48 6.57-1.07 0-2.08-.56-2.42-1.22l-.66 2.52c-.24.92-.89 2.07-1.32 2.78A12 12 0 1 0 12 0z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Payment, Security & Legal Footer Bottom -->
+      <section class="footer-bottom" aria-label="Legal, payment and compliance">
+        <div class="footer-container">
+          <div class="bottom-top-row">
+            <!-- Payment Badges -->
+            <div class="payment-methods-wrap">
+              <span class="methods-label">We Accept:</span>
+              <div class="payment-badges" aria-label="Accepted payment methods">
+                <span class="pay-badge" title="Visa">
+                  <span class="pay-text pay-visa">VISA</span>
+                </span>
+                <span class="pay-badge" title="Mastercard">
+                  <span class="pay-text pay-mc">
+                    <span class="mc-circle mc-red"></span>
+                    <span class="mc-circle mc-yellow"></span>
+                  </span>
+                </span>
+                <span class="pay-badge" title="American Express">
+                  <span class="pay-text pay-amex">AMEX</span>
+                </span>
+                <span class="pay-badge" title="PayPal">
+                  <span class="pay-text pay-paypal">PayPal</span>
+                </span>
+                <span class="pay-badge" title="Apple Pay">
+                  <span class="pay-text pay-apple"> Pay</span>
+                </span>
+                <span class="pay-badge" title="Google Pay">
+                  <span class="pay-text pay-gpay">G Pay</span>
+                </span>
+                <span class="pay-badge" title="Klarna">
+                  <span class="pay-text pay-klarna">Klarna.</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Security Assurance Badges -->
+            <div class="security-badges" aria-label="Security and encryption guarantees">
+              <div class="security-badge">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>256-Bit SSL Encrypted</span>
+              </div>
+              <div class="security-badge">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span>PCI-DSS Level 1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-divider"></div>
+
+          <div class="bottom-legal-row">
+            <p class="copyright-text">
+              &copy; 2026 X-Mart Superstore, Inc. All rights reserved. Built for ultra-fast, modern commerce.
+            </p>
+            <nav class="legal-links" aria-label="Legal terms and disclosures">
+              <a href="#privacy" class="legal-link">Privacy Center</a>
+              <a href="#terms" class="legal-link">Terms of Service</a>
+              <a href="#cookies" class="legal-link">Cookie Preferences</a>
+              <a href="#accessibility" class="legal-link">Accessibility</a>
+              <a href="#ca-privacy" class="legal-link">Your Privacy Choices</a>
+              <a href="#security" class="legal-link">Security &amp; Bug Bounty</a>
+            </nav>
+          </div>
+        </div>
+      </section>
+    </footer>
   </body>
 </html>

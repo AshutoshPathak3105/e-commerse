@@ -1,0 +1,10 @@
+{
+  "name": "e-commerse-store",
+  "version": "1.0.0",
+  "description": "X-Mart Superstore — Frontend & Backend",
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "seed": "npm run seed --prefix backend"
+  }
+}
