@@ -2389,7 +2389,7 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
   `;
 
   portalEl.innerHTML = `
-    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 92vh; font-family: inherit;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 96vh; font-family: inherit;">
       
       <!-- Top Header (Clean, professional typography, no emoji icons) -->
       <div style="background: #ff9700; color: #000000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -2445,7 +2445,7 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
               type="text" 
               id="inapp-upi-id-input" 
               placeholder="e.g. mobile@okhdfcbank or yourname@paytm" 
-              value="${(user.phone || '9065553105') + '@okaxis'}" 
+              value="" 
               style="flex: 1; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"
             >
             <button 
