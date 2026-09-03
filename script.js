@@ -2371,15 +2371,13 @@ function buildWishlistDrawer() {
   };
 }
 
-/* ── In-App Sandbox Payment Gateway Modal (Fallback) ── */
-function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
+/* ── Dedicated UPI Payment Gateway Modal ── */
+function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCancel }) {
   const existingPortal = document.getElementById('xmart-inapp-payment-portal');
   if (existingPortal) existingPortal.remove();
 
   const formattedAmount = Currency.format(amount);
   const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=upi%3A%2F%2Fpay%3Fpa%3Dxmartsuperstore%40icici%26pn%3DX-Mart%2BSuperstore%26am%3D${encodeURIComponent(amount)}%26cu%3DINR`;
-
-  const initialTab = paymentMethod === 'NetBanking' ? 'netbanking' : paymentMethod === 'Card' ? 'card' : 'upi';
 
   const portalEl = document.createElement('div');
   portalEl.id = 'xmart-inapp-payment-portal';
@@ -2391,159 +2389,109 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
   `;
 
   portalEl.innerHTML = `
-    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 92vh; font-family: inherit;">
       
-      <!-- Top Header -->
-      <div style="background: #ff9700; color: #000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="background: #000; color: #fff; font-size: 14px; font-weight: 900; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;">X</span>
-          <div>
-            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #000;">X-Mart Payment Gateway</h3>
-            <span style="font-size: 11px; font-weight: 700; opacity: 0.85;">🔒 256-Bit SSL Encrypted &amp; Verified</span>
-          </div>
+      <!-- Top Header (Clean, professional typography, no emoji icons) -->
+      <div style="background: #ff9700; color: #000000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #000000;">X-Mart UPI Gateway</h3>
+          <span style="font-size: 11.5px; font-weight: 600; color: #1e293b;">Unified Payments Interface • Real-Time Verification</span>
         </div>
-        <button id="inapp-close-btn" style="background: transparent; border: none; font-size: 24px; font-weight: 700; cursor: pointer; color: #000; line-height: 1;">&times;</button>
+        <button id="inapp-close-btn" style="background: transparent; border: none; font-size: 24px; font-weight: 700; cursor: pointer; color: #000000; line-height: 1; padding: 2px 6px;">&times;</button>
       </div>
 
       <!-- Price Banner -->
       <div style="background: #fff8ee; border-bottom: 1.5px solid #fed7aa; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <span style="font-size: 12px; color: #7c2d12; font-weight: 700;">Order Payable Amount:</span>
-          <div style="font-size: 20px; font-weight: 900; color: #0f172a;">${formattedAmount}</div>
+          <span style="font-size: 11px; color: #7c2d12; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Order Payable Amount</span>
+          <div style="font-size: 20px; font-weight: 900; color: #0f172a; margin-top: 2px;">${formattedAmount}</div>
         </div>
-        <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #92400e;">
-          TEST SANDBOX
+        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #334155;">
+          Zero Extra Fees
         </div>
       </div>
 
-      <!-- Nav Tabs -->
-      <div style="display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-        <button class="inapp-tab-btn ${initialTab === 'upi' ? 'is-active' : ''}" data-tab="upi" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'upi' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'upi' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'upi' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          ⚡ Instant UPI
-        </button>
-        <button class="inapp-tab-btn ${initialTab === 'card' ? 'is-active' : ''}" data-tab="card" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'card' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'card' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'card' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          💳 Cards
-        </button>
-        <button class="inapp-tab-btn ${initialTab === 'netbanking' ? 'is-active' : ''}" data-tab="netbanking" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'netbanking' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'netbanking' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'netbanking' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          🏦 Net Banking
-        </button>
-      </div>
-
-      <!-- Body Content -->
+      <!-- Body Content (Strict UPI Only) -->
       <div style="padding: 20px; overflow-y: auto; flex: 1;">
         
-        <!-- ── 1. UPI TAB ── -->
-        <div id="inapp-tab-upi" class="inapp-tab-content" style="display: ${initialTab === 'upi' ? 'block' : 'none'}; text-align: center;">
-          <p style="margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #334155;">Scan QR code with any UPI App to pay</p>
-          
-          <div style="display: inline-block; padding: 10px; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 14px;">
-            <img src="${upiQrUrl}" alt="UPI QR Code" style="width: 170px; height: 170px; display: block; border-radius: 8px;">
-          </div>
-
-          <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-            <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px;">GPay</span>
+        <!-- Supported UPI Apps (Clean badges, no emojis) -->
+        <div style="margin-bottom: 16px; text-align: center;">
+          <span style="font-size: 11.5px; font-weight: 700; color: #64748b; display: block; margin-bottom: 8px;">Supported UPI Applications</span>
+          <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px;">Google Pay</span>
             <span style="font-size: 11px; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 3px 8px; border-radius: 4px;">PhonePe</span>
             <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px;">Paytm</span>
-            <span style="font-size: 11px; font-weight: 800; background: #ffedd5; color: #c2410c; padding: 3px 8px; border-radius: 4px;">BHIM UPI</span>
+            <span style="font-size: 11px; font-weight: 800; background: #ffedd5; color: #c2410c; padding: 3px 8px; border-radius: 4px;">BHIM</span>
+            <span style="font-size: 11px; font-weight: 800; background: #f1f5f9; color: #334155; padding: 3px 8px; border-radius: 4px;">Any Bank UPI</span>
           </div>
+        </div>
 
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-            <input type="text" id="inapp-upi-id-input" placeholder="e.g. mobile@okhdfcbank or yourname@paytm" value="${(user.phone || '9065553105') + '@okaxis'}" style="flex: 1; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none;">
-            <button type="button" id="inapp-upi-pay-btn" style="background: #0f172a; color: #fff; font-weight: 800; border: none; padding: 11px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap;">
-              Verify &amp; Pay
+        <!-- Dynamic QR Code -->
+        <div style="text-align: center; padding: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 18px;">
+          <span style="font-size: 12px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">Scan with Any UPI App</span>
+          <div style="display: inline-block; padding: 6px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;">
+            <img src="${upiQrUrl}" alt="UPI QR Code" style="width: 140px; height: 140px; display: block; border-radius: 4px;">
+          </div>
+          <p style="margin: 6px 0 0; font-size: 11px; color: #64748b;">Open your mobile UPI app to scan and pay</p>
+        </div>
+
+        <!-- UPI ID Verification Section -->
+        <div style="margin-bottom: 16px;">
+          <label for="inapp-upi-id-input" style="display: block; font-size: 12.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            Enter UPI ID / VPA
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input 
+              type="text" 
+              id="inapp-upi-id-input" 
+              placeholder="e.g. mobile@okhdfcbank or yourname@paytm" 
+              value="${(user.phone || '9065553105') + '@okaxis'}" 
+              style="flex: 1; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"
+            >
+            <button 
+              type="button" 
+              id="inapp-upi-verify-btn" 
+              style="background: #0f172a; color: #ffffff; font-weight: 700; border: none; padding: 10px 16px; border-radius: 8px; font-size: 12.5px; cursor: pointer; white-space: nowrap; transition: background-color 0.2s;"
+            >
+              Verify UPI ID
             </button>
           </div>
 
-          <button type="button" id="inapp-upi-instant-approve-btn" style="width: 100%; background: #16a34a; color: #fff; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(22,163,74,0.35);">
-            ⚡ Approve &amp; Complete UPI Payment
+          <!-- Dynamic Verification Status Notice (shown once verified or on invalid format) -->
+          <div id="inapp-upi-status-box" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.4;"></div>
+        </div>
+
+        <!-- Final Pay Button (DISABLED by default until UPI ID is verified) -->
+        <div style="margin-top: 14px;">
+          <button 
+            type="button" 
+            id="inapp-upi-pay-submit-btn" 
+            disabled 
+            style="width: 100%; background: #cbd5e1; color: #64748b; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14px; cursor: not-allowed; transition: all 0.25s;"
+          >
+            Verify UPI ID to Pay ${formattedAmount}
           </button>
+          <p id="inapp-upi-hint" style="text-align: center; font-size: 11px; color: #64748b; margin: 6px 0 0;">
+            Please click "Verify UPI ID" to validate your account before payment.
+          </p>
         </div>
 
-        <!-- ── 2. CARD TAB ── -->
-        <div id="inapp-tab-card" class="inapp-tab-content" style="display: ${initialTab === 'card' ? 'block' : 'none'};">
-          <form id="inapp-card-form">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-size: 12.5px; font-weight: 700; color: #64748b;">Enter Card Details</span>
-              <button type="button" id="inapp-autofill-card-btn" style="background: #e0f2fe; color: #0369a1; border: none; font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
-                ⚡ Auto-Fill Test Card
-              </button>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-              <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Card Number</label>
-              <input type="text" id="inapp-card-num" placeholder="4111 1111 1111 1111" maxlength="19" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Expiry Date (MM/YY)</label>
-                <input type="text" id="inapp-card-exp" placeholder="12/28" maxlength="5" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">CVV / CVC</label>
-                <input type="password" id="inapp-card-cvv" placeholder="123" maxlength="4" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-              </div>
-            </div>
-
-            <div style="margin-bottom: 16px;">
-              <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Name on Card</label>
-              <input type="text" id="inapp-card-name" value="${user.name || 'Ashutosh Pathak'}" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-            </div>
-
-            <!-- OTP Simulator Container (hidden by default) -->
-            <div id="inapp-card-otp-box" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 14px; margin-bottom: 14px;">
-              <div style="font-size: 12.5px; font-weight: 800; color: #166534; margin-bottom: 4px;">📲 Bank OTP Verification:</div>
-              <div style="font-size: 11.5px; color: #15803d; margin-bottom: 8px;">Enter 6-Digit OTP sent to your registered mobile:</div>
-              <input type="text" id="inapp-card-otp-input" value="123456" maxlength="6" style="width: 100%; padding: 10px; border: 1.5px solid #22c55e; border-radius: 6px; font-size: 16px; font-weight: 900; letter-spacing: 4px; text-align: center; box-sizing: border-box;">
-            </div>
-
-            <button type="submit" id="inapp-card-submit-btn" style="width: 100%; background: #ff9700; color: #000; font-weight: 900; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(255,151,0,0.35);">
-              Pay ${formattedAmount} via Card
-            </button>
-          </form>
-        </div>
-
-        <!-- ── 3. NET BANKING TAB ── -->
-        <div id="inapp-tab-netbanking" class="inapp-tab-content" style="display: ${initialTab === 'netbanking' ? 'block' : 'none'};">
-          <p style="margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #334155;">Select Your Bank:</p>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;">
-            <label class="inapp-bank-option is-selected" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #ff9700; border-radius: 10px; background: #fff8ee; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="SBI" checked style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">State Bank of India</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="HDFC" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">HDFC Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="ICICI" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">ICICI Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="AXIS" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Axis Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="KOTAK" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Kotak Mahindra Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="PNB" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Punjab National Bank</span>
-            </label>
-          </div>
-
-          <button type="button" id="inapp-netbanking-pay-btn" style="width: 100%; background: #0f172a; color: #fff; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(15,23,42,0.25);">
-            ⚡ Authorize &amp; Pay ${formattedAmount}
+        <!-- Alternative: Scanned QR Confirmation -->
+        <div style="margin-top: 12px; text-align: center;">
+          <button 
+            type="button" 
+            id="inapp-upi-qr-confirm-btn" 
+            style="background: transparent; border: 1px dashed #cbd5e1; color: #475569; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; width: 100%; transition: all 0.2s;"
+          >
+            I have scanned and completed payment with QR Code
           </button>
         </div>
 
       </div>
 
-      <!-- Footer Info -->
+      <!-- Footer Info (Clean) -->
       <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 10px 20px; text-align: center; font-size: 11px; color: #64748b;">
-        X-Mart Superstore • Verified 100% Buyer Protection • Fast Doorstep Delivery
+        National Payments Corporation of India (NPCI) • 256-Bit Encrypted
       </div>
     </div>
   `;
@@ -2557,28 +2505,90 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
   };
   portalEl.querySelector('#inapp-close-btn')?.addEventListener('click', closePortal);
 
-  // Tab switching
-  portalEl.querySelectorAll('.inapp-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabName = btn.dataset.tab;
-      portalEl.querySelectorAll('.inapp-tab-btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = '#64748b';
-        b.style.borderBottom = '2.5px solid transparent';
-      });
-      btn.style.background = '#fff';
-      btn.style.color = '#ea580c';
-      btn.style.borderBottom = '2.5px solid #ea580c';
+  // Verification & Payment Logic
+  const upiInput  = portalEl.querySelector('#inapp-upi-id-input');
+  const verifyBtn = portalEl.querySelector('#inapp-upi-verify-btn');
+  const statusBox = portalEl.querySelector('#inapp-upi-status-box');
+  const payBtn    = portalEl.querySelector('#inapp-upi-pay-submit-btn');
+  const hintEl    = portalEl.querySelector('#inapp-upi-hint');
+  let isUpiVerified = false;
 
-      portalEl.querySelectorAll('.inapp-tab-content').forEach(c => c.style.display = 'none');
-      const target = portalEl.querySelector(`#inapp-tab-${tabName}`);
-      if (target) target.style.display = 'block';
-    });
+  const performVerification = () => {
+    const upiVal = (upiInput?.value || '').trim();
+    if (!upiVal || !upiVal.includes('@') || upiVal.length < 5) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#fef2f2';
+      statusBox.style.border = '1px solid #fecaca';
+      statusBox.style.color = '#991b1b';
+      statusBox.innerHTML = 'Please enter a valid UPI format (e.g., <strong>username@okhdfcbank</strong> or <strong>9065553105@paytm</strong>).';
+      isUpiVerified = false;
+      payBtn.disabled = true;
+      payBtn.style.background = '#cbd5e1';
+      payBtn.style.color = '#64748b';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.textContent = `Verify UPI ID to Pay ${formattedAmount}`;
+      return;
+    }
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+
+    setTimeout(() => {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = 'Verified';
+      verifyBtn.style.background = '#16a34a';
+
+      isUpiVerified = true;
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#f0fdf4';
+      statusBox.style.border = '1px solid #86efac';
+      statusBox.style.color = '#166534';
+      
+      const accountHolder = user?.name || 'Verified User';
+      const bankName = upiVal.split('@')[1]?.toUpperCase() || 'BANK';
+      statusBox.innerHTML = `<strong>Verified UPI Account:</strong> ${upiVal}<br><span style="font-size:11px;color:#15803d;">Payer: ${accountHolder} • Connected to ${bankName} VPA.</span>`;
+
+      // Enable the Pay Button
+      payBtn.disabled = false;
+      payBtn.style.background = '#16a34a';
+      payBtn.style.color = '#ffffff';
+      payBtn.style.cursor = 'pointer';
+      payBtn.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
+      payBtn.textContent = `Pay ${formattedAmount} via UPI`;
+
+      if (hintEl) {
+        hintEl.textContent = 'UPI ID verified. Click Pay to confirm and place your order.';
+        hintEl.style.color = '#15803d';
+        hintEl.style.fontWeight = '600';
+      }
+    }, 500);
+  };
+
+  verifyBtn?.addEventListener('click', performVerification);
+
+  // Reset verification if user changes the input
+  upiInput?.addEventListener('input', () => {
+    if (isUpiVerified) {
+      isUpiVerified = false;
+      verifyBtn.textContent = 'Verify UPI ID';
+      verifyBtn.style.background = '#0f172a';
+      statusBox.style.display = 'none';
+      payBtn.disabled = true;
+      payBtn.style.background = '#cbd5e1';
+      payBtn.style.color = '#64748b';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.textContent = `Verify UPI ID to Pay ${formattedAmount}`;
+      if (hintEl) {
+        hintEl.textContent = 'Please click "Verify UPI ID" to validate your account before payment.';
+        hintEl.style.color = '#64748b';
+        hintEl.style.fontWeight = 'normal';
+      }
+    }
   });
 
-  // 1. UPI Approval
-  const handleUpiSuccess = () => {
-    const upiId = portalEl.querySelector('#inapp-upi-id-input')?.value || 'user@okaxis';
+  // Payment Execution
+  const executePayment = (methodDetail = 'UPI ID') => {
+    const upiId = upiInput?.value?.trim() || 'user@okaxis';
     portalEl.remove();
     onSuccess?.({
       orderId: `ord_upi_${Date.now()}`,
@@ -2586,69 +2596,21 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
       signature: `sig_upi_${Date.now()}`,
       method: 'UPI',
       isSandbox: true,
-      upiId
+      upiId,
+      methodDetail
     });
   };
-  portalEl.querySelector('#inapp-upi-instant-approve-btn')?.addEventListener('click', handleUpiSuccess);
-  portalEl.querySelector('#inapp-upi-pay-btn')?.addEventListener('click', handleUpiSuccess);
 
-  // 2. Card autofill & submit
-  const cardNum = portalEl.querySelector('#inapp-card-num');
-  const cardExp = portalEl.querySelector('#inapp-card-exp');
-  const cardCvv = portalEl.querySelector('#inapp-card-cvv');
-  const otpBox  = portalEl.querySelector('#inapp-card-otp-box');
-  const cardBtn = portalEl.querySelector('#inapp-card-submit-btn');
-
-  portalEl.querySelector('#inapp-autofill-card-btn')?.addEventListener('click', () => {
-    if (cardNum) cardNum.value = '4111 1111 1111 1111';
-    if (cardExp) cardExp.value = '12/28';
-    if (cardCvv) cardCvv.value = '123';
-  });
-
-  let cardStep = 'details';
-  portalEl.querySelector('#inapp-card-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (cardStep === 'details') {
-      cardStep = 'otp';
-      if (otpBox) otpBox.style.display = 'block';
-      if (cardBtn) cardBtn.textContent = 'Submit OTP & Confirm Order';
-      showToast('Bank OTP sent: Enter 123456 to confirm', 'info', 4000);
-    } else {
-      portalEl.remove();
-      onSuccess?.({
-        orderId: `ord_card_${Date.now()}`,
-        paymentId: `pay_card_${Date.now()}`,
-        signature: `sig_card_${Date.now()}`,
-        method: 'Card',
-        isSandbox: true
-      });
+  payBtn?.addEventListener('click', () => {
+    if (!isUpiVerified) {
+      showToast('Please verify your UPI ID first.', 'warn');
+      return;
     }
+    executePayment('Verified UPI ID');
   });
 
-  // 3. Net Banking Bank Selection & Pay
-  portalEl.querySelectorAll('.inapp-bank-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      portalEl.querySelectorAll('.inapp-bank-option').forEach(o => {
-        o.style.borderColor = '#e2e8f0';
-        o.style.background = '#fff';
-      });
-      opt.style.borderColor = '#ff9700';
-      opt.style.background = '#fff8ee';
-      opt.querySelector('input[type=radio]').checked = true;
-    });
-  });
-
-  portalEl.querySelector('#inapp-netbanking-pay-btn')?.addEventListener('click', () => {
-    const bank = portalEl.querySelector('input[name="inapp_bank"]:checked')?.value || 'SBI';
-    portalEl.remove();
-    onSuccess?.({
-      orderId: `ord_nb_${Date.now()}`,
-      paymentId: `pay_nb_${Date.now()}`,
-      signature: `sig_nb_${Date.now()}`,
-      method: 'NetBanking',
-      isSandbox: true,
-      bank
-    });
+  portalEl.querySelector('#inapp-upi-qr-confirm-btn')?.addEventListener('click', () => {
+    executePayment('UPI QR Scan');
   });
 }
 
