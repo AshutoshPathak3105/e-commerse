@@ -2389,7 +2389,7 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
   `;
 
   portalEl.innerHTML = `
-    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 96vh; font-family: inherit;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 96vh; font-family: inherit;">
       
       <!-- Top Header (Clean, professional typography, no emoji icons) -->
       <div style="background: #ff9700; color: #000000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -2471,20 +2471,6 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
           >
             Verify UPI ID to Pay ${formattedAmount}
           </button>
-          <p id="inapp-upi-hint" style="text-align: center; font-size: 11px; color: #64748b; margin: 6px 0 0;">
-            Please click "Verify UPI ID" to validate your account before payment.
-          </p>
-        </div>
-
-        <!-- Alternative: Scanned QR Confirmation -->
-        <div style="margin-top: 12px; text-align: center;">
-          <button 
-            type="button" 
-            id="inapp-upi-qr-confirm-btn" 
-            style="background: transparent; border: 1px dashed #cbd5e1; color: #475569; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; width: 100%; transition: all 0.2s;"
-          >
-            I have scanned and completed payment with QR Code
-          </button>
         </div>
 
       </div>
@@ -2510,7 +2496,6 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
   const verifyBtn = portalEl.querySelector('#inapp-upi-verify-btn');
   const statusBox = portalEl.querySelector('#inapp-upi-status-box');
   const payBtn    = portalEl.querySelector('#inapp-upi-pay-submit-btn');
-  const hintEl    = portalEl.querySelector('#inapp-upi-hint');
   let isUpiVerified = false;
 
   const performVerification = () => {
@@ -2556,11 +2541,6 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
       payBtn.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
       payBtn.textContent = `Pay ${formattedAmount} via UPI`;
 
-      if (hintEl) {
-        hintEl.textContent = 'UPI ID verified. Click Pay to confirm and place your order.';
-        hintEl.style.color = '#15803d';
-        hintEl.style.fontWeight = '600';
-      }
     }, 500);
   };
 
@@ -2578,11 +2558,6 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
       payBtn.style.color = '#64748b';
       payBtn.style.cursor = 'not-allowed';
       payBtn.textContent = `Verify UPI ID to Pay ${formattedAmount}`;
-      if (hintEl) {
-        hintEl.textContent = 'Please click "Verify UPI ID" to validate your account before payment.';
-        hintEl.style.color = '#64748b';
-        hintEl.style.fontWeight = 'normal';
-      }
     }
   });
 
@@ -2609,9 +2584,6 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
     executePayment('Verified UPI ID');
   });
 
-  portalEl.querySelector('#inapp-upi-qr-confirm-btn')?.addEventListener('click', () => {
-    executePayment('UPI QR Scan');
-  });
 }
 
 /* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
