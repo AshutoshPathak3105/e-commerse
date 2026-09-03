@@ -2654,7 +2654,13 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
 
 /* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
 async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
-  // 1. Attempt official Razorpay Checkout SDK if loaded
+  // If UPI is selected, open the dedicated Instant UPI Payment Window (QR Code + Google Pay / PhonePe / Paytm)
+  if (paymentMethod === 'UPI') {
+    openInAppPaymentPortalModal({ amount, paymentMethod: 'UPI', user, address, onSuccess, onCancel });
+    return;
+  }
+
+  // 1. Attempt official Razorpay Checkout SDK for Cards / Netbanking
   try {
     const configRes = await apiFetch('/payment/config');
     const keyId = configRes?.keyId;
