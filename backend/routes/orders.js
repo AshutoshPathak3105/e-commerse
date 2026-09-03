@@ -6,6 +6,7 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
+const { sendOrderConfirmationEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -36,32 +37,30 @@ router.post(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    let cart = await Cart.findOne({ user: req.user._id }).populate(
-      'items.product',
-      'name price stock isActive images'
-    );
-
     let rawItems = [];
-    if (cart && cart.items && cart.items.length > 0) {
-      rawItems = cart.items.map(i => ({
-        product: i.product?._id || i.product,
-        name: i.name,
-        image: i.image || (i.product?.images && i.product.images[0]) || '',
-        price: i.price,
-        quantity: i.quantity,
-        stock: i.product?.stock ?? 999,
-        isActive: i.product?.isActive ?? true
-      }));
-    } else if (req.body.items && Array.isArray(req.body.items) && req.body.items.length > 0) {
+    if (req.body.items && Array.isArray(req.body.items) && req.body.items.length > 0) {
       rawItems = req.body.items.map(i => ({
-        product: i.productId || i.id || i._id,
-        name: i.name,
+        product: i.productId || i.id || i._id || `prod-${Date.now()}`,
+        name: i.name || 'Product',
         image: i.img || i.image || '',
-        price: i.price,
-        quantity: i.qty || i.quantity || 1,
+        price: Number(i.price) || 0,
+        quantity: Number(i.qty || i.quantity) || 1,
         stock: 999,
         isActive: true
       }));
+    } else {
+      let cart = await Cart.findOne({ user: req.user._id });
+      if (cart && cart.items && cart.items.length > 0) {
+        rawItems = cart.items.map(i => ({
+          product: i.product?._id || i.product || `prod-${Date.now()}`,
+          name: i.name,
+          image: i.image || '',
+          price: Number(i.price) || 0,
+          quantity: Number(i.quantity) || 1,
+          stock: 999,
+          isActive: true
+        }));
+      }
     }
 
     if (rawItems.length === 0) {
@@ -118,6 +117,15 @@ router.post(
 
     // Clear the cart
     await Cart.findOneAndUpdate({ user: req.user._id }, { $set: { items: [] } });
+
+    // Send Purchase / Order Confirmation Invoice Email via Brevo
+    sendOrderConfirmationEmail({
+      email: req.user.email,
+      name: req.body.shippingAddress?.name || req.user.name,
+      order: order.toObject()
+    }).catch(err => {
+      console.error('[Brevo Order Email Failed]:', err);
+    });
 
     res.status(201).json({
       success: true,

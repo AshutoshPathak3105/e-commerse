@@ -22,7 +22,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const page     = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit    = Math.min(50, parseInt(req.query.limit) || 12);
+    const limit    = Math.min(1000, parseInt(req.query.limit) || 24);
     const skip     = (page - 1) * limit;
 
     const filter = { isActive: true };
@@ -43,22 +43,48 @@ router.get(
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const searchRegex = new RegExp(escaped, 'i');
 
-      // Common e-commerce search synonyms mapping
+      // Comprehensive e-commerce search synonyms mapping
       const synonymsMap = {
-        'mobile': ['phone', 'smartphone', 'oneplus', 'samsung', 'iphone', 'nord', 'galaxy', '5g', 'redmi', 'realme'],
+        'mobile': ['phone', 'smartphone', 'oneplus', 'samsung', 'iphone', 'nord', 'galaxy', '5g', 'redmi', 'realme', 'cellular'],
         'phone': ['mobile', 'smartphone', 'oneplus', 'samsung', 'iphone', 'nord', 'galaxy', 'cellular'],
         'smartphone': ['mobile', 'phone', 'oneplus', 'samsung', 'iphone', 'nord'],
-        'laptop': ['computer', 'macbook', 'notebook', 'pc', 'asus', 'dell', 'hp', 'lenovo'],
+        'laptop': ['computer', 'macbook', 'notebook', 'pc', 'asus', 'dell', 'hp', 'lenovo', 'acer', 'labtop'],
+        'labtop': ['laptop', 'computer', 'macbook', 'notebook', 'dell', 'hp', 'lenovo', 'asus'],
         'computer': ['laptop', 'pc', 'macbook', 'desktop', 'monitor'],
-        'headphone': ['earbuds', 'audio', 'earphone', 'headset', 'airpods', 'sony', 'bose', 'sound'],
-        'earphone': ['earbuds', 'headphone', 'audio', 'airpods', 'sound'],
-        'earbuds': ['airpods', 'earphones', 'headphones', 'audio', 'buds'],
-        'shoe': ['sneaker', 'footwear', 'running', 'boots', 'shoes', 'nike', 'adidas', 'puma'],
-        'shoes': ['sneaker', 'footwear', 'running', 'boots', 'shoes', 'nike', 'adidas', 'puma', 'woodland'],
-        'cloth': ['shirt', 't-shirt', 'dress', 'top', 'fashion', 'jeans', 'pant', 'suit', 'jacket', 'saree'],
-        'clothes': ['shirt', 't-shirt', 'dress', 'top', 'fashion', 'jeans', 'pant', 'suit', 'jacket', 'saree'],
-        'dress': ['saree', 'kurta', 'maxi', 'top', 'women', 'suit', 'fashion'],
-        'watch': ['smartwatch', 'fossil', 'apple watch', 'galaxy watch', 'clock'],
+        'headphone': ['earbuds', 'audio', 'earphone', 'headset', 'airpods', 'sony', 'bose', 'sound', 'neckband'],
+        'earphone': ['earbuds', 'headphone', 'audio', 'airpods', 'sound', 'neckband', 'wired earphone', 'iem'],
+        'earbuds': ['airpods', 'earphones', 'headphones', 'audio', 'buds', 'tws'],
+        'airpod': ['airpods', 'earbuds', 'earphones', 'tws', 'apple', 'buds', 'wireless earbuds'],
+        'airpods': ['airpod', 'earbuds', 'earphones', 'tws', 'apple', 'buds', 'wireless earbuds'],
+        'neckband': ['bluetooth neckband', 'earphones', 'wireless neckband', 'boAt', 'oneplus bullets', 'realme buds'],
+        'wired': ['wired earphone', 'in-ear', 'iem', '3.5mm', 'bassheads', 'type-c earphones'],
+        'keyboard': ['mechanical keyboard', 'rgb keyboard', 'gaming keyboard', 'wireless keyboard', 'logitech', 'keychron'],
+        'mouse': ['wireless mouse', 'gaming mouse', 'optical mouse', 'logitech mouse', 'razer', 'trackball'],
+        'watch': ['smartwatch', 'fossil', 'apple watch', 'galaxy watch', 'clock', 'chronograph', 'titan', 'casio', 'watches'],
+        'watches': ['watch', 'smartwatch', 'fossil', 'apple watch', 'galaxy watch', 'clock', 'chronograph', 'titan', 'casio'],
+        'tshirt': ['t-shirt', 'tee', 'tshirst', 'polo', 'graphic tee', 'oversized tee', 'tshirts'],
+        'tshirts': ['tshirt', 't-shirt', 'tee', 'tshirst', 'polo', 'graphic tee', 'oversized tee'],
+        'tshirst': ['tshirt', 't-shirt', 'tee', 'polo', 'graphic tee', 'oversized tee'],
+        'jean': ['jeans', 'denim', 'pants', 'trousers', 'levis', 'wrangler'],
+        'jeans': ['jean', 'denim', 'pants', 'trousers', 'levis', 'wrangler', 'slim fit'],
+        'shirt': ['shirts', 'formal shirt', 'casual shirt', 'cotton shirt', 'linen shirt', 'button-down'],
+        'shirts': ['shirt', 'formal shirt', 'casual shirt', 'cotton shirt', 'linen shirt', 'button-down'],
+        'apparel': ['appeals', 'clothes', 'clothing', 'fashion', 'jacket', 'blazer', 'coat', 'hoodie', 'suit', 'dress'],
+        'appeals': ['apparel', 'clothes', 'clothing', 'fashion', 'jacket', 'blazer', 'coat', 'hoodie', 'suit'],
+        'kitchen': ['kitchenware', 'cookware', 'cooker', 'pan', 'blender', 'air fryer', 'kettle', 'prestige', 'hawkins'],
+        'kitchenware': ['kitchen', 'cookware', 'cooker', 'pan', 'blender', 'air fryer', 'kettle', 'prestige', 'hawkins'],
+        'toy': ['toys', 'lego', 'action figure', 'drone', 'board game', 'plushie', 'nerf', 'puzzle', 'rc car'],
+        'toys': ['toy', 'lego', 'action figure', 'drone', 'board game', 'plushie', 'nerf', 'puzzle', 'rc car'],
+        'bag': ['bags', 'backpack', 'rucksack', 'duffel', 'laptop bag', 'wildcraft', 'tote'],
+        'bags': ['bag', 'backpack', 'rucksack', 'duffel', 'laptop bag', 'wildcraft', 'tote'],
+        'trolley': ['trolly', 'trollybags', 'trolley bag', 'suitcase', 'luggage', 'american tourister', 'samsonite', 'safari'],
+        'trollybag': ['trolley', 'trollybags', 'trolley bag', 'suitcase', 'luggage', 'american tourister', 'samsonite'],
+        'trollybags': ['trolley', 'trolley bag', 'suitcase', 'luggage', 'american tourister', 'samsonite', 'safari'],
+        'sofa': ['sofas', 'couch', 'sectional', 'recliner', 'sofa set', 'futon', 'living room'],
+        'sofas': ['sofa', 'couch', 'sectional', 'recliner', 'sofa set', 'futon', 'living room'],
+        'shoe': ['sneaker', 'footwear', 'running', 'boots', 'shoes', 'nike', 'adidas', 'puma', 'clarks', 'woodland'],
+        'shoes': ['sneaker', 'footwear', 'running', 'boots', 'shoes', 'nike', 'adidas', 'puma', 'clarks', 'woodland'],
+        'beauty': ['skincare', 'perfume', 'makeup', 'serum', 'grooming', 'lipstick', 'dior', 'ordinary'],
         'tv': ['television', 'smart tv', 'oled', 'bravia', 'screen', 'display'],
       };
 

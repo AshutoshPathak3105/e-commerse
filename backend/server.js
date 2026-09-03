@@ -2,7 +2,8 @@
  * X-Mart Superstore — Express REST API
  * Entry point: server.js
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express      = require('express');
 const cors         = require('cors');
 const helmet       = require('helmet');
@@ -21,6 +22,7 @@ const cartRoutes       = require('./routes/cart');
 const orderRoutes      = require('./routes/orders');
 const wishlistRoutes   = require('./routes/wishlist');
 const newsletterRoutes = require('./routes/newsletter');
+const paymentRoutes    = require('./routes/payment');
 
 // ── Connect to MongoDB Atlas ─────────────────────────────────
 connectDB();
@@ -87,8 +89,7 @@ app.use('/api/cart',       cartRoutes);
 app.use('/api/orders',     orderRoutes);
 app.use('/api/wishlist',   wishlistRoutes);
 app.use('/api/newsletter', newsletterRoutes);
-
-const path = require('path');
+app.use('/api/payment',    paymentRoutes);
 
 // ── Serve Frontend Static Files with Cache-Busting for Dev ──
 const frontendPath = path.join(__dirname, '..');

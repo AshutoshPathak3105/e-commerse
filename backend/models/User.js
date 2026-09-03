@@ -11,6 +11,20 @@ const addressSchema = new mongoose.Schema({
   isDefault:{ type: Boolean, default: false },
 }, { _id: true });
 
+const sellerProfileSchema = new mongoose.Schema({
+  bizName:    { type: String, trim: true, required: true },
+  storeName:  { type: String, trim: true, required: true },
+  email:      { type: String, trim: true, lowercase: true, required: true },
+  phone:      { type: String, trim: true, required: true },
+  gstin:      { type: String, trim: true, uppercase: true, required: true },
+  pincode:    { type: String, trim: true, required: true },
+  bankAcc:    { type: String, trim: true, required: true },
+  bankIfsc:   { type: String, trim: true, uppercase: true, required: true },
+  category:   { type: String, default: 'Electronics' },
+  isVerified: { type: Boolean, default: true },
+  verifiedAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -30,14 +44,24 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
+      required: [true, 'Mobile number is required'],
       trim: true,
       match: [/^\+?[\d\s\-]{7,15}$/, 'Enter a valid phone number'],
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function() { return !this.googleId && this.authProvider === 'local'; },
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // never returned by default
+    },
+    googleId: {
+      type: String,
+      default: null,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'github'],
+      default: 'local',
     },
     role: {
       type: String,
@@ -49,6 +73,10 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
     addresses: [addressSchema],
+    sellerProfile: {
+      type: sellerProfileSchema,
+      default: null,
+    },
     wishlist: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -58,6 +86,23 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    otp: {
+      type: String,
+      select: false,
+    },
+    otpExpiry: {
+      type: Date,
+      select: false,
+    },
+    otpType: {
+      type: String,
+      enum: ['login', 'reset', 'profile'],
+      select: false,
+    },
+    pendingProfile: {
+      type: mongoose.Schema.Types.Mixed,
+      select: false,
     },
   },
   {
@@ -69,7 +114,7 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.password || !this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
