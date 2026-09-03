@@ -2471,7 +2471,7 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
 
             <div style="margin-bottom: 12px;">
               <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Card Number</label>
-              <input type="text" id="inapp-card-num" placeholder="5104 0600 0000 0008" maxlength="19" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
+              <input type="text" id="inapp-card-num" placeholder="4111 1111 1111 1111" maxlength="19" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
@@ -2600,7 +2600,7 @@ function openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onS
   const cardBtn = portalEl.querySelector('#inapp-card-submit-btn');
 
   portalEl.querySelector('#inapp-autofill-card-btn')?.addEventListener('click', () => {
-    if (cardNum) cardNum.value = '5104 0600 0000 0008';
+    if (cardNum) cardNum.value = '4111 1111 1111 1111';
     if (cardExp) cardExp.value = '12/28';
     if (cardCvv) cardCvv.value = '123';
   });
