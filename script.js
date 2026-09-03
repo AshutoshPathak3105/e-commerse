@@ -2585,12 +2585,134 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
   });
 
 }
+/* ── Dedicated In-App Net Banking Modal ── */
+function openInAppNetBankingModal({ amount, user, onSuccess, onCancel }) {
+  const existing = document.getElementById('xmart-netbanking-portal');
+  if (existing) existing.remove();
+
+  const formattedAmount = Currency.format(amount);
+
+  const portalEl = document.createElement('div');
+  portalEl.id = 'xmart-netbanking-portal';
+  portalEl.style.cssText = `
+    position: fixed; inset: 0; z-index: 100000;
+    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    animation: fadeIn 0.2s ease-out;
+  `;
+
+  const banks = [
+    { value: 'SBI',   label: 'State Bank of India' },
+    { value: 'HDFC',  label: 'HDFC Bank' },
+    { value: 'ICICI', label: 'ICICI Bank' },
+    { value: 'AXIS',  label: 'Axis Bank' },
+    { value: 'KOTAK', label: 'Kotak Mahindra Bank' },
+    { value: 'PNB',   label: 'Punjab National Bank' },
+    { value: 'BOB',   label: 'Bank of Baroda' },
+    { value: 'CANARA',label: 'Canara Bank' },
+  ];
+
+  const bankOptions = banks.map((b, idx) => `
+    <label class="nb-bank-opt" data-val="${b.value}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:2px solid ${idx === 0 ? '#ff9700' : '#e2e8f0'};border-radius:10px;background:${idx === 0 ? '#fff8ee' : '#fff'};cursor:pointer;transition:all 0.15s;">
+      <input type="radio" name="nb_bank" value="${b.value}" ${idx === 0 ? 'checked' : ''} style="accent-color:#ff9700;">
+      <span style="font-size:13px;font-weight:700;color:#0f172a;">${b.label}</span>
+    </label>
+  `).join('');
+
+  portalEl.innerHTML = `
+    <div style="background:#ffffff;border-radius:16px;width:100%;max-width:600px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);overflow:hidden;display:flex;flex-direction:column;max-height:96vh;font-family:inherit;">
+
+      <!-- Header -->
+      <div style="background:#ff9700;color:#000;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h3 style="margin:0;font-size:16px;font-weight:800;color:#000;">Net Banking Payment</h3>
+          <span style="font-size:11.5px;font-weight:600;color:#1e293b;">Secure Bank Portal Redirect</span>
+        </div>
+        <button id="nb-close-btn" style="background:transparent;border:none;font-size:24px;font-weight:700;cursor:pointer;color:#000;line-height:1;padding:2px 6px;">&times;</button>
+      </div>
+
+      <!-- Amount Banner -->
+      <div style="background:#fff8ee;border-bottom:1.5px solid #fed7aa;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-size:11px;color:#7c2d12;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Order Payable Amount</span>
+          <div style="font-size:20px;font-weight:900;color:#0f172a;margin-top:2px;">${formattedAmount}</div>
+        </div>
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#334155;">Zero Extra Fees</div>
+      </div>
+
+      <!-- Bank List -->
+      <div style="padding:20px;overflow-y:auto;flex:1;">
+        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#334155;">Select Your Bank</p>
+        <div id="nb-bank-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          ${bankOptions}
+        </div>
+
+        <button id="nb-pay-btn" style="width:100%;background:#0f172a;color:#fff;font-weight:800;border:none;padding:14px 20px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(15,23,42,0.25);transition:background 0.2s;">
+          Proceed to Bank &amp; Pay ${formattedAmount}
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;text-align:center;font-size:11px;color:#64748b;">
+        256-Bit Encrypted • Direct Bank Portal Checkout
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(portalEl);
+
+  // Close
+  portalEl.querySelector('#nb-close-btn')?.addEventListener('click', () => {
+    portalEl.remove();
+    onCancel?.();
+  });
+
+  // Bank selection highlight
+  portalEl.querySelectorAll('.nb-bank-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      portalEl.querySelectorAll('.nb-bank-opt').forEach(o => {
+        o.style.borderColor = '#e2e8f0';
+        o.style.background = '#fff';
+      });
+      opt.style.borderColor = '#ff9700';
+      opt.style.background = '#fff8ee';
+      opt.querySelector('input[type=radio]').checked = true;
+    });
+  });
+
+  // Pay
+  portalEl.querySelector('#nb-pay-btn')?.addEventListener('click', () => {
+    const bank = portalEl.querySelector('input[name="nb_bank"]:checked')?.value || 'SBI';
+    const payBtn = portalEl.querySelector('#nb-pay-btn');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Redirecting to Bank...';
+
+    setTimeout(() => {
+      portalEl.remove();
+      onSuccess?.({
+        orderId:   `ord_nb_${Date.now()}`,
+        paymentId: `pay_nb_${Date.now()}`,
+        signature: `sig_nb_${Date.now()}`,
+        method: 'NetBanking',
+        isSandbox: true,
+        bank
+      });
+    }, 800);
+  });
+}
 
 /* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
 async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
-  // If UPI is selected, open the dedicated Instant UPI Payment Window (QR Code + Google Pay / PhonePe / Paytm)
+  // UPI → dedicated UPI modal with QR + verification
   if (paymentMethod === 'UPI') {
     openInAppPaymentPortalModal({ amount, paymentMethod: 'UPI', user, address, onSuccess, onCancel });
+    return;
+  }
+
+  // Net Banking → dedicated in-app bank selection portal
+  // (Razorpay test mode does not support Net Banking — it shows "Choose other payment option")
+  if (paymentMethod === 'NetBanking') {
+    openInAppNetBankingModal({ amount, user, onSuccess, onCancel });
     return;
   }
 
