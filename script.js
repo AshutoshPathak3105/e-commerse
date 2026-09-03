@@ -2961,15 +2961,6 @@ function buildCheckoutModal() {
                 <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Direct secure bank portal checkout (1-click Instant Test).</p>
               </div>
             </label>
-
-            <!-- Test Mode Helper Hint -->
-            <div style="margin-top:10px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.5;">
-              <strong>💡 Razorpay Test Mode Guide:</strong><br>
-              • <strong>Domestic MasterCard:</strong> <code>5104 0600 0000 0008</code> (CVV: <code>123</code>, Exp: <code>12/28</code>)<br>
-              • <strong>Domestic Visa Card:</strong> <code>4718 6091 0820 4366</code> (CVV: <code>123</code>, Exp: <code>12/28</code>)<br>
-              • <strong>Net Banking:</strong> Select any bank &amp; click <strong>"Success"</strong><br>
-              • <strong>UPI:</strong> Use VPA <code>success@razorpay</code>
-            </div>
           </div>
 
           <!-- Right: Final Order Total & Place Order Button -->
