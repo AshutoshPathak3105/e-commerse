@@ -9618,11 +9618,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── 3. CATEGORY / DEPARTMENT NAVIGATION ───────────────────
 
-  // "All Departments" hamburger button — Open Amazon-style side navigation drawer
-  document.querySelector('.departments-button')?.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    window._openDepartmentSidebar?.();
+  // "All Departments" & Mobile Menu hamburger buttons — Open Amazon-style side navigation drawer
+  document.querySelectorAll('.departments-button, .mobile-menu-trigger').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      window._openDepartmentSidebar?.();
+    });
   });
 
   // Department dropdown links (electronics, fashion, etc.) -> Full Dedicated Window Page
