@@ -1006,12 +1006,9 @@ small {
   border: 0;
 }
 
-/* ── Mobile Brand Group and Menu Trigger Base (Desktop) ── */
+/* Mobile Brand Group Base (Desktop) */
 .mobile-brand-group {
   display: contents;
-}
-.mobile-menu-trigger {
-  display: none;
 }
 .orders-icon {
   display: none;
@@ -1047,7 +1044,7 @@ small {
 
 /* Tablet & Mobile Screens (<= 840px) */
 @media (max-width: 840px) {
-  /* 1. Utility Bar: Keep Currency & Language & Help visible */
+  /* 1. Utility Bar: Keep Currency & Language visible */
   .utility-bar {
     display: flex !important;
     align-items: center !important;
@@ -1101,56 +1098,29 @@ small {
     order: 1 !important;
   }
 
-  .mobile-menu-trigger {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+  .main-bar .brand {
+    height: 52px !important;
+  }
+
+  .main-bar .brand-mark {
     width: 38px !important;
     height: 38px !important;
-    padding: 0 !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-radius: 8px !important;
-    color: #ffffff !important;
-    cursor: pointer !important;
-    transition: background 140ms ease !important;
-    flex-shrink: 0 !important;
+    flex: 0 0 38px !important;
+    font-size: 22px !important;
+    border-radius: 0 !important;
   }
 
-  .mobile-menu-trigger:active,
-  .mobile-menu-trigger:hover {
-    background: rgba(255, 255, 255, 0.18) !important;
-  }
-
-  .mobile-menu-trigger svg {
-    width: 22px !important;
-    height: 22px !important;
-    stroke: #ffffff !important;
-    stroke-width: 2.4 !important;
-  }
-
-  .brand {
-    height: 38px !important;
-  }
-
-  .brand-mark {
-    width: 34px !important;
-    height: 34px !important;
-    flex-basis: 34px !important;
-    font-size: 19px !important;
-    border-radius: 6px !important;
-  }
-
-  .brand-copy {
+  .main-bar .brand-copy {
     display: flex !important;
   }
 
-  .brand-name {
-    font-size: 16px !important;
+  .main-bar .brand-name {
+    font-size: 22px !important;
   }
 
-  .brand-tagline {
-    font-size: 8.5px !important;
+  .main-bar .brand-tagline {
+    color: #ffffff !important;
+    font-size: 10px !important;
   }
 
   /* 3. Header Action Icons: Orders, Wishlist, Account, Cart all fully accessible */
@@ -1353,6 +1323,19 @@ small {
 
   .brand-copy {
     display: none !important;
+  }
+
+  /* Keep the full logo lockup beside all four header actions. */
+  .main-bar .brand-copy {
+    display: flex !important;
+  }
+
+  .main-bar .brand-name {
+    font-size: 20px !important;
+  }
+
+  .main-bar .brand-tagline {
+    font-size: 9px !important;
   }
 }
 

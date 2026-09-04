@@ -9618,8 +9618,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── 3. CATEGORY / DEPARTMENT NAVIGATION ───────────────────
 
-  // "All Departments" & Mobile Menu hamburger buttons — Open Amazon-style side navigation drawer
-  document.querySelectorAll('.departments-button, .mobile-menu-trigger').forEach(btn => {
+  // "All Departments" button — Open Amazon-style side navigation drawer
+  document.querySelectorAll('.departments-button').forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -10443,11 +10443,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  // ── 13. HELP UTILITY LINK ─────────────────────────────────
-  document.querySelector('a[href="#help"]')?.addEventListener('click', e => {
-    e.preventDefault();
-    window._openCustomerServicePage?.();
-  });
 });
 
 
