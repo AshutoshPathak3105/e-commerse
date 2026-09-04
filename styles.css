@@ -6046,8 +6046,129 @@ small {
 @media (max-width: 768px) {
   .hero-banners-row { grid-template-columns: 1fr 1fr; }
   .quad-cards-row { grid-template-columns: 1fr; }
-  .hero-slide-overlay { padding: 0 24px; }
-  .hero-slide-title { font-size: 20px; }
+
+  /* Mobile Image Slider Height Reduction (Mobile View Only) */
+  .hero-slider-section {
+    margin-bottom: 12px !important;
+  }
+  .hero-slider-wrap {
+    min-height: 200px !important;
+    height: 200px !important;
+    border-radius: 8px !important;
+  }
+  .hero-slider-viewport,
+  .hero-slider-track,
+  .hero-slide {
+    min-height: 200px !important;
+    height: 200px !important;
+  }
+  .hero-slide-img {
+    height: 200px !important;
+    object-fit: cover !important;
+  }
+
+  /* Compact Overlay & Typography for Mobile View */
+  .hero-slide-overlay {
+    padding: 0 36px !important;
+    background: linear-gradient(90deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.5) 65%, rgba(15,23,42,0.2) 100%) !important;
+  }
+  .hero-slide-content {
+    max-width: 88% !important;
+    gap: 4px !important;
+  }
+  .hero-slide-title {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px !important;
+    font-weight: 800 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+  .hero-slide-desc {
+    font-size: 11.5px !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  /* Both Left and Right Navigation Buttons: Decreased Height & Size (Mobile View Only) */
+  .hero-nav-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+  }
+  .hero-nav-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 2.5 !important;
+  }
+  .hero-nav-prev {
+    left: 6px !important;
+  }
+  .hero-nav-next {
+    right: 6px !important;
+  }
+
+  /* Remove Orange CTA Button from All Images in Mobile View Only */
+  .hero-slide-cta {
+    display: none !important;
+  }
+
+  #hero-slider-indicators {
+    padding: 6px 0 4px !important;
+    gap: 6px !important;
+  }
+  .hero-slider-dot {
+    width: 6px !important;
+    height: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-slider-wrap,
+  .hero-slider-viewport,
+  .hero-slider-track,
+  .hero-slide {
+    min-height: 175px !important;
+    height: 175px !important;
+  }
+  .hero-slide-img {
+    height: 175px !important;
+  }
+  .hero-slide-overlay {
+    padding: 0 32px !important;
+  }
+  .hero-slide-title {
+    font-size: 14.5px !important;
+  }
+  .hero-slide-desc {
+    font-size: 10.5px !important;
+  }
+  .hero-nav-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+  }
+  .hero-nav-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  .hero-nav-prev {
+    left: 4px !important;
+  }
+  .hero-nav-next {
+    right: 4px !important;
+  }
 }
 
 

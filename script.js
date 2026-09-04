@@ -9772,10 +9772,11 @@ document.addEventListener('DOMContentLoaded', () => {
   showSlide(0);
   startSlideShow();
 
-  // ── 5. HERO SLIDE CTA BUTTONS (Shop Electronics Deals, etc.) ──
+  // ── 5. HERO SLIDE & CTA BUTTON NAVIGATION ──
   document.querySelectorAll('.hero-slide-cta').forEach(cta => {
     cta.addEventListener('click', e => {
       e.preventDefault();
+      e.stopPropagation();
       const txt = cta.textContent.toLowerCase();
       if (txt.includes('electronic')) window._openCatalog?.('Electronics');
       else if (txt.includes('fashion')) window._openCatalog?.('Fashion');
@@ -9783,6 +9784,22 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (txt.includes('beauty')) window._openCatalog?.('Beauty & Health');
       else window._openCatalog?.();
     });
+  });
+
+  // Enable direct tap/click navigation on the entire slide (for mobile view where orange CTA is hidden)
+  document.querySelectorAll('.hero-slide').forEach(slide => {
+    slide.addEventListener('click', e => {
+      if (e.target.closest('.hero-nav-btn') || e.target.closest('.hero-slider-indicators') || e.target.closest('.hero-slide-cta')) return;
+      const cta = slide.querySelector('.hero-slide-cta');
+      if (!cta) return;
+      const txt = cta.textContent.toLowerCase();
+      if (txt.includes('electronic')) window._openCatalog?.('Electronics');
+      else if (txt.includes('fashion')) window._openCatalog?.('Fashion');
+      else if (txt.includes('home')) window._openCatalog?.('Home & Kitchen');
+      else if (txt.includes('beauty')) window._openCatalog?.('Beauty & Health');
+      else window._openCatalog?.();
+    });
+    slide.style.cursor = 'pointer';
   });
 
   // ── Helper: Find Authentic Catalog Product for Card Clicks ──
