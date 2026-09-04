@@ -1584,7 +1584,7 @@ small {
 
 .hero-banners-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   width: 100%;
   box-sizing: border-box;
@@ -1994,7 +1994,7 @@ small {
    ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .hero-banners-row {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   
@@ -6106,7 +6106,7 @@ small {
    RESPONSIVE ADJUSTMENTS
    ---------------------------------------------------------- */
 @media (max-width: 1200px) {
-  .hero-banners-row { grid-template-columns: repeat(3, 1fr); }
+  .hero-banners-row { grid-template-columns: repeat(2, 1fr); }
   .quad-cards-row { grid-template-columns: repeat(2, 1fr); }
 }
 
