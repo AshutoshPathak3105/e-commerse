@@ -5630,7 +5630,7 @@ function initPageRouter() {
             e.stopPropagation();
             const ordId = btn.dataset.id;
             const targetOrder = allOrders.find(o => (o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId)) || allOrders[0];
-            if (targetOrder) openOrderInvoiceModal(targetOrder, 'details');
+            if (targetOrder) openOrderInvoiceModal(targetOrder, 'track');
           });
         });
 
@@ -5766,8 +5766,8 @@ function initPageRouter() {
       <div class="commercial-window-wrap" style="padding-top:10px;">
         <!-- Page Header Area -->
         <div style="margin-bottom:20px;">
-          <h1 style="font-size:26px;font-weight:900;color:#000000;margin:0 0 6px;letter-spacing:-0.5px;">Order Details & Documentation</h1>
-          <p style="font-size:14px;color:#000000;margin:0;">View itemized billing, official GST tax invoice, warranty certificates, and tracking.</p>
+          <h1 id="ord-page-main-title" style="font-size:26px;font-weight:900;color:#000000;margin:0 0 6px;letter-spacing:-0.5px;">${defaultTab === 'track' ? 'Package Tracking & Shipment Status' : 'Order Details & Documentation'}</h1>
+          <p id="ord-page-main-sub" style="font-size:14px;color:#000000;margin:0;">${defaultTab === 'track' ? `Live status updates, courier tracking ID, and shipment journey for Order #${orderId}` : 'View itemized billing, official GST tax invoice, warranty certificates, and tracking.'}</p>
         </div>
 
         <!-- Navigation Tabs (With Track Package next to Order Details) -->
@@ -5855,69 +5855,107 @@ function initPageRouter() {
         <!-- VIEW 2: LIVE PACKAGE TRACKING -->
         <div id="page-view-ord-track" style="${defaultTab === 'track' ? 'display:block;' : 'display:none;'}">
           <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
-            <!-- Tracking Header -->
-            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:18px;margin-bottom:24px;gap:14px;">
-              <div>
-                <div style="font-size:11px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;">SHIPMENT TRACKING</div>
-                <div style="font-size:20px;font-weight:900;color:#000000;margin-top:2px;">AWB: DEL-82910471-IN</div>
-                <div style="font-size:13px;color:#000000;margin-top:4px;">Carrier: <strong>Blue Dart / Delhivery Express</strong></div>
+            <!-- Top Controls: Back button & Status Pill -->
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;gap:12px;">
+              <button id="btn-track-back-to-orders" style="display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #cbd5e1;padding:8px 18px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:#000000;transition:all 0.15s ease;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Back to Your Orders</span>
+              </button>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;font-weight:700;color:#64748b;">Current Status:</span>
+                <span style="font-size:12.5px;font-weight:800;background:${statusBg};color:${statusColor};padding:4px 14px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">${status}</span>
               </div>
-              <div style="text-align:right;">
-                <div style="font-size:12px;color:#000000;">Estimated Delivery:</div>
-                <div style="font-size:16px;font-weight:900;color:#000000;margin-top:2px;">Tomorrow by 8:00 PM</div>
+            </div>
+
+            <!-- Tracking Overview Header Card -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">COURIER AIRWAY BILL (AWB)</div>
+                <div style="font-size:18px;font-weight:900;color:#000000;margin-top:3px;font-family:monospace;">DEL-${(orderId.replace(/[^A-Za-z0-9]/g, '').slice(-8) || '82910471')}-IN</div>
+                <div style="font-size:12.5px;color:#000000;margin-top:4px;">Express Partner: <strong>Blue Dart / Delhivery Air</strong></div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">ESTIMATED DELIVERY</div>
+                <div style="font-size:18px;font-weight:900;color:#15803d;margin-top:3px;">${status === 'Delivered' ? 'Delivered Successfully' : (status === 'Cancelled' ? 'Order Cancelled' : 'Tomorrow by 8:00 PM')}</div>
+                <div style="font-size:12.5px;color:#000000;margin-top:4px;">${status === 'Delivered' ? 'Delivered to recipient' : 'Express Doorstep Delivery Guaranteed'}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">DELIVERY ADDRESS</div>
+                <div style="font-size:13.5px;font-weight:800;color:#000000;margin-top:3px;">${defaultAddr.name}</div>
+                <div style="font-size:12px;color:#000000;line-height:1.4;margin-top:2px;">${defaultAddr.street}, ${defaultAddr.city} (${defaultAddr.pincode})</div>
+              </div>
+            </div>
+
+            <!-- Ordered Items in this Package -->
+            <div style="margin-bottom:26px;">
+              <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">ITEMS IN THIS PACKAGE (${items.length})</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                ${items.map(it => `
+                  <div style="display:flex;gap:16px;align-items:center;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;">
+                    <img src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;" />
+                    <div style="flex:1;min-width:0;">
+                      <h4 style="margin:0 0 4px;font-size:14.5px;font-weight:800;color:#000000;">${it.name}</h4>
+                      <div style="font-size:12.5px;color:#000000;">Quantity: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Price: <strong>${Currency.format(it.price || 0)}</strong></div>
+                    </div>
+                    <span style="font-size:11px;font-weight:800;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:6px;">In Shipment</span>
+                  </div>
+                `).join('')}
               </div>
             </div>
 
             <!-- Visual Progress Timeline -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:16px;margin-bottom:30px;padding:10px 0;">
-              <div style="background:#f8fafc;border:1.5px solid #000000;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">1. Placed</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">COMPLETED</div>
-              </div>
-              <div style="background:#f8fafc;border:1.5px solid #000000;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">2. Confirmed</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">VERIFIED</div>
-              </div>
-              <div style="background:#ffffff;border:2px solid #000000;border-radius:10px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                <div style="font-weight:900;font-size:13px;color:#000000;">3. In Transit</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Bilaspur Hub</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">ACTIVE</div>
-              </div>
-              <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">4. Out for Delivery</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Pending</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">UPCOMING</div>
-              </div>
-              <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">5. Delivered</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Pending</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">FINAL</div>
+            <div style="margin-bottom:28px;">
+              <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">SHIPMENT MILESTONES</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;">
+                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 1. Placed</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">COMPLETED</div>
+                </div>
+                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 2. Confirmed</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">VERIFIED</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:14px;text-align:center;box-shadow:${status === 'Delivered' ? 'none' : '0 3px 10px rgba(37,99,235,0.12)'};">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓' : '🚚'} 3. In Transit</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">Bilaspur Hub</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
+                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
+                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
+                </div>
               </div>
             </div>
 
-            <!-- Detailed Checkpoints List -->
-            <h4 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live Activity Log</h4>
-            <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+            <!-- Detailed Checkpoints Activity Log -->
+            <h4 style="margin:0 0 14px;font-size:14px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live GPS Activity Log</h4>
+            <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:18px;background:#f8fafc;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
                 <div>
-                  <strong style="color:#000000;">Package Arrived at Local Facility</strong><br/>
-                  <span style="color:#000000;">Bilaspur Distribution Center, Chhattisgarh</span>
+                  <strong style="color:#000000;">Package Arrived at Local Distribution Facility</strong><br/>
+                  <span style="color:#475569;">Bilaspur Distribution Center, Chhattisgarh</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">Today, 03:45 AM</div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
                 <div>
                   <strong style="color:#000000;">Shipment Picked Up & Departed Sort Center</strong><br/>
-                  <span style="color:#000000;">Raipur Main Fulfillment Center</span>
+                  <span style="color:#475569;">Raipur Main Fulfillment Center, Chhattisgarh</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">Yesterday, 09:15 PM</div>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:13px;">
                 <div>
-                  <strong style="color:#000000;">Order Processed & Shipping Label Created</strong><br/>
-                  <span style="color:#000000;">X-Mart Superstore Central Warehouse</span>
+                  <strong style="color:#000000;">Order Verified & Airway Bill Generated</strong><br/>
+                  <span style="color:#475569;">X-Mart Superstore Central Fulfillment Warehouse</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">${dateStr}</div>
               </div>
@@ -6151,12 +6189,34 @@ function initPageRouter() {
       if (viewTrack) viewTrack.style.display = tabName === 'track' ? 'block' : 'none';
       if (viewInvoice) viewInvoice.style.display = tabName === 'invoice' ? 'block' : 'none';
       if (viewWarranty) viewWarranty.style.display = tabName === 'warranty' ? 'block' : 'none';
+
+      const hdrTitle = pageContainer.querySelector('#ord-page-main-title');
+      const hdrSub = pageContainer.querySelector('#ord-page-main-sub');
+      if (hdrTitle && hdrSub) {
+        if (tabName === 'track') {
+          hdrTitle.textContent = 'Package Tracking & Shipment Status';
+          hdrSub.textContent = `Live status updates, courier tracking ID, and shipment journey for Order #${orderId}`;
+        } else if (tabName === 'invoice') {
+          hdrTitle.textContent = 'Official Commercial Tax Invoice';
+          hdrSub.textContent = `GST-compliant invoice and tax breakdown for Order #${orderId}`;
+        } else if (tabName === 'warranty') {
+          hdrTitle.textContent = 'Warranty & Authenticity Certificate';
+          hdrSub.textContent = `Brand warranty coverage and replacement guarantee for Order #${orderId}`;
+        } else {
+          hdrTitle.textContent = 'Order Details & Documentation';
+          hdrSub.textContent = 'View itemized billing, official GST tax invoice, warranty certificates, and tracking.';
+        }
+      }
     };
 
     tabDetails?.addEventListener('click', () => showTab('details'));
     tabTrack?.addEventListener('click', () => showTab('track'));
     tabInvoice?.addEventListener('click', () => showTab('invoice'));
     tabWarranty?.addEventListener('click', () => showTab('warranty'));
+
+    pageContainer.querySelector('#btn-track-back-to-orders')?.addEventListener('click', () => {
+      if (typeof window._openOrders === 'function') window._openOrders();
+    });
 
     pageContainer.querySelector('#btn-page-hdr-track')?.addEventListener('click', () => showTab('track'));
     pageContainer.querySelector('#btn-page-hdr-invoice')?.addEventListener('click', () => showTab('invoice'));
@@ -8612,6 +8672,10 @@ function initPageRouter() {
         const ordId = state?.orderId || hash.replace('#order/', '').trim();
         const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
         window._openDedicatedOrderInvoicePage(ord, state?.tab || 'details', false);
+      } else if (hash.startsWith('#track/') || (state && state.type === 'order-track')) {
+        const ordId = state?.orderId || hash.replace('#track/', '').trim();
+        const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        window._openDedicatedOrderInvoicePage(ord, 'track', false);
       } else if (hash.startsWith('#return/') || hash.startsWith('#replace/') || (state && state.type === 'return-replace')) {
         const ordId = state?.orderId || hash.replace('#return/', '').replace('#replace/', '').trim();
         const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
@@ -10194,7 +10258,12 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (href === '#help-center' || href === '#contact' || text.includes('contact') || text.includes('help center')) {
         window._openCustomerServicePage?.();
       } else if (href === '#track-order' || text.includes('track')) {
-        window._openOrders?.();
+        const savedOrders = (window._allUserOrders && window._allUserOrders.length) ? window._allUserOrders : [];
+        if (savedOrders.length) {
+          openOrderInvoiceModal(savedOrders[0], 'track');
+        } else {
+          window._openOrders?.();
+        }
       } else if (href === '#store-locations') {
         window._openLocation?.();
       }
@@ -10310,6 +10379,44 @@ document.addEventListener('DOMContentLoaded', () => {
     window._reRenderHomePrices?.();
   }
   Language.init();
+
+  // ── Permanently Lock Currency & Language Panels in English ────
+  function enforceUtilityMenusEnglish() {
+    const currMenu = document.getElementById('currency-menu');
+    if (currMenu) {
+      const hdr = currMenu.querySelector('.dropdown-menu-header');
+      if (hdr && hdr.textContent.trim() !== 'Select Currency') hdr.textContent = 'Select Currency';
+      const labels = { INR: 'Rupees (₹)', USD: 'USD ($)', EUR: 'EUR (€)', GBP: 'GBP (£)' };
+      currMenu.querySelectorAll('[data-dropdown-option]').forEach(it => {
+        const code = it.dataset.currencyCode;
+        if (code && labels[code] && it.textContent.trim() !== labels[code]) {
+          it.textContent = labels[code];
+        }
+      });
+    }
+    const langMenu = document.getElementById('language-menu');
+    if (langMenu) {
+      const hdr = langMenu.querySelector('.dropdown-menu-header');
+      if (hdr && hdr.textContent.trim() !== 'Select Language') hdr.textContent = 'Select Language';
+      const labels = { en: 'English', es: 'Español', fr: 'Français', hi: 'हिन्दी' };
+      langMenu.querySelectorAll('[data-dropdown-option]').forEach(it => {
+        const code = it.dataset.langCode;
+        if (code && labels[code] && it.textContent.trim() !== labels[code]) {
+          it.textContent = labels[code];
+        }
+      });
+    }
+  }
+  enforceUtilityMenusEnglish();
+
+  // Watch for external translation engine text modifications and auto-revert
+  const _menuObserver = new MutationObserver(() => {
+    enforceUtilityMenusEnglish();
+  });
+  const _cMenu = document.getElementById('currency-menu');
+  const _lMenu = document.getElementById('language-menu');
+  if (_cMenu) _menuObserver.observe(_cMenu, { childList: true, subtree: true, characterData: true });
+  if (_lMenu) _menuObserver.observe(_lMenu, { childList: true, subtree: true, characterData: true });
 
   // ── 12. BACK TO TOP (scroll-triggered floating button) ─────
   // Inject a back-to-top button if none exists
