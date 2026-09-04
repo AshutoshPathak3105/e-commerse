@@ -27,6 +27,12 @@ const errorHandler = (err, req, res, next) => {
       .join(', ');
   }
 
+  // Mongoose: database connection / timeout
+  if (err.name === 'MongooseError' && err.message.includes('buffering timed out')) {
+    statusCode = 503;
+    message = 'Database unavailable: unable to reach MongoDB Atlas. Please whitelist your IP (0.0.0.0/0) in MongoDB Atlas Network Access.';
+  }
+
   res.status(statusCode).json({
     success: false,
     message,

@@ -14,8 +14,11 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2.4" />
-    <script src="script.js?v=2.4" defer></script>
+    <link rel="stylesheet" href="styles.css?v=12.1" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="script.js?v=12.1" defer></script>
   </head>
   <body id="top">
     <header class="site-header">
@@ -25,10 +28,6 @@
         </p>
 
         <nav class="utility-links" aria-label="Utility navigation">
-          <a href="#store-locator" class="utility-link">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-            <span>Store Locator</span>
-          </a>
           <a href="#help" class="utility-link">
             <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9.7 9a2.6 2.6 0 0 1 5 1c0 1.8-2.7 2-2.7 3.8"/><path d="M12 17h.01"/></svg>
             <span>Help</span>
@@ -40,10 +39,10 @@
             </button>
             <div class="dropdown-menu utility-menu selection-menu" id="currency-menu" role="menu" aria-label="Choose currency" data-dropdown-menu>
               <div class="dropdown-menu-header">Select Currency</div>
-              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="Rupees (&#8377;)"><span class="drop-icon">&#127470;&#127475;</span> Rupees (&#8377;)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="USD ($)"><span class="drop-icon">&#127482;&#127480;</span> USD ($)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="EUR (&euro;)"><span class="drop-icon">&#127466;&#127482;</span> EUR (&euro;)</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="GBP (&pound;)"><span class="drop-icon">&#127468;&#127463;</span> GBP (&pound;)</button>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-currency-code="INR" data-label="Rupees (₹)">Rupees (₹)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-currency-code="USD" data-label="USD ($)">USD ($)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-currency-code="EUR" data-label="EUR (€)">EUR (€)</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-currency-code="GBP" data-label="GBP (£)">GBP (£)</button>
             </div>
           </div>
           <div class="dropdown utility-dropdown">
@@ -53,21 +52,21 @@
             </button>
             <div class="dropdown-menu utility-menu selection-menu" id="language-menu" role="menu" aria-label="Choose language" data-dropdown-menu>
               <div class="dropdown-menu-header">Select Language</div>
-              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="English"><span class="drop-icon">&#127466;&#127475;</span> English</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Espa&ntilde;ol"><span class="drop-icon">&#127466;&#127480;</span> Espa&ntilde;ol</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fran&ccedil;ais"><span class="drop-icon">&#127467;&#127479;</span> Fran&ccedil;ais</button>
-              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;"><span class="drop-icon">&#127470;&#127475;</span> &#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</button>
+              <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-lang-code="en" data-label="English">English</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-lang-code="es" data-label="Español">Español</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-lang-code="fr" data-label="Français">Français</button>
+              <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-lang-code="hi" data-label="हिन्दी">हिन्दी</button>
             </div>
           </div>
         </nav>
       </div>
 
       <div class="main-bar">
-        <a class="brand" href="#top" aria-label="X-Mart home">
-          <span class="brand-mark">X</span>
-          <span class="brand-copy">
-            <span class="brand-name">X-MART</span>
-            <span class="brand-tagline">SUPERSTORE</span>
+        <a class="brand notranslate" translate="no" href="#top" aria-label="X-Mart home">
+          <span class="brand-mark notranslate" translate="no">X</span>
+          <span class="brand-copy notranslate" translate="no">
+            <span class="brand-name notranslate" translate="no">X-MART</span>
+            <span class="brand-tagline notranslate" translate="no">SUPERSTORE</span>
           </span>
         </a>
 
@@ -88,11 +87,11 @@
               </button>
               <div class="dropdown-menu search-menu selection-menu" id="search-category-menu" role="menu" aria-label="Choose product category" data-dropdown-menu>
                 <div class="dropdown-menu-header">Search In</div>
-                <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="All"><span class="drop-icon">&#127991;&#65039;</span> All Categories</button>
-                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Electronics"><span class="drop-icon">&#9889;</span> Electronics</button>
-                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fashion"><span class="drop-icon">&#128087;</span> Fashion</button>
-                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Home"><span class="drop-icon">&#127969;</span> Home &amp; Kitchen</button>
-                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Beauty"><span class="drop-icon">&#x2728;</span> Beauty &amp; Health</button>
+                <button class="dropdown-item is-selected" type="button" role="menuitemradio" aria-checked="true" data-dropdown-option data-label="All">All Categories</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Electronics">Electronics</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Fashion">Fashion</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Home">Home &amp; Kitchen</button>
+                <button class="dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-dropdown-option data-label="Beauty">Beauty &amp; Health</button>
               </div>
             </div>
             <label class="visually-hidden" for="product-search">Search X-Mart products</label>
@@ -104,30 +103,13 @@
         </div>
 
         <div class="header-actions">
-          <div class="dropdown account-dropdown">
-            <button class="account-action" type="button" aria-label="Account and lists" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-dropdown-trigger>
-              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2.2a5.5 5.5 0 0 1 5.5-5.5h3A5.5 5.5 0 0 1 19 18.8V21"/></svg>
-              <span>
-                <small>Hello, Sign In</small>
-                <strong>Account &amp; Lists</strong>
-              </span>
-              <svg class="down-mark dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg>
-            </button>
-            <div class="dropdown-menu account-menu" id="account-menu" role="menu" aria-label="Account and lists" data-dropdown-menu>
-              <div class="account-menu-header">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>
-                <div>
-                  <p class="account-menu-hello">Welcome back!</p>
-                  <p class="account-menu-sub">Sign in for a personalised experience</p>
-                </div>
-              </div>
-              <a class="dropdown-item dropdown-item-primary" href="#sign-in" role="menuitem">Sign in or Create account</a>
-              <span class="dropdown-divider" role="separator"></span>
-              <a class="dropdown-item" href="#account" role="menuitem"><span class="menu-item-icon">&#x1F464;</span> My Account</a>
-              <a class="dropdown-item" href="#orders" role="menuitem"><span class="menu-item-icon">&#x1F4E6;</span> Your Orders</a>
-              <a class="dropdown-item" href="#wishlist" role="menuitem"><span class="menu-item-icon">&#x2764;&#xFE0F;</span> Your Wishlist</a>
-            </div>
-          </div>
+          <button class="account-action" type="button" aria-label="Account and orders" id="nav-account-btn">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2.2a5.5 5.5 0 0 1 5.5-5.5h3A5.5 5.5 0 0 1 19 18.8V21"/></svg>
+            <span>
+              <small>Hello, Sign In</small>
+              <strong>Account &amp; Lists</strong>
+            </span>
+          </button>
 
           <a class="orders-action" href="#orders">
             <span>
@@ -152,43 +134,34 @@
       </div>
 
       <nav class="category-bar" aria-label="Primary navigation">
-        <div class="dropdown department-dropdown">
-          <button class="departments-button" type="button" aria-label="Browse all departments" aria-haspopup="menu" aria-expanded="false" aria-controls="departments-menu" data-dropdown-trigger>
+        <div class="department-btn-wrap">
+          <button class="departments-button" type="button" aria-label="Browse all departments">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
             <span>All Departments</span>
           </button>
-          <div class="dropdown-menu department-menu" id="departments-menu" role="menu" aria-label="All departments" data-dropdown-menu>
-            <div class="dropdown-menu-header dark">&#x1F6CD;&#xFE0F; Browse Departments</div>
-            <a class="dropdown-item" href="#electronics" role="menuitem"><span class="dept-icon">&#x1F4BB;</span> Electronics</a>
-            <a class="dropdown-item" href="#fashion" role="menuitem"><span class="dept-icon">&#x1F457;</span> Fashion &amp; Apparel</a>
-            <a class="dropdown-item" href="#home-kitchen" role="menuitem"><span class="dept-icon">&#x1F3E0;</span> Home &amp; Kitchen</a>
-            <a class="dropdown-item" href="#beauty-health" role="menuitem"><span class="dept-icon">&#x2728;</span> Beauty &amp; Health</a>
-            <a class="dropdown-item" href="#grocery" role="menuitem"><span class="dept-icon">&#x1F6D2;</span> Grocery &amp; Gourmet</a>
-            <a class="dropdown-item" href="#sports" role="menuitem"><span class="dept-icon">&#x26BD;</span> Sports &amp; Outdoors</a>
-          </div>
         </div>
         <a href="#deals" class="category-link deals-link">Today's Deals <span class="hot-badge">HOT</span></a>
         <a href="#best-sellers" class="category-link">Best Sellers</a>
         <div class="dropdown category-dropdown">
           <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="electronics-menu" data-dropdown-trigger>Electronics <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="electronics-menu" role="menu" aria-label="Electronics categories" data-dropdown-menu>
-            <div class="dropdown-menu-header">&#x1F4BB; Electronics</div>
-            <a class="dropdown-item" href="#phones" role="menuitem"><span class="menu-item-icon">&#x1F4F1;</span> Phones &amp; Tablets</a>
-            <a class="dropdown-item" href="#computers" role="menuitem"><span class="menu-item-icon">&#x1F5A5;&#xFE0F;</span> Computers &amp; Accessories</a>
-            <a class="dropdown-item" href="#tv-audio" role="menuitem"><span class="menu-item-icon">&#x1F4FA;</span> TV &amp; Audio</a>
-            <a class="dropdown-item" href="#cameras" role="menuitem"><span class="menu-item-icon">&#x1F4F7;</span> Cameras</a>
-            <a class="dropdown-item" href="#gaming" role="menuitem"><span class="menu-item-icon">&#x1F3AE;</span> Gaming</a>
+            <div class="dropdown-menu-header">Electronics</div>
+            <a class="dropdown-item" href="#phones" role="menuitem">Phones &amp; Tablets</a>
+            <a class="dropdown-item" href="#computers" role="menuitem">Computers &amp; Accessories</a>
+            <a class="dropdown-item" href="#tv-audio" role="menuitem">TV &amp; Audio</a>
+            <a class="dropdown-item" href="#cameras" role="menuitem">Cameras</a>
+            <a class="dropdown-item" href="#gaming" role="menuitem">Gaming</a>
           </div>
         </div>
         <div class="dropdown category-dropdown">
           <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="fashion-menu" data-dropdown-trigger>Fashion <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="fashion-menu" role="menu" aria-label="Fashion categories" data-dropdown-menu>
-            <div class="dropdown-menu-header">&#x1F457; Fashion</div>
-            <a class="dropdown-item" href="#womens-fashion" role="menuitem"><span class="menu-item-icon">&#x1F469;</span> Women's Fashion</a>
-            <a class="dropdown-item" href="#mens-fashion" role="menuitem"><span class="menu-item-icon">&#x1F468;</span> Men's Fashion</a>
-            <a class="dropdown-item" href="#kids-fashion" role="menuitem"><span class="menu-item-icon">&#x1F9D2;</span> Kids' Fashion</a>
-            <a class="dropdown-item" href="#shoes" role="menuitem"><span class="menu-item-icon">&#x1F45F;</span> Shoes</a>
-            <a class="dropdown-item" href="#bags" role="menuitem"><span class="menu-item-icon">&#x1F45C;</span> Bags &amp; Accessories</a>
+            <div class="dropdown-menu-header">Fashion</div>
+            <a class="dropdown-item" href="#womens-fashion" role="menuitem">Women's Fashion</a>
+            <a class="dropdown-item" href="#mens-fashion" role="menuitem">Men's Fashion</a>
+            <a class="dropdown-item" href="#kids-fashion" role="menuitem">Kids' Fashion</a>
+            <a class="dropdown-item" href="#shoes" role="menuitem">Shoes</a>
+            <a class="dropdown-item" href="#bags" role="menuitem">Bags &amp; Accessories</a>
           </div>
         </div>
         <a href="#home-kitchen" class="category-link">Home &amp; Kitchen</a>
@@ -219,7 +192,6 @@
                   <img class="hero-slide-img" src="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80" alt="Electronics Mega Sale" loading="eager">
                   <div class="hero-slide-overlay">
                     <div class="hero-slide-content">
-                      <span class="hero-slide-tag">⚡ TECH &amp; ELECTRONICS BONANZA</span>
                       <h2 class="hero-slide-title">Up to 60% Off Next-Gen Laptops, 4K OLEDs &amp; Audio</h2>
                       <p class="hero-slide-desc">Explore unbeatable offers on Intel Core Ultra, Apple Silicon, Sony Noise Cancelling &amp; Smart TVs.</p>
                       <a href="#electronics" class="hero-slide-cta">Shop Electronics Deals <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
@@ -232,7 +204,6 @@
                   <img class="hero-slide-img" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80" alt="Fashion Big Trend Festival" loading="lazy">
                   <div class="hero-slide-overlay">
                     <div class="hero-slide-content">
-                      <span class="hero-slide-tag">👗 FASHION &amp; APPAREL FESTIVAL</span>
                       <h2 class="hero-slide-title">Min. 50% - 75% Off Trending Global Styles</h2>
                       <p class="hero-slide-desc">Top fashion brands, ethnic wear, streetwear, jackets, luxury watches &amp; sneakers for everyone.</p>
                       <a href="#fashion" class="hero-slide-cta">Explore Fashion Collection <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
@@ -245,7 +216,6 @@
                   <img class="hero-slide-img" src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80" alt="Home & Kitchen Makeover" loading="lazy">
                   <div class="hero-slide-overlay">
                     <div class="hero-slide-content">
-                      <span class="hero-slide-tag">🏡 HOME &amp; KITCHEN MAKEOVER</span>
                       <h2 class="hero-slide-title">Up to 70% Off Modern Furniture &amp; Smart Appliances</h2>
                       <p class="hero-slide-desc">Upgrade your living space with designer chandeliers, espresso machines, cookware &amp; robotic vacuums.</p>
                       <a href="#home-kitchen" class="hero-slide-cta">Upgrade Your Home <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
@@ -258,7 +228,6 @@
                   <img class="hero-slide-img" src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1600&auto=format&fit=crop&q=80" alt="Beauty and Wellness" loading="lazy">
                   <div class="hero-slide-overlay">
                     <div class="hero-slide-content">
-                      <span class="hero-slide-tag">✨ BEAUTY &amp; PERSONAL CARE</span>
                       <h2 class="hero-slide-title">Flat 40% - 60% Off Luxury Skincare &amp; Fragrances</h2>
                       <p class="hero-slide-desc">Dermatologist-approved skincare, premium serums, salon hair appliances &amp; signature fragrances.</p>
                       <a href="#beauty-health" class="hero-slide-cta">Shop Beauty Deals <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
@@ -271,7 +240,6 @@
                   <img class="hero-slide-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80" alt="Gaming & Tech Hub" loading="lazy">
                   <div class="hero-slide-overlay">
                     <div class="hero-slide-content">
-                      <span class="hero-slide-tag">🎮 GAMING &amp; HIGH-PERFORMANCE HUB</span>
                       <h2 class="hero-slide-title">Ultra Gear, Consoles &amp; RTX 50-Series Power</h2>
                       <p class="hero-slide-desc">Immerse yourself with high-refresh rate monitors, mechanical keyboards, ergonomic chairs &amp; VR headsets.</p>
                       <a href="#gaming" class="hero-slide-cta">Level Up Your Setup <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
@@ -1459,11 +1427,11 @@
       <section class="footer-mid-bar" aria-label="Brand and social media">
         <div class="footer-container mid-bar-container">
           <div class="footer-brand-info">
-            <a class="brand" href="#top" aria-label="X-Mart home">
-              <span class="brand-mark">X</span>
-              <span class="brand-copy">
-                <span class="brand-name footer-brand-name">X-MART</span>
-                <span class="brand-tagline footer-brand-tagline">SUPERSTORE</span>
+            <a class="brand notranslate" translate="no" href="#top" aria-label="X-Mart home">
+              <span class="brand-mark notranslate" translate="no">X</span>
+              <span class="brand-copy notranslate" translate="no">
+                <span class="brand-name footer-brand-name notranslate" translate="no">X-MART</span>
+                <span class="brand-tagline footer-brand-tagline notranslate" translate="no">SUPERSTORE</span>
               </span>
             </a>
             <p class="brand-mission">
@@ -1582,5 +1550,18 @@
         </div>
       </section>
     </footer>
+
+    <!-- Google Translate Full-Page Integration -->
+    <div id="google_translate_element" style="display:none;"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,es,fr,hi',
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </body>
 </html>

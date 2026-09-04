@@ -17,8 +17,11 @@ const connectDB = async () => {
     });
 
   } catch (error) {
-    console.error(`❌  MongoDB Connection Failed: ${error.message}`);
-    process.exit(1);
+    console.error(`\n❌  MongoDB Connection Failed: ${error.message}`);
+    console.error('👉  Troubleshooting tips:');
+    console.error('    1. Open MongoDB Atlas (https://cloud.mongodb.com)');
+    console.error('    2. Go to "Network Access" -> Click "Add IP Address" -> Click "Allow Access From Anywhere" (0.0.0.0/0)');
+    console.error('    3. Verify your MONGO_URI in backend/.env has the correct username, password, and database name.\n');
   }
 };
 
