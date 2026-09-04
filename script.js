@@ -9185,7 +9185,7 @@ function buildCartPanel() {
 
   const p = document.createElement('aside');
   p.id = 'cart-panel';
-  p.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:380px;max-width:95vw;background:#fff;z-index:99999;box-shadow:-6px 0 28px rgba(0,0,0,.2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 300ms cubic-bezier(.16,1,.3,1);font-family:inherit;';
+  p.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:380px;max-width:95vw;background:#fff;z-index:99999;box-shadow:-6px 0 28px rgba(0,0,0,.2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 300ms cubic-bezier(.16,1,.3,1), visibility 300ms;font-family:inherit;visibility:hidden;pointer-events:none;';
   p.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#19324c;">
       <h2 style="margin:0;font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;">Your Cart</h2>
@@ -9199,10 +9199,17 @@ function buildCartPanel() {
   document.body.appendChild(p);
 
   const close = () => {
+    p.classList.remove('is-open');
     p.style.transform = 'translateX(100%)';
+    p.style.pointerEvents = 'none';
     ov.style.opacity = '0';
     ov.style.pointerEvents = 'none';
     document.body.style.overflow = '';
+    setTimeout(() => {
+      if (!p.classList.contains('is-open')) {
+        p.style.visibility = 'hidden';
+      }
+    }, 320);
   };
 
   document.getElementById('cart-panel-close').addEventListener('click', close);
@@ -9210,6 +9217,9 @@ function buildCartPanel() {
 
   window._openCart = () => {
     renderCartPanel();
+    p.classList.add('is-open');
+    p.style.visibility = 'visible';
+    p.style.pointerEvents = 'auto';
     p.style.transform = 'translateX(0)';
     ov.style.opacity = '1';
     ov.style.pointerEvents = 'auto';
