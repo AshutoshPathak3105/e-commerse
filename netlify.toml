@@ -1,0 +1,19 @@
+# Netlify Configuration for X-Mart E-Commerce Frontend
+
+[build]
+  # Root publish directory containing index.html, styles.css, script.js
+  publish = "."
+
+[[redirects]]
+  # Route all SPA client paths to index.html with HTTP 200
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  # Security and performance headers
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

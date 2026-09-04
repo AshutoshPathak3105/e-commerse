@@ -147,23 +147,25 @@ const server = app.listen(PORT, () => {
   console.log(`  🌍  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('══════════════════════════════════════════════\n');
 
-  // ── Auto-open Chrome when server starts ──────────────────
-  const platform = os.platform();
-  let openCmd;
-  if (platform === 'win32') {
-    openCmd = `start chrome "${url}"`;
-  } else if (platform === 'darwin') {
-    openCmd = `open -a "Google Chrome" "${url}"`;
-  } else {
-    openCmd = `xdg-open "${url}"`;
-  }
-  exec(openCmd, (err) => {
-    if (err) {
-      // Chrome not found — try default browser
-      const fallback = platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
-      exec(fallback);
+  // ── Auto-open Chrome when server starts (local development only) ──────
+  if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+    const platform = os.platform();
+    let openCmd;
+    if (platform === 'win32') {
+      openCmd = `start chrome "${url}"`;
+    } else if (platform === 'darwin') {
+      openCmd = `open -a "Google Chrome" "${url}"`;
+    } else {
+      openCmd = `xdg-open "${url}"`;
     }
-  });
+    exec(openCmd, (err) => {
+      if (err) {
+        // Chrome not found — try default browser
+        const fallback = platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
+        exec(fallback);
+      }
+    });
+  }
 });
 
 // Graceful shutdown

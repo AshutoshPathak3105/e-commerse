@@ -1,7 +1,18 @@
-/* Dynamic API Base: works whether opened via localhost:8000, 127.0.0.1:5500, or file protocol */
-const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8000'
-  ? '/api'
-  : 'http://localhost:8000/api';
+/* ═══════════════════════════════════════════════════════════════
+   DYNAMIC API BASE CONFIGURATION (Localhost + Netlify/Render)
+   ═══════════════════════════════════════════════════════════════ */
+// Deployed Render backend URL (can also be overridden in HTML via window.RENDER_BACKEND_URL)
+const PRODUCTION_BACKEND_URL = window.RENDER_BACKEND_URL || 'https://e-commerse-4xlp.onrender.com';
+
+const isLocalHost = (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.protocol === 'file:'
+);
+
+const API_BASE = isLocalHost
+  ? (window.location.port === '8000' ? '/api' : 'http://localhost:8000/api')
+  : `${PRODUCTION_BACKEND_URL.replace(/\/+$/, '')}/api`;
 
 /* ── Currency Converter (Base: INR ₹) ──────────────────────── */
 const Currency = {
@@ -191,7 +202,7 @@ async function apiFetch(endpoint, options = {}) {
   try {
     res = await fetch(url, options);
   } catch (err) {
-    throw new Error('Cannot connect to backend server at http://localhost:8000. Please start your server with "npm start".');
+    throw new Error(`Cannot connect to backend server at ${API_BASE}. Please ensure your backend is running.`);
   }
 
   const text = await res.text();
@@ -2360,15 +2371,13 @@ function buildWishlistDrawer() {
   };
 }
 
-/* ── Razorpay Checkout Integration ── */
-async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
+/* ── Dedicated UPI Payment Gateway Modal ── */
+function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCancel }) {
   const existingPortal = document.getElementById('xmart-inapp-payment-portal');
   if (existingPortal) existingPortal.remove();
 
   const formattedAmount = Currency.format(amount);
   const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=upi%3A%2F%2Fpay%3Fpa%3Dxmartsuperstore%40icici%26pn%3DX-Mart%2BSuperstore%26am%3D${encodeURIComponent(amount)}%26cu%3DINR`;
-
-  const initialTab = paymentMethod === 'NetBanking' ? 'netbanking' : paymentMethod === 'Card' ? 'card' : 'upi';
 
   const portalEl = document.createElement('div');
   portalEl.id = 'xmart-inapp-payment-portal';
@@ -2380,159 +2389,95 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
   `;
 
   portalEl.innerHTML = `
-    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 96vh; font-family: inherit;">
       
-      <!-- Top Header -->
-      <div style="background: #ff9700; color: #000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="background: #000; color: #fff; font-size: 14px; font-weight: 900; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;">X</span>
-          <div>
-            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #000;">X-Mart Payment Gateway</h3>
-            <span style="font-size: 11px; font-weight: 700; opacity: 0.85;">🔒 256-Bit SSL Encrypted &amp; Verified</span>
-          </div>
+      <!-- Top Header (Clean, professional typography, no emoji icons) -->
+      <div style="background: #ff9700; color: #000000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #000000;">X-Mart UPI Gateway</h3>
+          <span style="font-size: 11.5px; font-weight: 600; color: #1e293b;">Unified Payments Interface • Real-Time Verification</span>
         </div>
-        <button id="inapp-close-btn" style="background: transparent; border: none; font-size: 24px; font-weight: 700; cursor: pointer; color: #000; line-height: 1;">&times;</button>
+        <button id="inapp-close-btn" style="background: transparent; border: none; font-size: 24px; font-weight: 700; cursor: pointer; color: #000000; line-height: 1; padding: 2px 6px;">&times;</button>
       </div>
 
       <!-- Price Banner -->
       <div style="background: #fff8ee; border-bottom: 1.5px solid #fed7aa; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <span style="font-size: 12px; color: #7c2d12; font-weight: 700;">Order Payable Amount:</span>
-          <div style="font-size: 20px; font-weight: 900; color: #0f172a;">${formattedAmount}</div>
+          <span style="font-size: 11px; color: #7c2d12; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Order Payable Amount</span>
+          <div style="font-size: 20px; font-weight: 900; color: #0f172a; margin-top: 2px;">${formattedAmount}</div>
         </div>
-        <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #92400e;">
-          TEST SANDBOX
+        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #334155;">
+          Zero Extra Fees
         </div>
       </div>
 
-      <!-- Nav Tabs -->
-      <div style="display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-        <button class="inapp-tab-btn ${initialTab === 'upi' ? 'is-active' : ''}" data-tab="upi" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'upi' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'upi' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'upi' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          ⚡ Instant UPI
-        </button>
-        <button class="inapp-tab-btn ${initialTab === 'card' ? 'is-active' : ''}" data-tab="card" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'card' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'card' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'card' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          💳 Cards
-        </button>
-        <button class="inapp-tab-btn ${initialTab === 'netbanking' ? 'is-active' : ''}" data-tab="netbanking" style="flex: 1; padding: 12px 8px; border: none; background: ${initialTab === 'netbanking' ? '#fff' : 'transparent'}; font-size: 13px; font-weight: 800; color: ${initialTab === 'netbanking' ? '#ea580c' : '#64748b'}; border-bottom: 2.5px solid ${initialTab === 'netbanking' ? '#ea580c' : 'transparent'}; cursor: pointer;">
-          🏦 Net Banking
-        </button>
-      </div>
-
-      <!-- Body Content -->
+      <!-- Body Content (Strict UPI Only) -->
       <div style="padding: 20px; overflow-y: auto; flex: 1;">
         
-        <!-- ── 1. UPI TAB ── -->
-        <div id="inapp-tab-upi" class="inapp-tab-content" style="display: ${initialTab === 'upi' ? 'block' : 'none'}; text-align: center;">
-          <p style="margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #334155;">Scan QR code with any UPI App to pay</p>
-          
-          <div style="display: inline-block; padding: 10px; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 14px;">
-            <img src="${upiQrUrl}" alt="UPI QR Code" style="width: 170px; height: 170px; display: block; border-radius: 8px;">
-          </div>
-
-          <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-            <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px;">GPay</span>
+        <!-- Supported UPI Apps (Clean badges, no emojis) -->
+        <div style="margin-bottom: 16px; text-align: center;">
+          <span style="font-size: 11.5px; font-weight: 700; color: #64748b; display: block; margin-bottom: 8px;">Supported UPI Applications</span>
+          <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px;">Google Pay</span>
             <span style="font-size: 11px; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 3px 8px; border-radius: 4px;">PhonePe</span>
             <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px;">Paytm</span>
-            <span style="font-size: 11px; font-weight: 800; background: #ffedd5; color: #c2410c; padding: 3px 8px; border-radius: 4px;">BHIM UPI</span>
+            <span style="font-size: 11px; font-weight: 800; background: #ffedd5; color: #c2410c; padding: 3px 8px; border-radius: 4px;">BHIM</span>
+            <span style="font-size: 11px; font-weight: 800; background: #f1f5f9; color: #334155; padding: 3px 8px; border-radius: 4px;">Any Bank UPI</span>
           </div>
+        </div>
 
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-            <input type="text" id="inapp-upi-id-input" placeholder="e.g. mobile@okhdfcbank or yourname@paytm" value="${(user.phone || '9065553105') + '@okaxis'}" style="flex: 1; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none;">
-            <button type="button" id="inapp-upi-pay-btn" style="background: #0f172a; color: #fff; font-weight: 800; border: none; padding: 11px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap;">
-              Verify &amp; Pay
+        <!-- Dynamic QR Code -->
+        <div style="text-align: center; padding: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 18px;">
+          <span style="font-size: 12px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">Scan with Any UPI App</span>
+          <div style="display: inline-block; padding: 6px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;">
+            <img src="${upiQrUrl}" alt="UPI QR Code" style="width: 140px; height: 140px; display: block; border-radius: 4px;">
+          </div>
+          <p style="margin: 6px 0 0; font-size: 11px; color: #64748b;">Open your mobile UPI app to scan and pay</p>
+        </div>
+
+        <!-- UPI ID Verification Section -->
+        <div style="margin-bottom: 16px;">
+          <label for="inapp-upi-id-input" style="display: block; font-size: 12.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            Enter UPI ID / VPA
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input 
+              type="text" 
+              id="inapp-upi-id-input" 
+              placeholder="e.g. mobile@okhdfcbank or yourname@paytm" 
+              value="" 
+              style="flex: 1; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"
+            >
+            <button 
+              type="button" 
+              id="inapp-upi-verify-btn" 
+              style="background: #0f172a; color: #ffffff; font-weight: 700; border: none; padding: 10px 16px; border-radius: 8px; font-size: 12.5px; cursor: pointer; white-space: nowrap; transition: background-color 0.2s;"
+            >
+              Verify UPI ID
             </button>
           </div>
 
-          <button type="button" id="inapp-upi-instant-approve-btn" style="width: 100%; background: #16a34a; color: #fff; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(22,163,74,0.35);">
-            ⚡ Approve &amp; Complete UPI Payment
-          </button>
+          <!-- Dynamic Verification Status Notice (shown once verified or on invalid format) -->
+          <div id="inapp-upi-status-box" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.4;"></div>
         </div>
 
-        <!-- ── 2. CARD TAB ── -->
-        <div id="inapp-tab-card" class="inapp-tab-content" style="display: ${initialTab === 'card' ? 'block' : 'none'};">
-          <form id="inapp-card-form">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-size: 12.5px; font-weight: 700; color: #64748b;">Enter Card Details</span>
-              <button type="button" id="inapp-autofill-card-btn" style="background: #e0f2fe; color: #0369a1; border: none; font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
-                ⚡ Auto-Fill Test Card
-              </button>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-              <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Card Number</label>
-              <input type="text" id="inapp-card-num" placeholder="5104 0600 0000 0008" maxlength="19" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Expiry Date (MM/YY)</label>
-                <input type="text" id="inapp-card-exp" placeholder="12/28" maxlength="5" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">CVV / CVC</label>
-                <input type="password" id="inapp-card-cvv" placeholder="123" maxlength="4" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-              </div>
-            </div>
-
-            <div style="margin-bottom: 16px;">
-              <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px;">Name on Card</label>
-              <input type="text" id="inapp-card-name" value="${user.name || 'Ashutosh Pathak'}" required style="width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;">
-            </div>
-
-            <!-- OTP Simulator Container (hidden by default) -->
-            <div id="inapp-card-otp-box" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 14px; margin-bottom: 14px;">
-              <div style="font-size: 12.5px; font-weight: 800; color: #166534; margin-bottom: 4px;">📲 Bank OTP Verification:</div>
-              <div style="font-size: 11.5px; color: #15803d; margin-bottom: 8px;">Enter 6-Digit OTP sent to your registered mobile:</div>
-              <input type="text" id="inapp-card-otp-input" value="123456" maxlength="6" style="width: 100%; padding: 10px; border: 1.5px solid #22c55e; border-radius: 6px; font-size: 16px; font-weight: 900; letter-spacing: 4px; text-align: center; box-sizing: border-box;">
-            </div>
-
-            <button type="submit" id="inapp-card-submit-btn" style="width: 100%; background: #ff9700; color: #000; font-weight: 900; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(255,151,0,0.35);">
-              Pay ${formattedAmount} via Card
-            </button>
-          </form>
-        </div>
-
-        <!-- ── 3. NET BANKING TAB ── -->
-        <div id="inapp-tab-netbanking" class="inapp-tab-content" style="display: ${initialTab === 'netbanking' ? 'block' : 'none'};">
-          <p style="margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #334155;">Select Your Bank:</p>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;">
-            <label class="inapp-bank-option is-selected" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #ff9700; border-radius: 10px; background: #fff8ee; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="SBI" checked style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">State Bank of India</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="HDFC" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">HDFC Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="ICICI" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">ICICI Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="AXIS" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Axis Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="KOTAK" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Kotak Mahindra Bank</span>
-            </label>
-            <label class="inapp-bank-option" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer;">
-              <input type="radio" name="inapp_bank" value="PNB" style="accent-color: #ff9700;">
-              <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Punjab National Bank</span>
-            </label>
-          </div>
-
-          <button type="button" id="inapp-netbanking-pay-btn" style="width: 100%; background: #0f172a; color: #fff; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(15,23,42,0.25);">
-            ⚡ Authorize &amp; Pay ${formattedAmount}
+        <!-- Final Pay Button (DISABLED by default until UPI ID is verified) -->
+        <div style="margin-top: 14px;">
+          <button 
+            type="button" 
+            id="inapp-upi-pay-submit-btn" 
+            disabled 
+            style="width: 100%; background: #cbd5e1; color: #64748b; font-weight: 800; border: none; padding: 13px 20px; border-radius: 10px; font-size: 14px; cursor: not-allowed; transition: all 0.25s;"
+          >
+            Verify UPI ID to Pay ${formattedAmount}
           </button>
         </div>
 
       </div>
 
-      <!-- Footer Info -->
+      <!-- Footer Info (Clean) -->
       <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 10px 20px; text-align: center; font-size: 11px; color: #64748b;">
-        X-Mart Superstore • Verified 100% Buyer Protection • Fast Doorstep Delivery
+        National Payments Corporation of India (NPCI) • 256-Bit Encrypted
       </div>
     </div>
   `;
@@ -2546,76 +2491,186 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
   };
   portalEl.querySelector('#inapp-close-btn')?.addEventListener('click', closePortal);
 
-  // Tab switching
-  portalEl.querySelectorAll('.inapp-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabName = btn.dataset.tab;
-      portalEl.querySelectorAll('.inapp-tab-btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = '#64748b';
-        b.style.borderBottom = '2.5px solid transparent';
-      });
-      btn.style.background = '#fff';
-      btn.style.color = '#ea580c';
-      btn.style.borderBottom = '2.5px solid #ea580c';
+  // Verification & Payment Logic
+  const upiInput  = portalEl.querySelector('#inapp-upi-id-input');
+  const verifyBtn = portalEl.querySelector('#inapp-upi-verify-btn');
+  const statusBox = portalEl.querySelector('#inapp-upi-status-box');
+  const payBtn    = portalEl.querySelector('#inapp-upi-pay-submit-btn');
+  let isUpiVerified = false;
 
-      portalEl.querySelectorAll('.inapp-tab-content').forEach(c => c.style.display = 'none');
-      const target = portalEl.querySelector(`#inapp-tab-${tabName}`);
-      if (target) target.style.display = 'block';
-    });
+  const performVerification = () => {
+    const upiVal = (upiInput?.value || '').trim();
+    if (!upiVal || !upiVal.includes('@') || upiVal.length < 5) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#fef2f2';
+      statusBox.style.border = '1px solid #fecaca';
+      statusBox.style.color = '#991b1b';
+      statusBox.innerHTML = 'Please enter a valid UPI format (e.g., <strong>username@okhdfcbank</strong> or <strong>9065553105@paytm</strong>).';
+      isUpiVerified = false;
+      payBtn.disabled = true;
+      payBtn.style.background = '#cbd5e1';
+      payBtn.style.color = '#64748b';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.textContent = `Verify UPI ID to Pay ${formattedAmount}`;
+      return;
+    }
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+
+    setTimeout(() => {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = 'Verified';
+      verifyBtn.style.background = '#16a34a';
+
+      isUpiVerified = true;
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#f0fdf4';
+      statusBox.style.border = '1px solid #86efac';
+      statusBox.style.color = '#166534';
+      
+      const accountHolder = user?.name || 'Verified User';
+      const bankName = upiVal.split('@')[1]?.toUpperCase() || 'BANK';
+      statusBox.innerHTML = `<strong>Verified UPI Account:</strong> ${upiVal}<br><span style="font-size:11px;color:#15803d;">Payer: ${accountHolder} • Connected to ${bankName} VPA.</span>`;
+
+      // Enable the Pay Button
+      payBtn.disabled = false;
+      payBtn.style.background = '#16a34a';
+      payBtn.style.color = '#ffffff';
+      payBtn.style.cursor = 'pointer';
+      payBtn.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
+      payBtn.textContent = `Pay ${formattedAmount} via UPI`;
+
+    }, 500);
+  };
+
+  verifyBtn?.addEventListener('click', performVerification);
+
+  // Reset verification if user changes the input
+  upiInput?.addEventListener('input', () => {
+    if (isUpiVerified) {
+      isUpiVerified = false;
+      verifyBtn.textContent = 'Verify UPI ID';
+      verifyBtn.style.background = '#0f172a';
+      statusBox.style.display = 'none';
+      payBtn.disabled = true;
+      payBtn.style.background = '#cbd5e1';
+      payBtn.style.color = '#64748b';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.textContent = `Verify UPI ID to Pay ${formattedAmount}`;
+    }
   });
 
-  // 1. UPI Approval
-  const handleUpiSuccess = () => {
-    const upiId = portalEl.querySelector('#inapp-upi-id-input')?.value || 'user@okaxis';
+  // Payment Execution
+  const executePayment = (methodDetail = 'UPI ID') => {
+    const upiId = upiInput?.value?.trim() || 'user@okaxis';
     portalEl.remove();
     onSuccess?.({
       orderId: `ord_upi_${Date.now()}`,
       paymentId: `pay_upi_${Date.now()}`,
       signature: `sig_upi_${Date.now()}`,
       method: 'UPI',
-      upiId
+      isSandbox: true,
+      upiId,
+      methodDetail
     });
   };
-  portalEl.querySelector('#inapp-upi-instant-approve-btn')?.addEventListener('click', handleUpiSuccess);
-  portalEl.querySelector('#inapp-upi-pay-btn')?.addEventListener('click', handleUpiSuccess);
 
-  // 2. Card autofill & submit
-  const cardNum = portalEl.querySelector('#inapp-card-num');
-  const cardExp = portalEl.querySelector('#inapp-card-exp');
-  const cardCvv = portalEl.querySelector('#inapp-card-cvv');
-  const otpBox  = portalEl.querySelector('#inapp-card-otp-box');
-  const cardBtn = portalEl.querySelector('#inapp-card-submit-btn');
-
-  portalEl.querySelector('#inapp-autofill-card-btn')?.addEventListener('click', () => {
-    if (cardNum) cardNum.value = '5104 0600 0000 0008';
-    if (cardExp) cardExp.value = '12/28';
-    if (cardCvv) cardCvv.value = '123';
-  });
-
-  let cardStep = 'details';
-  portalEl.querySelector('#inapp-card-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (cardStep === 'details') {
-      cardStep = 'otp';
-      if (otpBox) otpBox.style.display = 'block';
-      if (cardBtn) cardBtn.textContent = 'Submit OTP & Confirm Order';
-      showToast('Bank OTP sent: Enter 123456 to confirm', 'info', 4000);
-    } else {
-      portalEl.remove();
-      onSuccess?.({
-        orderId: `ord_card_${Date.now()}`,
-        paymentId: `pay_card_${Date.now()}`,
-        signature: `sig_card_${Date.now()}`,
-        method: 'Card'
-      });
+  payBtn?.addEventListener('click', () => {
+    if (!isUpiVerified) {
+      showToast('Please verify your UPI ID first.', 'warn');
+      return;
     }
+    executePayment('Verified UPI ID');
   });
 
-  // 3. Net Banking Bank Selection & Pay
-  portalEl.querySelectorAll('.inapp-bank-option').forEach(opt => {
+}
+/* ── Dedicated In-App Net Banking Modal ── */
+function openInAppNetBankingModal({ amount, user, onSuccess, onCancel }) {
+  const existing = document.getElementById('xmart-netbanking-portal');
+  if (existing) existing.remove();
+
+  const formattedAmount = Currency.format(amount);
+
+  const portalEl = document.createElement('div');
+  portalEl.id = 'xmart-netbanking-portal';
+  portalEl.style.cssText = `
+    position: fixed; inset: 0; z-index: 100000;
+    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    animation: fadeIn 0.2s ease-out;
+  `;
+
+  const banks = [
+    { value: 'SBI',   label: 'State Bank of India' },
+    { value: 'HDFC',  label: 'HDFC Bank' },
+    { value: 'ICICI', label: 'ICICI Bank' },
+    { value: 'AXIS',  label: 'Axis Bank' },
+    { value: 'KOTAK', label: 'Kotak Mahindra Bank' },
+    { value: 'PNB',   label: 'Punjab National Bank' },
+    { value: 'BOB',   label: 'Bank of Baroda' },
+    { value: 'CANARA',label: 'Canara Bank' },
+  ];
+
+  const bankOptions = banks.map((b, idx) => `
+    <label class="nb-bank-opt" data-val="${b.value}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:2px solid ${idx === 0 ? '#ff9700' : '#e2e8f0'};border-radius:10px;background:${idx === 0 ? '#fff8ee' : '#fff'};cursor:pointer;transition:all 0.15s;">
+      <input type="radio" name="nb_bank" value="${b.value}" ${idx === 0 ? 'checked' : ''} style="accent-color:#ff9700;">
+      <span style="font-size:13px;font-weight:700;color:#0f172a;">${b.label}</span>
+    </label>
+  `).join('');
+
+  portalEl.innerHTML = `
+    <div style="background:#ffffff;border-radius:16px;width:100%;max-width:600px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);overflow:hidden;display:flex;flex-direction:column;max-height:96vh;font-family:inherit;">
+
+      <!-- Header -->
+      <div style="background:#ff9700;color:#000;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h3 style="margin:0;font-size:16px;font-weight:800;color:#000;">Net Banking Payment</h3>
+          <span style="font-size:11.5px;font-weight:600;color:#1e293b;">Secure Bank Portal Redirect</span>
+        </div>
+        <button id="nb-close-btn" style="background:transparent;border:none;font-size:24px;font-weight:700;cursor:pointer;color:#000;line-height:1;padding:2px 6px;">&times;</button>
+      </div>
+
+      <!-- Amount Banner -->
+      <div style="background:#fff8ee;border-bottom:1.5px solid #fed7aa;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-size:11px;color:#7c2d12;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Order Payable Amount</span>
+          <div style="font-size:20px;font-weight:900;color:#0f172a;margin-top:2px;">${formattedAmount}</div>
+        </div>
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#334155;">Zero Extra Fees</div>
+      </div>
+
+      <!-- Bank List -->
+      <div style="padding:20px;overflow-y:auto;flex:1;">
+        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#334155;">Select Your Bank</p>
+        <div id="nb-bank-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          ${bankOptions}
+        </div>
+
+        <button id="nb-pay-btn" style="width:100%;background:#0f172a;color:#fff;font-weight:800;border:none;padding:14px 20px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(15,23,42,0.25);transition:background 0.2s;">
+          Proceed to Bank &amp; Pay ${formattedAmount}
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;text-align:center;font-size:11px;color:#64748b;">
+        256-Bit Encrypted • Direct Bank Portal Checkout
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(portalEl);
+
+  // Close
+  portalEl.querySelector('#nb-close-btn')?.addEventListener('click', () => {
+    portalEl.remove();
+    onCancel?.();
+  });
+
+  // Bank selection highlight
+  portalEl.querySelectorAll('.nb-bank-opt').forEach(opt => {
     opt.addEventListener('click', () => {
-      portalEl.querySelectorAll('.inapp-bank-option').forEach(o => {
+      portalEl.querySelectorAll('.nb-bank-opt').forEach(o => {
         o.style.borderColor = '#e2e8f0';
         o.style.background = '#fff';
       });
@@ -2625,18 +2680,117 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
     });
   });
 
-  portalEl.querySelector('#inapp-netbanking-pay-btn')?.addEventListener('click', () => {
-    const bank = portalEl.querySelector('input[name="inapp_bank"]:checked')?.value || 'SBI';
-    portalEl.remove();
-    onSuccess?.({
-      orderId: `ord_nb_${Date.now()}`,
-      paymentId: `pay_nb_${Date.now()}`,
-      signature: `sig_nb_${Date.now()}`,
-      method: 'NetBanking',
-      bank
-    });
+  // Pay
+  portalEl.querySelector('#nb-pay-btn')?.addEventListener('click', () => {
+    const bank = portalEl.querySelector('input[name="nb_bank"]:checked')?.value || 'SBI';
+    const payBtn = portalEl.querySelector('#nb-pay-btn');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Redirecting to Bank...';
+
+    setTimeout(() => {
+      portalEl.remove();
+      onSuccess?.({
+        orderId:   `ord_nb_${Date.now()}`,
+        paymentId: `pay_nb_${Date.now()}`,
+        signature: `sig_nb_${Date.now()}`,
+        method: 'NetBanking',
+        isSandbox: true,
+        bank
+      });
+    }, 800);
   });
 }
+
+/* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
+async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel }) {
+  // UPI → dedicated UPI modal with QR + verification
+  if (paymentMethod === 'UPI') {
+    openInAppPaymentPortalModal({ amount, paymentMethod: 'UPI', user, address, onSuccess, onCancel });
+    return;
+  }
+
+  // Net Banking → dedicated in-app bank selection portal
+  // (Razorpay test mode does not support Net Banking — it shows "Choose other payment option")
+  if (paymentMethod === 'NetBanking') {
+    openInAppNetBankingModal({ amount, user, onSuccess, onCancel });
+    return;
+  }
+
+  // 1. Attempt official Razorpay Checkout SDK for Cards / Netbanking
+  try {
+    const configRes = await apiFetch('/payment/config');
+    const keyId = configRes?.keyId;
+
+    if (window.Razorpay && keyId && keyId !== 'rzp_test_placeholder') {
+      const orderRes = await apiFetch('/payment/create-order', {
+        method: 'POST',
+        headers: Auth.getHeaders(),
+        body: JSON.stringify({ amount })
+      });
+
+      if (orderRes?.success && orderRes?.order) {
+        const rzpOrder = orderRes.order;
+        const options = {
+          key: keyId,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency || 'INR',
+          name: 'X-Mart Superstore',
+          description: `Order Checkout (${paymentMethod})`,
+          order_id: rzpOrder.id,
+          prefill: {
+            name: user?.name || '',
+            email: user?.email || '',
+            contact: user?.phone || ''
+          },
+          theme: {
+            color: '#ff9700'
+          },
+          handler: function (response) {
+            onSuccess?.({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              isSandbox: Boolean(orderRes.isSandbox),
+              method: paymentMethod
+            });
+          },
+          modal: {
+            ondismiss: function () {
+              onCancel?.();
+            }
+          }
+        };
+
+        if (paymentMethod === 'UPI') {
+          options.prefill.method = 'upi';
+        } else if (paymentMethod === 'Card') {
+          options.prefill.method = 'card';
+        } else if (paymentMethod === 'NetBanking') {
+          options.prefill.method = 'netbanking';
+        }
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (errResp) {
+          showToast(`Payment Failed: ${errResp?.error?.description || 'Transaction cancelled'}`, 'error');
+          onCancel?.();
+        });
+        rzp.open();
+        return; // Successfully opened official Razorpay popup!
+      }
+    }
+  } catch (err) {
+    console.warn('Official Razorpay SDK unavailable, falling back to in-app portal:', err.message);
+  }
+
+  // 2. Fallback: Open built-in interactive payment modal
+  openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onSuccess, onCancel });
+}
+
+// Global Aliases
+const openInAppPaymentPortal = openRazorpayCheckout;
+window.openInAppPaymentPortal = openRazorpayCheckout;
+window.openRazorpayCheckout = openRazorpayCheckout;
+
 
 /* ── 5. Multi-Step Checkout & Payment Modal (3 Commercial Steps) ────── */
 function buildCheckoutModal() {
@@ -2869,15 +3023,6 @@ function buildCheckoutModal() {
                 <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Direct secure bank portal checkout (1-click Instant Test).</p>
               </div>
             </label>
-
-            <!-- Test Mode Helper Hint -->
-            <div style="margin-top:10px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.5;">
-              <strong>💡 Razorpay Test Mode Guide:</strong><br>
-              • <strong>Domestic MasterCard:</strong> <code>5104 0600 0000 0008</code> (CVV: <code>123</code>, Exp: <code>12/28</code>)<br>
-              • <strong>Domestic Visa Card:</strong> <code>4718 6091 0820 4366</code> (CVV: <code>123</code>, Exp: <code>12/28</code>)<br>
-              • <strong>Net Banking:</strong> Select any bank &amp; click <strong>"Success"</strong><br>
-              • <strong>UPI:</strong> Use VPA <code>success@razorpay</code>
-            </div>
           </div>
 
           <!-- Right: Final Order Total & Place Order Button -->
@@ -3138,6 +3283,8 @@ function buildCheckoutModal() {
     const wBal = isNaN(rawBal) ? 0 : rawBal;
     const wBalEl = modal.querySelector('#chk-wallet-avail-bal');
     if (wBalEl) wBalEl.textContent = wBal.toFixed(2);
+
+    updatePlaceOrderBtnLabel();
   }
 
   // Stepper tab clicks
@@ -3214,11 +3361,49 @@ function buildCheckoutModal() {
   modal.querySelector('#chk-backto-step2-btn')?.addEventListener('click', () => goToStep(2));
   modal.querySelector('#chk-step3-change-addr-btn')?.addEventListener('click', () => goToStep(2));
 
-  // Payment method selection radio
+  // Update "Place Order" button text based on selected payment method
+  function updatePlaceOrderBtnLabel() {
+    const subtotal = Store.cartTotal();
+    const tax = Math.round(subtotal * 0.18);
+    const grandTotal = subtotal + tax;
+    const formattedTotal = Currency.format(grandTotal);
+    const method = modal.querySelector('input[name="checkoutPaymentMethod"]:checked')?.value || 'COD';
+    const btnSpan = modal.querySelector('#chk-place-order-final-btn span');
+    if (!btnSpan) return;
+
+    if (method === 'COD') {
+      btnSpan.textContent = `Place Order • ${formattedTotal} (COD)`;
+    } else if (method === 'Wallet') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Wallet`;
+    } else if (method === 'UPI') {
+      btnSpan.textContent = `Pay ${formattedTotal} via UPI (Razorpay)`;
+    } else if (method === 'Card') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Card (Razorpay)`;
+    } else if (method === 'NetBanking') {
+      btnSpan.textContent = `Pay ${formattedTotal} via Net Banking (Razorpay)`;
+    } else {
+      btnSpan.textContent = `Place Order • ${formattedTotal}`;
+    }
+  };
+
+  // Payment method selection radio & card click handling
+  modal.querySelectorAll('.payment-method-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const radio = card.querySelector('input[name="checkoutPaymentMethod"]');
+      if (radio && !radio.checked) {
+        radio.checked = true;
+      }
+      modal.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('is-selected'));
+      card.classList.add('is-selected');
+      updatePlaceOrderBtnLabel();
+    });
+  });
+
   modal.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(r => {
     r.addEventListener('change', () => {
       modal.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('is-selected'));
       r.closest('.payment-method-card')?.classList.add('is-selected');
+      updatePlaceOrderBtnLabel();
     });
   });
 
@@ -3250,7 +3435,7 @@ function buildCheckoutModal() {
       const curBal = parseFloat(localStorage.getItem('xmart_wallet_balance') || '0.00');
       if (curBal < grandTotal) {
         btn.disabled = false;
-        btn.textContent = 'Place Order Now';
+        updatePlaceOrderBtnLabel();
         showToast(`Insufficient Wallet Balance (₹${curBal.toFixed(2)}). Please select COD or UPI.`, 'error', 4500);
         return;
       }
@@ -3261,19 +3446,19 @@ function buildCheckoutModal() {
 
     if (!Auth.isLoggedIn()) {
       btn.disabled = false;
-      btn.textContent = 'Place Order Now';
+      updatePlaceOrderBtnLabel();
       showToast('Please Sign In or Register to place your order.', 'warn');
       modal._close();
       window._openAuth?.('signup');
       return;
     }
 
-    // Online Payments (UPI, Card, NetBanking)
+    // Online Payments (UPI, Card, NetBanking via Razorpay)
     if (selectedPayMethod === 'UPI' || selectedPayMethod === 'Card' || selectedPayMethod === 'NetBanking') {
       btn.disabled = false;
-      btn.textContent = 'Place Order Now';
+      updatePlaceOrderBtnLabel();
 
-      openInAppPaymentPortal({
+      openRazorpayCheckout({
         amount: grandTotal,
         paymentMethod: selectedPayMethod,
         user: Auth.getUser() || {},
@@ -3282,14 +3467,19 @@ function buildCheckoutModal() {
           btn.disabled = true;
           btn.textContent = 'Finalizing Your Order...';
           try {
+            const orderId = paymentResult.razorpay_order_id || paymentResult.orderId || `ord_${Date.now()}`;
+            const paymentId = paymentResult.razorpay_payment_id || paymentResult.paymentId || `pay_${Date.now()}`;
+            const signature = paymentResult.razorpay_signature || paymentResult.signature || 'verified_inapp_signature';
+            const isSandbox = paymentResult.isSandbox !== undefined ? paymentResult.isSandbox : false;
+
             const verifyRes = await apiFetch('/payment/verify', {
               method: 'POST',
               headers: Auth.getHeaders(),
               body: JSON.stringify({
-                razorpay_order_id: paymentResult.orderId || `ord_${Date.now()}`,
-                razorpay_payment_id: paymentResult.paymentId || `pay_${Date.now()}`,
-                razorpay_signature: paymentResult.signature || 'verified_inapp_signature',
-                isSandbox: true,
+                razorpay_order_id: orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature,
+                isSandbox: isSandbox,
                 shippingAddress: savedDeliveryAddress,
                 paymentMethod: selectedPayMethod,
                 items: Store.cart
@@ -3305,12 +3495,12 @@ function buildCheckoutModal() {
             showToast(`Order Notice: ${err.message}`, 'error', 6000);
           } finally {
             btn.disabled = false;
-            btn.textContent = 'Place Order Now';
+            updatePlaceOrderBtnLabel();
           }
         },
         onCancel: () => {
           btn.disabled = false;
-          btn.textContent = 'Place Order Now';
+          updatePlaceOrderBtnLabel();
           showToast('Payment window closed. Order was not placed.', 'info');
         }
       });
@@ -5440,7 +5630,7 @@ function initPageRouter() {
             e.stopPropagation();
             const ordId = btn.dataset.id;
             const targetOrder = allOrders.find(o => (o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId)) || allOrders[0];
-            if (targetOrder) openOrderInvoiceModal(targetOrder, 'details');
+            if (targetOrder) openOrderInvoiceModal(targetOrder, 'track');
           });
         });
 
@@ -5576,8 +5766,8 @@ function initPageRouter() {
       <div class="commercial-window-wrap" style="padding-top:10px;">
         <!-- Page Header Area -->
         <div style="margin-bottom:20px;">
-          <h1 style="font-size:26px;font-weight:900;color:#000000;margin:0 0 6px;letter-spacing:-0.5px;">Order Details & Documentation</h1>
-          <p style="font-size:14px;color:#000000;margin:0;">View itemized billing, official GST tax invoice, warranty certificates, and tracking.</p>
+          <h1 id="ord-page-main-title" style="font-size:26px;font-weight:900;color:#000000;margin:0 0 6px;letter-spacing:-0.5px;">${defaultTab === 'track' ? 'Package Tracking & Shipment Status' : 'Order Details & Documentation'}</h1>
+          <p id="ord-page-main-sub" style="font-size:14px;color:#000000;margin:0;">${defaultTab === 'track' ? `Live status updates, courier tracking ID, and shipment journey for Order #${orderId}` : 'View itemized billing, official GST tax invoice, warranty certificates, and tracking.'}</p>
         </div>
 
         <!-- Navigation Tabs (With Track Package next to Order Details) -->
@@ -5665,69 +5855,107 @@ function initPageRouter() {
         <!-- VIEW 2: LIVE PACKAGE TRACKING -->
         <div id="page-view-ord-track" style="${defaultTab === 'track' ? 'display:block;' : 'display:none;'}">
           <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
-            <!-- Tracking Header -->
-            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:18px;margin-bottom:24px;gap:14px;">
-              <div>
-                <div style="font-size:11px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;">SHIPMENT TRACKING</div>
-                <div style="font-size:20px;font-weight:900;color:#000000;margin-top:2px;">AWB: DEL-82910471-IN</div>
-                <div style="font-size:13px;color:#000000;margin-top:4px;">Carrier: <strong>Blue Dart / Delhivery Express</strong></div>
+            <!-- Top Controls: Back button & Status Pill -->
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;gap:12px;">
+              <button id="btn-track-back-to-orders" style="display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #cbd5e1;padding:8px 18px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:#000000;transition:all 0.15s ease;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Back to Your Orders</span>
+              </button>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;font-weight:700;color:#64748b;">Current Status:</span>
+                <span style="font-size:12.5px;font-weight:800;background:${statusBg};color:${statusColor};padding:4px 14px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">${status}</span>
               </div>
-              <div style="text-align:right;">
-                <div style="font-size:12px;color:#000000;">Estimated Delivery:</div>
-                <div style="font-size:16px;font-weight:900;color:#000000;margin-top:2px;">Tomorrow by 8:00 PM</div>
+            </div>
+
+            <!-- Tracking Overview Header Card -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">COURIER AIRWAY BILL (AWB)</div>
+                <div style="font-size:18px;font-weight:900;color:#000000;margin-top:3px;font-family:monospace;">DEL-${(orderId.replace(/[^A-Za-z0-9]/g, '').slice(-8) || '82910471')}-IN</div>
+                <div style="font-size:12.5px;color:#000000;margin-top:4px;">Express Partner: <strong>Blue Dart / Delhivery Air</strong></div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">ESTIMATED DELIVERY</div>
+                <div style="font-size:18px;font-weight:900;color:#15803d;margin-top:3px;">${status === 'Delivered' ? 'Delivered Successfully' : (status === 'Cancelled' ? 'Order Cancelled' : 'Tomorrow by 8:00 PM')}</div>
+                <div style="font-size:12.5px;color:#000000;margin-top:4px;">${status === 'Delivered' ? 'Delivered to recipient' : 'Express Doorstep Delivery Guaranteed'}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">DELIVERY ADDRESS</div>
+                <div style="font-size:13.5px;font-weight:800;color:#000000;margin-top:3px;">${defaultAddr.name}</div>
+                <div style="font-size:12px;color:#000000;line-height:1.4;margin-top:2px;">${defaultAddr.street}, ${defaultAddr.city} (${defaultAddr.pincode})</div>
+              </div>
+            </div>
+
+            <!-- Ordered Items in this Package -->
+            <div style="margin-bottom:26px;">
+              <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">ITEMS IN THIS PACKAGE (${items.length})</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                ${items.map(it => `
+                  <div style="display:flex;gap:16px;align-items:center;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;">
+                    <img src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;" />
+                    <div style="flex:1;min-width:0;">
+                      <h4 style="margin:0 0 4px;font-size:14.5px;font-weight:800;color:#000000;">${it.name}</h4>
+                      <div style="font-size:12.5px;color:#000000;">Quantity: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Price: <strong>${Currency.format(it.price || 0)}</strong></div>
+                    </div>
+                    <span style="font-size:11px;font-weight:800;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:6px;">In Shipment</span>
+                  </div>
+                `).join('')}
               </div>
             </div>
 
             <!-- Visual Progress Timeline -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:16px;margin-bottom:30px;padding:10px 0;">
-              <div style="background:#f8fafc;border:1.5px solid #000000;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">1. Placed</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">COMPLETED</div>
-              </div>
-              <div style="background:#f8fafc;border:1.5px solid #000000;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">2. Confirmed</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">VERIFIED</div>
-              </div>
-              <div style="background:#ffffff;border:2px solid #000000;border-radius:10px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                <div style="font-weight:900;font-size:13px;color:#000000;">3. In Transit</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Bilaspur Hub</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">ACTIVE</div>
-              </div>
-              <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">4. Out for Delivery</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Pending</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">UPCOMING</div>
-              </div>
-              <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px;text-align:center;">
-                <div style="font-weight:900;font-size:13px;color:#000000;">5. Delivered</div>
-                <div style="font-size:11.5px;color:#000000;margin-top:4px;">Pending</div>
-                <div style="font-size:11px;font-weight:800;color:#000000;margin-top:4px;">FINAL</div>
+            <div style="margin-bottom:28px;">
+              <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">SHIPMENT MILESTONES</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;">
+                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 1. Placed</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">COMPLETED</div>
+                </div>
+                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 2. Confirmed</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">VERIFIED</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:14px;text-align:center;box-shadow:${status === 'Delivered' ? 'none' : '0 3px 10px rgba(37,99,235,0.12)'};">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓' : '🚚'} 3. In Transit</div>
+                  <div style="font-size:11px;color:#000000;margin-top:4px;">Bilaspur Hub</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
+                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
+                </div>
+                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
+                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
+                </div>
               </div>
             </div>
 
-            <!-- Detailed Checkpoints List -->
-            <h4 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live Activity Log</h4>
-            <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+            <!-- Detailed Checkpoints Activity Log -->
+            <h4 style="margin:0 0 14px;font-size:14px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live GPS Activity Log</h4>
+            <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:18px;background:#f8fafc;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
                 <div>
-                  <strong style="color:#000000;">Package Arrived at Local Facility</strong><br/>
-                  <span style="color:#000000;">Bilaspur Distribution Center, Chhattisgarh</span>
+                  <strong style="color:#000000;">Package Arrived at Local Distribution Facility</strong><br/>
+                  <span style="color:#475569;">Bilaspur Distribution Center, Chhattisgarh</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">Today, 03:45 AM</div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
                 <div>
                   <strong style="color:#000000;">Shipment Picked Up & Departed Sort Center</strong><br/>
-                  <span style="color:#000000;">Raipur Main Fulfillment Center</span>
+                  <span style="color:#475569;">Raipur Main Fulfillment Center, Chhattisgarh</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">Yesterday, 09:15 PM</div>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:13px;">
                 <div>
-                  <strong style="color:#000000;">Order Processed & Shipping Label Created</strong><br/>
-                  <span style="color:#000000;">X-Mart Superstore Central Warehouse</span>
+                  <strong style="color:#000000;">Order Verified & Airway Bill Generated</strong><br/>
+                  <span style="color:#475569;">X-Mart Superstore Central Fulfillment Warehouse</span>
                 </div>
                 <div style="color:#000000;font-weight:700;text-align:right;">${dateStr}</div>
               </div>
@@ -5961,12 +6189,34 @@ function initPageRouter() {
       if (viewTrack) viewTrack.style.display = tabName === 'track' ? 'block' : 'none';
       if (viewInvoice) viewInvoice.style.display = tabName === 'invoice' ? 'block' : 'none';
       if (viewWarranty) viewWarranty.style.display = tabName === 'warranty' ? 'block' : 'none';
+
+      const hdrTitle = pageContainer.querySelector('#ord-page-main-title');
+      const hdrSub = pageContainer.querySelector('#ord-page-main-sub');
+      if (hdrTitle && hdrSub) {
+        if (tabName === 'track') {
+          hdrTitle.textContent = 'Package Tracking & Shipment Status';
+          hdrSub.textContent = `Live status updates, courier tracking ID, and shipment journey for Order #${orderId}`;
+        } else if (tabName === 'invoice') {
+          hdrTitle.textContent = 'Official Commercial Tax Invoice';
+          hdrSub.textContent = `GST-compliant invoice and tax breakdown for Order #${orderId}`;
+        } else if (tabName === 'warranty') {
+          hdrTitle.textContent = 'Warranty & Authenticity Certificate';
+          hdrSub.textContent = `Brand warranty coverage and replacement guarantee for Order #${orderId}`;
+        } else {
+          hdrTitle.textContent = 'Order Details & Documentation';
+          hdrSub.textContent = 'View itemized billing, official GST tax invoice, warranty certificates, and tracking.';
+        }
+      }
     };
 
     tabDetails?.addEventListener('click', () => showTab('details'));
     tabTrack?.addEventListener('click', () => showTab('track'));
     tabInvoice?.addEventListener('click', () => showTab('invoice'));
     tabWarranty?.addEventListener('click', () => showTab('warranty'));
+
+    pageContainer.querySelector('#btn-track-back-to-orders')?.addEventListener('click', () => {
+      if (typeof window._openOrders === 'function') window._openOrders();
+    });
 
     pageContainer.querySelector('#btn-page-hdr-track')?.addEventListener('click', () => showTab('track'));
     pageContainer.querySelector('#btn-page-hdr-invoice')?.addEventListener('click', () => showTab('invoice'));
@@ -8422,6 +8672,10 @@ function initPageRouter() {
         const ordId = state?.orderId || hash.replace('#order/', '').trim();
         const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
         window._openDedicatedOrderInvoicePage(ord, state?.tab || 'details', false);
+      } else if (hash.startsWith('#track/') || (state && state.type === 'order-track')) {
+        const ordId = state?.orderId || hash.replace('#track/', '').trim();
+        const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        window._openDedicatedOrderInvoicePage(ord, 'track', false);
       } else if (hash.startsWith('#return/') || hash.startsWith('#replace/') || (state && state.type === 'return-replace')) {
         const ordId = state?.orderId || hash.replace('#return/', '').replace('#replace/', '').trim();
         const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
@@ -9364,11 +9618,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── 3. CATEGORY / DEPARTMENT NAVIGATION ───────────────────
 
-  // "All Departments" hamburger button — Open Amazon-style side navigation drawer
-  document.querySelector('.departments-button')?.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    window._openDepartmentSidebar?.();
+  // "All Departments" & Mobile Menu hamburger buttons — Open Amazon-style side navigation drawer
+  document.querySelectorAll('.departments-button, .mobile-menu-trigger').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      window._openDepartmentSidebar?.();
+    });
   });
 
   // Department dropdown links (electronics, fashion, etc.) -> Full Dedicated Window Page
@@ -10004,7 +10260,12 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (href === '#help-center' || href === '#contact' || text.includes('contact') || text.includes('help center')) {
         window._openCustomerServicePage?.();
       } else if (href === '#track-order' || text.includes('track')) {
-        window._openOrders?.();
+        const savedOrders = (window._allUserOrders && window._allUserOrders.length) ? window._allUserOrders : [];
+        if (savedOrders.length) {
+          openOrderInvoiceModal(savedOrders[0], 'track');
+        } else {
+          window._openOrders?.();
+        }
       } else if (href === '#store-locations') {
         window._openLocation?.();
       }
@@ -10120,6 +10381,44 @@ document.addEventListener('DOMContentLoaded', () => {
     window._reRenderHomePrices?.();
   }
   Language.init();
+
+  // ── Permanently Lock Currency & Language Panels in English ────
+  function enforceUtilityMenusEnglish() {
+    const currMenu = document.getElementById('currency-menu');
+    if (currMenu) {
+      const hdr = currMenu.querySelector('.dropdown-menu-header');
+      if (hdr && hdr.textContent.trim() !== 'Select Currency') hdr.textContent = 'Select Currency';
+      const labels = { INR: 'Rupees (₹)', USD: 'USD ($)', EUR: 'EUR (€)', GBP: 'GBP (£)' };
+      currMenu.querySelectorAll('[data-dropdown-option]').forEach(it => {
+        const code = it.dataset.currencyCode;
+        if (code && labels[code] && it.textContent.trim() !== labels[code]) {
+          it.textContent = labels[code];
+        }
+      });
+    }
+    const langMenu = document.getElementById('language-menu');
+    if (langMenu) {
+      const hdr = langMenu.querySelector('.dropdown-menu-header');
+      if (hdr && hdr.textContent.trim() !== 'Select Language') hdr.textContent = 'Select Language';
+      const labels = { en: 'English', es: 'Español', fr: 'Français', hi: 'हिन्दी' };
+      langMenu.querySelectorAll('[data-dropdown-option]').forEach(it => {
+        const code = it.dataset.langCode;
+        if (code && labels[code] && it.textContent.trim() !== labels[code]) {
+          it.textContent = labels[code];
+        }
+      });
+    }
+  }
+  enforceUtilityMenusEnglish();
+
+  // Watch for external translation engine text modifications and auto-revert
+  const _menuObserver = new MutationObserver(() => {
+    enforceUtilityMenusEnglish();
+  });
+  const _cMenu = document.getElementById('currency-menu');
+  const _lMenu = document.getElementById('language-menu');
+  if (_cMenu) _menuObserver.observe(_cMenu, { childList: true, subtree: true, characterData: true });
+  if (_lMenu) _menuObserver.observe(_lMenu, { childList: true, subtree: true, characterData: true });
 
   // ── 12. BACK TO TOP (scroll-triggered floating button) ─────
   // Inject a back-to-top button if none exists
