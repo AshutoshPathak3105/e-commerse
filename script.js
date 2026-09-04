@@ -2800,18 +2800,18 @@ function buildCheckoutModal() {
     bodyHtml: `
       <div class="checkout-stepper-wrap">
         <div class="step-tab is-active" id="step-tab-1" data-step="1">
-          <div class="step-num" style="width:28px;height:28px;border-radius:50%;background:#ff9700;color:#000;font-weight:900;display:grid;place-items:center;font-size:13px;">1</div>
-          <div class="step-text" style="font-size:13.5px;font-weight:800;color:#0f172a;">1. Order Summary</div>
+          <div class="step-num">1</div>
+          <div class="step-text"><span class="chk-step-long">1. Order Summary</span><span class="chk-step-short">Summary</span></div>
         </div>
-        <div style="height:2px;background:#cbd5e1;flex:1;margin:0 10px;"></div>
+        <div class="chk-stepper-line"></div>
         <div class="step-tab" id="step-tab-2" data-step="2">
-          <div class="step-num" style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;color:#64748b;font-weight:900;display:grid;place-items:center;font-size:13px;">2</div>
-          <div class="step-text" style="font-size:13.5px;font-weight:700;color:#64748b;">2. Address Details</div>
+          <div class="step-num">2</div>
+          <div class="step-text"><span class="chk-step-long">2. Address Details</span><span class="chk-step-short">Address</span></div>
         </div>
-        <div style="height:2px;background:#cbd5e1;flex:1;margin:0 10px;"></div>
+        <div class="chk-stepper-line"></div>
         <div class="step-tab" id="step-tab-3" data-step="3">
-          <div class="step-num" style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;color:#64748b;font-weight:900;display:grid;place-items:center;font-size:13px;">3</div>
-          <div class="step-text" style="font-size:13.5px;font-weight:700;color:#64748b;">3. Payment Options</div>
+          <div class="step-num">3</div>
+          <div class="step-text"><span class="chk-step-long">3. Payment Options</span><span class="chk-step-short">Payment</span></div>
         </div>
       </div>
 
@@ -2820,15 +2820,15 @@ function buildCheckoutModal() {
         <div class="chk-pane-grid">
           <!-- Items List -->
           <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-              <h4 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;">Items in Your Order (<span id="chk-step1-count">0</span>)</h4>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h4 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;">Items in Your Order (<span id="chk-step1-count">0</span>)</h4>
             </div>
-            <div id="chk-step1-items-list" style="display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;padding-right:6px;"></div>
+            <div id="chk-step1-items-list" style="display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;padding-right:4px;"></div>
           </div>
 
           <!-- Price Summary & Continue -->
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:22px;height:fit-content;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
-            <h4 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0f172a;">Order Price Details</h4>
+          <div class="chk-price-card">
+            <h4 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0f172a;">Order Price Details</h4>
             
             <div class="chk-price-row">
               <span>Price (<span id="chk-step1-summary-count">0</span> items):</span>
@@ -2844,17 +2844,17 @@ function buildCheckoutModal() {
             </div>
 
             <!-- Coupon Input -->
-            <div style="display:flex;gap:8px;margin:14px 0 16px;">
+            <div style="display:flex;gap:8px;margin:12px 0 14px;">
               <input type="text" id="chk-coupon-input" placeholder="ENTER COUPON CODE" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;outline:none;text-transform:uppercase;font-weight:700;" />
-              <button type="button" id="chk-coupon-apply-btn" style="background:#19324c;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;">Apply</button>
+              <button type="button" id="chk-coupon-apply-btn" style="background:#19324c;color:#fff;border:none;padding:9px 15px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;">Apply</button>
             </div>
 
-            <div style="border-top:1.5px dashed #cbd5e1;padding-top:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-              <span style="font-size:15px;font-weight:800;color:#0f172a;">Total Payable:</span>
-              <strong id="chk-step1-grand-total" style="font-size:19px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
+            <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span style="font-size:14.5px;font-weight:800;color:#0f172a;">Total Payable:</span>
+              <strong id="chk-step1-grand-total" style="font-size:18px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
             </div>
 
-            <button type="button" id="chk-goto-step2-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:13px 18px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+            <button type="button" id="chk-goto-step2-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 16px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
               <span>Proceed to Delivery Address</span>
             </button>
           </div>
@@ -2866,14 +2866,14 @@ function buildCheckoutModal() {
 
         <!-- ── Saved Address Cards (shown when addresses exist) ── -->
         <div id="chk-saved-addr-section" style="display:none;">
-          <div style="margin-bottom:14px;">
-            <h4 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;">2. Select Delivery Address</h4>
-            <p style="margin:2px 0 0;font-size:12.5px;color:#64748b;">Your saved addresses are shown below. Select one or add a new one.</p>
+          <div style="margin-bottom:12px;">
+            <h4 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;">2. Select Delivery Address</h4>
+            <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Your saved addresses are shown below. Select one or add a new one.</p>
           </div>
-          <div id="chk-addr-cards-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+          <div id="chk-addr-cards-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"></div>
 
           <!-- Add New Address Toggle -->
-          <button type="button" id="chk-add-new-addr-btn" style="display:flex;align-items:center;gap:8px;background:transparent;border:2px dashed #cbd5e1;color:#000000;font-weight:700;font-size:13px;padding:10px 18px;border-radius:10px;cursor:pointer;width:100%;justify-content:center;transition:border-color 0.2s,background 0.2s;">
+          <button type="button" id="chk-add-new-addr-btn" style="display:flex;align-items:center;gap:8px;background:transparent;border:2px dashed #cbd5e1;color:#000000;font-weight:700;font-size:13px;padding:10px 16px;border-radius:10px;cursor:pointer;width:100%;justify-content:center;transition:border-color 0.2s,background 0.2s;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Use a Different / New Address
           </button>
@@ -2882,17 +2882,17 @@ function buildCheckoutModal() {
         <!-- ── New Address Form (always visible when no saved addr; collapsible otherwise) ── -->
         <div id="chk-new-addr-form-wrap">
           <form id="chk-address-form">
-            <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <div>
-                <h4 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;" id="chk-addr-form-title">2. Enter Full Delivery Address</h4>
-                <p style="margin:2px 0 0;font-size:12.5px;color:#64748b;">Accurate address ensures on-time doorstep delivery.</p>
+                <h4 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;" id="chk-addr-form-title">2. Enter Full Delivery Address</h4>
+                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Accurate address ensures on-time doorstep delivery.</p>
               </div>
-              <button type="button" id="chk-cancel-new-addr-btn" style="display:none;background:transparent;border:1.5px solid #e2e8f0;color:#64748b;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;">
+              <button type="button" id="chk-cancel-new-addr-btn" style="display:none;background:transparent;border:1.5px solid #e2e8f0;color:#64748b;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;">
                 ← Back to Saved Addresses
               </button>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="chk-form-row-3">
               <div class="auth-input-group">
                 <label>Full Recipient Name *</label>
                 <input type="text" id="chk-step2-name" required>
@@ -2907,17 +2907,17 @@ function buildCheckoutModal() {
               </div>
             </div>
 
-            <div class="auth-input-group" style="margin-bottom:14px;">
+            <div class="auth-input-group" style="margin-bottom:12px;">
               <label>Flat, House No., Building, Apartment, Company *</label>
               <input type="text" id="chk-step2-flat" required>
             </div>
 
-            <div class="auth-input-group" style="margin-bottom:14px;">
+            <div class="auth-input-group" style="margin-bottom:12px;">
               <label>Area, Colony, Street, Sector, Landmark *</label>
               <input type="text" id="chk-step2-street" required>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="chk-form-row-3">
               <div class="auth-input-group">
                 <label>City / District *</label>
                 <input type="text" id="chk-step2-city" required>
@@ -2928,7 +2928,7 @@ function buildCheckoutModal() {
               </div>
               <div class="auth-input-group">
                 <label>Address Type *</label>
-                <select id="chk-step2-type" style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff;outline:none;">
+                <select id="chk-step2-type" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13.5px;background:#fff;outline:none;">
                   <option value="HOME">Home</option>
                   <option value="WORK">Work</option>
                   <option value="OTHER">Other</option>
@@ -2937,11 +2937,11 @@ function buildCheckoutModal() {
             </div>
 
             <!-- Step 2 Navigation Buttons -->
-            <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:18px;flex-wrap:wrap;">
-              <button type="button" id="chk-backto-step1-btn" style="background:#f1f5f9;color:#334155;border:1.5px solid #cbd5e1;font-weight:700;padding:12px 28px;border-radius:10px;font-size:14px;cursor:pointer;min-width:190px;">
+            <div class="chk-step-nav-bar">
+              <button type="button" id="chk-backto-step1-btn" style="background:#f1f5f9;color:#334155;border:1.5px solid #cbd5e1;font-weight:700;padding:11px 24px;border-radius:10px;font-size:13.5px;cursor:pointer;">
                 Back to Order Summary
               </button>
-              <button type="submit" id="chk-goto-step3-btn" class="com-btn-primary" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 32px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);min-width:220px;">
+              <button type="submit" id="chk-goto-step3-btn" class="com-btn-primary" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:11px 28px;border-radius:10px;font-size:13.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);">
                 Proceed to Payment Options
               </button>
             </div>
@@ -2949,11 +2949,11 @@ function buildCheckoutModal() {
         </div>
 
         <!-- Proceed button for when using a saved address card -->
-        <div id="chk-addr-card-proceed-bar" style="display:none;justify-content:center;align-items:center;gap:16px;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:18px;flex-wrap:wrap;">
-          <button type="button" id="chk-backto-step1-btn2" style="background:#f1f5f9;color:#334155;border:1.5px solid #cbd5e1;font-weight:700;padding:12px 28px;border-radius:10px;font-size:14px;cursor:pointer;min-width:190px;">
+        <div id="chk-addr-card-proceed-bar" class="chk-step-nav-bar" style="display:none;">
+          <button type="button" id="chk-backto-step1-btn2" style="background:#f1f5f9;color:#334155;border:1.5px solid #cbd5e1;font-weight:700;padding:11px 24px;border-radius:10px;font-size:13.5px;cursor:pointer;">
             Back to Order Summary
           </button>
-          <button type="button" id="chk-use-selected-addr-btn" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 32px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);min-width:220px;">
+          <button type="button" id="chk-use-selected-addr-btn" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:11px 28px;border-radius:10px;font-size:13.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);">
             Proceed to Payment Options
           </button>
         </div>
@@ -2964,70 +2964,72 @@ function buildCheckoutModal() {
         <div class="chk-pane-grid">
           <!-- Left: Payment Methods -->
           <div>
-            <div style="margin-bottom:14px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <span style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;">Delivering To:</span>
-                <div id="chk-step3-selected-addr-text" style="font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;">Ashutosh Pathak, Bilaspur, 495001</div>
+            <div class="chk-delivery-badge" style="margin-bottom:10px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+              <div style="min-width:0;flex:1;padding-right:8px;">
+                <span style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">Delivering To:</span>
+                <div id="chk-step3-selected-addr-text" style="font-size:12px;font-weight:700;color:#0f172a;margin-top:2px;word-break:break-word;line-height:1.35;">Ashutosh Pathak, Bilaspur, 495001</div>
               </div>
-              <button type="button" id="chk-step3-change-addr-btn" style="background:transparent;border:none;color:#0878f9;font-weight:700;font-size:12.5px;cursor:pointer;">Change</button>
+              <button type="button" id="chk-step3-change-addr-btn" style="background:transparent;border:none;color:#0878f9;font-weight:700;font-size:11.5px;cursor:pointer;flex-shrink:0;">Change</button>
             </div>
 
-            <h4 style="margin:0 0 12px;font-size:16px;font-weight:800;color:#0f172a;">3. Select Payment Option</h4>
+            <h4 style="margin:0 0 8px;font-size:14.5px;font-weight:800;color:#0f172a;">3. Select Payment Option</h4>
 
             <!-- Payment Radio Cards -->
-            <label class="payment-method-card is-selected">
-              <input type="radio" name="checkoutPaymentMethod" value="COD" checked>
-              <div>
-                <strong>Cash on Delivery (COD) / Pay on Delivery</strong>
-                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Pay safely in cash or UPI QR code at your doorstep.</p>
-              </div>
-            </label>
-
-            <label class="payment-method-card" id="chk-wallet-pay-option">
-              <input type="radio" name="checkoutPaymentMethod" value="Wallet">
-              <div>
-                <strong>X-Mart Cash & Wallet (Balance: ₹<span id="chk-wallet-avail-bal">0.00</span>)</strong>
-                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">1-Click instant debit with zero processing fees.</p>
-              </div>
-            </label>
-
-            <label class="payment-method-card">
-              <input type="radio" name="checkoutPaymentMethod" value="UPI">
-              <div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <strong>Instant UPI (Google Pay, PhonePe, Paytm, BHIM)</strong>
-                  <span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+            <div class="chk-payment-methods-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+              <label class="payment-method-card is-selected">
+                <input type="radio" name="checkoutPaymentMethod" value="COD" checked>
+                <div style="flex:1;min-width:0;">
+                  <strong>Cash on Delivery (COD) / Pay on Delivery</strong>
+                  <p>Pay safely in cash or UPI QR code at your doorstep.</p>
                 </div>
-                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Instant authorization with 5% Prime cashback eligibility.</p>
-              </div>
-            </label>
+              </label>
 
-            <label class="payment-method-card">
-              <input type="radio" name="checkoutPaymentMethod" value="Card">
-              <div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <strong>Credit / Debit Card (Visa, MasterCard, RuPay, Amex)</strong>
-                  <span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+              <label class="payment-method-card" id="chk-wallet-pay-option">
+                <input type="radio" name="checkoutPaymentMethod" value="Wallet">
+                <div style="flex:1;min-width:0;">
+                  <strong>X-Mart Cash & Wallet (Balance: ₹<span id="chk-wallet-avail-bal">0.00</span>)</strong>
+                  <p>1-Click instant debit with zero processing fees.</p>
                 </div>
-                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Bank-grade 256-Bit SSL encrypted transaction.</p>
-              </div>
-            </label>
+              </label>
 
-            <label class="payment-method-card">
-              <input type="radio" name="checkoutPaymentMethod" value="NetBanking">
-              <div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <strong>Net Banking (All Major Indian Banks)</strong>
-                  <span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+              <label class="payment-method-card">
+                <input type="radio" name="checkoutPaymentMethod" value="UPI">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <strong>Instant UPI (Google Pay, PhonePe, Paytm, BHIM)</strong>
+                    <span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+                  </div>
+                  <p>Instant authorization with 5% Prime cashback eligibility.</p>
                 </div>
-                <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Direct secure bank portal checkout (1-click Instant Test).</p>
-              </div>
-            </label>
+              </label>
+
+              <label class="payment-method-card">
+                <input type="radio" name="checkoutPaymentMethod" value="Card">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <strong>Credit / Debit Card (Visa, MasterCard, RuPay, Amex)</strong>
+                    <span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+                  </div>
+                  <p>Bank-grade 256-Bit SSL encrypted transaction.</p>
+                </div>
+              </label>
+
+              <label class="payment-method-card">
+                <input type="radio" name="checkoutPaymentMethod" value="NetBanking">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <strong>Net Banking (All Major Indian Banks)</strong>
+                    <span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
+                  </div>
+                  <p>Direct secure bank portal checkout (1-click Instant Test).</p>
+                </div>
+              </label>
+            </div>
           </div>
 
           <!-- Right: Final Order Total & Place Order Button -->
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:22px;height:fit-content;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
-            <h4 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0f172a;">Final Payment Review</h4>
+          <div class="chk-price-card">
+            <h4 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0f172a;">Final Payment Review</h4>
             
             <div class="chk-price-row">
               <span>Items Total:</span>
@@ -3042,20 +3044,20 @@ function buildCheckoutModal() {
               <strong id="chk-step3-tax" style="color:#0f172a;font-size:14px;">₹0</strong>
             </div>
 
-            <div style="border-top:1.5px dashed #cbd5e1;padding-top:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-              <span style="font-size:15px;font-weight:800;color:#0f172a;">Grand Total:</span>
-              <strong id="chk-step3-grand-total" style="font-size:20px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
+            <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span style="font-size:14.5px;font-weight:800;color:#0f172a;">Grand Total:</span>
+              <strong id="chk-step3-grand-total" style="font-size:18px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
             </div>
 
-            <button type="button" id="chk-place-order-final-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:14px 18px;border-radius:10px;font-size:15px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;">
+            <button type="button" id="chk-place-order-final-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:13px 16px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               <span>Place Order Now</span>
             </button>
 
-            <button type="button" id="chk-backto-step2-btn" style="width:100%;background:transparent;border:none;color:#64748b;font-weight:700;padding:10px;margin-top:8px;font-size:13px;cursor:pointer;">
+            <button type="button" id="chk-backto-step2-btn" style="width:100%;background:transparent;border:none;color:#64748b;font-weight:700;padding:8px;margin-top:6px;font-size:12.5px;cursor:pointer;">
               Back to Address Details
             </button>
-            <p style="text-align:center;font-size:11.5px;color:#94a3b8;margin:6px 0 0;">Safe &amp; Encrypted 256-Bit Checkout</p>
+            <p style="text-align:center;font-size:11px;color:#94a3b8;margin:6px 0 0;">Safe &amp; Encrypted 256-Bit Checkout</p>
           </div>
         </div>
       </div>
@@ -3116,13 +3118,13 @@ function buildCheckoutModal() {
 
     itemsList.innerHTML = Store.cart.map(item => `
       <div class="checkout-item-card">
-        <img class="chk-item-link" data-id="${item.id}" src="${item.image || item.img || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}" alt="${item.name}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;transition:transform 140ms ease;" />
-        <div style="flex:1;min-width:0;">
-          <div class="chk-item-link" data-id="${item.id}" style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" title="${item.name}">${item.name}</div>
-          <div style="font-size:12px;color:#64748b;">${Currency.format(item.price)} × ${item.qty}</div>
+        <img class="chk-item-link" data-id="${item.id}" src="${item.image || item.img || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}" alt="${item.name}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;flex-shrink:0;" />
+        <div style="flex:1;min-width:0;overflow:hidden;padding:0 4px;">
+          <div class="chk-item-link" data-id="${item.id}" style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;width:100%;" title="${item.name}">${item.name}</div>
+          <div style="font-size:11.5px;color:#64748b;">${Currency.format(item.price)} × ${item.qty}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:14px;font-weight:800;color:#0f172a;">${Currency.format(item.price * item.qty)}</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:13.5px;font-weight:800;color:#0f172a;white-space:nowrap;">${Currency.format(item.price * item.qty)}</div>
           <button type="button" class="btn-chk-remove-item" data-id="${item.id}" style="background:transparent;border:none;color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;padding:2px 0;">Remove</button>
         </div>
       </div>
@@ -7622,7 +7624,7 @@ function initPageRouter() {
       { id: 'left',   label: 'Left Side',   deg: '90°',  src: rawImages[1] || rawImages[0] || baseImg, style: 'transform: scale(1.04) perspective(600px) rotateY(20deg) rotateZ(-2deg);' },
       { id: 'top',    label: 'Top View',    deg: '180°', src: rawImages[2] || rawImages[0] || baseImg, style: 'transform: scale(1.06) perspective(600px) rotateX(24deg);' },
       { id: 'right',  label: 'Right Side',  deg: '270°', src: rawImages[3] || rawImages[1] || rawImages[0] || baseImg, style: 'transform: scale(1.04) perspective(600px) rotateY(-20deg) rotateZ(2deg);' },
-      { id: 'bottom', label: 'Bottom/Back', deg: '360°', src: rawImages[4] || rawImages[0] || baseImg, style: 'transform: scale(1.02) rotateY(180deg);' }
+      { id: 'bottom', label: 'Back View',   deg: '360°', src: rawImages[4] || rawImages[0] || baseImg, style: 'transform: scale(1.02) rotateY(180deg);' }
     ];
 
     let currentAngleIdx = 0;
@@ -7855,7 +7857,7 @@ function initPageRouter() {
               ${ANGLES.map((ang, idx) => `
                 <div class="prod-thumb-item ${idx === 0 ? 'is-active' : ''}" data-idx="${idx}" data-src="${ang.src}" title="${ang.label} (${ang.deg})">
                   <img src="${ang.src}" alt="${ang.label}">
-                  <span class="thumb-angle-label">${ang.label.split(' ')[0]}</span>
+                  <span class="thumb-angle-label">${(ang.label || '').replace(/[\/\-].*$/, '').trim().split(' ')[0]}</span>
                 </div>
               `).join('')}
             </div>
