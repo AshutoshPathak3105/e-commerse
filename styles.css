@@ -6337,15 +6337,45 @@ small {
 }
 
 @media (max-width: 768px) {
+  /* ── Promo Banner Cards: 2-column grid on mobile ── */
   .hero-banners-row {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
+  .hero-banner-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: unset !important;
+    box-sizing: border-box !important;
+  }
+  .hero-card-img-wrap {
+    height: 130px !important;
+    min-height: 130px !important;
+    max-height: 130px !important;
+  }
+
+  /* ── Quick Browse Strip: 2-column grid on mobile ── */
   .quick-browse-track {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  .quick-browse-item {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    flex: none !important;
   }
   .quick-browse-item.quick-item-hide-mobile,
   .quick-item-hide-mobile {
