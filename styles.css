@@ -8798,14 +8798,19 @@ small {
 /* Hero Profile Card */
 .account-hero-card {
   position: relative;
-  background: linear-gradient(135deg, #19324c 0%, #0d1b2a 100%);
-  border-radius: 14px;
-  padding: 18px 22px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  border-radius: 16px;
+  padding: 22px 28px;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 8px 22px rgba(25, 50, 76, 0.22);
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 24px;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
@@ -8835,35 +8840,37 @@ small {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #ff9700;
-  color: #000000;
-  font-size: 24px;
-  font-weight: 900;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 14px rgba(255, 151, 0, 0.4);
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #0878f9, #0256b9);
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(8, 120, 249, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .account-badge-prime {
   position: absolute;
   bottom: -4px;
   right: -4px;
-  background: #22c55e;
-  color: #ffffff;
+  background: #f59e0b;
+  color: #0f172a;
   font-size: 10px;
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 10px;
-  border: 2px solid #19324c;
+  border: 2px solid #1e293b;
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
+.account-user-name,
 .account-user-info h3 {
   margin: 0 0 3px;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.3px;
@@ -8871,8 +8878,8 @@ small {
 
 .account-user-meta {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 16px;
+  flex-wrap: wrap;
   font-size: 13px;
   color: #cbd5e1;
 }
@@ -8881,19 +8888,41 @@ small {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 151, 0, 0.15);
-  border: 1px solid rgba(255, 151, 0, 0.4);
-  color: #ffb74d;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fcd34d;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
   margin-top: 3px;
   width: fit-content;
 }
 
-.account-hero-actions {
+.account-hero-actions,
+.account-hero-right {
   z-index: 1;
+}
+
+.account-edit-btn {
+  background: #ff9900;
+  color: #0f1111;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 11px 22px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(255, 153, 0, 0.3);
+  transition: all 0.2s;
+}
+
+.account-edit-btn:hover {
+  background: #e68a00;
+  transform: translateY(-1px);
 }
 
 .account-edit-profile-btn {
@@ -9097,7 +9126,7 @@ small {
     grid-template-columns: repeat(2, 1fr);
   }
   .account-hub-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   .account-hero-card {
     flex-direction: column;
@@ -9274,7 +9303,7 @@ small {
 
 @media (max-width: 640px) {
   .account-hub-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
@@ -10125,6 +10154,282 @@ body {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
+
+  /* Commercial Hero Banners formatting & single-line perk tags on mobile */
+  .com-hero-banner {
+    padding: 18px 16px !important;
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+    gap: 12px !important;
+  }
+
+  .com-hero-left {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .com-hero-title {
+    font-size: 19px !important;
+    font-weight: 800 !important;
+    line-height: 1.3 !important;
+    margin: 0 0 6px 0 !important;
+    letter-spacing: -0.2px !important;
+    word-break: break-word !important;
+  }
+
+  .com-hero-desc {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    color: #e2e8f0 !important;
+    margin: 0 0 12px 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* All perk tags stay strictly in ONE single horizontal line and fit 100% */
+  .com-hero-perks {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .com-hero-perks::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .perk-pill {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 5px 3px !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    line-height: 1.2 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Mobile Account Hero Profile Card */
+  .account-hero-card {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .account-hero-left {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    padding-right: 88px !important;
+    box-sizing: border-box !important;
+  }
+
+  .account-avatar-wrap {
+    flex-shrink: 0 !important;
+  }
+
+  .account-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 21px !important;
+  }
+
+  .account-badge-prime {
+    font-size: 8.5px !important;
+    padding: 1px 5px !important;
+    bottom: -3px !important;
+    right: -3px !important;
+  }
+
+  .account-user-info {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .account-user-name,
+  .account-user-info h3 {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    margin: 0 0 2px 0 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #ffffff !important;
+  }
+
+  .account-user-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+    line-height: 1.35 !important;
+  }
+
+  .account-user-email,
+  .account-user-phone,
+  .account-user-meta span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #cbd5e1 !important;
+  }
+
+  .account-tier-tag {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: rgba(245, 158, 11, 0.16) !important;
+    border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    color: #fcd34d !important;
+  }
+
+  .account-tier-tag span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Edit button anchored at top right corner */
+  .account-hero-right {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    width: auto !important;
+    margin: 0 !important;
+    z-index: 2 !important;
+  }
+
+  .account-edit-btn {
+    width: auto !important;
+    padding: 6px 12px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 8px rgba(255, 153, 0, 0.3) !important;
+  }
+
+  /* 4 Stat Cards in 2-column grid on mobile */
+  .account-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .account-stat-card {
+    padding: 14px 10px !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .account-stat-val {
+    font-size: 19px !important;
+    font-weight: 800 !important;
+  }
+
+  .account-stat-lbl {
+    font-size: 11px !important;
+  }
+
+  /* 6 Account Hub Cards in 2-column grid on mobile */
+  .account-hub-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .account-hub-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 14px 12px !important;
+    gap: 8px !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .account-hub-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9px !important;
+    margin-bottom: 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-hub-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .account-hub-info {
+    width: 100% !important;
+  }
+
+  .account-hub-info h4 {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 0 3px 0 !important;
+    line-height: 1.25 !important;
+  }
+
+  .account-hub-info p {
+    font-size: 11px !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    line-height: 1.35 !important;
+  }
+
+  .account-hub-card > div:last-child {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -10142,6 +10447,113 @@ body {
     padding-right: 12px !important;
     padding-bottom: 7px !important;
     box-sizing: border-box !important;
+  }
+
+  .com-hero-banner {
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .com-hero-title {
+    font-size: 17px !important;
+  }
+
+  .com-hero-desc {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  .com-hero-perks {
+    gap: 4px !important;
+  }
+
+  .perk-pill {
+    font-size: 9.5px !important;
+    padding: 4px 2px !important;
+  }
+
+  .account-hero-card {
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
+    margin-bottom: 12px !important;
+    gap: 10px !important;
+  }
+
+  .account-hero-left {
+    padding-right: 80px !important;
+  }
+
+  .account-hero-right {
+    top: 12px !important;
+    right: 12px !important;
+  }
+
+  .account-avatar {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 19px !important;
+  }
+
+  .account-user-name,
+  .account-user-info h3 {
+    font-size: 15.5px !important;
+  }
+
+  .account-user-meta {
+    font-size: 11px !important;
+  }
+
+  .account-tier-tag {
+    font-size: 10px !important;
+    padding: 5px 8px !important;
+  }
+
+  .account-edit-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .account-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .account-stat-card {
+    padding: 12px 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .account-stat-val {
+    font-size: 17px !important;
+  }
+
+  .account-stat-lbl {
+    font-size: 10.5px !important;
+  }
+
+  .account-hub-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .account-hub-card {
+    padding: 12px 10px !important;
+    border-radius: 10px !important;
+  }
+
+  .account-hub-icon {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .account-hub-info h4 {
+    font-size: 12.5px !important;
+  }
+
+  .account-hub-info p {
+    font-size: 10px !important;
   }
 }
 

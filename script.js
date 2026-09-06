@@ -7408,43 +7408,43 @@ function initPageRouter() {
             <h1 class="com-hero-title">Your Account & Preferences Hub</h1>
             <p class="com-hero-desc">Manage your personal profile, real-time order history, saved addresses, wallet balance, and bank-grade security settings.</p>
             <div class="com-hero-perks">
-              <div class="perk-pill"><span>Unlimited Free Express Delivery</span></div>
-              <div class="perk-pill"><span>5% Extra Cashback on All Orders</span></div>
-              <div class="perk-pill"><span>256-Bit SSL Encrypted Account</span></div>
+              <div class="perk-pill"><span>Free Delivery</span></div>
+              <div class="perk-pill"><span>5% Cashback</span></div>
+              <div class="perk-pill"><span>256-Bit SSL</span></div>
             </div>
           </div>
         </div>
 
         <!-- Profile Card with Matching Navy Blue Gradient (Exact Same Width as Hero Banner) -->
-        <div class="account-hero-card" style="border-radius:16px;padding:26px 36px;margin-bottom:24px;color:#ffffff;box-shadow:0 8px 24px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.12);background:linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;box-sizing:border-box;">
-            <div class="account-hero-left" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-              <div class="account-avatar-wrap" style="position:relative;">
-                <div class="account-avatar" style="width:68px;height:68px;font-size:28px;background:linear-gradient(135deg,#0878f9,#0256b9);color:#ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:0 4px 14px rgba(8,120,249,0.4);border:2px solid rgba(255,255,255,0.2);">${initials}</div>
-                <div class="account-badge-prime" style="position:absolute;bottom:-4px;right:-4px;background:#f59e0b;color:#0f172a;font-size:10px;font-weight:800;padding:2px 6px;border-radius:10px;border:2px solid #1e293b;">
-                  <span>PRO</span>
-                </div>
-              </div>
-              <div class="account-user-info">
-                <h3 style="font-size:24px;font-weight:800;color:#ffffff;margin:0 0 6px;letter-spacing:-0.3px;">${firstName}</h3>
-                <div class="account-user-meta" style="display:flex;gap:16px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;font-weight:500;">
-                  <span>${email}</span>
-                  <span>${phone}</span>
-                </div>
-                <div class="account-tier-tag" style="margin-top:8px;display:inline-block;padding:5px 12px;background:rgba(245,158,11,0.18);color:#fcd34d;font-weight:700;font-size:12px;border-radius:20px;border:1px solid rgba(245,158,11,0.35);">
-                  Verified Prime Member • Unlimited Free Delivery
-                </div>
+        <div class="account-hero-card">
+          <div class="account-hero-left">
+            <div class="account-avatar-wrap">
+              <div class="account-avatar">${initials}</div>
+              <div class="account-badge-prime">
+                <span>PRO</span>
               </div>
             </div>
-            <div class="account-hero-right">
-              <button type="button" class="account-edit-btn" id="acct-page-edit-profile-btn" style="background:#ff9900;color:#0f1111;font-size:13px;font-weight:800;padding:12px 22px;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(255,153,0,0.3);transition:all 0.2s;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                <span>Edit Profile</span>
-              </button>
+            <div class="account-user-info">
+              <h3 class="account-user-name">${firstName}</h3>
+              <div class="account-user-meta">
+                <span class="account-user-email">${email}</span>
+                <span class="account-user-phone">${phone}</span>
+              </div>
             </div>
           </div>
+          <div class="account-tier-tag">
+            <span>Verified Prime Member • Unlimited Free Delivery</span>
+          </div>
+          <div class="account-hero-right">
+            <button type="button" class="account-edit-btn" id="acct-page-edit-profile-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Edit Profile</span>
+            </button>
+          </div>
+        </div>
 
           <!-- 4 Stat Cards Grid -->
-          <div class="account-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:30px;">
+          <div class="account-stats-grid">
             <div class="account-stat-card" id="page-stat-orders" style="cursor:pointer;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;text-align:center;transition:transform 0.2s, box-shadow 0.2s;">
               <div class="account-stat-icon" style="color:#0878f9;margin-bottom:6px;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
@@ -7478,7 +7478,7 @@ function initPageRouter() {
           <!-- 6 Account Hub Services Cards (Symmetric: 3 Up & 3 Down) -->
           <div style="margin-bottom:36px;">
             <h4 style="font-size:14px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">Account Services & Hub</h4>
-            <div class="account-hub-grid" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;">
+            <div class="account-hub-grid">
               <!-- 1. Orders -->
               <div class="account-hub-card" id="page-hub-orders" style="cursor:pointer;display:flex;align-items:center;gap:16px;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;transition:all 0.2s;">
                 <div class="account-hub-icon" style="width:44px;height:44px;background:#f0f7ff;color:#0878f9;border-radius:10px;display:flex;align-items:center;justify-content:center;">
@@ -8036,15 +8036,6 @@ function initPageRouter() {
                   <button id="detail-add-wishlist" class="buybox-btn buybox-btn--wishlist ${isWishlisted ? 'is-active' : ''}">
                     ${isWishlisted ? 'In Your Wishlist' : 'Add to Wishlist'}
                   </button>
-                </div>
-              </div>
-
-              <!-- Seller & Protection Assurance Footer -->
-              <div class="buybox-footer-assurance">
-                <div class="assurance-row"><small>Ships from:</small> <strong>X-Mart Superstore Hub</strong></div>
-                <div class="assurance-row"><small>Sold by:</small> <strong>${prod.brand || 'X-Mart'} Direct</strong></div>
-                <div class="assurance-badge">
-                  <span>100% Buyer Protection Guaranteed</span>
                 </div>
               </div>
             </div>
