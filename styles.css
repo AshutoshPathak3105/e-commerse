@@ -494,11 +494,12 @@ svg {
   display: inline-flex;
   align-items: center;
   width: auto;
-  height: 52px;
+  height: auto;
   padding: 0;
   border: none;
   background: transparent;
-  white-space: nowrap;
+  text-decoration: none;
+  line-height: 0;
 }
 
 .brand:hover,
@@ -507,18 +508,64 @@ svg {
   background: transparent;
 }
 
+.brand-logo {
+  height: 64px;
+  width: auto;
+  max-width: 210px;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: none;
+  object-fit: cover;
+  display: block;
+  background: transparent;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.brand:hover .brand-logo,
+.brand:focus-visible .brand-logo {
+  transform: scale(1.04);
+  opacity: 0.95;
+  border: none;
+  box-shadow: none;
+}
+
+.footer-logo {
+  height: 70px;
+  width: auto;
+  max-width: 230px;
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
 .brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border-radius: 0;
-  background: #0878f9;
-  color: white;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brand-mark img,
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.brand:hover .brand-mark {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(255, 151, 0, 0.4);
 }
 
 .brand-copy {
@@ -1130,15 +1177,17 @@ small {
   }
 
   .main-bar .brand {
-    height: 52px !important;
+    height: auto !important;
   }
 
-  .main-bar .brand-mark {
-    width: 38px !important;
-    height: 38px !important;
-    flex: 0 0 38px !important;
-    font-size: 22px !important;
-    border-radius: 0 !important;
+  .main-bar .brand-logo {
+    height: 52px !important;
+    width: auto !important;
+    max-width: 160px !important;
+    border: none !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
   }
 
   .main-bar .brand-copy {
@@ -1356,17 +1405,14 @@ small {
     display: none !important;
   }
 
-  /* Keep the full logo lockup beside all four header actions. */
-  .main-bar .brand-copy {
-    display: flex !important;
-  }
-
-  .main-bar .brand-name {
-    font-size: 20px !important;
-  }
-
-  .main-bar .brand-tagline {
-    font-size: 9px !important;
+  .main-bar .brand-logo {
+    height: 44px !important;
+    width: auto !important;
+    max-width: 130px !important;
+    border: none !important;
+    border-radius: 9px !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
   }
 }
 
@@ -5353,7 +5399,14 @@ small {
 .review-item-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.review-item-right-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .reviewer-meta {
@@ -10025,6 +10078,70 @@ body {
 }
 .site-footer .pay-klarna { color: #000000 !important; }
 
+/* ==========================================================================
+   MOBILE CONTAINER WIDTH & SPACING NORMALIZATION
+   Ensures all page-level content containers share the same width,
+   horizontal padding, and compact bottom spacing on mobile — eliminating
+   visual inconsistency between different sections/pages and the large
+   gap that would otherwise appear between the last section and the footer.
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 7px bottom gap between last section and footer */
+  .main-content {
+    padding-bottom: 7px !important;
+  }
 
+  /* Universal page-level containers — consistent 12px side padding, compact bottom */
+  .body-container,
+  .commercial-window-wrap,
+  .page-hero-wrap,
+  .page-products-wrap,
+  .cs-page-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: 7px !important;
+    box-sizing: border-box !important;
+  }
 
+  /* Direct children of main-content that act as page wrappers */
+  .main-content > section,
+  .main-content > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Home page sections that sit inside .body-container */
+  .hero-slider-section,
+  .hero-banners-section,
+  .quick-browse-section,
+  .quad-cards-section,
+  .quad-grid-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 7px bottom gap on very small screens too */
+  .main-content {
+    padding-bottom: 7px !important;
+  }
+
+  .body-container,
+  .commercial-window-wrap,
+  .page-hero-wrap,
+  .page-products-wrap,
+  .cs-page-wrap {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: 7px !important;
+    box-sizing: border-box !important;
+  }
+}
 

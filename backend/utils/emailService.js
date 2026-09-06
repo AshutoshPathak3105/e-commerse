@@ -3,6 +3,8 @@
  * Uses native fetch to send responsive HTML transactional emails.
  */
 
+const getClientUrl = () => (process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/+$/, '') : 'http://localhost:8000');
+
 async function sendBrevoEmail({ to, subject, htmlContent }) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey || apiKey.includes('your_')) {
@@ -71,7 +73,7 @@ async function sendWelcomeEmail({ email, name }) {
         </div>
 
         <div style="text-align: center; margin: 28px 0 12px;">
-          <a href="http://localhost:8000" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">Start Shopping Now</a>
+          <a href="${getClientUrl()}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">Start Shopping Now</a>
         </div>
       </div>
 
@@ -213,7 +215,7 @@ async function sendOrderConfirmationEmail({ email, name, order }) {
         </div>
 
         <div style="text-align: center; margin: 28px 0 12px;">
-          <a href="http://localhost:8000" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-size: 14px;">Track Package in Store</a>
+          <a href="${getClientUrl()}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-size: 14px;">Track Package in Store</a>
         </div>
       </div>
 

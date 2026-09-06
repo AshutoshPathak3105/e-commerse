@@ -1,19 +1,39 @@
 # Netlify Configuration for X-Mart E-Commerce Frontend
 
 [build]
+  # Static frontend requires no build command on Netlify
+  command = ""
   # Root publish directory containing index.html, styles.css, script.js
   publish = "."
 
+# ── Security: Block public access to backend source code & package files ──
+[[redirects]]
+  from = "/backend/*"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package*.json"
+  status = 404
+  force = true
+
+# ── SPA Routing ──
 [[redirects]]
   # Route all SPA client paths to index.html with HTTP 200
   from = "/*"
   to = "/index.html"
   status = 200
 
+# ── Global Security & Cache Headers ──
 [[headers]]
-  # Security and performance headers
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+

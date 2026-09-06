@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: xmart-backend
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+      - key: SENDER_NAME
+        value: X-Mart Store
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false

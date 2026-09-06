@@ -14,6 +14,13 @@ const API_BASE = isLocalHost
   ? (window.location.port === '8000' ? '/api' : 'http://localhost:8000/api')
   : `${PRODUCTION_BACKEND_URL.replace(/\/+$/, '')}/api`;
 
+// Automatically wake up sleeping Render free-tier backend in background on page load
+if (!isLocalHost) {
+  try {
+    fetch(`${API_BASE}/health`, { method: 'GET', keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
+
 /* ── Currency Converter (Base: INR ₹) ──────────────────────── */
 const Currency = {
   current: localStorage.getItem('xmart_currency') || 'INR',
@@ -589,6 +596,13 @@ function buildAuthModal() {
     title: 'Account & Sign In',
     bodyHtml: `
       <div id="auth-unlogged-view">
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:16px;">
+          <img src="logo.png" alt="X-Mart Logo" style="width:48px;height:48px;border-radius:12px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.16);display:block;" />
+          <div>
+            <div style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;line-height:1.1;">X-MART</div>
+            <div style="font-size:10.5px;font-weight:700;color:#ff9700;letter-spacing:1px;text-transform:uppercase;">Superstore</div>
+          </div>
+        </div>
         <div class="auth-tabs" id="auth-main-tabs">
           <button class="auth-tab-btn is-active" data-tab="signin">Sign In</button>
           <button class="auth-tab-btn" data-tab="signup">Create Account</button>
@@ -5972,7 +5986,9 @@ function initPageRouter() {
             <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000000;padding-bottom:18px;margin-bottom:20px;">
               <div>
                 <div style="font-size:26px;font-weight:900;color:#000000;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;">
-                  <span style="background:#000000;color:#ffffff;width:34px;height:34px;display:grid;place-items:center;border-radius:6px;font-size:20px;">X</span>
+                  <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;overflow:hidden;background:#000000;box-shadow:0 2px 6px rgba(0,0,0,0.15);flex-shrink:0;">
+                    <img src="logo.png" alt="X-Mart" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;" />
+                  </span>
                   <span>X-MART SUPERSTORE</span>
                 </div>
                 <div style="font-size:12.5px;color:#000000;margin-top:6px;line-height:1.5;">
@@ -8192,12 +8208,14 @@ function initPageRouter() {
                         <div>
                           <div class="reviewer-name-row">
                             <strong>${rev.name}</strong>
-                            ${rev.verified ? `<span class="verified-buyer-pill">Verified Buyer</span>` : ''}
                           </div>
                           <span class="review-date">${rev.date || 'Recently'}</span>
                         </div>
                       </div>
-                      <div class="review-item-stars">${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}</div>
+                      <div class="review-item-right-col">
+                        ${rev.verified ? `<span class="verified-buyer-pill">Verified Buyer</span>` : ''}
+                        <div class="review-item-stars">${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}</div>
+                      </div>
                     </div>
                     <h5 class="review-item-title">${rev.title || 'Genuine Customer Review'}</h5>
                     <p class="review-item-body">${rev.comment}</p>
@@ -8543,13 +8561,15 @@ function initPageRouter() {
               <div>
                 <div class="reviewer-name-row">
                   <strong>${newReview.name}</strong>
-                  <span class="verified-buyer-pill">Verified Buyer</span>
                   <span class="new-review-badge">NEW</span>
                 </div>
                 <span class="review-date">Just now</span>
               </div>
             </div>
-            <div class="review-item-stars">${'★'.repeat(newReview.rating)}${'☆'.repeat(5 - newReview.rating)}</div>
+            <div class="review-item-right-col">
+              <span class="verified-buyer-pill">Verified Buyer</span>
+              <div class="review-item-stars">${'★'.repeat(newReview.rating)}${'☆'.repeat(5 - newReview.rating)}</div>
+            </div>
           </div>
           <h5 class="review-item-title">${newReview.title}</h5>
           <p class="review-item-body">${newReview.comment}</p>
