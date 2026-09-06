@@ -118,10 +118,10 @@ Currency.fetchLiveRates();
 
 function initHomePriceConverter() {
   const elements = document.querySelectorAll(
-    '.delivery-message, .hero-card-badge, .yellow-price-tag, .quad-item-label, .quad-card-title'
+    '.delivery-message, .ticker-slide, .hero-card-badge, .yellow-price-tag, .quad-item-label, .quad-card-title'
   );
   elements.forEach(el => {
-    if (el.textContent.includes('₹') && !el.dataset.origHtml) {
+    if (el.textContent.includes('₹') && !el.dataset.origHtml && !el.classList.contains('ticker-wrap')) {
       el.dataset.origHtml = el.innerHTML;
     }
   });
@@ -129,10 +129,10 @@ function initHomePriceConverter() {
 
 window._reRenderHomePrices = () => {
   const elements = document.querySelectorAll(
-    '.delivery-message, .hero-card-badge, .yellow-price-tag, .quad-item-label, .quad-card-title'
+    '.delivery-message, .ticker-slide, .hero-card-badge, .yellow-price-tag, .quad-item-label, .quad-card-title'
   );
   elements.forEach(el => {
-    if (el.dataset.origHtml) {
+    if (el.dataset.origHtml && !el.classList.contains('ticker-wrap')) {
       if (Currency.current === 'INR') {
         el.innerHTML = el.dataset.origHtml;
       } else {
@@ -144,6 +144,38 @@ window._reRenderHomePrices = () => {
     }
   });
 };
+
+/* ── Sliding Announcement Ticker (Utility Bar) ─────────────── */
+function initUtilityTicker() {
+  const ticker = document.getElementById('utility-ticker');
+  if (!ticker) return;
+  const slides = ticker.querySelectorAll('.ticker-slide');
+  if (slides.length <= 1) return;
+
+  let current = 0;
+  setInterval(() => {
+    const prev = slides[current];
+    prev.classList.remove('is-active');
+    prev.classList.add('is-exiting');
+
+    setTimeout(() => {
+      prev.classList.remove('is-exiting');
+    }, 500);
+
+    current = (current + 1) % slides.length;
+    slides[current].classList.add('is-active');
+  }, 3500);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initHomePriceConverter();
+    initUtilityTicker();
+  });
+} else {
+  initHomePriceConverter();
+  initUtilityTicker();
+}
 
 /* ── Multi-Language Translation Manager (EN, ES, FR, HI) ─────── */
 const Language = {
@@ -573,6 +605,7 @@ function createModal(id, options = {}) {
     overlay.classList.remove('is-active');
     overlay.style.display = 'none';
     document.body.style.overflow = '';
+    document.body.classList.remove('panel-open');
   };
 
   windowEl.querySelector('.xmodal-close-btn')?.addEventListener('click', close);
@@ -584,6 +617,7 @@ function createModal(id, options = {}) {
       overlay.classList.add('is-active');
     });
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('panel-open');
   };
   overlay._close = close;
 
@@ -4217,6 +4251,38 @@ function initPageRouter() {
                     </div>
                   </div>
 
+                  <!-- Section 6: Special Offers & Commercial Discounts -->
+                  <div class="seller-section-card">
+                    <div class="seller-section-header">
+                      <h3>6. Available Special Offers & Discounts (Buyer Incentives)</h3>
+                    </div>
+                    <div class="seller-grid-form">
+                      <div class="form-group span-2">
+                        <label for="prod-offer-bank">Bank Offer Promotion</label>
+                        <input type="text" id="prod-offer-bank" class="seller-input" placeholder="e.g. 10% Instant Discount upto ₹1,500 on HDFC / ICICI Bank Credit Cards">
+                        <small class="form-hint">Displayed under Special Offers with 'Bank Offer' tag.</small>
+                      </div>
+
+                      <div class="form-group span-2">
+                        <label for="prod-offer-emi">No Cost EMI Offer</label>
+                        <input type="text" id="prod-offer-emi" class="seller-input" placeholder="e.g. Available on major bank credit cards starting at ₹332/month">
+                        <small class="form-hint">Displayed with 'No Cost EMI' tag.</small>
+                      </div>
+
+                      <div class="form-group span-2">
+                        <label for="prod-offer-cashback">Cashback / Rewards Offer</label>
+                        <input type="text" id="prod-offer-cashback" class="seller-input" placeholder="e.g. Get flat 5% unlimited cashback with X-Mart Prime Card">
+                        <small class="form-hint">Displayed with 'Cashback' tag.</small>
+                      </div>
+
+                      <div class="form-group span-2">
+                        <label for="prod-offer-special">Custom Seller Promotion (Optional)</label>
+                        <input type="text" id="prod-offer-special" class="seller-input" placeholder="e.g. Extra ₹200 off with code XMARTNEW">
+                        <small class="form-hint">Extra promotional offer visible on product detail page.</small>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- Submit Button -->
                   <div style="margin-top:20px;">
                     <button type="submit" id="seller-publish-btn" class="seller-submit-btn">
@@ -4576,6 +4642,18 @@ function initPageRouter() {
 
       const discount = (originalPrice > price) ? Math.round(((originalPrice - price) / originalPrice) * 100) : 10;
 
+      // Extract seller offers
+      const offers = [];
+      const bankOffer = pageContainer.querySelector('#prod-offer-bank')?.value.trim();
+      const emiOffer = pageContainer.querySelector('#prod-offer-emi')?.value.trim();
+      const cashbackOffer = pageContainer.querySelector('#prod-offer-cashback')?.value.trim();
+      const specialOffer = pageContainer.querySelector('#prod-offer-special')?.value.trim();
+
+      if (bankOffer) offers.push({ tag: 'Bank Offer', text: bankOffer });
+      if (emiOffer) offers.push({ tag: 'No Cost EMI', text: emiOffer });
+      if (cashbackOffer) offers.push({ tag: 'Cashback', text: cashbackOffer });
+      if (specialOffer) offers.push({ tag: 'Special Offer', text: specialOffer });
+
       const payload = {
         name,
         category,
@@ -4587,7 +4665,8 @@ function initPageRouter() {
         warranty,
         description,
         images: [image],
-        tags: [category.toLowerCase(), brand.toLowerCase(), 'new-arrival', 'seller-listing']
+        tags: [category.toLowerCase(), brand.toLowerCase(), 'new-arrival', 'seller-listing'],
+        offers
       };
 
       try {
@@ -4858,6 +4937,9 @@ function initPageRouter() {
                   <button class="seller-action-btn edit-btn" data-id="${id}" title="Edit Product Details">
                     Edit
                   </button>
+                  <button class="seller-action-btn offers-btn" data-id="${id}" title="Manage Offers & Promotions" style="background:#fff7ed;color:#b45309;border:1.5px solid #fed7aa;">
+                    🏷️ Offers
+                  </button>
                   <button class="seller-action-btn delete-btn" data-id="${id}" title="Delete Product">
                     Delete
                   </button>
@@ -5030,6 +5112,16 @@ function initPageRouter() {
           });
         });
 
+        // Wire Offers Button (Seller can manage per-product offers)
+        tbody.querySelectorAll('.offers-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const prod = products.find(p => (p._id || p.id) === id);
+            if (!prod) return;
+            openSellerManageOffersModal(prod);
+          });
+        });
+
         // Wire Delete Button
         tbody.querySelectorAll('.delete-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -5055,6 +5147,110 @@ function initPageRouter() {
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#dc2626;">Error: ${err.message}</td></tr>`;
       }
+    }
+
+    // ── Seller: Manage Per-Product Offers Modal ──
+    function openSellerManageOffersModal(prod) {
+      const id = prod._id || prod.id;
+      // Load saved offers
+      let savedOffers = Array.isArray(prod.offers) ? prod.offers : [];
+      try {
+        const localOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${id || prod.name}`) || 'null');
+        if (localOffers && Array.isArray(localOffers) && localOffers.length > 0) savedOffers = localOffers;
+      } catch {}
+
+      const exBank     = savedOffers.find(o => o.tag === 'Bank Offer')?.text || '';
+      const exEmi      = savedOffers.find(o => o.tag === 'No Cost EMI')?.text || '';
+      const exCashback = savedOffers.find(o => o.tag === 'Cashback')?.text || '';
+      const exSpecial  = savedOffers.find(o => o.tag !== 'Bank Offer' && o.tag !== 'No Cost EMI' && o.tag !== 'Cashback')?.text || '';
+
+      const modalId = 'seller-manage-offers-modal';
+      document.getElementById(modalId)?.remove();
+
+      const offersModal = createModal(modalId, {
+        title: `🏷️ Manage Offers — ${prod.name}`,
+        large: true,
+        bodyHtml: `
+          <div style="font-size:13.5px;color:#0f172a;">
+            <p style="margin-bottom:16px;color:#475569;font-size:13px;">Set or update the promotional offers for <strong>${prod.name}</strong>. These will appear on the product detail page visible to customers.</p>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">1. Bank Offer Promotion</label>
+                <input type="text" id="seller-offer-bank" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exBank.replace(/"/g, '&quot;')}" placeholder="e.g. 10% Instant Discount upto ₹1,500 on HDFC / ICICI Bank Credit Cards">
+                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'Bank Offer' tag on the product page.</small>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">2. No Cost EMI Offer</label>
+                <input type="text" id="seller-offer-emi" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exEmi.replace(/"/g, '&quot;')}" placeholder="e.g. Available on major bank credit cards starting at ₹332/month">
+                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'No Cost EMI' tag.</small>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">3. Cashback / Rewards Offer</label>
+                <input type="text" id="seller-offer-cashback" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exCashback.replace(/"/g, '&quot;')}" placeholder="e.g. Get flat 5% unlimited cashback with X-Mart Prime Card">
+                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'Cashback' tag.</small>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">4. Custom Promotion (Optional)</label>
+                <input type="text" id="seller-offer-special" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exSpecial.replace(/"/g, '&quot;')}" placeholder="e.g. Extra ₹200 off with coupon XMARTNEW">
+                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Extra promotional text visible to buyers.</small>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+              <button type="button" id="seller-offers-modal-cancel" style="padding:10px 18px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
+              <button type="button" id="seller-offers-modal-save" style="padding:10px 22px;background:#f59e0b;color:#000;border:none;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.3);">Publish Offers</button>
+            </div>
+          </div>
+        `
+      });
+      offersModal._open();
+
+      const modalEl = document.getElementById(modalId);
+      modalEl?.querySelector('#seller-offers-modal-cancel')?.addEventListener('click', () => offersModal._close());
+
+      modalEl?.querySelector('#seller-offers-modal-save')?.addEventListener('click', async () => {
+        const b = modalEl.querySelector('#seller-offer-bank')?.value.trim();
+        const e = modalEl.querySelector('#seller-offer-emi')?.value.trim();
+        const c = modalEl.querySelector('#seller-offer-cashback')?.value.trim();
+        const s = modalEl.querySelector('#seller-offer-special')?.value.trim();
+
+        const newOffers = [];
+        if (b) newOffers.push({ tag: 'Bank Offer', text: b });
+        if (e) newOffers.push({ tag: 'No Cost EMI', text: e });
+        if (c) newOffers.push({ tag: 'Cashback', text: c });
+        if (s) newOffers.push({ tag: 'Special Offer', text: s });
+
+        if (newOffers.length === 0) {
+          showToast('Please enter at least one offer before publishing.', 'warn');
+          return;
+        }
+
+        // Update in-memory
+        prod.offers = newOffers;
+        const pIdx = Store.allProducts?.findIndex(p => (p._id || p.id) === id);
+        if (pIdx !== -1 && Store.allProducts) Store.allProducts[pIdx] = { ...Store.allProducts[pIdx], offers: newOffers };
+
+        // Persist to localStorage
+        try {
+          localStorage.setItem(`xmart_custom_offers_${id || prod.name}`, JSON.stringify(newOffers));
+        } catch {}
+
+        // Persist to MongoDB backend
+        if (id) {
+          try {
+            const token = Store.token || localStorage.getItem('xmart_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            await fetch(`${API_BASE}/products/${id}`, {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ offers: newOffers })
+            });
+          } catch {}
+        }
+
+        showToast(`✓ Offers for "${prod.name}" published successfully!`, 'success', 4000);
+        offersModal._close();
+      });
     }
 
     // Modal to Edit Any Product Fully
@@ -5847,20 +6043,20 @@ function initPageRouter() {
           </div>
 
           <!-- Ordered Items List -->
-          <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
-            <h4 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;">ORDERED ITEMS (${items.length})</h4>
-            <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="ord-detail-items-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
+            <h4 class="ord-detail-items-title" style="margin:0 0 16px;font-size:16px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;">ORDERED ITEMS (${items.length})</h4>
+            <div class="ord-detail-items-wrap" style="display:flex;flex-direction:column;gap:14px;">
               ${items.map(it => `
-                <div style="display:flex;gap:18px;align-items:center;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;">
-                  <img src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" style="width:84px;height:84px;border-radius:10px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;" />
-                  <div style="flex:1;min-width:0;">
-                    <h4 style="margin:0 0 6px;font-size:15.5px;font-weight:700;color:#000000;">${it.name}</h4>
-                    <div style="font-size:13.5px;color:#000000;margin-bottom:4px;">Qty: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Unit Price: <strong>${Currency.format(it.price || 0)}</strong></div>
-                    <div style="font-size:12.5px;color:#000000;font-weight:700;">Standard Commercial Return/Exchange Covered</div>
+                <div class="ord-detail-item-row" style="display:flex;gap:18px;align-items:center;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;">
+                  <img class="ord-detail-item-img" src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" style="width:84px;height:84px;border-radius:10px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;" />
+                  <div class="ord-detail-item-info" style="flex:1;min-width:0;">
+                    <h4 class="ord-detail-item-name" style="margin:0 0 6px;font-size:15.5px;font-weight:700;color:#000000;">${it.name}</h4>
+                    <div class="ord-detail-item-meta" style="font-size:13.5px;color:#000000;margin-bottom:4px;">Qty: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Unit Price: <strong>${Currency.format(it.price || 0)}</strong></div>
+                    <div class="ord-detail-item-badge" style="font-size:12.5px;color:#000000;font-weight:700;">Standard Commercial Return/Exchange Covered</div>
                   </div>
-                  <div style="text-align:right;">
-                    <div style="font-size:18px;font-weight:900;color:#000000;">${Currency.format((it.price || 0) * (it.quantity || it.qty || 1))}</div>
-                    <button class="btn-page-inv-buy-again" data-name="${it.name}" data-price="${it.price}" data-img="${it.image || it.img || ''}" style="margin-top:8px;padding:8px 16px;background:#ff9700;color:#000000;border:none;border-radius:8px;font-size:12.5px;font-weight:800;cursor:pointer;">Buy Again</button>
+                  <div class="ord-detail-item-action" style="text-align:right;">
+                    <div class="ord-detail-item-price" style="font-size:18px;font-weight:900;color:#000000;">${Currency.format((it.price || 0) * (it.quantity || it.qty || 1))}</div>
+                    <button class="btn-page-inv-buy-again ord-detail-item-btn" data-name="${it.name}" data-price="${it.price}" data-img="${it.image || it.img || ''}" style="margin-top:8px;padding:8px 16px;background:#ff9700;color:#000000;border:none;border-radius:8px;font-size:12.5px;font-weight:800;cursor:pointer;">Buy Again</button>
                   </div>
                 </div>
               `).join('')}
@@ -5871,14 +6067,11 @@ function initPageRouter() {
         <!-- VIEW 2: LIVE PACKAGE TRACKING -->
         <div id="page-view-ord-track" style="${defaultTab === 'track' ? 'display:block;' : 'display:none;'}">
           <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
-            <!-- Top Controls: Back button & Status Pill -->
-            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;gap:12px;">
-              <button id="btn-track-back-to-orders" style="display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #cbd5e1;padding:8px 18px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:#000000;transition:all 0.15s ease;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-                <span>Back to Your Orders</span>
-              </button>
+            <!-- Top Header: Title & Status -->
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #000000;gap:10px;">
+              <div style="font-size:16px;font-weight:900;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">📦 Live Package Tracking</div>
               <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:12px;font-weight:700;color:#64748b;">Current Status:</span>
+                <span style="font-size:12px;font-weight:700;color:#64748b;">Status:</span>
                 <span style="font-size:12.5px;font-weight:800;background:${statusBg};color:${statusColor};padding:4px 14px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">${status}</span>
               </div>
             </div>
@@ -5922,31 +6115,41 @@ function initPageRouter() {
             <!-- Visual Progress Timeline -->
             <div style="margin-bottom:28px;">
               <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">SHIPMENT MILESTONES</div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;">
-                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 1. Placed</div>
-                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">COMPLETED</div>
+              <div class="track-milestones-col" style="display:flex;flex-direction:column;gap:10px;">
+                <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <div>
+                    <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Placed</div>
+                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
                 </div>
-                <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-weight:900;font-size:13px;color:#16a34a;">✓ 2. Confirmed</div>
-                  <div style="font-size:11px;color:#000000;margin-top:4px;">${dateOnly}</div>
-                  <div style="font-size:10.5px;font-weight:800;color:#15803d;margin-top:4px;">VERIFIED</div>
+                <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <div>
+                    <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 2. Confirmed</div>
+                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">VERIFIED</div>
                 </div>
-                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:14px;text-align:center;box-shadow:${status === 'Delivered' ? 'none' : '0 3px 10px rgba(37,99,235,0.12)'};">
-                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓' : '🚚'} 3. In Transit</div>
-                  <div style="font-size:11px;color:#000000;margin-top:4px;">Bilaspur Hub</div>
-                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
+                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:${status === 'Delivered' ? 'none' : '0 2px 8px rgba(37,99,235,0.1)'};">
+                  <div>
+                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓ ' : ''}3. In Transit</div>
+                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">Bilaspur Hub</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : 'rgba(37,99,235,0.12)'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
                 </div>
-                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
-                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
-                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
+                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <div>
+                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
+                    <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
                 </div>
-                <div style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-weight:900;font-size:13px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
-                  <div style="font-size:11px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
-                  <div style="font-size:10.5px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};margin-top:4px;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
+                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <div>
+                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
+                    <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
                 </div>
               </div>
             </div>
@@ -5983,22 +6186,22 @@ function initPageRouter() {
         <div id="page-view-ord-invoice" style="${defaultTab === 'invoice' ? 'display:block;' : 'display:none;'}">
           <div class="invoice-paper-card">
             <!-- Invoice Header -->
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000000;padding-bottom:18px;margin-bottom:20px;">
-              <div>
+            <div class="inv-header-row" style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000000;padding-bottom:18px;margin-bottom:20px;">
+              <div class="inv-header-left">
                 <div style="font-size:26px;font-weight:900;color:#000000;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;">
                   <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;overflow:hidden;background:#000000;box-shadow:0 2px 6px rgba(0,0,0,0.15);flex-shrink:0;">
-                    <img src="logo.png" alt="X-Mart" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;" />
+                    <img src="logo.png" alt="X-Mart" style="width:100%;height:100%;object-fit:contain;padding:3px;display:block;" />
                   </span>
-                  <span>X-MART SUPERSTORE</span>
+                  <span class="inv-brand-name">X-MART SUPERSTORE</span>
                 </div>
-                <div style="font-size:12.5px;color:#000000;margin-top:6px;line-height:1.5;">
+                <div class="inv-company-info" style="font-size:12.5px;color:#000000;margin-top:6px;line-height:1.5;">
                   <strong>X-Mart Retail Superstore India Pvt. Ltd.</strong><br/>
                   Plot 14, Tech Park, Link Road, Bilaspur, Chhattisgarh, PIN: 495001<br/>
                   <strong>GSTIN:</strong> 22AABCX9921D1ZZ &nbsp;|&nbsp; <strong>PAN:</strong> AABCX9921D
                 </div>
               </div>
-              <div style="text-align:right;">
-                <div style="font-size:16px;font-weight:900;color:#000000;text-transform:uppercase;letter-spacing:1px;">TAX INVOICE / BILL OF SUPPLY</div>
+              <div class="inv-header-right" style="text-align:right;">
+                <div class="inv-header-title" style="font-size:16px;font-weight:900;color:#000000;text-transform:uppercase;letter-spacing:1px;">TAX INVOICE / BILL OF SUPPLY</div>
                 <div style="font-size:12.5px;color:#000000;margin-top:4px;">Original for Recipient</div>
                 <div style="font-size:13.5px;font-weight:800;color:#000000;margin-top:6px;">Invoice No: INV-${orderId.replace(/[^A-Za-z0-9]/g, '')}</div>
                 <div style="font-size:12.5px;color:#000000;">Invoice Date: ${dateStr}</div>
@@ -6006,8 +6209,8 @@ function initPageRouter() {
             </div>
 
             <!-- Billing & Shipping Details Table -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:22px;font-size:13px;">
-              <div style="background:#f8fafc;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
+            <div class="inv-meta-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:22px;font-size:13px;">
+              <div class="inv-meta-box" style="background:#f8fafc;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
                 <div style="font-weight:800;color:#000000;text-transform:uppercase;margin-bottom:6px;">Customer / Billed To:</div>
                 <strong>${defaultAddr.name}</strong><br/>
                 ${defaultAddr.street}<br/>
@@ -6015,7 +6218,7 @@ function initPageRouter() {
                 Phone: ${defaultAddr.phone}<br/>
                 State/UT Code: 22 (Chhattisgarh)
               </div>
-              <div style="background:#f8fafc;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
+              <div class="inv-meta-box" style="background:#f8fafc;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
                 <div style="font-weight:800;color:#000000;text-transform:uppercase;margin-bottom:6px;">Order & Dispatch Details:</div>
                 <strong>Order #:</strong> ${orderId}<br/>
                 <strong>Order Date:</strong> ${dateStr}<br/>
@@ -6026,6 +6229,7 @@ function initPageRouter() {
             </div>
 
             <!-- Itemized GST Invoice Table -->
+            <div class="inv-table-scroll">
             <table class="invoice-table">
               <thead>
                 <tr>
@@ -6072,15 +6276,16 @@ function initPageRouter() {
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             <!-- Signatory & Watermark Footer -->
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;padding-top:18px;border-top:1px solid #000000;font-size:12.5px;color:#000000;">
-              <div>
+            <div class="inv-footer-row" style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;padding-top:18px;border-top:1px solid #000000;font-size:12.5px;color:#000000;">
+              <div class="inv-footer-left">
                 <div style="font-weight:700;color:#000000;margin-bottom:2px;">Declaration:</div>
                 We declare that this invoice shows the actual price of goods described and that all particulars are true and correct.
                 <div style="margin-top:6px;font-family:monospace;color:#000000;">Digitally generated via X-Mart E-Commerce Automated Billing System.</div>
               </div>
-              <div style="text-align:right;min-width:200px;">
+              <div class="inv-footer-right" style="text-align:right;min-width:200px;">
                 <div style="font-weight:800;color:#000000;margin-bottom:28px;">For X-Mart Retail Superstore Pvt Ltd:</div>
                 <div style="font-weight:800;color:#000000;border-top:1px dashed #000000;padding-top:4px;">Authorized Signatory</div>
               </div>
@@ -6099,30 +6304,30 @@ function initPageRouter() {
         <div id="page-view-ord-warranty" style="${defaultTab === 'warranty' ? 'display:block;' : 'display:none;'}">
           <div class="invoice-paper-card" style="border:1.5px solid #000000;background:#ffffff;">
             <!-- Warranty Header -->
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000000;padding-bottom:18px;margin-bottom:20px;">
-              <div>
-                <div style="font-size:24px;font-weight:900;color:#000000;letter-spacing:-0.5px;">
+            <div class="wrn-header-row" style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000000;padding-bottom:18px;margin-bottom:20px;">
+              <div class="wrn-header-left">
+                <div class="wrn-title" style="font-size:24px;font-weight:900;color:#000000;letter-spacing:-0.5px;">
                   OFFICIAL WARRANTY & AUTHENTICITY CERTIFICATE
                 </div>
                 <div style="font-size:13px;color:#000000;margin-top:4px;">
                   Issued by <strong>X-Mart Retail Superstore India Pvt. Ltd.</strong> in partnership with Authorized Brand Distributors.
                 </div>
               </div>
-              <div style="text-align:right;">
+              <div class="wrn-header-right" style="text-align:right;flex-shrink:0;">
                 <div style="font-size:14px;font-weight:900;color:#000000;">CERTIFICATE ID: WRN-${orderId.replace(/[^A-Za-z0-9]/g, '')}</div>
                 <div style="font-size:12.5px;color:#000000;margin-top:2px;">Coverage: <strong>1 Year Full Replacement Warranty</strong></div>
               </div>
             </div>
 
             <!-- Warranty Holder Details -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;font-size:13px;">
-              <div style="background:#ffffff;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
+            <div class="wrn-meta-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;font-size:13px;">
+              <div class="wrn-meta-box" style="background:#ffffff;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
                 <div style="font-weight:800;color:#000000;text-transform:uppercase;margin-bottom:4px;">Warranty Registered To:</div>
                 <strong>${defaultAddr.name}</strong><br/>
                 Address: ${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.state} - ${defaultAddr.pincode}<br/>
                 Registered Contact: ${defaultAddr.phone}
               </div>
-              <div style="background:#ffffff;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
+              <div class="wrn-meta-box" style="background:#ffffff;padding:14px 16px;border-radius:8px;border:1px solid #000000;line-height:1.5;">
                 <div style="font-weight:800;color:#000000;text-transform:uppercase;margin-bottom:4px;">Coverage Period:</div>
                 <strong>Purchase Date:</strong> ${dateOnly}<br/>
                 <strong>Warranty Valid Until:</strong> <strong style="color:#000000;">${warrantyValidDate}</strong><br/>
@@ -6131,6 +6336,7 @@ function initPageRouter() {
             </div>
 
             <!-- Covered Products Table -->
+            <div class="inv-table-scroll">
             <table class="invoice-table">
               <thead>
                 <tr>
@@ -6155,6 +6361,7 @@ function initPageRouter() {
                 `).join('')}
               </tbody>
             </table>
+            </div>
 
             <!-- Warranty Terms & Protection -->
             <div style="margin-top:18px;padding:16px;background:#f8fafc;border:1px solid #000000;border-radius:8px;font-size:12.5px;color:#000000;line-height:1.6;">
@@ -6164,12 +6371,12 @@ function initPageRouter() {
               3. Genuine brand replacement guaranteed with zero depreciation during the warranty period.
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid #000000;font-size:12.5px;color:#000000;">
-              <div>
+            <div class="wrn-footer-row" style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid #000000;font-size:12.5px;color:#000000;">
+              <div class="wrn-footer-left">
                 <div style="font-weight:700;color:#000000;">Direct Claim Support:</div>
                 Toll-Free Helpline: 1800-419-0123 &nbsp;|&nbsp; Email: warranty@xmart-retail.com
               </div>
-              <div style="text-align:right;">
+              <div class="wrn-footer-right" style="text-align:right;">
                 <div style="font-weight:800;color:#000000;">X-Mart Quality Assurance Seal</div>
                 <div style="font-size:11px;color:#000000;margin-top:2px;">Verified Authentic</div>
               </div>
@@ -7827,6 +8034,22 @@ function initPageRouter() {
       sub: `Top-rated trending products curated to match your preference`
     };
 
+    // Retrieve real seller-defined offers if present
+    try {
+      const savedCustomOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${prod._id || prod.id || prod.name}`) || 'null');
+      if (savedCustomOffers && Array.isArray(savedCustomOffers) && savedCustomOffers.length > 0) {
+        prod.offers = savedCustomOffers;
+      }
+    } catch {}
+
+    const dynamicDefaultOffers = [
+      { tag: 'Bank Offer', text: `10% Instant Discount upto ₹${Math.min(1500, Math.max(300, Math.round(finalPrice * 0.1)))} on HDFC / ICICI Bank Credit Cards` },
+      { tag: 'No Cost EMI', text: `Available on major bank credit cards starting at ₹${Math.max(199, Math.round(finalPrice / 12))}/month` },
+      { tag: 'Cashback', text: `Get flat 5% unlimited cashback with X-Mart Prime Card` }
+    ];
+    const displayOffers = (Array.isArray(prod.offers) && prod.offers.length > 0) ? prod.offers : dynamicDefaultOffers;
+    const savedPin = localStorage.getItem('xmart_pincode') || '495001';
+
     pageContainer.innerHTML = `
       <div class="commercial-window-wrap">
         <div class="prod-detail-wrapper" style="margin-top: 8px;">
@@ -7955,18 +8178,19 @@ function initPageRouter() {
 
                 <!-- Available Special Offers Box -->
                 <div class="prod-offers-box">
-                  <div class="prod-offers-title">Available Special Offers & Discounts</div>
-                  <div class="prod-offer-item">
-                    <span class="offer-tag">Bank Offer</span>
-                    <span>10% Instant Discount upto ₹1,500 on HDFC / ICICI Bank Credit Cards</span>
+                  <div class="prod-offers-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <span>Available Special Offers & Discounts</span>
+                    <button type="button" id="btn-seller-edit-offers" title="Seller: Add or edit special offers for this product" style="background:#ff9700;color:#000000;border:none;border-radius:6px;font-size:11px;font-weight:800;padding:4px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:all 0.15s ease;">
+                      <span>+ Seller: Add / Edit Offers</span>
+                    </button>
                   </div>
-                  <div class="prod-offer-item">
-                    <span class="offer-tag">No Cost EMI</span>
-                    <span>Available on major bank credit cards starting at ₹332/month</span>
-                  </div>
-                  <div class="prod-offer-item">
-                    <span class="offer-tag">Cashback</span>
-                    <span>Get flat 5% unlimited cashback with X-Mart Prime Card</span>
+                  <div id="detail-offers-list">
+                    ${displayOffers.map(off => `
+                      <div class="prod-offer-item">
+                        <span class="offer-tag">${off.tag || 'Special Offer'}</span>
+                        <span>${off.text}</span>
+                      </div>
+                    `).join('')}
                   </div>
                 </div>
 
@@ -8019,10 +8243,12 @@ function initPageRouter() {
                 <div class="buybox-pincode-box">
                   <label for="detail-pincode-input">Deliver to:</label>
                   <div class="buybox-pincode-input-group">
-                    <input type="text" id="detail-pincode-input" value="" maxlength="6">
+                    <input type="text" id="detail-pincode-input" value="${savedPin}" maxlength="6" placeholder="Enter 6-digit PIN">
                     <button type="button" id="detail-pincode-btn">Check</button>
                   </div>
-                  <p class="buybox-delivery-promise"><strong>Free Delivery</strong> Guaranteed by Tomorrow</p>
+                  <p class="buybox-delivery-promise" id="detail-delivery-promise">
+                    <span style="color:#16a34a;font-weight:800;">✓ Deliver to ${savedPin}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow
+                  </p>
                 </div>
 
                 <!-- Action Buttons -->
@@ -8334,14 +8560,45 @@ function initPageRouter() {
       }
     });
 
-    // Pincode checker
-    pageContainer.querySelector('#detail-pincode-btn')?.addEventListener('click', () => {
-      const pin = pageContainer.querySelector('#detail-pincode-input')?.value.trim();
+    // ── Delivery Pincode Checker Logic ──
+    const pincodeInput = pageContainer.querySelector('#detail-pincode-input');
+    const pincodeBtn = pageContainer.querySelector('#detail-pincode-btn');
+    const deliveryPromiseEl = pageContainer.querySelector('#detail-delivery-promise');
+
+    const checkPincodeDelivery = () => {
+      const pin = pincodeInput?.value.trim();
       if (/^\d{6}$/.test(pin)) {
         localStorage.setItem('xmart_pincode', pin);
-        showToast(`Delivery available for pincode ${pin} by tomorrow!`, 'success');
+        document.querySelectorAll('.location-control strong').forEach(el => el.textContent = pin);
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayStr = tomorrow.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        if (deliveryPromiseEl) {
+          deliveryPromiseEl.innerHTML = `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${pin}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow (${dayStr}) • Cash on Delivery Available`;
+        }
+        if (pincodeInput) {
+          pincodeInput.style.borderColor = '#16a34a';
+        }
+        showToast(`Delivery is available to PIN ${pin}! Guaranteed by tomorrow.`, 'success');
       } else {
+        if (pincodeInput) {
+          pincodeInput.style.borderColor = '#dc2626';
+          pincodeInput.focus();
+        }
+        if (deliveryPromiseEl) {
+          deliveryPromiseEl.innerHTML = `<span style="color:#dc2626;font-weight:700;">✕ Invalid Pincode</span> — Please enter a valid 6-digit postal pincode.`;
+        }
         showToast('Please enter a valid 6-digit postal pincode', 'error');
+      }
+    };
+
+    pincodeBtn?.addEventListener('click', checkPincodeDelivery);
+    pincodeInput?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkPincodeDelivery();
       }
     });
 
@@ -9200,7 +9457,7 @@ function buildCartPanel() {
   p.id = 'cart-panel';
   p.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:380px;max-width:95vw;background:#fff;z-index:99999;box-shadow:-6px 0 28px rgba(0,0,0,.2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 300ms cubic-bezier(.16,1,.3,1), visibility 300ms;font-family:inherit;visibility:hidden;pointer-events:none;';
   p.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#19324c;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#0f1f3d;">
       <h2 style="margin:0;font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;">Your Cart</h2>
       <button id="cart-panel-close" aria-label="Close cart" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;transition:background 140ms ease;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -9218,6 +9475,7 @@ function buildCartPanel() {
     ov.style.opacity = '0';
     ov.style.pointerEvents = 'none';
     document.body.style.overflow = '';
+    document.body.classList.remove('panel-open');
     setTimeout(() => {
       if (!p.classList.contains('is-open')) {
         p.style.visibility = 'hidden';
@@ -9237,6 +9495,7 @@ function buildCartPanel() {
     ov.style.opacity = '1';
     ov.style.pointerEvents = 'auto';
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('panel-open');
   };
 }
 
@@ -9555,6 +9814,16 @@ function buildLocationModal() {
     document.querySelectorAll('.location-control strong').forEach(el => el.textContent = displayText);
     localStorage.setItem('xmart_pincode', pin);
     localStorage.setItem('xmart_delivery_location', JSON.stringify(currentSelection));
+
+    // Sync with product detail page if open
+    const pDetailInput = document.querySelector('#detail-pincode-input');
+    if (pDetailInput) {
+      pDetailInput.value = pin;
+      const promiseEl = document.querySelector('#detail-delivery-promise');
+      if (promiseEl) {
+        promiseEl.innerHTML = `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${displayText}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow • Cash on Delivery Available`;
+      }
+    }
 
     if (pinInput) pinInput.value = '';
 

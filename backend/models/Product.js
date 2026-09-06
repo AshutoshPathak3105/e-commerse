@@ -92,6 +92,12 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: '1 Year Manufacturer Warranty',
     },
+    offers: [
+      {
+        tag: { type: String, default: 'Special Offer' },
+        text: { type: String, required: true },
+      },
+    ],
   },
   {
     timestamps: true,
