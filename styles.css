@@ -7336,105 +7336,148 @@ small {
 }
 
 /* -- Commercial Store Workspace Layout -- */
+/* Store layout: sidebar (filter bar) stacked above products */
 .com-store-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 24px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* -- Sidebar Filters -- */
-.com-sidebar {
+/* ── Dropdown Format Filter Bar ── */
+.com-filters-bar {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 20px 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-  position: sticky;
-  top: 80px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.sidebar-block {
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+.com-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 180px;
+  min-width: 160px;
 }
 
-.sidebar-block:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-
-.sidebar-title {
-  font-size: 14px;
+.com-filter-label {
+  font-size: 11px;
   font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 12px;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.sidebar-cat-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cat-filter-btn {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
+  letter-spacing: 0.6px;
   color: #475569;
-  cursor: pointer;
-  transition: all 140ms ease;
+  user-select: none;
 }
 
-.cat-filter-btn:hover {
+.com-select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.com-filter-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 9px 34px 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  font-family: inherit;
+  outline: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.com-filter-select:hover {
+  background-color: #ffffff;
+  border-color: #94a3b8;
+}
+
+.com-filter-select:focus {
+  background-color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.com-filter-select.has-value {
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.com-select-arrow {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #64748b;
+  transition: transform 150ms ease;
+}
+
+.com-filter-item:focus-within .com-select-arrow {
+  color: #0284c7;
+}
+
+/* Reset button */
+.com-filter-reset-item {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+.com-filter-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 150ms ease;
+  height: 38px;
+  box-sizing: border-box;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.com-filter-reset-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
   color: #0f172a;
 }
 
-.cat-filter-btn.is-active {
-  background: #19324c;
-  color: #ffffff;
-  font-weight: 800;
+.com-filter-reset-btn.is-active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
 }
 
-.price-range-options,
-.rating-filter-options,
-.discount-filter-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.com-filter-reset-btn.is-active:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  color: #1e40af;
 }
 
-.price-range-options label,
-.rating-filter-options label,
-.discount-filter-options label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #334155;
-  font-weight: 600;
-  cursor: pointer;
-}
+/* Keep old accordion and list class names harmless */
+.sf-accordion, .sidebar-block, .sidebar-title { display: none; }
 
-.price-range-options input,
-.rating-filter-options input,
-.discount-filter-options input {
-  accent-color: #ff9700;
-  cursor: pointer;
-}
 
 /* -- Catalog Toolbar & Grid -- */
 .com-catalog-toolbar {
@@ -7509,41 +7552,16 @@ small {
   margin-bottom: 10px;
 }
 
-.com-tag-badge {
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 10.5px;
-  font-weight: 900;
-  padding: 2px 7px;
-  border-radius: 4px;
-}
-
-.com-wishlist-btn {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: all 140ms ease;
-}
-
-.com-wishlist-btn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-}
-
+/* Image wrapper is now position:relative to host overlaid badge + wishlist */
 .com-prod-img-wrap {
   width: 100%;
-  height: 180px;
-  border-radius: 8px;
+  height: 200px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #f8fafc;
+  background: #f1f5f9;
   margin-bottom: 12px;
-  display: grid;
-  place-items: center;
+  position: relative;
+  display: block;
 }
 
 .com-prod-img-wrap img {
@@ -7551,6 +7569,45 @@ small {
   height: 100%;
   object-fit: cover;
   transition: transform 260ms ease;
+  display: block;
+}
+
+/* Discount badge overlaid on top-left of image */
+.com-tag-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 3px 7px;
+  border-radius: 4px;
+  z-index: 2;
+  letter-spacing: 0.2px;
+}
+
+/* Wishlist button overlaid on top-right of image */
+.com-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 140ms ease;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+
+.com-wishlist-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
 }
 
 .com-prod-card:hover .com-prod-img-wrap img {
@@ -7901,21 +7958,18 @@ small {
 
 /* -- Responsive adjustments -- */
 @media (max-width: 1200px) {
-  .com-store-layout { grid-template-columns: 210px 1fr; }
   .com-products-grid { grid-template-columns: repeat(3, 1fr); }
   .cs-quick-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 860px) {
-  .com-store-layout { grid-template-columns: 1fr; }
-  .com-sidebar { position: static; }
   .com-products-grid { grid-template-columns: 1fr 1fr; }
   .cs-quick-grid { grid-template-columns: 1fr; }
   .com-hero-title { font-size: 22px; }
 }
 
 @media (max-width: 520px) {
-  .com-products-grid { grid-template-columns: 1fr; }
+  .com-products-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 
@@ -11176,4 +11230,288 @@ body {
   }
 }
 
+/* ==========================================================================
+   WALLET PAGE — MOBILE OVERFLOW FIXES
+   Keeps all content inside the hero banner card and the wallet card
+   on narrow screens (≤ 768px).
+   ========================================================================== */
+@media (max-width: 768px) {
 
+  /* ── Card 1: Hero Banner — stop perk pills overflowing ── */
+  .com-hero-perks {
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  .perk-pill {
+    flex: 1 1 0 !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 9px !important;
+    padding: 4px 4px !important;
+  }
+
+  /* ── Card 2: Wallet Card — collapse inline 2-column grid to 1 column ──
+     The grid has an inline style (no class) so we target it via its
+     parent .commercial-window-wrap.                                        */
+  .commercial-window-wrap > div[style*="grid-template-columns"],
+  .commercial-window-wrap > div > div[style*="grid-template-columns"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure every direct child of that (now flex) wrapper is full-width */
+  .commercial-window-wrap > div[style*="grid-template-columns"] > div,
+  .commercial-window-wrap > div > div[style*="grid-template-columns"] > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Add Cash button — don't let it clip out of its flex row ── */
+  #page-wallet-add-cash-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-width: max-content !important;
+  }
+
+  /* ── Quick-add chip buttons — 2 per row ── */
+  .quick-chip-btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    max-width: calc(50% - 4px) !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Wallet balance amount — force white against dark card background */
+#page-wallet-bal-display,
+#page-wallet-bal-display * {
+  color: #ffffff !important;
+}
+
+div:has(> #page-wallet-bal-display) {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   DELIVERY ADDRESSES PAGE — MOBILE HERO BANNER LAYOUT
+   Stacks content vertically and pins "+ Add New Address" to top-right
+   ========================================================================== */
+@media (max-width: 768px) {
+
+  /* Make the banner a relative container so we can position the button */
+  .addr-hero-banner {
+    position: relative !important;
+    display: block !important;       /* switch from flex row to block */
+    padding: 18px 16px !important;
+    padding-top: 16px !important;
+  }
+
+  /* Text column takes full width */
+  .addr-hero-banner .com-hero-left {
+    min-width: 0 !important;
+    width: 100% !important;
+    /* Leave room on the right for the absolute button (≈130px) */
+    padding-right: 120px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Pin the button wrapper to top-right inside the banner */
+  .addr-add-btn-wrap {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    margin-top: 0 !important;
+  }
+
+  /* Shrink the button to fit the corner */
+  .addr-add-btn-wrap #addr-page-add-toggle-btn {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    gap: 4px !important;
+  }
+}
+
+/* ==========================================================================
+   STORE PAGE — MOBILE FILTER DROPDOWNS + 2-COLUMN PRODUCT GRID
+   ========================================================================== */
+@media (max-width: 768px) {
+
+  /* ── Store layout: stacked filters and catalog ── */
+  .com-store-layout {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── Dropdown Filter Bar: 2x2 grid on mobile with full-width reset ── */
+  .com-filters-bar {
+    padding: 12px 12px !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .com-filter-item {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: calc(50% - 6px) !important;
+    gap: 4px !important;
+  }
+
+  .com-filter-label {
+    font-size: 10px !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  .com-filter-select {
+    padding: 8px 26px 8px 10px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    height: 36px !important;
+  }
+
+  .com-select-arrow {
+    right: 8px !important;
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .com-filter-reset-item {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  .com-filter-reset-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 8px !important;
+    font-size: 12px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── Product grid: 2 columns on mobile ── */
+  .com-products-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* ── Product card: no internal padding, image flush to edges ── */
+  .com-prod-card {
+    padding: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  /* Taller image for mobile 2-col card (Amazon style) */
+  .com-prod-img-wrap {
+    height: 160px !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Badge: smaller on mobile */
+  .com-tag-badge {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+    top: 7px !important;
+    left: 7px !important;
+  }
+
+  /* Wishlist: slightly smaller on mobile */
+  .com-wishlist-btn {
+    width: 26px !important;
+    height: 26px !important;
+    top: 7px !important;
+    right: 7px !important;
+  }
+
+  /* Product info: padded separately since card has no padding */
+  .com-prod-info {
+    padding: 10px 10px 12px !important;
+    gap: 3px !important;
+  }
+
+  .com-brand-sub {
+    font-size: 10px !important;
+  }
+
+  .com-prod-name {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    margin-bottom: 5px !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .com-rating-row {
+    margin-bottom: 6px !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .com-stars {
+    font-size: 10px !important;
+    padding: 1px 5px !important;
+  }
+
+  .com-rev-count {
+    font-size: 10.5px !important;
+  }
+
+  .prime-delivery-pill {
+    font-size: 10px !important;
+    padding: 1px 5px !important;
+  }
+
+  .com-final-price {
+    font-size: 15px !important;
+  }
+
+  .com-orig-price {
+    font-size: 11px !important;
+  }
+
+  .com-save-text {
+    font-size: 10px !important;
+    color: #16a34a !important;
+  }
+
+  .com-pricing-row {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    align-items: baseline !important;
+  }
+
+  .com-delivery-note {
+    font-size: 10.5px !important;
+    margin: 4px 0 0 !important;
+    color: #475569 !important;
+  }
+
+  /* Catalog toolbar compact */
+  .com-catalog-toolbar {
+    padding: 8px 12px !important;
+    margin-bottom: 10px !important;
+    gap: 8px !important;
+  }
+
+  .results-count-text {
+    font-size: 12px !important;
+  }
+
+  .toolbar-sort-wrap label {
+    display: none !important;
+  }
+
+  .com-sort-select {
+    font-size: 11.5px !important;
+    padding: 5px 8px !important;
+  }
+}

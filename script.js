@@ -3702,51 +3702,75 @@ function initPageRouter() {
 
         <!-- Main Workspace: Commercial Sidebar + Live Grid -->
         <div class="com-store-layout">
-          <!-- Left Sidebar Filters -->
-          <aside class="com-sidebar">
-            <div class="sidebar-block">
-              <h3 class="sidebar-title">Categories</h3>
-              <ul class="sidebar-cat-list">
-                <li><button class="cat-filter-btn ${!category && !isDeals ? 'is-active' : ''}" data-cat="">All Departments</button></li>
-                <li><button class="cat-filter-btn ${category === 'Electronics' ? 'is-active' : ''}" data-cat="Electronics">Electronics (30)</button></li>
-                <li><button class="cat-filter-btn ${category === 'Fashion' ? 'is-active' : ''}" data-cat="Fashion">Fashion (30)</button></li>
-                <li><button class="cat-filter-btn ${category === 'Home & Kitchen' ? 'is-active' : ''}" data-cat="Home & Kitchen">Home & Kitchen (30)</button></li>
-                <li><button class="cat-filter-btn ${category === 'Beauty & Health' ? 'is-active' : ''}" data-cat="Beauty & Health">Beauty & Health (30)</button></li>
-                <li><button class="cat-filter-btn ${category === 'Sports' ? 'is-active' : ''}" data-cat="Sports">Sports & Fitness (30)</button></li>
-                <li><button class="cat-filter-btn ${category === 'Grocery' ? 'is-active' : ''}" data-cat="Grocery">Gourmet Grocery (30)</button></li>
-              </ul>
-            </div>
-
-            <div class="sidebar-block">
-              <h3 class="sidebar-title">Price Range</h3>
-              <div class="price-range-options">
-                <label><input type="radio" name="price-filter" value="all" checked> All Prices</label>
-                <label><input type="radio" name="price-filter" value="under-1000"> Under ₹1,000</label>
-                <label><input type="radio" name="price-filter" value="1000-5000"> ₹1,000 - ₹5,000</label>
-                <label><input type="radio" name="price-filter" value="5000-25000"> ₹5,000 - ₹25,000</label>
-                <label><input type="radio" name="price-filter" value="above-25000"> Above ₹25,000</label>
+          <!-- Filter Bar in Dropdown Format -->
+          <div class="com-filters-bar" id="com-filters-bar">
+            <!-- Dropdown: Categories -->
+            <div class="com-filter-item">
+              <label class="com-filter-label" for="filter-category">Categories</label>
+              <div class="com-select-wrap">
+                <select id="filter-category" class="com-filter-select" aria-label="Filter by Category">
+                  <option value="" ${!category ? 'selected' : ''}>All Categories</option>
+                  <option value="Electronics" ${category === 'Electronics' ? 'selected' : ''}>Electronics</option>
+                  <option value="Fashion" ${category === 'Fashion' ? 'selected' : ''}>Fashion</option>
+                  <option value="Home & Kitchen" ${category === 'Home & Kitchen' ? 'selected' : ''}>Home & Kitchen</option>
+                  <option value="Beauty & Health" ${category === 'Beauty & Health' ? 'selected' : ''}>Beauty & Health</option>
+                  <option value="Sports" ${category === 'Sports' ? 'selected' : ''}>Sports & Fitness</option>
+                  <option value="Grocery" ${category === 'Grocery' ? 'selected' : ''}>Gourmet Grocery</option>
+                </select>
+                <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
             </div>
 
-            <div class="sidebar-block">
-              <h3 class="sidebar-title">Customer Rating</h3>
-              <div class="rating-filter-options">
-                <label><input type="radio" name="rating-filter" value="all" checked> All Ratings</label>
-                <label><input type="radio" name="rating-filter" value="4.5"> 4.5★ & above</label>
-                <label><input type="radio" name="rating-filter" value="4.0"> 4.0★ & above</label>
+            <!-- Dropdown: Price Range -->
+            <div class="com-filter-item">
+              <label class="com-filter-label" for="filter-price">Price Range</label>
+              <div class="com-select-wrap">
+                <select id="filter-price" class="com-filter-select" aria-label="Filter by Price Range">
+                  <option value="all">All Prices</option>
+                  <option value="under-1000">Under ₹1,000</option>
+                  <option value="1000-5000">₹1,000 - ₹5,000</option>
+                  <option value="5000-25000">₹5,000 - ₹25,000</option>
+                  <option value="above-25000">Above ₹25,000</option>
+                </select>
+                <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
             </div>
 
-            <div class="sidebar-block">
-              <h3 class="sidebar-title">Discount</h3>
-              <div class="discount-filter-options">
-                <label><input type="radio" name="discount-filter" value="all" checked> All Discounts</label>
-                <label><input type="radio" name="discount-filter" value="40"> 40% Off or more</label>
-                <label><input type="radio" name="discount-filter" value="25"> 25% Off or more</label>
-                <label><input type="radio" name="discount-filter" value="15"> 15% Off or more</label>
+            <!-- Dropdown: Customer Rating -->
+            <div class="com-filter-item">
+              <label class="com-filter-label" for="filter-rating">Customer Rating</label>
+              <div class="com-select-wrap">
+                <select id="filter-rating" class="com-filter-select" aria-label="Filter by Customer Rating">
+                  <option value="all">All Ratings</option>
+                  <option value="4.5">4.5★ & above</option>
+                  <option value="4.0">4.0★ & above</option>
+                </select>
+                <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
             </div>
-          </aside>
+
+            <!-- Dropdown: Discount -->
+            <div class="com-filter-item">
+              <label class="com-filter-label" for="filter-discount">Discount</label>
+              <div class="com-select-wrap">
+                <select id="filter-discount" class="com-filter-select" aria-label="Filter by Discount">
+                  <option value="all">All Discounts</option>
+                  <option value="40">40% Off or more</option>
+                  <option value="25">25% Off or more</option>
+                  <option value="15">15% Off or more</option>
+                </select>
+                <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+
+            <!-- Reset Filters Action -->
+            <div class="com-filter-item com-filter-reset-item">
+              <button id="com-reset-filters-btn" class="com-filter-reset-btn" type="button" title="Reset all filters">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
 
           <!-- Right Products Catalog View -->
           <section class="com-catalog-area">
@@ -3794,27 +3818,58 @@ function initPageRouter() {
       }, 1000);
     }
 
-
-    // Wire Sidebar Category Filters
-    pageContainer.querySelectorAll('.cat-filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const cat = btn.dataset.cat;
-        window._openDedicatedPage(cat, '', '');
-      });
+    // Wire Category Dropdown
+    const catSelect = pageContainer.querySelector('#filter-category');
+    catSelect?.addEventListener('change', (e) => {
+      const newCat = e.target.value;
+      window._openDedicatedPage(newCat, '', search, true);
     });
 
     // Wire Dynamic Filter Change
     const filterAndRender = () => {
-      const priceVal = pageContainer.querySelector('input[name="price-filter"]:checked')?.value || 'all';
-      const ratingVal = pageContainer.querySelector('input[name="rating-filter"]:checked')?.value || 'all';
-      const discVal = pageContainer.querySelector('input[name="discount-filter"]:checked')?.value || 'all';
+      const priceVal = pageContainer.querySelector('#filter-price')?.value || 'all';
+      const ratingVal = pageContainer.querySelector('#filter-rating')?.value || 'all';
+      const discVal = pageContainer.querySelector('#filter-discount')?.value || 'all';
       const sortVal = pageContainer.querySelector('#com-sort-dropdown')?.value || 'popular';
+
+      const priceSelect = pageContainer.querySelector('#filter-price');
+      const ratingSelect = pageContainer.querySelector('#filter-rating');
+      const discSelect = pageContainer.querySelector('#filter-discount');
+      const resetBtn = pageContainer.querySelector('#com-reset-filters-btn');
+
+      if (priceSelect) priceSelect.classList.toggle('has-value', priceVal !== 'all');
+      if (ratingSelect) ratingSelect.classList.toggle('has-value', ratingVal !== 'all');
+      if (discSelect) discSelect.classList.toggle('has-value', discVal !== 'all');
+      if (catSelect) catSelect.classList.toggle('has-value', !!catSelect.value);
+
+      const hasActive = !!category || priceVal !== 'all' || ratingVal !== 'all' || discVal !== 'all';
+      if (resetBtn) resetBtn.classList.toggle('is-active', hasActive);
 
       fetchAndRenderCommercialProducts(category, search, { priceVal, ratingVal, discVal, sortVal });
     };
 
-    pageContainer.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener('change', filterAndRender));
+    pageContainer.querySelector('#filter-price')?.addEventListener('change', filterAndRender);
+    pageContainer.querySelector('#filter-rating')?.addEventListener('change', filterAndRender);
+    pageContainer.querySelector('#filter-discount')?.addEventListener('change', filterAndRender);
     pageContainer.querySelector('#com-sort-dropdown')?.addEventListener('change', filterAndRender);
+
+    // Wire Reset Filters Button
+    pageContainer.querySelector('#com-reset-filters-btn')?.addEventListener('click', () => {
+      if (category) {
+        window._openDedicatedPage('', '', search, true);
+      } else {
+        if (catSelect) catSelect.value = '';
+        const priceSelect = pageContainer.querySelector('#filter-price');
+        const ratingSelect = pageContainer.querySelector('#filter-rating');
+        const discSelect = pageContainer.querySelector('#filter-discount');
+        const sortSelect = pageContainer.querySelector('#com-sort-dropdown');
+        if (priceSelect) priceSelect.value = 'all';
+        if (ratingSelect) ratingSelect.value = 'all';
+        if (discSelect) discSelect.value = 'all';
+        if (sortSelect) sortSelect.value = 'popular';
+        filterAndRender();
+      }
+    });
 
     // Initial Fetch
     filterAndRender();
