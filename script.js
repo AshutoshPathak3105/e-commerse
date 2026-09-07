@@ -927,8 +927,8 @@ function buildAuthModal() {
           <!-- 4. Footer Bar with Centered Sign Out & Delete Account in Same Line -->
           <div class="account-footer-bar" style="display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 0 6px;">
             <button type="button" id="account-delete-btn" style="background:#dc2626;color:#ffffff;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(220,38,38,0.2);transition:all 0.2s ease;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-              <span>Delete Account</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+              <span style="color:#ffffff !important;">Delete Account</span>
             </button>
             <button type="button" class="account-signout-btn" id="auth-logout-btn" style="background:#ff9900;color:#0f1111;font-size:13px;font-weight:800;padding:10px 24px;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(255,153,0,0.25);transition:all 0.2s ease;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -7342,7 +7342,7 @@ function initPageRouter() {
           <!-- Left Column: Live Wallet Card & Top-Up -->
           <div style="display:flex;flex-direction:column;gap:20px;">
             <!-- Dark Modern Wallet Card -->
-            <div style="background:linear-gradient(135deg, #19324c 0%, #0d1b2a 100%);color:#fff;border-radius:16px;padding:26px;box-shadow:0 12px 30px rgba(15,23,42,0.3);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1);">
+            <div class="wallet-live-card" style="background:linear-gradient(135deg, #19324c 0%, #0d1b2a 100%);color:#fff;border-radius:16px;padding:26px;box-shadow:0 12px 30px rgba(15,23,42,0.3);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#ff9700;">X-Mart Cash & Wallet</span>
@@ -7356,7 +7356,7 @@ function initPageRouter() {
               <!-- Quick Add Chips -->
               <div style="margin-bottom:12px;">
                 <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:#cbd5e1;letter-spacing:0.5px;">Quick Add Cash</span>
-                <div style="display:flex;gap:8px;margin-top:8px;">
+                <div class="wallet-chips-row" style="display:flex;gap:8px;margin-top:8px;">
                   <button type="button" class="quick-chip-btn" data-amt="100" style="flex:1;padding:7px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+₹100</button>
                   <button type="button" class="quick-chip-btn" data-amt="500" style="flex:1;padding:7px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+₹500</button>
                   <button type="button" class="quick-chip-btn" data-amt="1000" style="flex:1;padding:7px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+₹1,000</button>
@@ -7365,14 +7365,14 @@ function initPageRouter() {
               </div>
 
               <!-- Amount Input & Add Button -->
-              <div style="display:flex;gap:8px;background:rgba(255,255,255,0.08);padding:6px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);">
+              <div class="wallet-input-row" style="display:flex;gap:8px;background:rgba(255,255,255,0.08);padding:6px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);">
                 <input type="number" id="page-wallet-input-amt" placeholder="Enter amount (₹)" min="50" step="50" style="flex:1;background:transparent;border:none;color:#fff;padding:8px 12px;font-size:14px;outline:none;" />
                 <button type="button" id="page-wallet-add-cash-btn" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;">+ Add Cash</button>
               </div>
             </div>
 
             <!-- Gift Card / Promo Code Voucher Box -->
-            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div class="wallet-voucher-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
                 <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
@@ -7392,9 +7392,9 @@ function initPageRouter() {
           <!-- Right Column: Saved Payment Methods & Transaction Ledger -->
           <div style="display:flex;flex-direction:column;gap:24px;">
             <!-- Saved Payment Methods -->
-            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <div>
+            <div class="wallet-methods-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div class="wallet-methods-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div class="wallet-methods-title-wrap">
                   <h3 style="margin:0 0 2px;font-size:16px;font-weight:800;color:#0f172a;">Saved Payment Methods</h3>
                   <p style="margin:0;font-size:12px;color:#64748b;">Manage your saved UPI accounts, credit and debit cards</p>
                 </div>
@@ -7405,7 +7405,7 @@ function initPageRouter() {
               <div id="add-payment-form-wrap" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:16px;">
                 <h4 style="margin:0 0 12px;font-size:14px;font-weight:800;color:#0f172a;">Add New UPI or Card</h4>
                 <form id="new-payment-form" style="display:flex;flex-direction:column;gap:10px;">
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div class="new-pay-inputs-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <input type="text" id="new-pay-name" placeholder="Name on Card / UPI Nickname" required style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" />
                     <input type="text" id="new-pay-details" placeholder="UPI ID or Card Number" required style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" />
                   </div>
@@ -7421,7 +7421,7 @@ function initPageRouter() {
             </div>
 
             <!-- Transaction Passbook & Ledger -->
-            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div class="wallet-passbook-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
               <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
                 <div>
                   <h3 style="margin:0 0 2px;font-size:16px;font-weight:800;color:#0f172a;">Wallet Passbook & Statement</h3>
@@ -7737,8 +7737,9 @@ function initPageRouter() {
           </div>
 
           <!-- 6 Account Hub Services Cards (Symmetric: 3 Up & 3 Down) -->
-          <div style="margin-bottom:36px;">
-            <h4 style="font-size:14px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">Account Services & Hub</h4>
+          <!-- 6 Account Hub Services Cards (Symmetric: 3 Up & 3 Down) -->
+          <div class="account-hub-section" style="margin-bottom:12px;">
+            <h4 style="font-size:14px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Account Services & Hub</h4>
             <div class="account-hub-grid">
               <!-- 1. Orders -->
               <div class="account-hub-card" id="page-hub-orders" style="cursor:pointer;display:flex;align-items:center;gap:16px;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;transition:all 0.2s;">
@@ -7815,13 +7816,13 @@ function initPageRouter() {
           </div>
 
           <!-- Bottom Action Buttons: Both Centered in Same Line -->
-          <div class="account-footer-bar" style="display:flex;justify-content:center;align-items:center;gap:16px;margin:40px 0 20px;flex-wrap:wrap;">
-            <button type="button" id="acct-page-delete-btn" style="background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(220,38,38,0.28);transition:all 0.2s ease;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-              <span>Delete Account</span>
+          <div class="account-footer-bar acct-page-footer-bar" style="display:flex;justify-content:center;align-items:center;gap:12px;margin:10px 0 6px;flex-wrap:nowrap;">
+            <button type="button" id="acct-page-delete-btn" style="background:#dc2626;color:#ffffff;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(220,38,38,0.22);transition:all 0.2s ease;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+              <span style="color:#ffffff !important;">Delete Account</span>
             </button>
-            <button type="button" id="acct-page-logout-btn" style="background:#ff9900;color:#0f1111;font-size:14px;font-weight:800;padding:12px 32px;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(255,153,0,0.32);transition:all 0.2s ease;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <button type="button" id="acct-page-logout-btn" style="background:#ff9900;color:#0f1111;font-size:13px;font-weight:800;padding:10px 22px;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(255,153,0,0.25);transition:all 0.2s ease;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               <span>Sign Out</span>
             </button>
           </div>
@@ -9721,10 +9722,67 @@ function buildLocationModal() {
   if (cityDisplay) cityDisplay.textContent = `${currentSelection.city || 'Bilaspur'}, ${currentSelection.state || 'Chhattisgarh'}`;
   if (metaDisplay) metaDisplay.textContent = `PIN: ${currentSelection.pincode || '495001'}`;
 
-  // Fetch location from PIN
-  async function fetchLocationFromPin(pin) {
-    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) return;
+  // Mobile/Tablet viewport detection (<= 1024px)
+  const isMobileOrTablet = () => window.innerWidth <= 1024;
 
+  // Apply location: updates navbar, persists to localStorage, syncs product page, and handles modal close
+  function applyLocation(pin, isAuto = false) {
+    const activePin = pin || pinInput?.value?.trim() || currentSelection.pincode || '495001';
+    const city = currentSelection.city || 'Bilaspur';
+    const displayText = `${city} ${activePin}`.trim();
+
+    // 1. Immediately update navbar delivery location section
+    document.querySelectorAll('.location-control strong').forEach(el => {
+      el.textContent = displayText;
+    });
+
+    // 2. Persist to localStorage
+    localStorage.setItem('xmart_pincode', activePin);
+    localStorage.setItem('xmart_delivery_location', JSON.stringify(currentSelection));
+
+    // 3. Sync with product detail page if open
+    const pDetailInput = document.querySelector('#detail-pincode-input');
+    if (pDetailInput) {
+      pDetailInput.value = activePin;
+      const promiseEl = document.querySelector('#detail-delivery-promise');
+      if (promiseEl) {
+        promiseEl.innerHTML = `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${displayText}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow • Cash on Delivery Available`;
+      }
+    }
+
+    if (pinInput) pinInput.value = '';
+
+    const resultCard = modal.querySelector('#pin-modal-result-card');
+    if (resultCard) {
+      resultCard.style.borderColor = '#22c55e';
+      resultCard.style.background = '#f0fdf4';
+    }
+
+    showToast(`Delivery location updated to: ${displayText}!`, 'success', 3000);
+
+    if (isAuto) {
+      setTimeout(() => {
+        modal._close();
+        if (resultCard) {
+          resultCard.style.borderColor = '#e2e8f0';
+          resultCard.style.background = '#f8fafc';
+        }
+      }, 450);
+    } else {
+      modal._close();
+      if (resultCard) {
+        resultCard.style.borderColor = '#e2e8f0';
+        resultCard.style.background = '#f8fafc';
+      }
+    }
+  }
+
+  // Fetch location from PIN
+  let isFetching = false;
+  async function fetchLocationFromPin(pin) {
+    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin) || isFetching) return;
+
+    isFetching = true;
     if (spinner) spinner.style.display = 'inline-block';
 
     // 1. Common PIN dictionary for 0ms instant response
@@ -9743,6 +9801,7 @@ function buildLocationModal() {
       '500001': { city: 'Hyderabad', state: 'Telangana' },
       '800001': { city: 'Patna', state: 'Bihar' },
       '802101': { city: 'Buxar', state: 'Bihar' },
+      '802103': { city: 'Dumraon, Buxar', state: 'Bihar' },
       '201301': { city: 'Noida', state: 'Uttar Pradesh' },
       '122001': { city: 'Gurugram', state: 'Haryana' },
       '302001': { city: 'Jaipur', state: 'Rajasthan' },
@@ -9758,6 +9817,10 @@ function buildLocationModal() {
       if (cityDisplay) cityDisplay.textContent = `${pinMap[pin].city}, ${pinMap[pin].state}`;
       if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
       if (spinner) spinner.style.display = 'none';
+      isFetching = false;
+      if (isMobileOrTablet()) {
+        applyLocation(pin, true);
+      }
       return;
     }
 
@@ -9776,6 +9839,10 @@ function buildLocationModal() {
         if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
         if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
         if (spinner) spinner.style.display = 'none';
+        isFetching = false;
+        if (isMobileOrTablet()) {
+          applyLocation(pin, true);
+        }
         return;
       }
     } catch {}
@@ -9794,10 +9861,27 @@ function buildLocationModal() {
         currentSelection.address = `${city}, ${state} - ${pin}`;
         if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
         if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
+        if (spinner) spinner.style.display = 'none';
+        isFetching = false;
+        if (isMobileOrTablet()) {
+          applyLocation(pin, true);
+        }
+        return;
       }
     } catch {}
 
+    // 4. Fallback if offline / unmapped PIN
+    currentSelection.pincode = pin;
+    currentSelection.city = 'PIN ' + pin;
+    currentSelection.state = 'India';
+    currentSelection.address = `PIN: ${pin}, India`;
+    if (cityDisplay) cityDisplay.textContent = `PIN: ${pin}`;
+    if (metaDisplay) metaDisplay.textContent = `Delivery Area`;
     if (spinner) spinner.style.display = 'none';
+    isFetching = false;
+    if (isMobileOrTablet()) {
+      applyLocation(pin, true);
+    }
   }
 
   pinInput?.addEventListener('input', (e) => {
@@ -9805,6 +9889,18 @@ function buildLocationModal() {
     e.target.value = val;
     if (val.length === 6) {
       fetchLocationFromPin(val);
+    }
+  });
+
+  pinInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = pinInput.value.trim();
+      if (val.length === 6) {
+        fetchLocationFromPin(val);
+      } else {
+        showToast('Please enter a full 6-digit PIN code.', 'warn');
+      }
     }
   });
 
@@ -9844,7 +9940,11 @@ function buildLocationModal() {
             currentSelection = { pincode: pin, city, state, address: `${city}, ${state} - ${pin}` };
             if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
             if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
-            showToast(`Location detected: ${city} (${pin})`, 'success');
+            if (isMobileOrTablet()) {
+              applyLocation(pin, true);
+            } else {
+              showToast(`Location detected: ${city} (${pin})`, 'success');
+            }
           }
         } catch {
           showToast('GPS detected successfully', 'success');
@@ -9859,34 +9959,18 @@ function buildLocationModal() {
     );
   });
 
-  // Confirm Location
+  // Confirm Location (Desktop manual button)
   confirmBtn?.addEventListener('click', () => {
-    const pin = pinInput.value.trim() || currentSelection.pincode || '495001';
-    const city = currentSelection.city || 'Bilaspur';
-    const displayText = `${city} ${pin}`.trim();
-
-    document.querySelectorAll('.location-control strong').forEach(el => el.textContent = displayText);
-    localStorage.setItem('xmart_pincode', pin);
-    localStorage.setItem('xmart_delivery_location', JSON.stringify(currentSelection));
-
-    // Sync with product detail page if open
-    const pDetailInput = document.querySelector('#detail-pincode-input');
-    if (pDetailInput) {
-      pDetailInput.value = pin;
-      const promiseEl = document.querySelector('#detail-delivery-promise');
-      if (promiseEl) {
-        promiseEl.innerHTML = `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${displayText}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow • Cash on Delivery Available`;
-      }
-    }
-
-    if (pinInput) pinInput.value = '';
-
-    showToast(`Delivery location updated to: ${displayText}!`, 'success', 3500);
-    modal._close();
+    applyLocation(pinInput.value.trim(), false);
   });
 
   window._openLocation = () => {
     if (pinInput) pinInput.value = '';
+    const resultCard = modal.querySelector('#pin-modal-result-card');
+    if (resultCard) {
+      resultCard.style.borderColor = '#e2e8f0';
+      resultCard.style.background = '#f8fafc';
+    }
     modal._open();
     setTimeout(() => pinInput?.focus(), 120);
   };
@@ -10439,23 +10523,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── 9. FOOTER ACCORDION (Mobile) ──────────────────────────
-  document.querySelectorAll('[data-footer-accordion]').forEach(col => {
-    const hdr = col.querySelector('.footer-col-header');
-    if (!hdr) return;
-    hdr.addEventListener('click', () => {
-      if (window.innerWidth > 768) return;
-      const isOpen = col.classList.contains('is-expanded');
-      document.querySelectorAll('[data-footer-accordion]').forEach(c => {
-        c.classList.remove('is-expanded');
-        c.querySelector('.footer-col-header')?.setAttribute('aria-expanded', 'false');
-      });
-      if (!isOpen) {
-        col.classList.add('is-expanded');
-        hdr.setAttribute('aria-expanded', 'true');
-      }
-    });
-  });
+  // ── 9. FOOTER DIRECTORY (2-Column Grid on Mobile) ──────────
+  // Directory links are permanently displayed across 2 columns on mobile.
 
   // ── 10. COMPREHENSIVE FOOTER INTERACTIVITY ─────────────────
 
