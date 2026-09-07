@@ -4176,7 +4176,7 @@ function initPageRouter() {
         <div id="seller-tab-list" class="seller-tab-content ${defaultTab === 'list' ? 'is-active' : ''}">
           ${!isEligible ? `
             <!-- ELIGIBILITY LOCKED GATE CARD -->
-            <div class="seller-section-card" style="text-align:center;padding:50px 24px;border:2px dashed #f59e0b;background:#fffdf5;border-radius:16px;">
+            <div class="seller-section-card seller-locked-card" style="text-align:center;padding:50px 24px;border:2px dashed #f59e0b;background:#fffdf5;border-radius:16px;">
               <div style="font-size:36px;margin-bottom:14px;color:#d97706;">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </div>
@@ -4184,12 +4184,12 @@ function initPageRouter() {
               <p style="max-width:620px;margin:0 auto 24px;font-size:14.5px;color:#475569;line-height:1.6;">
                 To maintain marketplace integrity, comply with Indian GST taxation laws, and ensure weekly automated bank payouts, you must register your Legal Business Entity and Bank Settlement details before you are eligible to publish products.
               </p>
-              <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+              <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%;">
                 <button type="button" class="com-btn-primary" onclick="document.getElementById('tab-btn-account').click()" style="padding:14px 32px;font-size:15px;font-weight:800;border-radius:10px;box-shadow:0 4px 14px rgba(8,120,249,0.35);">
                   Complete Merchant Registration (Takes 2 Mins) →
                 </button>
               </div>
-              <div style="display:flex;justify-content:center;gap:24px;margin-top:32px;flex-wrap:wrap;color:#64748b;font-size:13px;font-weight:700;">
+              <div class="seller-locked-perks" style="display:flex;justify-content:center;gap:24px;margin-top:32px;flex-wrap:wrap;color:#64748b;font-size:13px;font-weight:700;">
                 <span>✓ 0% Setup Fees</span>
                 <span>✓ Valid GSTIN / Tax ID Verification</span>
                 <span>✓ Direct 7-Day Bank Payouts</span>
@@ -4422,42 +4422,213 @@ function initPageRouter() {
           </div>
         </div>
 
-        <!-- TAB 3: SALES & ANALYTICS -->
+        <!-- TAB 3: SALES & ANALYTICS (COMMERCIAL AMAZON/FLIPKART SELLER CONSOLE) -->
         <div id="seller-tab-analytics" class="seller-tab-content">
           <div class="seller-section-card">
-            <div class="seller-section-header" style="justify-content:space-between;display:flex;align-items:center;flex-wrap:wrap;">
+            <!-- Header with Live Performance Status -->
+            <div class="seller-section-header" style="justify-content:space-between;display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
               <div>
-                <h3>Merchant Sales & Performance Analytics</h3>
-                <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Real-time breakdown of gross merchandise value, order fulfillment pipeline, and automated bank settlements.</p>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <h3 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;">Merchant Sales, Orders & Payments Console</h3>
+                  <span class="seller-pill-badge verified" style="font-size:11.5px;">● Live Settlement Engine</span>
+                </div>
+                <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Enterprise-level tracking of customer orders, courier dispatch pipeline, marketplace commissions, and automated bank disbursements.</p>
               </div>
-              <span class="seller-pill-badge verified" style="font-size:12px;">● Live Settlement Engine</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" id="btn-seller-export-report" class="seller-btn-outline" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;font-weight:800;background:#ffffff;color:#1e293b;cursor:pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Export Financial Report</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Analytics Visual Cards -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin:20px 0 24px;">
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;">
-                <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:6px;">Order Pipeline Status</div>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
-                    <span>Pending Dispatch:</span>
-                    <strong style="color:#0878f9;">12 Orders</strong>
+            <!-- 1. Executive Performance Metrics Bar -->
+            <div class="seller-analytics-kpi-bar" id="seller-analytics-kpis">
+              <div class="seller-kpi-stat-box">
+                <div class="seller-kpi-stat-lbl">Gross Merchandise Value (GMV)</div>
+                <div class="seller-kpi-stat-val" id="analytics-stat-gmv">₹4,92,500</div>
+                <div class="seller-kpi-stat-sub" style="color:#059669;">↑ +14.8% vs previous period</div>
+              </div>
+              <div class="seller-kpi-stat-box">
+                <div class="seller-kpi-stat-lbl">Net Bank Settlements Disbursed</div>
+                <div class="seller-kpi-stat-val" id="analytics-stat-net">₹4,33,400</div>
+                <div class="seller-kpi-stat-sub" style="color:#0284c7;">✓ Direct NEFT to Bank</div>
+              </div>
+              <div class="seller-kpi-stat-box">
+                <div class="seller-kpi-stat-lbl">Total Customer Orders</div>
+                <div class="seller-kpi-stat-val" id="analytics-stat-orders">0</div>
+                <div class="seller-kpi-stat-sub" style="color:#64748b;" id="analytics-stat-units">0 units fulfilled</div>
+              </div>
+              <div class="seller-kpi-stat-box">
+                <div class="seller-kpi-stat-lbl">Next Scheduled Payout</div>
+                <div class="seller-kpi-stat-val" id="analytics-stat-next-payout">₹78,450</div>
+                <div class="seller-kpi-stat-sub" style="color:#d97706;">Friday • HDFC Bank ****${(currentSeller?.bankAcc || '98765432100123').slice(-4)}</div>
+              </div>
+            </div>
+
+            <!-- 2. Dual Commercial Sub-Navigation Switcher -->
+            <div class="seller-analytics-subnav">
+              <button type="button" class="seller-subnav-btn is-active" id="subnav-btn-orders" data-subview="orders">
+                <span>📦 Manage Orders & Shipments</span>
+                <span class="seller-subnav-counter" id="subnav-orders-badge">0</span>
+              </button>
+              <button type="button" class="seller-subnav-btn" id="subnav-btn-payments" data-subview="payments">
+                <span>💳 Payments, Fees & Bank Settlements</span>
+              </button>
+            </div>
+
+            <!-- 3A. SUB-VIEW: ORDERS & SHIPMENTS CONSOLE -->
+            <div id="seller-subview-orders" class="seller-subview-panel is-active">
+              <!-- Status Filter Chips Bar -->
+              <div class="seller-order-status-tabs">
+                <button type="button" class="seller-order-status-chip is-active" data-status="all">
+                  All Orders (<span id="count-status-all">0</span>)
+                </button>
+                <button type="button" class="seller-order-status-chip" data-status="pending">
+                  <span class="status-dot pending"></span>
+                  Pending Dispatch (<span id="count-status-pending">0</span>)
+                </button>
+                <button type="button" class="seller-order-status-chip" data-status="shipped">
+                  <span class="status-dot shipped"></span>
+                  In-Transit (<span id="count-status-shipped">0</span>)
+                </button>
+                <button type="button" class="seller-order-status-chip" data-status="delivered">
+                  <span class="status-dot delivered"></span>
+                  Delivered (<span id="count-status-delivered">0</span>)
+                </button>
+                <button type="button" class="seller-order-status-chip" data-status="cancelled">
+                  <span class="status-dot cancelled"></span>
+                  Cancelled (<span id="count-status-cancelled">0</span>)
+                </button>
+              </div>
+
+              <!-- Filter & Search Toolbar -->
+              <div class="seller-orders-toolbar">
+                <div class="seller-search-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="seller-orders-search" placeholder="Search by Order ID, Buyer Name, or Product...">
+                </div>
+                <div class="seller-filter-group">
+                  <select id="seller-orders-period" class="seller-toolbar-select">
+                    <option value="all">All Time</option>
+                    <option value="7">Last 7 Days</option>
+                    <option value="30" selected>Last 30 Days</option>
+                    <option value="this_month">This Month</option>
+                  </select>
+                  <select id="seller-orders-payfilter" class="seller-toolbar-select">
+                    <option value="all">All Payment Modes</option>
+                    <option value="prepaid">Pre-paid / UPI / Card</option>
+                    <option value="cod">Cash on Delivery (COD)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Orders Commercial Table -->
+              <div class="seller-table-wrap">
+                <table class="seller-orders-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID & Date</th>
+                      <th>Product & SKU</th>
+                      <th>Customer & Destination</th>
+                      <th>Amount & Payment</th>
+                      <th>Fulfillment Status</th>
+                      <th>Merchant Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="seller-orders-tbody">
+                    <tr>
+                      <td colspan="6" style="text-align:center;padding:36px;color:#64748b;">
+                        Loading orders and shipment pipeline...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 3B. SUB-VIEW: PAYMENTS & BANK SETTLEMENTS CONSOLE -->
+            <div id="seller-subview-payments" class="seller-subview-panel" style="display:none;">
+              <!-- Bank Payout & Settlement Info Cards -->
+              <div class="seller-settlement-cards-grid">
+                <!-- Card 1: Direct Bank Disbursement -->
+                <div class="seller-settlement-hero-card">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span style="font-size:12px;font-weight:800;color:#0878f9;text-transform:uppercase;letter-spacing:0.5px;">Scheduled Disbursement</span>
+                    <span class="seller-pill-badge verified" style="font-size:11px;">🟢 NEFT Ready</span>
                   </div>
-                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
-                    <span>In-Transit (FBX Express):</span>
-                    <strong style="color:#f59e0b;">48 Orders</strong>
+                  <div style="font-size:28px;font-weight:900;color:#0f172a;margin-bottom:4px;" id="settlement-hero-amount">₹78,450.00</div>
+                  <p style="font-size:13px;color:#059669;font-weight:700;margin:0 0 12px;">✓ Scheduled for Friday Automated Bank Settlement</p>
+                  <div class="seller-bank-meta-box">
+                    <div style="font-size:12px;color:#475569;">
+                      <strong>Beneficiary Bank:</strong> ${currentSeller?.bankName || 'HDFC Bank Ltd'}
+                    </div>
+                    <div style="font-size:12px;color:#475569;">
+                      <strong>Account Number:</strong> ****${(currentSeller?.bankAcc || '98765432100123').slice(-4)}
+                    </div>
+                    <div style="font-size:12px;color:#475569;">
+                      <strong>IFSC Code:</strong> ${currentSeller?.bankIfsc || 'HDFC0001234'}
+                    </div>
+                    <div style="font-size:12px;color:#475569;">
+                      <strong>Account Holder:</strong> ${currentSeller?.storeName || 'Registered Merchant'}
+                    </div>
                   </div>
-                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
-                    <span>Delivered this Month:</span>
-                    <strong style="color:#059669;">240 Orders</strong>
+                </div>
+
+                <!-- Card 2: Commercial Amazon/Flipkart Fee Deduction Model -->
+                <div class="seller-fee-structure-card">
+                  <h4 style="margin:0 0 8px;font-size:14px;font-weight:800;color:#0f172a;">Commercial Marketplace Fee Schedule</h4>
+                  <p style="font-size:12px;color:#64748b;margin:0 0 14px;">Transparent calculation applied automatically to all seller orders:</p>
+                  <div class="seller-fee-items-list">
+                    <div class="seller-fee-item">
+                      <div class="seller-fee-name">Marketplace Referral Commission</div>
+                      <div class="seller-fee-value">8.0% of Item Value</div>
+                    </div>
+                    <div class="seller-fee-item">
+                      <div class="seller-fee-name">Closing & Gateway Fee</div>
+                      <div class="seller-fee-value">2.0% + ₹15 per order</div>
+                    </div>
+                    <div class="seller-fee-item">
+                      <div class="seller-fee-name">FBX Express Pick & Pack Logistics</div>
+                      <div class="seller-fee-value">₹39 flat across India</div>
+                    </div>
+                    <div class="seller-fee-item">
+                      <div class="seller-fee-name">GST on Marketplace Services</div>
+                      <div class="seller-fee-value">18% on fees (Input Tax Credit eligible)</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;">
-                <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:6px;">Next Bank Disbursement</div>
-                <div style="font-size:24px;font-weight:900;color:#0f172a;margin:8px 0 4px;">₹78,450.00</div>
-                <p style="font-size:12px;color:#059669;font-weight:700;margin:0 0 8px;">✓ Scheduled for Friday Direct NEFT Payout</p>
-                <small style="color:#64748b;font-size:11px;">Bank Account: ****${(currentSeller?.bankAcc || '98765432100123').slice(-4)} (IFSC: ${currentSeller?.bankIfsc || 'HDFC0001234'})</small>
+              <!-- Settlement Disbursement Ledger Table -->
+              <div style="margin-top:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                  <div>
+                    <h4 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;">Direct Bank Disbursement Ledger</h4>
+                    <p style="margin:2px 0 0;font-size:12.5px;color:#64748b;">Historical record of weekly electronic fund transfers (NEFT/RTGS) to your linked bank account.</p>
+                  </div>
+                  <span style="font-size:12px;color:#64748b;font-weight:700;">Showing last 4 settlement cycles</span>
+                </div>
+
+                <div class="seller-table-wrap">
+                  <table class="seller-settlement-table">
+                    <thead>
+                      <tr>
+                        <th>Disbursement ID</th>
+                        <th>Settlement Period</th>
+                        <th>Gross Order Value</th>
+                        <th>Platform Deductions</th>
+                        <th>Net Bank Transferred</th>
+                        <th>Bank UTR Reference</th>
+                        <th>Settlement Status</th>
+                        <th>Statement</th>
+                      </tr>
+                    </thead>
+                    <tbody id="seller-settlement-tbody">
+                      <!-- Dynamically rendered -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -4480,7 +4651,7 @@ function initPageRouter() {
 
             <form id="seller-register-form" class="seller-grid-form" novalidate style="margin-top:16px;">
               <!-- 1. Business Legal Info -->
-              <div class="form-group span-2" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #0878f9;margin-bottom:4px;">
+              <div class="form-group span-2 seller-form-subheader" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #0878f9;margin-bottom:4px;">
                 <strong style="color:#0f172a;font-size:13.5px;">1. Legal Entity & Store Identity</strong>
               </div>
 
@@ -4509,7 +4680,7 @@ function initPageRouter() {
               </div>
 
               <!-- 2. Tax & Warehouse Logistics -->
-              <div class="form-group span-2" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #059669;margin-top:10px;margin-bottom:4px;">
+              <div class="form-group span-2 seller-form-subheader" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #059669;margin-top:10px;margin-bottom:4px;">
                 <strong style="color:#0f172a;font-size:13.5px;">2. Taxation & Warehouse Logistics</strong>
               </div>
 
@@ -4526,7 +4697,7 @@ function initPageRouter() {
               </div>
 
               <!-- 3. Banking & Direct Settlement -->
-              <div class="form-group span-2" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #f59e0b;margin-top:10px;margin-bottom:4px;">
+              <div class="form-group span-2 seller-form-subheader" style="background:#f8fafc;padding:12px 16px;border-radius:10px;border-left:4px solid #f59e0b;margin-top:10px;margin-bottom:4px;">
                 <strong style="color:#0f172a;font-size:13.5px;">3. Direct Bank Settlement (For Weekly Automated Payouts)</strong>
               </div>
 
@@ -4588,6 +4759,9 @@ function initPageRouter() {
 
         if (tab === 'inventory') {
           loadSellerInventory();
+        }
+        if (tab === 'analytics') {
+          initSellerAnalytics();
         }
       });
     });
@@ -5486,6 +5660,835 @@ function initPageRouter() {
       modal._open();
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // COMMERCIAL SELLER ORDERS, PAYMENTS & SETTLEMENTS ANALYTICS ENGINE
+    // ══════════════════════════════════════════════════════════════════
+    function getSellerOrders() {
+      let orders = [];
+      try {
+        const local = localStorage.getItem('xmart_seller_orders_v1');
+        if (local) orders = JSON.parse(local);
+      } catch (e) { orders = []; }
+
+      if (!orders || orders.length === 0) {
+        orders = [
+          {
+            id: 'XM-894210',
+            orderDate: new Date(Date.now() - 3600000 * 2).toISOString(),
+            customerName: 'Rohit Sharma',
+            customerPhone: '+91 98201 44521',
+            customerEmail: 'rohit.s@example.com',
+            shippingAddress: { street: 'Flat 402, Sea Breeze Apts, Linking Rd', city: 'Mumbai', state: 'Maharashtra', pincode: '400050' },
+            items: [
+              {
+                id: 'prod-sony-wh',
+                name: 'Sony WH-1000XM5 Wireless Noise Canceling Headphones',
+                sku: 'XM-AUD-WH1000XM5-BLK',
+                image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200',
+                price: 24999,
+                quantity: 1,
+                category: 'Electronics'
+              }
+            ],
+            totalAmount: 24999,
+            paymentMethod: 'Pre-paid (Razorpay / UPI)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'Pending Dispatch',
+            courier: 'FBX Express Air Cargo',
+            trackingNumber: 'FBX-TRK-98421038'
+          },
+          {
+            id: 'XM-893104',
+            orderDate: new Date(Date.now() - 3600000 * 9).toISOString(),
+            customerName: 'Ananya Iyer',
+            customerPhone: '+91 97401 88312',
+            customerEmail: 'ananya.iyer@example.com',
+            shippingAddress: { street: '74, 4th Cross, Koramangala 4th Block', city: 'Bengaluru', state: 'Karnataka', pincode: '560034' },
+            items: [
+              {
+                id: 'prod-macbook',
+                name: 'Apple MacBook Air M3 15-inch 16GB/512GB',
+                sku: 'XM-APL-MBA15-M3',
+                image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=200',
+                price: 114900,
+                quantity: 1,
+                category: 'Computers'
+              }
+            ],
+            totalAmount: 114900,
+            paymentMethod: 'Credit Card (HDFC EMI)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'Pending Dispatch',
+            courier: 'FBX Surface Logistics',
+            trackingNumber: 'FBX-TRK-98310419'
+          },
+          {
+            id: 'XM-891942',
+            orderDate: new Date(Date.now() - 86400000).toISOString(),
+            customerName: 'Vikram Patel',
+            customerPhone: '+91 99099 12345',
+            customerEmail: 'vikram.patel@example.com',
+            shippingAddress: { street: 'B-12, Shivalik Yash, 132 Feet Ring Rd', city: 'Ahmedabad', state: 'Gujarat', pincode: '380015' },
+            items: [
+              {
+                id: 'prod-sandisk',
+                name: 'SanDisk 2TB Extreme Portable SSD USB 3.2',
+                sku: 'XM-STR-SD2TB-EXT',
+                image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=200',
+                price: 14999,
+                quantity: 1,
+                category: 'Storage'
+              }
+            ],
+            totalAmount: 14999,
+            paymentMethod: 'Pre-paid (Google Pay)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'In-Transit',
+            courier: 'FBX Air Express',
+            trackingNumber: 'FBX-TRK-89194271'
+          },
+          {
+            id: 'XM-889412',
+            orderDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+            customerName: 'Sneha Kapoor',
+            customerPhone: '+91 98230 55431',
+            customerEmail: 'sneha.k@example.com',
+            shippingAddress: { street: 'Wing C, Gera Regent Park, Baner', city: 'Pune', state: 'Maharashtra', pincode: '411045' },
+            items: [
+              {
+                id: 'prod-wildcraft',
+                name: 'Wildcraft 45L Adventure Rucksack Backpack',
+                sku: 'XM-BAG-WC45L-OLV',
+                image: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=200',
+                price: 2700,
+                quantity: 2,
+                category: 'Travel & Outdoor'
+              }
+            ],
+            totalAmount: 5400,
+            paymentMethod: 'Cash on Delivery (COD)',
+            paymentStatus: 'Pending at Delivery',
+            fulfillmentStatus: 'In-Transit',
+            courier: 'FBX Surface Cargo',
+            trackingNumber: 'FBX-TRK-88941209'
+          },
+          {
+            id: 'XM-887320',
+            orderDate: new Date(Date.now() - 86400000 * 4).toISOString(),
+            customerName: 'Arjun Mehta',
+            customerPhone: '+91 98110 77654',
+            customerEmail: 'arjun.mehta@example.com',
+            shippingAddress: { street: 'D-42, Greater Kailash Part 1', city: 'New Delhi', state: 'Delhi', pincode: '110048' },
+            items: [
+              {
+                id: 'prod-suit',
+                name: "Men's Premium Slim-Fit Italian Tailored Suit",
+                sku: 'XM-FSH-SUIT-NVY-40',
+                image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200',
+                price: 8999,
+                quantity: 1,
+                category: 'Fashion'
+              }
+            ],
+            totalAmount: 8999,
+            paymentMethod: 'Pre-paid (PhonePe)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'Delivered',
+            courier: 'FBX Express Direct',
+            trackingNumber: 'FBX-TRK-88732014'
+          },
+          {
+            id: 'XM-884105',
+            orderDate: new Date(Date.now() - 86400000 * 6).toISOString(),
+            customerName: 'Priya Nair',
+            customerPhone: '+91 94470 33219',
+            customerEmail: 'priya.nair@example.com',
+            shippingAddress: { street: 'Plot 18, Panampilly Nagar', city: 'Kochi', state: 'Kerala', pincode: '682036' },
+            items: [
+              {
+                id: 'prod-philips-hue',
+                name: 'Philips Hue Smart Ambient Light Kit with Hub',
+                sku: 'XM-IOT-HUE-RGB',
+                image: 'https://images.unsplash.com/photo-1550985543-f47f38aeee65?w=200',
+                price: 6499,
+                quantity: 1,
+                category: 'Smart Home'
+              }
+            ],
+            totalAmount: 6499,
+            paymentMethod: 'Credit Card (ICICI)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'Delivered',
+            courier: 'FBX Air Express',
+            trackingNumber: 'FBX-TRK-88410567'
+          },
+          {
+            id: 'XM-881200',
+            orderDate: new Date(Date.now() - 86400000 * 8).toISOString(),
+            customerName: 'Devansh Joshi',
+            customerPhone: '+91 94140 66543',
+            customerEmail: 'devansh.j@example.com',
+            shippingAddress: { street: '304, Malviya Nagar Sector 4', city: 'Jaipur', state: 'Rajasthan', pincode: '302017' },
+            items: [
+              {
+                id: 'prod-smartwatch',
+                name: 'Noise ColorFit Pro 5 AMOLED Smartwatch',
+                sku: 'XM-WCH-CFP5-BLK',
+                image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200',
+                price: 3499,
+                quantity: 2,
+                category: 'Wearables'
+              }
+            ],
+            totalAmount: 6998,
+            paymentMethod: 'Pre-paid (Paytm UPI)',
+            paymentStatus: 'Paid',
+            fulfillmentStatus: 'Delivered',
+            courier: 'FBX Express Cargo',
+            trackingNumber: 'FBX-TRK-88120092'
+          },
+          {
+            id: 'XM-878914',
+            orderDate: new Date(Date.now() - 86400000 * 10).toISOString(),
+            customerName: 'Siddharth Rao',
+            customerPhone: '+91 99890 22134',
+            customerEmail: 'siddharth.rao@example.com',
+            shippingAddress: { street: 'Apt 12B, My Home Bhooja, HITEC City', city: 'Hyderabad', state: 'Telangana', pincode: '500081' },
+            items: [
+              {
+                id: 'prod-logitech-mx',
+                name: 'Logitech MX Master 3S Wireless Performance Mouse',
+                sku: 'XM-ACC-MX3S-GRY',
+                image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=200',
+                price: 8995,
+                quantity: 1,
+                category: 'Accessories'
+              }
+            ],
+            totalAmount: 8995,
+            paymentMethod: 'Pre-paid (UPI)',
+            paymentStatus: 'Refunded',
+            fulfillmentStatus: 'Cancelled',
+            courier: 'Cancelled before Dispatch',
+            trackingNumber: 'N/A'
+          }
+        ];
+        try { localStorage.setItem('xmart_seller_orders_v1', JSON.stringify(orders)); } catch (e) {}
+      }
+
+      // Calculate fee deductions for all orders
+      return orders.map(ord => {
+        const gross = ord.totalAmount || 0;
+        const refFee = Math.round(gross * 0.08); // 8% Referral Commission
+        const closeFee = Math.round(gross * 0.02) + 15; // 2% + 15 Closing Fee
+        const logFee = 39; // FBX Express Pick & Pack flat courier fee
+        const gst = Math.round((refFee + closeFee + logFee) * 0.18); // 18% GST on Marketplace Services
+        const totalDeduct = refFee + closeFee + logFee + gst;
+        const net = Math.max(0, gross - totalDeduct);
+
+        return {
+          ...ord,
+          feeBreakdown: {
+            grossAmount: gross,
+            referralFee: refFee,
+            closingFee: closeFee,
+            logisticsFee: logFee,
+            gstOnFees: gst,
+            totalDeductions: totalDeduct,
+            netPayout: net
+          }
+        };
+      });
+    }
+
+    function saveSellerOrders(orders) {
+      try {
+        localStorage.setItem('xmart_seller_orders_v1', JSON.stringify(orders));
+      } catch (e) {}
+    }
+
+    function initSellerAnalytics() {
+      const container = pageContainer.querySelector('#seller-tab-analytics');
+      if (!container) return;
+
+      let currentStatusFilter = 'all';
+      let currentPeriodFilter = '30';
+      let currentPayFilter = 'all';
+      let currentSearchQuery = '';
+
+      // 1. Sub-navigation Switching (Orders vs Payments)
+      const subnavOrders = container.querySelector('#subnav-btn-orders');
+      const subnavPayments = container.querySelector('#subnav-btn-payments');
+      const panelOrders = container.querySelector('#seller-subview-orders');
+      const panelPayments = container.querySelector('#seller-subview-payments');
+
+      subnavOrders?.addEventListener('click', () => {
+        subnavOrders.classList.add('is-active');
+        subnavPayments.classList.remove('is-active');
+        if (panelOrders) panelOrders.style.display = 'block';
+        if (panelPayments) panelPayments.style.display = 'none';
+      });
+
+      subnavPayments?.addEventListener('click', () => {
+        subnavPayments.classList.add('is-active');
+        subnavOrders.classList.remove('is-active');
+        if (panelPayments) panelPayments.style.display = 'block';
+        if (panelOrders) panelOrders.style.display = 'none';
+        renderSettlementLedger();
+      });
+
+      // 2. Refresh KPIs and Order Counts
+      function refreshMetrics() {
+        const allOrders = getSellerOrders();
+
+        // Calculate totals
+        let totalGMV = 0;
+        let totalNetSettled = 0;
+        let totalUnits = 0;
+        let nextPayout = 0;
+
+        let cntAll = allOrders.length;
+        let cntPending = 0;
+        let cntShipped = 0;
+        let cntDelivered = 0;
+        let cntCancelled = 0;
+
+        allOrders.forEach(ord => {
+          const status = ord.fulfillmentStatus || 'Pending Dispatch';
+          const qty = (ord.items || []).reduce((sum, it) => sum + (it.quantity || 1), 0);
+          totalUnits += qty;
+
+          if (status !== 'Cancelled') {
+            totalGMV += ord.totalAmount || 0;
+          }
+
+          if (status === 'Delivered') {
+            cntDelivered++;
+            totalNetSettled += ord.feeBreakdown.netPayout;
+          } else if (status === 'In-Transit') {
+            cntShipped++;
+            nextPayout += ord.feeBreakdown.netPayout;
+          } else if (status === 'Pending Dispatch') {
+            cntPending++;
+            nextPayout += ord.feeBreakdown.netPayout;
+          } else if (status === 'Cancelled') {
+            cntCancelled++;
+          }
+        });
+
+        // Set Values
+        const gmvEl = container.querySelector('#analytics-stat-gmv');
+        const netEl = container.querySelector('#analytics-stat-net');
+        const ordsEl = container.querySelector('#analytics-stat-orders');
+        const unitsEl = container.querySelector('#analytics-stat-units');
+        const nextEl = container.querySelector('#analytics-stat-next-payout');
+        const heroNextEl = container.querySelector('#settlement-hero-amount');
+        const subnavBadge = container.querySelector('#subnav-orders-badge');
+
+        if (gmvEl) gmvEl.textContent = Currency.format(totalGMV);
+        if (netEl) netEl.textContent = Currency.format(totalNetSettled);
+        if (ordsEl) ordsEl.textContent = cntAll;
+        if (unitsEl) unitsEl.textContent = `${totalUnits} units fulfilled`;
+        if (nextEl) nextEl.textContent = Currency.format(nextPayout || 78450);
+        if (heroNextEl) heroNextEl.textContent = Currency.format(nextPayout || 78450);
+        if (subnavBadge) subnavBadge.textContent = cntPending;
+
+        // Counter Badges on Status Tabs
+        const cAll = container.querySelector('#count-status-all');
+        const cPen = container.querySelector('#count-status-pending');
+        const cShp = container.querySelector('#count-status-shipped');
+        const cDel = container.querySelector('#count-status-delivered');
+        const cCan = container.querySelector('#count-status-cancelled');
+
+        if (cAll) cAll.textContent = cntAll;
+        if (cPen) cPen.textContent = cntPending;
+        if (cShp) cShp.textContent = cntShipped;
+        if (cDel) cDel.textContent = cntDelivered;
+        if (cCan) cCan.textContent = cntCancelled;
+      }
+
+      // 3. Render Orders Table
+      function renderOrdersTable() {
+        const tbody = container.querySelector('#seller-orders-tbody');
+        if (!tbody) return;
+
+        const allOrders = getSellerOrders();
+
+        // Apply filters
+        const filtered = allOrders.filter(ord => {
+          // Status filter
+          if (currentStatusFilter === 'pending' && ord.fulfillmentStatus !== 'Pending Dispatch') return false;
+          if (currentStatusFilter === 'shipped' && ord.fulfillmentStatus !== 'In-Transit') return false;
+          if (currentStatusFilter === 'delivered' && ord.fulfillmentStatus !== 'Delivered') return false;
+          if (currentStatusFilter === 'cancelled' && ord.fulfillmentStatus !== 'Cancelled') return false;
+
+          // Payment mode filter
+          if (currentPayFilter === 'prepaid' && ord.paymentMethod.includes('COD')) return false;
+          if (currentPayFilter === 'cod' && !ord.paymentMethod.includes('COD')) return false;
+
+          // Search query
+          if (currentSearchQuery) {
+            const q = currentSearchQuery.toLowerCase();
+            const idMatch = (ord.id || '').toLowerCase().includes(q);
+            const custMatch = (ord.customerName || '').toLowerCase().includes(q);
+            const prodMatch = (ord.items || []).some(it => (it.name || '').toLowerCase().includes(q));
+            if (!idMatch && !custMatch && !prodMatch) return false;
+          }
+
+          // Date period filter
+          if (currentPeriodFilter === '7') {
+            const ageDays = (Date.now() - new Date(ord.orderDate).getTime()) / 86400000;
+            if (ageDays > 7) return false;
+          } else if (currentPeriodFilter === '30') {
+            const ageDays = (Date.now() - new Date(ord.orderDate).getTime()) / 86400000;
+            if (ageDays > 30) return false;
+          }
+
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align:center;padding:48px 20px;color:#64748b;">
+                <div style="font-size:32px;margin-bottom:8px;">📦</div>
+                <strong style="font-size:15px;color:#0f172a;display:block;margin-bottom:4px;">No matching merchant orders found</strong>
+                <p style="font-size:13px;margin:0;">Try adjusting your status filter or search query to view active shipments.</p>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(ord => {
+          const firstItem = (ord.items && ord.items[0]) || { name: 'Catalog Item', price: ord.totalAmount, quantity: 1 };
+          const moreCount = ord.items && ord.items.length > 1 ? ` +${ord.items.length - 1} more` : '';
+          const isPending = ord.fulfillmentStatus === 'Pending Dispatch';
+          const isShipped = ord.fulfillmentStatus === 'In-Transit';
+          const isDelivered = ord.fulfillmentStatus === 'Delivered';
+          const isCancelled = ord.fulfillmentStatus === 'Cancelled';
+
+          let statusClass = 'pending';
+          if (isShipped) statusClass = 'shipped';
+          if (isDelivered) statusClass = 'delivered';
+          if (isCancelled) statusClass = 'cancelled';
+
+          const formattedDate = new Date(ord.orderDate).toLocaleDateString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+
+          return `
+            <tr data-order-id="${ord.id}">
+              <!-- Order ID & Date -->
+              <td>
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <strong class="seller-order-id-link" data-id="${ord.id}" style="color:#0878f9;cursor:pointer;font-family:monospace;font-size:13px;" title="Click to view tax invoice & breakdown">
+                    ${ord.id}
+                  </strong>
+                  <span style="font-size:11.5px;color:#64748b;">${formattedDate}</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#0284c7;">FBX Express Standard</span>
+                </div>
+              </td>
+
+              <!-- Product & SKU -->
+              <td>
+                <div class="seller-table-prod">
+                  <img src="${firstItem.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${firstItem.name}">
+                  <div class="seller-table-prod-details">
+                    <strong class="seller-table-prod-name" title="${firstItem.name}">${firstItem.name}${moreCount}</strong>
+                    <div style="display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap;">
+                      <span class="seller-sku-badge">${firstItem.sku || 'SKU-STD-01'}</span>
+                      <small style="color:#64748b;font-weight:700;">Qty: ${firstItem.quantity || 1}</small>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Customer & Destination -->
+              <td>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <strong style="font-size:13px;color:#0f172a;">${ord.customerName}</strong>
+                  <span style="font-size:11.5px;color:#64748b;">${ord.shippingAddress.city}, ${ord.shippingAddress.state}</span>
+                  <span style="font-size:11px;color:#059669;font-weight:700;">PIN: ${ord.shippingAddress.pincode}</span>
+                </div>
+              </td>
+
+              <!-- Amount & Payment Method -->
+              <td>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <strong style="font-size:14px;color:#0f172a;">${Currency.format(ord.totalAmount)}</strong>
+                  <span class="seller-paymethod-pill ${ord.paymentMethod.includes('COD') ? 'cod' : 'prepaid'}">
+                    ${ord.paymentMethod}
+                  </span>
+                  <small style="font-size:10.5px;color:#059669;font-weight:800;">Net Payout: ${Currency.format(ord.feeBreakdown.netPayout)}</small>
+                </div>
+              </td>
+
+              <!-- Fulfillment Status -->
+              <td>
+                <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                  <span class="seller-status-badge ${statusClass}">
+                    <span class="status-dot ${statusClass}"></span>
+                    ${ord.fulfillmentStatus}
+                  </span>
+                  ${ord.trackingNumber && ord.trackingNumber !== 'N/A' ? `
+                    <small style="font-size:10px;color:#64748b;font-family:monospace;" title="FBX Logistics Courier Tracking">
+                      ${ord.trackingNumber}
+                    </small>
+                  ` : ''}
+                </div>
+              </td>
+
+              <!-- Merchant Actions -->
+              <td>
+                <div class="seller-actions-cell" style="display:flex;flex-direction:column;gap:6px;">
+                  ${isPending ? `
+                    <button type="button" class="seller-btn-sm seller-btn-primary btn-dispatch-order" data-id="${ord.id}" title="Generate Courier Dispatch Label">
+                      <span>📦 Dispatch / Ship</span>
+                    </button>
+                  ` : ''}
+                  ${isShipped ? `
+                    <button type="button" class="seller-btn-sm seller-btn-success btn-deliver-order" data-id="${ord.id}" title="Mark Delivered upon Buyer OTP Verification">
+                      <span>✓ Mark Delivered</span>
+                    </button>
+                  ` : ''}
+                  <button type="button" class="seller-btn-sm seller-btn-outline btn-view-invoice" data-id="${ord.id}">
+                    <span>📄 Tax Invoice</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // Wire Action Buttons
+        tbody.querySelectorAll('.btn-dispatch-order').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            updateOrderStatus(id, 'In-Transit');
+          });
+        });
+
+        tbody.querySelectorAll('.btn-deliver-order').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            updateOrderStatus(id, 'Delivered');
+          });
+        });
+
+        tbody.querySelectorAll('.btn-view-invoice, .seller-order-id-link').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            openSellerTaxInvoiceModal(id);
+          });
+        });
+      }
+
+      // 4. Update Order Status Transition
+      function updateOrderStatus(orderId, nextStatus) {
+        const orders = getSellerOrders();
+        const ord = orders.find(o => o.id === orderId);
+        if (!ord) return;
+
+        ord.fulfillmentStatus = nextStatus;
+        if (nextStatus === 'In-Transit' && (!ord.trackingNumber || ord.trackingNumber === 'N/A')) {
+          ord.trackingNumber = `FBX-TRK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+        }
+
+        saveSellerOrders(orders);
+        showToast(
+          nextStatus === 'In-Transit'
+            ? `✓ Order ${ord.id} marked as In-Transit! FBX courier tracking: ${ord.trackingNumber}`
+            : `✓ Order ${ord.id} marked as Delivered! Settlement added to disbursement ledger.`,
+          'success',
+          4000
+        );
+
+        refreshMetrics();
+        renderOrdersTable();
+      }
+
+      // 5. Render Bank Settlement Ledger
+      function renderSettlementLedger() {
+        const tbody = container.querySelector('#seller-settlement-tbody');
+        if (!tbody) return;
+
+        const settlements = [
+          {
+            id: 'SETTL-20260908-04',
+            period: '01 Sep – 07 Sep 2026',
+            gross: 89200,
+            deductions: 10750,
+            net: 78450,
+            utr: 'Pending Friday NEFT Run',
+            status: 'Processing (Friday Scheduled)',
+            isPending: true
+          },
+          {
+            id: 'SETTL-20260901-01',
+            period: '25 Aug – 31 Aug 2026',
+            gross: 142800,
+            deductions: 17136,
+            net: 125664,
+            utr: 'HDFCN2624490182',
+            status: 'Deposited',
+            isPending: false
+          },
+          {
+            id: 'SETTL-20260824-02',
+            period: '18 Aug – 24 Aug 2026',
+            gross: 188500,
+            deductions: 22620,
+            net: 165880,
+            utr: 'HDFCN2623781204',
+            status: 'Deposited',
+            isPending: false
+          },
+          {
+            id: 'SETTL-20260817-03',
+            period: '11 Aug – 17 Aug 2026',
+            gross: 161200,
+            deductions: 19344,
+            net: 141856,
+            utr: 'HDFCN2623019842',
+            status: 'Deposited',
+            isPending: false
+          }
+        ];
+
+        tbody.innerHTML = settlements.map(st => `
+          <tr>
+            <td><strong style="font-family:monospace;font-size:12.5px;color:#0f172a;">${st.id}</strong></td>
+            <td><span style="font-size:12.5px;color:#475569;font-weight:700;">${st.period}</span></td>
+            <td><strong style="font-size:13px;color:#0f172a;">${Currency.format(st.gross)}</strong></td>
+            <td><span style="font-size:13px;color:#dc2626;font-weight:700;">-${Currency.format(st.deductions)}</span></td>
+            <td><strong style="font-size:14px;color:#059669;font-weight:900;">${Currency.format(st.net)}</strong></td>
+            <td><span style="font-size:11.5px;font-family:monospace;color:#64748b;">${st.utr}</span></td>
+            <td>
+              <span class="seller-status-badge ${st.isPending ? 'pending' : 'delivered'}" style="font-size:11px;">
+                ${st.status}
+              </span>
+            </td>
+            <td>
+              <button type="button" class="seller-btn-sm seller-btn-outline btn-download-settl" data-id="${st.id}">
+                <span>📥 PDF</span>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('.btn-download-settl').forEach(btn => {
+          btn.addEventListener('click', () => {
+            showToast(`Settlement summary for ${btn.dataset.id} downloaded successfully!`, 'info', 3000);
+          });
+        });
+      }
+
+      // 6. Tax Invoice Modal
+      function openSellerTaxInvoiceModal(orderId) {
+        const orders = getSellerOrders();
+        const ord = orders.find(o => o.id === orderId);
+        if (!ord) return;
+
+        const modalId = 'seller-tax-invoice-modal';
+        document.getElementById(modalId)?.remove();
+
+        const f = ord.feeBreakdown;
+        const formattedDate = new Date(ord.orderDate).toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        const invoiceModal = createModal(modalId, {
+          title: `Commercial Tax Invoice & Settlement Breakdown — ${ord.id}`,
+          large: true,
+          bodyHtml: `
+            <div class="seller-invoice-wrap" style="font-family:inherit;color:#0f172a;">
+              <!-- Invoice Header Banner -->
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0f172a;padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <h2 style="margin:0;font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">TAX INVOICE / SETTLEMENT SHEET</h2>
+                  <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Issued under Section 31 of CGST Act, 2017 • Original for Recipient</p>
+                </div>
+                <div style="text-align:right;">
+                  <strong style="font-size:14px;color:#0878f9;font-family:monospace;">INV-XM-2026-${ord.id.replace('XM-', '')}</strong>
+                  <div style="font-size:12px;color:#64748b;">Order Date: ${formattedDate}</div>
+                  <div style="font-size:11.5px;color:#059669;font-weight:700;">Fulfillment: FBX Express India</div>
+                </div>
+              </div>
+
+              <!-- Seller & Buyer Address Grid -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
+                <div>
+                  <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">SOLD BY (REGISTERED MERCHANT)</div>
+                  <strong style="font-size:14px;color:#0f172a;">${currentSeller?.storeName || 'X-Mart Verified Store'}</strong>
+                  <div style="font-size:12.5px;color:#475569;margin-top:2px;">Legal Name: ${currentSeller?.bizName || 'Commercial Enterprise Ltd'}</div>
+                  <div style="font-size:12px;color:#475569;">GSTIN / Tax ID: <strong>${currentSeller?.gstin || '27AABCT3518Q1ZV'}</strong></div>
+                  <div style="font-size:12px;color:#475569;">State: Maharashtra (Code 27)</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BILL TO & SHIP TO (CUSTOMER)</div>
+                  <strong style="font-size:14px;color:#0f172a;">${ord.customerName}</strong>
+                  <div style="font-size:12.5px;color:#475569;margin-top:2px;">${ord.shippingAddress.street}</div>
+                  <div style="font-size:12.5px;color:#475569;">${ord.shippingAddress.city}, ${ord.shippingAddress.state} - ${ord.shippingAddress.pincode}</div>
+                  <div style="font-size:12px;color:#475569;">Contact: ${ord.customerPhone} • ${ord.customerEmail}</div>
+                </div>
+              </div>
+
+              <!-- Itemized Products Table -->
+              <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
+                <thead>
+                  <tr style="background:#0f172a;color:#ffffff;text-align:left;">
+                    <th style="padding:8px 10px;">Item Description</th>
+                    <th style="padding:8px 10px;">HSN/SAC</th>
+                    <th style="padding:8px 10px;">Qty</th>
+                    <th style="padding:8px 10px;">Gross Price</th>
+                    <th style="padding:8px 10px;">Total (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(ord.items || []).map(it => `
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                      <td style="padding:10px;">
+                        <strong>${it.name}</strong><br>
+                        <small style="color:#64748b;font-family:monospace;">SKU: ${it.sku || 'N/A'}</small>
+                      </td>
+                      <td style="padding:10px;color:#64748b;">85183000</td>
+                      <td style="padding:10px;">${it.quantity}</td>
+                      <td style="padding:10px;">${Currency.format(it.price)}</td>
+                      <td style="padding:10px;font-weight:800;">${Currency.format(it.price * it.quantity)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <!-- Financial & Marketplace Deduction Breakdown Card -->
+              <div style="background:#f1f5f9;border-radius:10px;padding:16px;border:1px solid #cbd5e1;margin-bottom:20px;">
+                <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;">
+                  Commercial Settlement & Fee Breakdown (Amazon/Flipkart Model)
+                </h4>
+                <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+                  <div style="display:flex;justify-content:space-between;color:#0f172a;">
+                    <span>Gross Customer Paid Amount:</span>
+                    <strong>${Currency.format(f.grossAmount)}</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                    <span>Less: Marketplace Referral Commission (8%):</span>
+                    <strong>-${Currency.format(f.referralFee)}</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                    <span>Less: Fixed Closing & Payment Fee (2% + ₹15):</span>
+                    <strong>-${Currency.format(f.closingFee)}</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                    <span>Less: FBX Express Pick & Pack Courier Logistics:</span>
+                    <strong>-${Currency.format(f.logisticsFee)}</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                    <span>Less: 18% GST on Marketplace Services:</span>
+                    <strong>-${Currency.format(f.gstOnFees)}</strong>
+                  </div>
+                  <div style="border-top:2px dashed #94a3b8;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;font-size:15px;">
+                    <strong style="color:#059669;">Net Merchant Bank Disbursement Payout:</strong>
+                    <strong style="color:#059669;font-size:17px;">${Currency.format(f.netPayout)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tracking Barcode & Modal Controls -->
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid #e2e8f0;padding-top:14px;">
+                <div>
+                  <div style="font-size:11px;font-weight:800;color:#64748b;">FBX LOGISTICS AIRWAY BILL (AWB)</div>
+                  <div style="font-family:monospace;font-size:13px;font-weight:800;color:#0f172a;letter-spacing:1px;">
+                    ||||| |||| |||||||| |||| ||||| ${ord.trackingNumber || 'FBX-TRK-98421038'}
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button type="button" id="btn-print-seller-invoice" style="padding:9px 18px;background:#0878f9;color:#ffffff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">
+                    🖨️ Print Tax Invoice
+                  </button>
+                  <button type="button" onclick="document.getElementById('${modalId}')._close()" style="padding:9px 16px;background:#e2e8f0;color:#1e293b;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          `
+        });
+
+        invoiceModal.querySelector('#btn-print-seller-invoice')?.addEventListener('click', () => {
+          window.print();
+        });
+
+        invoiceModal._open();
+      }
+
+      // 7. Wire Filter Events
+      container.querySelectorAll('.seller-order-status-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          container.querySelectorAll('.seller-order-status-chip').forEach(c => c.classList.remove('is-active'));
+          chip.classList.add('is-active');
+          currentStatusFilter = chip.dataset.status;
+          renderOrdersTable();
+        });
+      });
+
+      const searchInput = container.querySelector('#seller-orders-search');
+      searchInput?.addEventListener('input', () => {
+        currentSearchQuery = searchInput.value.trim();
+        renderOrdersTable();
+      });
+
+      const periodSelect = container.querySelector('#seller-orders-period');
+      periodSelect?.addEventListener('change', () => {
+        currentPeriodFilter = periodSelect.value;
+        renderOrdersTable();
+      });
+
+      const paySelect = container.querySelector('#seller-orders-payfilter');
+      paySelect?.addEventListener('change', () => {
+        currentPayFilter = paySelect.value;
+        renderOrdersTable();
+      });
+
+      // 8. Wire Export Report Button
+      container.querySelector('#btn-seller-export-report')?.addEventListener('click', () => {
+        const orders = getSellerOrders();
+        const headers = ['Order ID', 'Order Date', 'Customer Name', 'City', 'Product', 'Gross Amount (INR)', 'Referral Fee (INR)', 'Closing Fee (INR)', 'Logistics Fee (INR)', 'GST (INR)', 'Net Payout (INR)', 'Status'];
+        const rows = orders.map(o => {
+          const item = (o.items && o.items[0]) ? o.items[0].name.replace(/,/g, ' ') : 'Product';
+          const f = o.feeBreakdown;
+          return [
+            o.id,
+            new Date(o.orderDate).toISOString().split('T')[0],
+            `"${o.customerName}"`,
+            `"${o.shippingAddress.city}"`,
+            `"${item}"`,
+            f.grossAmount,
+            f.referralFee,
+            f.closingFee,
+            f.logisticsFee,
+            f.gstOnFees,
+            f.netPayout,
+            `"${o.fulfillmentStatus}"`
+          ].join(',');
+        });
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `X-Mart_Seller_Financial_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('✓ Financial Report exported successfully as CSV!', 'success', 3000);
+      });
+
+      // Initial execution
+      refreshMetrics();
+      renderOrdersTable();
+    }
+
     try {
       const myItems = JSON.parse(localStorage.getItem('xmart_seller_items') || '[]');
       const countEl = pageContainer.querySelector('#seller-inv-count');
@@ -5494,6 +6497,11 @@ function initPageRouter() {
       if (countEl) countEl.textContent = totalCount;
       if (kpiCount) kpiCount.textContent = totalCount;
     } catch {}
+
+    // Pre-initialize analytics data so counters and caches are active immediately
+    try {
+      initSellerAnalytics();
+    } catch (e) { console.warn('Seller Analytics Init notice:', e); }
   };
 
   // ── 4. COMMERCIAL 24/7 CUSTOMER CARE & HELP HUB WINDOW ─────
@@ -6993,22 +8001,22 @@ function initPageRouter() {
               <input type="text" id="page-addr-street" required>
             </div>
 
-            <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:16px;flex-wrap:wrap;">
-              <button type="submit" class="com-btn-primary" id="page-addr-submit-btn" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 32px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.3);min-width:200px;">Save Delivery Address</button>
-              <button type="button" id="page-addr-cancel-btn" style="background:#e2e8f0;color:#334155;border:none;padding:12px 28px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;min-width:120px;">Cancel</button>
+            <div class="addr-form-actions">
+              <button type="submit" class="com-btn-primary" id="page-addr-submit-btn">Save Delivery Address</button>
+              <button type="button" id="page-addr-cancel-btn">Cancel</button>
             </div>
           </form>
         </div>
 
         <!-- Filter & Search Bar -->
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px;background:#ffffff;padding:16px 20px;border-radius:12px;border:1px solid #e2e8f0;">
-          <div style="display:flex;gap:8px;">
+        <div class="addr-toolbar-wrap">
+          <div class="addr-filter-group">
             <button class="page-chip is-active addr-filter-btn" data-filter="all">All Addresses</button>
             <button class="page-chip addr-filter-btn" data-filter="HOME">Home</button>
             <button class="page-chip addr-filter-btn" data-filter="WORK">Work / Office</button>
           </div>
-          <div style="flex:1;max-width:320px;min-width:200px;">
-            <input type="text" id="addr-search-input" placeholder="Search by name, PIN, or city..." style="width:100%;padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" />
+          <div class="addr-search-wrap">
+            <input type="text" id="addr-search-input" placeholder="Search by name, PIN, or city..." />
           </div>
         </div>
 
@@ -7087,16 +8095,16 @@ function initPageRouter() {
       }
 
       gridEl.innerHTML = filtered.map(addr => `
-        <div style="background:#ffffff;border:1.5px solid ${addr.isDefault ? '#ff9700' : '#e2e8f0'};border-radius:14px;padding:20px;position:relative;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 14px rgba(0,0,0,0.04);transition:all 140ms ease;">
+        <div class="addr-card-item" style="background:#ffffff;border:1.5px solid ${addr.isDefault ? '#ff9700' : '#e2e8f0'};border-radius:14px;padding:20px;position:relative;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 14px rgba(0,0,0,0.04);transition:all 140ms ease;">
           <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:11px;font-weight:800;background:${addr.type === 'HOME' ? '#eff6ff' : '#f0fdf4'};color:${addr.type === 'HOME' ? '#2563eb' : '#16a34a'};padding:3px 9px;border-radius:6px;border:1px solid currentColor;">
+            <div class="addr-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="addr-card-badges" style="display:flex;align-items:center;gap:8px;">
+                <span class="addr-badge-type" style="font-size:11px;font-weight:800;background:${addr.type === 'HOME' ? '#eff6ff' : '#f0fdf4'};color:${addr.type === 'HOME' ? '#2563eb' : '#16a34a'};padding:3px 9px;border-radius:6px;border:1px solid currentColor;white-space:nowrap;">
                   ${addr.type || 'HOME'}
                 </span>
-                ${addr.isDefault ? '<span style="font-size:11px;font-weight:800;background:#fff3e0;color:#d97706;padding:3px 9px;border-radius:6px;border:1px solid #fed7aa;">DEFAULT DESTINATION</span>' : ''}
+                ${addr.isDefault ? '<span class="addr-badge-default" style="font-size:11px;font-weight:800;background:#fff3e0;color:#d97706;padding:3px 9px;border-radius:6px;border:1px solid #fed7aa;white-space:nowrap;">DEFAULT DESTINATION</span>' : ''}
               </div>
-              <div style="display:flex;align-items:center;gap:10px;">
+              <div class="addr-card-actions" style="display:flex;align-items:center;gap:10px;">
                 <button type="button" class="btn-card-edit" data-id="${addr.id}" style="background:transparent;border:none;color:#0284c7;font-size:13px;font-weight:700;cursor:pointer;">Edit</button>
                 <button type="button" class="btn-card-del" data-id="${addr.id}" style="background:transparent;border:none;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">Delete</button>
               </div>
