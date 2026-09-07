@@ -9564,6 +9564,15 @@ html.category-dropdown-locked {
   width: fit-content;
 }
 
+.account-tier-tag-mobile {
+  display: none !important;
+}
+
+.account-tier-tag-desktop {
+  display: inline-flex !important;
+  margin-top: 7px !important;
+}
+
 .account-hero-actions,
 .account-hero-right {
   z-index: 1;
@@ -11288,6 +11297,19 @@ body {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+  }
+
+  .account-tier-tag-mobile {
+    display: flex !important;
+  }
+
+  /* Completely remove the first tag (under email inside user info) from mobile view */
+  .account-tier-tag-desktop,
+  .account-user-info .account-tier-tag,
+  .account-user-info .account-tier-tag-desktop,
+  .account-hero-card .account-user-info .account-tier-tag,
+  .account-hero-card .account-user-info .account-tier-tag-desktop {
+    display: none !important;
   }
 
   /* Edit button anchored at top right corner */

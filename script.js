@@ -792,7 +792,7 @@ function buildAuthModal() {
                 <h3 id="logged-user-name">Ashutosh Pathak</h3>
                 <div class="account-user-meta">
                   <span id="logged-user-email">user@example.com</span>
-                  <span id="logged-user-phone">Phone: Verified</span>
+                  <span id="logged-user-phone" style="display:none;">Phone: Verified</span>
                 </div>
                 <div class="account-tier-tag">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -7689,11 +7689,13 @@ function initPageRouter() {
               <h3 class="account-user-name">${firstName}</h3>
               <div class="account-user-meta">
                 <span class="account-user-email">${email}</span>
-                <span class="account-user-phone">${phone}</span>
+              </div>
+              <div class="account-tier-tag account-tier-tag-desktop">
+                <span>Verified Prime Member • Unlimited Free Delivery</span>
               </div>
             </div>
           </div>
-          <div class="account-tier-tag">
+          <div class="account-tier-tag account-tier-tag-mobile">
             <span>Verified Prime Member • Unlimited Free Delivery</span>
           </div>
           <div class="account-hero-right">
