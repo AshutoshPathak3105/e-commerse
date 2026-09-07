@@ -560,13 +560,10 @@ svg {
   object-fit: cover;
   display: block;
   background: transparent;
-  transition: transform 0.22s ease, opacity 0.22s ease;
 }
 
 .brand:hover .brand-logo,
 .brand:focus-visible .brand-logo {
-  transform: scale(1.04);
-  opacity: 0.95;
   border: none;
   box-shadow: none;
 }
@@ -10656,19 +10653,22 @@ body {
     gap: 10px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .account-hub-card {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    padding: 14px 14px !important;
+    padding: 12px 10px !important;
     gap: 8px !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
     position: relative !important;
     background: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
 
   .account-hub-icon {
@@ -10689,14 +10689,18 @@ body {
 
   .account-hub-info {
     width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
 
   .account-hub-info h4 {
-    font-size: 13.5px !important;
+    font-size: 13px !important;
     font-weight: 700 !important;
     color: #0f172a !important;
     margin: 0 0 3px 0 !important;
     line-height: 1.25 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
   }
 
   .account-hub-info p {
@@ -10704,10 +10708,30 @@ body {
     color: #64748b !important;
     margin: 0 !important;
     line-height: 1.35 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
   }
 
   .account-hub-card > div:last-child {
     display: none !important;
+  }
+
+  /* Bottom buttons — always on same line on mobile */
+  .account-footer-bar {
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    padding: 16px 0 6px !important;
+  }
+
+  .account-footer-bar button,
+  #account-delete-btn,
+  .account-signout-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 10px 10px !important;
+    font-size: 12px !important;
+    justify-content: center !important;
   }
 
   /* Order History Card — Balanced 2x2 Header Layout on Mobile */

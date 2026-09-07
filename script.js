@@ -7761,7 +7761,7 @@ function initPageRouter() {
           </div>
 
           <!-- Bottom Action Buttons: Both Centered in Same Line -->
-          <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin:40px 0 20px;flex-wrap:wrap;">
+          <div class="account-footer-bar" style="display:flex;justify-content:center;align-items:center;gap:16px;margin:40px 0 20px;flex-wrap:wrap;">
             <button type="button" id="acct-page-delete-btn" style="background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(220,38,38,0.28);transition:all 0.2s ease;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
               <span>Delete Account</span>
