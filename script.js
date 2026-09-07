@@ -3667,14 +3667,14 @@ function initPageRouter() {
     const isBestseller = type === 'bestseller';
 
     let pageTitle = category 
-      ? `${category} Superstore` 
+      ? (search ? `${category}: ${search.charAt(0).toUpperCase() + search.slice(1)} Collection` : `All ${category} Superstore`) 
       : (isDeals ? "Today's Lightning Deals & Mega Discounts" : (isBestseller ? "X-Mart Certified Bestsellers & Top Rated" : (search ? `Search Results for "${search}"` : "All Department Superstore")));
     
     let bannerDesc = category 
-      ? `Discover over 30+ authentic ${category} verified by X-Mart Quality Assurance. Get manufacturer warranty, no-cost EMI, and free express delivery.`
+      ? (search ? `Showing top verified ${search} products in ${category} with manufacturer warranty and express delivery.` : `Discover over 30+ authentic ${category} verified by X-Mart Quality Assurance. Get manufacturer warranty, no-cost EMI, and free express delivery.`)
       : (isDeals ? "Grab limited-time flash deals with discounts up to 70% off. Refreshed hourly with exclusive bank cashbacks." : "Explore the highest-rated customer favorites backed by over 250,000+ verified buyer reviews.");
 
-    let bannerTag = category ? `${category.toUpperCase()} HUB` : (isDeals ? "LIGHTNING DEALS • ENDS TONIGHT" : "BESTSELLERS LEADERBOARD");
+    let bannerTag = category ? (search ? `${category.toUpperCase()} • ${search.toUpperCase()}` : `${category.toUpperCase()} HUB`) : (isDeals ? "LIGHTNING DEALS • ENDS TONIGHT" : "BESTSELLERS LEADERBOARD");
 
     // Commercial Window Layout with Sidebar Filter & Product Grid
     pageContainer.innerHTML = `
@@ -3691,10 +3691,9 @@ function initPageRouter() {
               </div>
             ` : `
               <div class="com-hero-perks">
-                <div class="perk-pill"><span>Free Express Delivery ₹499+</span></div>
-                <div class="perk-pill"><span>100% Genuine Guarantee</span></div>
-                <div class="perk-pill"><span>30-Day Easy Returns</span></div>
-                <div class="perk-pill"><span>No Cost EMI Available</span></div>
+                <div class="perk-pill"><span>Free Delivery</span></div>
+                <div class="perk-pill"><span>100% Genuine</span></div>
+                <div class="perk-pill"><span>Easy Returns</span></div>
               </div>
             `}
           </div>
@@ -3930,11 +3929,9 @@ function initPageRouter() {
         }
       }
 
-      if (products.length === 0 && !search && !category) {
-        products = Store.allProducts || [];
-      }
-
-      if (category) {
+      if (products.length === 0 && !search) {
+        products = (Store.allProducts || []).filter(p => !category || p.category?.toLowerCase() === category.toLowerCase());
+      } else if (category) {
         products = products.filter(p => p.category?.toLowerCase() === category.toLowerCase());
       }
 
@@ -5514,8 +5511,8 @@ function initPageRouter() {
             <h1 class="com-hero-title">How Can We Help You Today?</h1>
             <p class="com-hero-desc">Instant self-service tools, live parcel tracking, hassle-free returns, and dedicated concierge agents available 24/7.</p>
             <div class="com-hero-perks">
-              <div class="perk-pill"><span>1800-555-0199 (Toll Free)</span></div>
-              <div class="perk-pill"><span>Live Chat Response &lt; 60s</span></div>
+              <div class="perk-pill"><span>1800-555-0199</span></div>
+              <div class="perk-pill"><span>Live Chat &lt;60s</span></div>
               <div class="perk-pill"><span>support@xmart.com</span></div>
             </div>
           </div>
@@ -6038,7 +6035,7 @@ function initPageRouter() {
         </div>
 
         <!-- Navigation Tabs (With Track Package next to Order Details) -->
-        <div style="display:flex;gap:12px;border-bottom:2px solid #e2e8f0;margin-bottom:24px;background:#ffffff;padding:0 12px;border-radius:8px;">
+        <div class="ord-nav-tabs">
           <button id="page-tab-ord-details" class="invoice-tab-btn ${defaultTab === 'details' ? 'is-active' : ''}">Order Details</button>
           <button id="page-tab-ord-track" class="invoice-tab-btn ${defaultTab === 'track' ? 'is-active' : ''}">Track Package</button>
           <button id="page-tab-ord-invoice" class="invoice-tab-btn ${defaultTab === 'invoice' ? 'is-active' : ''}">Invoice</button>
@@ -6124,7 +6121,7 @@ function initPageRouter() {
           <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
             <!-- Top Header: Title & Status -->
             <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #000000;gap:10px;">
-              <div style="font-size:16px;font-weight:900;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">📦 Live Package Tracking</div>
+              <div style="font-size:16px;font-weight:900;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live Package Tracking</div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:12px;font-weight:700;color:#64748b;">Status:</span>
                 <span style="font-size:12.5px;font-weight:800;background:${statusBg};color:${statusColor};padding:4px 14px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">${status}</span>
@@ -6153,15 +6150,17 @@ function initPageRouter() {
             <!-- Ordered Items in this Package -->
             <div style="margin-bottom:26px;">
               <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">ITEMS IN THIS PACKAGE (${items.length})</div>
-              <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="track-pkg-items-wrap" style="display:flex;flex-direction:column;gap:10px;">
                 ${items.map(it => `
-                  <div style="display:flex;gap:16px;align-items:center;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;">
-                    <img src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;" />
-                    <div style="flex:1;min-width:0;">
-                      <h4 style="margin:0 0 4px;font-size:14.5px;font-weight:800;color:#000000;">${it.name}</h4>
-                      <div style="font-size:12.5px;color:#000000;">Quantity: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Price: <strong>${Currency.format(it.price || 0)}</strong></div>
+                  <div class="track-pkg-item-card">
+                    <img class="track-pkg-item-img" src="${it.image || it.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=140'}" alt="${it.name}" />
+                    <div class="track-pkg-item-info">
+                      <div class="track-pkg-item-header">
+                        <h4 class="track-pkg-item-name">${it.name}</h4>
+                        <span class="track-pkg-item-badge">In Shipment</span>
+                      </div>
+                      <div class="track-pkg-item-meta">Quantity: <strong>${it.quantity || it.qty || 1}</strong> &nbsp;•&nbsp; Price: <strong>${Currency.format(it.price || 0)}</strong></div>
                     </div>
-                    <span style="font-size:11px;font-weight:800;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:6px;">In Shipment</span>
                   </div>
                 `).join('')}
               </div>
@@ -6938,9 +6937,9 @@ function initPageRouter() {
             <h1 class="com-hero-title" style="margin: 0 0 8px; font-size: 26px; font-weight: 800; color: #ffffff;">Your Delivery Addresses</h1>
             <p class="com-hero-desc" style="margin: 0 0 16px; font-size: 13.5px; color: #cbd5e1; line-height: 1.5;">Manage your primary shipping destinations, residence & office locations, and PIN codes for 1-click express checkout.</p>
             <div class="com-hero-perks" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
-              <div class="perk-pill"><span>19,000+ PIN Codes Covered</span></div>
-              <div class="perk-pill"><span>1-Click Fast Checkout</span></div>
-              <div class="perk-pill"><span>Secure OTP Delivery</span></div>
+              <div class="perk-pill"><span>19,000+ PIN Codes</span></div>
+              <div class="perk-pill"><span>Fast Checkout</span></div>
+              <div class="perk-pill"><span>Secure OTP</span></div>
             </div>
           </div>
           <div style="display: flex; align-items: center; justify-content: flex-start; margin-top: 14px;">
@@ -7331,9 +7330,9 @@ function initPageRouter() {
             <h1 class="com-hero-title">X-Mart Cash & Payment Center</h1>
             <p class="com-hero-desc">Manage your prepaid cash balance, saved UPI IDs, credit/debit cards, promotional vouchers, and transaction ledger with 1-click seamless checkout.</p>
             <div class="com-hero-perks">
-              <div class="perk-pill"><span>1-Click Instant Refund</span></div>
-              <div class="perk-pill"><span>256-Bit Bank Grade SSL</span></div>
-              <div class="perk-pill"><span>5% Unlimited Prime Cashback</span></div>
+              <div class="perk-pill"><span>Instant Refund</span></div>
+              <div class="perk-pill"><span>256-Bit SSL</span></div>
+              <div class="perk-pill"><span>5% Cashback</span></div>
             </div>
           </div>
         </div>
@@ -9988,8 +9987,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Category nav links (top bar: Today's Deals, Best Sellers, Electronics, Fashion, etc.)
+  // Category nav links (top bar: Today's Deals, Best Sellers, Home & Kitchen, etc.)
   document.querySelectorAll('.category-link, .category-button').forEach(link => {
+    // Skip dropdown triggers so clicking them toggles the dropdown instead of navigating away
+    if (link.hasAttribute('data-dropdown-trigger') || link.closest('.category-dropdown')) {
+      return;
+    }
     link.addEventListener('click', e => {
       e.preventDefault();
       const text = link.textContent.trim().replace(/HOT/gi, '').trim();
@@ -9997,10 +10000,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window._openDedicatedPage?.('', 'deal');
       } else if (text.includes('Best Sellers')) {
         window._openDedicatedPage?.('');
-      } else if (text.includes('Electronics')) {
-        window._openDedicatedPage?.('Electronics');
-      } else if (text.includes('Fashion')) {
-        window._openDedicatedPage?.('Fashion');
       } else if (text.includes('Home')) {
         window._openDedicatedPage?.('Home & Kitchen');
       } else if (text.includes('Beauty')) {
@@ -10011,20 +10010,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Electronics subcategory menu -> Full Dedicated Window Page
-  document.querySelectorAll('#electronics-menu .dropdown-item').forEach(link => {
-    link.addEventListener('click', e => {
+  // Electronics & Fashion subcategory dropdown menu items -> Full Dedicated Window Page with subcategory search
+  document.querySelectorAll('#electronics-menu .dropdown-item, #fashion-menu .dropdown-item').forEach(item => {
+    let handledTouch = false;
+    const triggerItemNavigation = (e) => {
+      if (e.type === 'touchend') {
+        handledTouch = true;
+        setTimeout(() => { handledTouch = false; }, 400);
+      } else if (e.type === 'click' && handledTouch) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       e.preventDefault();
-      window._openDedicatedPage?.('Electronics');
-    });
-  });
+      e.stopPropagation();
 
-  // Fashion subcategory menu -> Full Dedicated Window Page
-  document.querySelectorAll('#fashion-menu .dropdown-item').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      window._openDedicatedPage?.('Fashion');
-    });
+      window._closeAllOpenDropdowns?.();
+      const dropdown = item.closest('.category-dropdown') || item.closest('.dropdown');
+      const trigger = dropdown?.querySelector('[data-dropdown-trigger]');
+      dropdown?.classList.remove('is-open');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      const menu = dropdown?.querySelector('.category-menu');
+      if (menu) {
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.right = '';
+        menu.style.transform = '';
+        menu.style.width = '';
+        menu.style.maxWidth = '';
+        menu.style.maxHeight = '';
+        menu.style.overflowY = '';
+        menu.style.overscrollBehavior = '';
+        menu.style.zIndex = '';
+      }
+      window._closeMobileCategoryLock?.();
+
+      const category = item.dataset.category || (item.closest('#electronics-menu') ? 'Electronics' : 'Fashion');
+      const search = item.dataset.search || '';
+
+      window._openDedicatedPage?.(category, '', search);
+    };
+
+    item.addEventListener('click', triggerItemNavigation);
+    item.addEventListener('touchend', triggerItemNavigation, { passive: false });
   });
 
   // ── 4. HERO SLIDER (uses #hero-slider-prev/next, .hero-slide) ──
@@ -10678,31 +10707,198 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── 11. DROPDOWN MENUS (Close on outside click) ────────────
+  // ── 11. DROPDOWN MENUS (Close on outside click & toggle) ───
+  // Backdrop element for mobile category dropdown
+  let categoryBackdrop = document.getElementById('category-dropdown-backdrop');
+  if (!categoryBackdrop) {
+    categoryBackdrop = document.createElement('div');
+    categoryBackdrop.id = 'category-dropdown-backdrop';
+    categoryBackdrop.className = 'category-dropdown-backdrop';
+    document.body.appendChild(categoryBackdrop);
+  }
+
+  function setMobileCategoryScrollLock(locked) {
+    if (window.innerWidth <= 840) {
+      if (locked) {
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        document.body.classList.add('category-dropdown-locked');
+        document.documentElement.classList.add('category-dropdown-locked');
+        categoryBackdrop?.classList.add('is-active');
+      } else {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.classList.remove('category-dropdown-locked');
+        document.documentElement.classList.remove('category-dropdown-locked');
+        categoryBackdrop?.classList.remove('is-active');
+      }
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.classList.remove('category-dropdown-locked');
+      document.documentElement.classList.remove('category-dropdown-locked');
+      categoryBackdrop?.classList.remove('is-active');
+    }
+  }
+
+  window._closeMobileCategoryLock = () => {
+    setMobileCategoryScrollLock(false);
+  };
+
+  categoryBackdrop?.addEventListener('click', () => {
+    closeAllOpenDropdowns();
+  });
+
+  // Helper to center category menu cleanly on mobile without clipping
+  function updateCategoryDropdownPosition(parentDropdown, trigger) {
+    if (!parentDropdown) return;
+    const menu = parentDropdown.querySelector('.category-menu');
+    if (!menu) return;
+
+    if (window.innerWidth <= 840) {
+      const rect = trigger.getBoundingClientRect();
+      const topPos = Math.round(rect.bottom + 6);
+      const menuWidth = Math.min(340, window.innerWidth - 28);
+
+      menu.style.position = 'fixed';
+      menu.style.top = `${topPos}px`;
+      menu.style.left = '50%';
+      menu.style.right = 'auto';
+      menu.style.transform = 'translateX(-50%)';
+      menu.style.width = `${menuWidth}px`;
+      menu.style.maxWidth = `${menuWidth}px`;
+      menu.style.maxHeight = `calc(100vh - ${topPos + 16}px)`;
+      menu.style.overflowY = 'auto';
+      menu.style.overscrollBehavior = 'contain';
+      menu.style.zIndex = '100000';
+
+      setMobileCategoryScrollLock(true);
+    } else {
+      resetCategoryDropdownPosition(parentDropdown);
+    }
+  }
+
+  function resetCategoryDropdownPosition(parentDropdown) {
+    const menu = parentDropdown?.querySelector?.('.category-menu');
+    if (menu) {
+      menu.style.position = '';
+      menu.style.top = '';
+      menu.style.left = '';
+      menu.style.right = '';
+      menu.style.transform = '';
+      menu.style.width = '';
+      menu.style.maxWidth = '';
+      menu.style.maxHeight = '';
+      menu.style.overflowY = '';
+      menu.style.overscrollBehavior = '';
+      menu.style.zIndex = '';
+    }
+
+    const anyCatOpen = Array.from(document.querySelectorAll('.category-dropdown')).some(d => d.classList.contains('is-open'));
+    if (!anyCatOpen) {
+      setMobileCategoryScrollLock(false);
+    }
+  }
+
+  function closeAllOpenDropdowns() {
+    document.querySelectorAll('[data-dropdown-trigger]').forEach(btn => {
+      btn.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('.dropdown').forEach(d => {
+      d.classList.remove('is-open');
+      resetCategoryDropdownPosition(d);
+    });
+    document.querySelectorAll('[data-dropdown-menu]').forEach(menu => {
+      menu.style.display = '';
+    });
+    setMobileCategoryScrollLock(false);
+  }
+  window._closeAllOpenDropdowns = closeAllOpenDropdowns;
+
+  // Close all open dropdowns when clicking outside
   document.addEventListener('click', e => {
-    // Close all open dropdowns when clicking outside
     if (!e.target.closest('.dropdown')) {
-      document.querySelectorAll('[data-dropdown-trigger]').forEach(btn => {
-        btn.setAttribute('aria-expanded', 'false');
-      });
-      document.querySelectorAll('[data-dropdown-menu]').forEach(menu => {
-        menu.style.display = '';
-      });
+      closeAllOpenDropdowns();
     }
   });
 
-  // Dropdown toggle logic
+  // Dropdown toggle logic (Clicking trigger or chevron icon)
   document.querySelectorAll('[data-dropdown-trigger]').forEach(trigger => {
     trigger.addEventListener('click', e => {
-      const expanded = trigger.getAttribute('aria-expanded') === 'true';
-      // Close all others first
-      document.querySelectorAll('[data-dropdown-trigger]').forEach(btn => {
-        if (btn !== trigger) btn.setAttribute('aria-expanded', 'false');
-      });
-      trigger.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      e.preventDefault();
       e.stopPropagation();
+      const parentDropdown = trigger.closest('.dropdown');
+      const isCurrentlyOpen = trigger.getAttribute('aria-expanded') === 'true' || parentDropdown?.classList.contains('is-open');
+
+      // Close all other open dropdowns
+      document.querySelectorAll('[data-dropdown-trigger]').forEach(btn => {
+        if (btn !== trigger) {
+          btn.setAttribute('aria-expanded', 'false');
+          const otherParent = btn.closest('.dropdown');
+          otherParent?.classList.remove('is-open');
+          resetCategoryDropdownPosition(otherParent);
+        }
+      });
+      document.querySelectorAll('.dropdown').forEach(d => {
+        if (d !== parentDropdown) {
+          d.classList.remove('is-open');
+          resetCategoryDropdownPosition(d);
+        }
+      });
+
+      // Toggle current dropdown
+      const willOpen = !isCurrentlyOpen;
+      trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      parentDropdown?.classList.toggle('is-open', willOpen);
+
+      if (parentDropdown?.classList.contains('category-dropdown')) {
+        if (willOpen) {
+          updateCategoryDropdownPosition(parentDropdown, trigger);
+        } else {
+          resetCategoryDropdownPosition(parentDropdown);
+        }
+      }
     });
   });
+
+  // Category dropdown hover & keyboard accessibility (desktop mouse only)
+  document.querySelectorAll('.category-dropdown').forEach(catDrop => {
+    let leaveTimer = null;
+    const trigger = catDrop.querySelector('[data-dropdown-trigger]');
+
+    catDrop.addEventListener('mouseenter', () => {
+      if (window.innerWidth <= 840 || window.matchMedia('(pointer: coarse)').matches) return;
+      if (leaveTimer) clearTimeout(leaveTimer);
+      catDrop.classList.add('is-open');
+      if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    });
+
+    catDrop.addEventListener('mouseleave', () => {
+      if (window.innerWidth <= 840 || window.matchMedia('(pointer: coarse)').matches) return;
+      leaveTimer = setTimeout(() => {
+        catDrop.classList.remove('is-open');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        resetCategoryDropdownPosition(catDrop);
+      }, 160);
+    });
+  });
+
+  // Handle mobile scroll/resize to adjust open category dropdown position
+  const repositionOpenCategoryDropdown = () => {
+    if (window.innerWidth <= 840) {
+      document.querySelectorAll('.category-dropdown.is-open').forEach(d => {
+        const trigger = d.querySelector('[data-dropdown-trigger]');
+        if (trigger) updateCategoryDropdownPosition(d, trigger);
+      });
+    } else {
+      setMobileCategoryScrollLock(false);
+      document.querySelectorAll('.category-dropdown').forEach(d => {
+        resetCategoryDropdownPosition(d);
+      });
+    }
+  };
+  window.addEventListener('resize', repositionOpenCategoryDropdown);
+  document.querySelector('.category-bar')?.addEventListener('scroll', repositionOpenCategoryDropdown, { passive: true });
 
   // Dropdown option selection
   document.querySelectorAll('[data-dropdown-option]').forEach(opt => {

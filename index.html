@@ -143,26 +143,116 @@
         </div>
         <a href="#deals" class="category-link deals-link">Today's Deals <span class="hot-badge">HOT</span></a>
         <a href="#best-sellers" class="category-link">Best Sellers</a>
-        <div class="dropdown category-dropdown">
-          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="electronics-menu" data-dropdown-trigger>Electronics <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
+        <div class="dropdown category-dropdown" data-nav-dropdown="electronics">
+          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="electronics-menu" data-dropdown-trigger aria-label="Electronics categories dropdown">Electronics <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="electronics-menu" role="menu" aria-label="Electronics categories" data-dropdown-menu>
-            <div class="dropdown-menu-header">Electronics</div>
-            <a class="dropdown-item" href="#phones" role="menuitem">Phones &amp; Tablets</a>
-            <a class="dropdown-item" href="#computers" role="menuitem">Computers &amp; Accessories</a>
-            <a class="dropdown-item" href="#tv-audio" role="menuitem">TV &amp; Audio</a>
-            <a class="dropdown-item" href="#cameras" role="menuitem">Cameras</a>
-            <a class="dropdown-item" href="#gaming" role="menuitem">Gaming</a>
+            <div class="dropdown-menu-header">
+              <span>Electronics Categories</span>
+            </div>
+            <a class="dropdown-item cat-all-item" href="#category/Electronics" data-category="Electronics" data-search="" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">All Electronics</span>
+                <span class="cat-menu-sub">Explore full gadgets collection</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=phone" data-category="Electronics" data-search="phone" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Smartphones &amp; Mobiles</span>
+                <span class="cat-menu-sub">iPhone, Samsung 5G, OnePlus</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=laptop" data-category="Electronics" data-search="laptop" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Laptops &amp; Computers</span>
+                <span class="cat-menu-sub">MacBook, ThinkPad, Gaming PC</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=headphone" data-category="Electronics" data-search="headphone" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Headphones &amp; Audio</span>
+                <span class="cat-menu-sub">Sony ANC, AirPods, Earbuds</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=watch" data-category="Electronics" data-search="watch" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Smartwatches &amp; Wearables</span>
+                <span class="cat-menu-sub">Apple Watch, Galaxy Watch</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=tv" data-category="Electronics" data-search="tv" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Smart TVs &amp; Soundbars</span>
+                <span class="cat-menu-sub">4K OLED, QLED, Home Theater</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=camera" data-category="Electronics" data-search="camera" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Cameras &amp; Photography</span>
+                <span class="cat-menu-sub">DSLR, Mirrorless, 4K Video</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Electronics?search=gaming" data-category="Electronics" data-search="gaming" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Gaming &amp; Consoles</span>
+                <span class="cat-menu-sub">PlayStation, Xbox, Controllers</span>
+              </span>
+            </a>
           </div>
         </div>
-        <div class="dropdown category-dropdown">
-          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="fashion-menu" data-dropdown-trigger>Fashion <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
+        <div class="dropdown category-dropdown" data-nav-dropdown="fashion">
+          <button class="category-link category-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="fashion-menu" data-dropdown-trigger aria-label="Fashion categories dropdown">Fashion <svg class="dropdown-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></button>
           <div class="dropdown-menu category-menu" id="fashion-menu" role="menu" aria-label="Fashion categories" data-dropdown-menu>
-            <div class="dropdown-menu-header">Fashion</div>
-            <a class="dropdown-item" href="#womens-fashion" role="menuitem">Women's Fashion</a>
-            <a class="dropdown-item" href="#mens-fashion" role="menuitem">Men's Fashion</a>
-            <a class="dropdown-item" href="#kids-fashion" role="menuitem">Kids' Fashion</a>
-            <a class="dropdown-item" href="#shoes" role="menuitem">Shoes</a>
-            <a class="dropdown-item" href="#bags" role="menuitem">Bags &amp; Accessories</a>
+            <div class="dropdown-menu-header">
+              <span>Fashion Categories</span>
+            </div>
+            <a class="dropdown-item cat-all-item" href="#category/Fashion" data-category="Fashion" data-search="" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">All Fashion</span>
+                <span class="cat-menu-sub">Explore full apparel collection</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=suit" data-category="Fashion" data-search="suit" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Men's Clothing &amp; Suits</span>
+                <span class="cat-menu-sub">Formal Suits, Blazers, Shirts</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=women" data-category="Fashion" data-search="women" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Women's Wear &amp; Sarees</span>
+                <span class="cat-menu-sub">Kanjeevaram, Kurtas, Dresses</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=tshirt" data-category="Fashion" data-search="tshirt" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">T-Shirts, Polos &amp; Tops</span>
+                <span class="cat-menu-sub">Nike, Adidas, Graphic Tees</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=shoe" data-category="Fashion" data-search="shoe" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Shoes &amp; Sneakers</span>
+                <span class="cat-menu-sub">Sneakers, Loafers, Running</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=watch" data-category="Fashion" data-search="watch" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Luxury Watches &amp; Jewelry</span>
+                <span class="cat-menu-sub">Titan, Fossil, Casio, Seiko</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=bag" data-category="Fashion" data-search="bag" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Bags &amp; Backpacks</span>
+                <span class="cat-menu-sub">Luggage, Trolleys, Handbags</span>
+              </span>
+            </a>
+            <a class="dropdown-item" href="#category/Fashion?search=jacket" data-category="Fashion" data-search="jacket" role="menuitem">
+              <span class="cat-menu-text">
+                <span class="cat-menu-name">Jackets &amp; Winterwear</span>
+                <span class="cat-menu-sub">Puffer Jackets, Hoodies, Coats</span>
+              </span>
+            </a>
           </div>
         </div>
         <a href="#home-kitchen" class="category-link">Home &amp; Kitchen</a>

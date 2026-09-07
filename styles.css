@@ -1070,14 +1070,184 @@ small {
 }
 
 .category-dropdown {
+  position: relative;
+  display: inline-flex;
   align-items: center;
 }
 
+.category-dropdown .category-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.category-button .dropdown-arrow {
+  width: 14px;
+  height: 14px;
+  color: #1a0a00;
+  stroke: #1a0a00;
+  stroke-width: 3.2;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.category-dropdown.is-open .dropdown-arrow,
+.category-dropdown [aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .category-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+  .category-dropdown:hover > .category-menu {
+    display: flex !important;
+    animation: dropdown-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+.category-dropdown.is-open > .category-menu,
+.category-dropdown > [data-dropdown-trigger][aria-expanded="true"] + .category-menu {
+  display: flex !important;
+  animation: dropdown-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .category-menu {
-  top: calc(100% + 10px);
+  position: absolute;
+  top: calc(100% + 4px);
   left: 0;
-  min-width: 220px;
+  min-width: 275px;
+  max-width: 320px;
   padding: 8px;
+  background: #131921;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow:
+    0 16px 36px -4px rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  z-index: 9999;
+  flex-direction: column;
+  gap: 2px;
+  display: none;
+}
+
+.category-menu .dropdown-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.category-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #ffffff !important;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 140ms ease, transform 140ms ease, color 140ms ease;
+  box-sizing: border-box;
+}
+
+.category-menu .dropdown-item:hover,
+.category-menu .dropdown-item:focus-visible {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateX(3px);
+  outline: none;
+}
+
+.category-menu .dropdown-item::before {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 0;
+  border-radius: 2px;
+  background: #ff9700;
+  margin-right: -4px;
+  transition: height 140ms ease;
+}
+
+.category-menu .dropdown-item:hover::before {
+  height: 16px;
+}
+
+.category-menu .cat-all-item {
+  background: rgba(255, 151, 0, 0.12) !important;
+  border: 1px solid rgba(255, 151, 0, 0.28) !important;
+  margin-bottom: 4px;
+}
+
+.category-menu .cat-all-item:hover {
+  background: rgba(255, 151, 0, 0.22) !important;
+}
+
+.cat-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.cat-menu-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.cat-menu-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.category-menu .dropdown-item:hover .cat-menu-name {
+  color: #ff9700;
+}
+
+.cat-menu-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+.cat-menu-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  background: #ff9700;
+  color: #1a0a00;
+  padding: 2px 7px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .deals-link {
@@ -1087,14 +1257,6 @@ small {
 .category-link:hover,
 .category-link:focus-visible {
   border-color: #1a0a00;
-}
-
-.category-button svg {
-  width: 15px;
-  height: 15px;
-  color: #1a0a00;
-  stroke: #1a0a00;
-  stroke-width: 3.2;
 }
 
 .hot-badge {
@@ -1428,6 +1590,98 @@ small {
     flex-shrink: 0 !important;
     font-size: 12px !important;
   }
+
+  .category-dropdown {
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    position: relative !important;
+  }
+
+  .category-dropdown .category-button {
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 3px 6px !important;
+    min-height: 28px !important;
+    gap: 4px !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer !important;
+  }
+
+  .category-dropdown .category-button .dropdown-arrow {
+    width: 13px !important;
+    height: 13px !important;
+    pointer-events: none;
+    flex-shrink: 0 !important;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .category-dropdown.is-open .dropdown-arrow,
+  .category-dropdown [aria-expanded="true"] .dropdown-arrow {
+    transform: rotate(180deg) !important;
+  }
+
+  /* Fixed viewport positioning centered horizontally on mobile */
+  .category-dropdown.is-open > .category-menu,
+  .category-dropdown > [data-dropdown-trigger][aria-expanded="true"] + .category-menu {
+    position: fixed !important;
+    display: flex !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(340px, calc(100vw - 28px)) !important;
+    max-width: calc(100vw - 28px) !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    box-shadow:
+      0 20px 48px -6px rgba(0, 0, 0, 0.8),
+      0 8px 24px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.14) inset !important;
+    z-index: 100000 !important;
+  }
+}
+
+/* Ensure site-header elevates above the backdrop when category dropdown is locked open on mobile */
+body.category-dropdown-locked #site-header,
+body.category-dropdown-locked .site-header,
+html.category-dropdown-locked #site-header,
+html.category-dropdown-locked .site-header {
+  z-index: 100005 !important;
+}
+
+/* Category dropdown mobile backdrop (transparent outside-click catcher with no blur) */
+.category-dropdown-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  z-index: 100000;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.category-dropdown-backdrop.is-active {
+  display: block;
+  pointer-events: auto;
+}
+
+body.category-dropdown-locked,
+html.category-dropdown-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+.category-menu {
+  touch-action: pan-y !important;
+}
+
+.category-menu .dropdown-item {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 /* Extra Small Phones (<= 420px) */
@@ -7592,22 +7846,43 @@ small {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255,255,255,0.92);
-  border: 1px solid rgba(0,0,0,0.08);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
   transition: all 140ms ease;
   z-index: 2;
-  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.com-wishlist-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex-shrink: 0;
+  transition: transform 140ms ease;
 }
 
 .com-wishlist-btn:hover {
   background: #fee2e2;
   border-color: #fca5a5;
+  transform: scale(1.08);
+}
+
+.com-wishlist-btn.is-active {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.com-wishlist-btn.is-active svg {
+  fill: #ef4444 !important;
+  stroke: #ef4444 !important;
 }
 
 .com-prod-card:hover .com-prod-img-wrap img {
@@ -10219,6 +10494,17 @@ small {
   color: #1e293b;
 }
 
+.ord-nav-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+  background: #ffffff;
+  padding: 0 12px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
 .invoice-tab-btn {
   padding: 10px 18px;
   border: none;
@@ -10229,11 +10515,75 @@ small {
   cursor: pointer;
   border-bottom: 3px solid transparent;
   transition: all 140ms ease;
+  white-space: nowrap;
 }
 
 .invoice-tab-btn.is-active {
   color: #000000 !important;
   border-bottom-color: #000000 !important;
+}
+
+/* === TRACK PACKAGE ITEM CARD BASE === */
+.track-pkg-item-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+}
+
+.track-pkg-item-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.track-pkg-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.track-pkg-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.track-pkg-item-name {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #000000;
+  line-height: 1.35;
+}
+
+.track-pkg-item-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.track-pkg-item-meta {
+  font-size: 12.5px;
+  color: #000000;
 }
 
 .order-clickable-item {
@@ -10487,7 +10837,7 @@ body {
 
   /* Commercial Hero Banners formatting & single-line perk tags on mobile */
   .com-hero-banner {
-    padding: 18px 16px !important;
+    padding: 16px 12px !important;
     border-radius: 12px !important;
     margin-bottom: 16px !important;
     gap: 12px !important;
@@ -10521,7 +10871,7 @@ body {
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 5px !important;
     margin-top: 8px !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
@@ -10541,7 +10891,7 @@ body {
     justify-content: center !important;
     text-align: center !important;
     white-space: nowrap !important;
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     font-weight: 700 !important;
     padding: 5px 3px !important;
     border-radius: 20px !important;
@@ -10549,7 +10899,17 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     color: #ffffff !important;
     line-height: 1.2 !important;
+    letter-spacing: -0.2px !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .perk-pill span {
+    display: block !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
   }
 
   /* Mobile Account Hero Profile Card */
@@ -11102,6 +11462,49 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
+  /* === NAVIGATION TABS: All 4 buttons fit in one line on mobile without horizontal scroll === */
+  .ord-nav-tabs {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+    padding: 0 2px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    margin-bottom: 16px !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .ord-nav-tabs .invoice-tab-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 25% !important;
+    max-width: 25% !important;
+    padding: 8px 2px 7px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    word-break: normal !important;
+    border-bottom: 2.5px solid transparent !important;
+    letter-spacing: -0.15px !important;
+    color: #000000 !important;
+    box-sizing: border-box !important;
+  }
+
+  .ord-nav-tabs .invoice-tab-btn.is-active {
+    border-bottom-color: #000000 !important;
+    color: #000000 !important;
+    font-weight: 900 !important;
+  }
+
   /* Reduce card padding */
   .invoice-paper-card {
     padding: 14px 12px !important;
@@ -11226,7 +11629,99 @@ body {
   .track-milestone-card {
     width: 100% !important;
     box-sizing: border-box !important;
-    padding: 10px 14px !important;
+  }
+
+  /* === TRACK PACKAGE ITEM CARD — MOBILE REDESIGN === */
+  .track-pkg-item-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    padding: 12px 10px !important;
+    gap: 12px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .track-pkg-item-img {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 8px !important;
+    object-fit: contain !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    flex-shrink: 0 !important;
+    padding: 2px !important;
+    box-sizing: border-box !important;
+  }
+
+  .track-pkg-item-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+  }
+
+  .track-pkg-item-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    width: 100% !important;
+  }
+
+  .track-pkg-item-name {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    word-break: break-word !important;
+  }
+
+  .track-pkg-item-meta {
+    font-size: 11.5px !important;
+    color: #475569 !important;
+    line-height: 1.3 !important;
+    margin-top: 1px !important;
+  }
+
+  .track-pkg-item-badge {
+    align-self: flex-start !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    padding: 2.5px 8px !important;
+    border-radius: 4px !important;
+    margin-top: 3px !important;
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    display: inline-block !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .ord-nav-tabs .invoice-tab-btn {
+    font-size: 9.5px !important;
+    padding: 7px 1px 6px !important;
+    letter-spacing: -0.25px !important;
+  }
+
+  .com-hero-banner {
+    padding: 14px 10px !important;
+  }
+
+  .com-hero-perks {
+    gap: 3px !important;
+  }
+
+  .perk-pill {
+    font-size: 8.5px !important;
+    padding: 4px 2px !important;
+    letter-spacing: -0.3px !important;
   }
 }
 
@@ -11402,97 +11897,162 @@ div:has(> #page-wallet-bal-display) {
     gap: 10px !important;
   }
 
-  /* ── Product card: no internal padding, image flush to edges ── */
+  /* ── Product card: compact height on mobile ── */
   .com-prod-card {
     padding: 0 !important;
     border-radius: 12px !important;
     overflow: hidden !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
   }
 
-  /* Taller image for mobile 2-col card (Amazon style) */
+  /* Compact image height for mobile 2-col card */
   .com-prod-img-wrap {
-    height: 160px !important;
+    height: 125px !important;
     border-radius: 0 !important;
     margin-bottom: 0 !important;
     width: 100% !important;
+    background: #f8fafc !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
-  /* Badge: smaller on mobile */
+  .com-prod-img-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Badge: compact on mobile */
   .com-tag-badge {
-    font-size: 9.5px !important;
-    padding: 2px 6px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    padding: 2px 5px !important;
     top: 7px !important;
     left: 7px !important;
+    border-radius: 4px !important;
+    z-index: 5 !important;
+    letter-spacing: 0.2px !important;
   }
 
-  /* Wishlist: slightly smaller on mobile */
+  /* Wishlist: proper floating circular format on mobile */
   .com-wishlist-btn {
-    width: 26px !important;
-    height: 26px !important;
+    width: 28px !important;
+    height: 28px !important;
     top: 7px !important;
     right: 7px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    z-index: 5 !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer !important;
+    transition: all 140ms ease !important;
   }
 
-  /* Product info: padded separately since card has no padding */
+  .com-wishlist-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+    transition: transform 140ms ease !important;
+  }
+
+  .com-wishlist-btn:active svg {
+    transform: scale(0.85) !important;
+  }
+
+  .com-wishlist-btn.is-active {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25) !important;
+  }
+
+  .com-wishlist-btn.is-active svg {
+    fill: #ef4444 !important;
+    stroke: #ef4444 !important;
+  }
+
+  /* Product info: compact spacing */
   .com-prod-info {
-    padding: 10px 10px 12px !important;
-    gap: 3px !important;
+    padding: 8px 8px 10px !important;
+    gap: 2px !important;
   }
 
   .com-brand-sub {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
+    margin-bottom: 1px !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.2px !important;
   }
 
   .com-prod-name {
-    font-size: 12.5px !important;
+    font-size: 11.5px !important;
     font-weight: 700 !important;
-    margin-bottom: 5px !important;
+    margin-bottom: 3px !important;
+    line-height: 1.25 !important;
+    height: 2.5em !important;
+    overflow: hidden !important;
+    display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
   }
 
   .com-rating-row {
-    margin-bottom: 6px !important;
+    margin-bottom: 3px !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 3px !important;
+    align-items: center !important;
   }
 
   .com-stars {
-    font-size: 10px !important;
-    padding: 1px 5px !important;
+    font-size: 9.5px !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
   }
 
   .com-rev-count {
-    font-size: 10.5px !important;
+    font-size: 9.5px !important;
   }
 
   .prime-delivery-pill {
-    font-size: 10px !important;
-    padding: 1px 5px !important;
+    font-size: 9px !important;
+    padding: 1px 4px !important;
   }
 
   .com-final-price {
-    font-size: 15px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
   }
 
   .com-orig-price {
-    font-size: 11px !important;
+    font-size: 10.5px !important;
   }
 
   .com-save-text {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     color: #16a34a !important;
   }
 
   .com-pricing-row {
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 3px !important;
     align-items: baseline !important;
   }
 
   .com-delivery-note {
-    font-size: 10.5px !important;
-    margin: 4px 0 0 !important;
+    font-size: 9.5px !important;
+    margin: 2px 0 0 !important;
     color: #475569 !important;
+    line-height: 1.2 !important;
   }
 
   /* Catalog toolbar compact */
