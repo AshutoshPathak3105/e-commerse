@@ -12248,26 +12248,150 @@ div:has(> #page-wallet-bal-display) {
 }
 
 /* ==========================================================================
-   DELIVERY ADDRESSES PAGE — MOBILE HERO BANNER LAYOUT
-   Stacks content vertically and pins "+ Add New Address" to top-right
+   DELIVERY ADDRESSES PAGE — HERO BANNER & MOBILE TOP-RIGHT BUTTON LAYOUT
    ========================================================================== */
-@media (max-width: 768px) {
+.addr-hero-banner {
+  background: linear-gradient(135deg, #091e3a 0%, #1e3a8a 100%) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 24px !important;
+  padding: 28px 32px !important;
+  border-radius: 16px !important;
+  margin-bottom: 24px !important;
+  position: relative !important;
+}
 
-  /* Make the banner a relative container so we can position the button */
+.addr-hero-banner .com-hero-left {
+  flex: 1;
+  min-width: 280px;
+}
+
+.addr-hero-banner .com-hero-title {
+  margin: 0 0 8px !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+}
+
+.addr-hero-banner .com-hero-desc {
+  margin: 0 0 16px !important;
+  font-size: 13.5px !important;
+  color: #cbd5e1 !important;
+  line-height: 1.5 !important;
+  max-width: 650px;
+}
+
+.addr-hero-banner .com-hero-perks {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 6px !important;
+}
+
+.addr-add-btn-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.addr-add-btn-wrap #addr-page-add-toggle-btn {
+  background: #ff9700 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: none !important;
+  padding: 13px 26px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  box-shadow: 0 4px 14px rgba(255,151,0,0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+.addr-add-btn-wrap #addr-page-add-toggle-btn:hover {
+  background: #ffa826 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(255,151,0,0.45) !important;
+}
+
+@media (max-width: 768px) {
+  /* Make the banner a relative container and switch to block layout */
   .addr-hero-banner {
+    display: block !important;
     position: relative !important;
-    display: block !important;       /* switch from flex row to block */
     padding: 18px 16px !important;
-    padding-top: 16px !important;
+    border-radius: 14px !important;
+    margin-bottom: 18px !important;
   }
 
   /* Text column takes full width */
   .addr-hero-banner .com-hero-left {
     min-width: 0 !important;
     width: 100% !important;
-    /* Leave room on the right for the absolute button (≈130px) */
-    padding-right: 120px !important;
+    padding-right: 0 !important;
     box-sizing: border-box !important;
+  }
+
+  /* Title wraps neatly on the left while leaving room for the top-right button */
+  .addr-hero-banner .com-hero-title {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+    margin: 0 0 10px 0 !important;
+    padding-right: 145px !important;
+    box-sizing: border-box !important;
+    word-break: break-word !important;
+  }
+
+  /* Description takes 100% width across the card below the title/button */
+  .addr-hero-banner .com-hero-desc {
+    width: 100% !important;
+    font-size: 12.5px !important;
+    line-height: 1.45 !important;
+    color: #cbd5e1 !important;
+    margin: 0 0 12px 0 !important;
+  }
+
+  /* Perks stretch cleanly across full width of card */
+  .addr-hero-banner .com-hero-perks {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .addr-hero-banner .perk-pill {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 6px 4px !important;
+    border-radius: 20px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.2px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .addr-hero-banner .perk-pill span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+    max-width: 100% !important;
   }
 
   /* Pin the button wrapper to top-right inside the banner */
@@ -12276,17 +12400,59 @@ div:has(> #page-wallet-bal-display) {
     top: 16px !important;
     right: 16px !important;
     margin-top: 0 !important;
+    z-index: 2 !important;
   }
 
-  /* Shrink the button to fit the corner */
+  /* Compact button styling for top-right mobile corner */
   .addr-add-btn-wrap #addr-page-add-toggle-btn {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
+    padding: 8px 13px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
     border-radius: 8px !important;
     white-space: nowrap !important;
     gap: 4px !important;
+    box-shadow: 0 3px 10px rgba(255,151,0,0.35) !important;
   }
 }
+
+@media (max-width: 400px) {
+  .addr-hero-banner {
+    padding: 14px 12px !important;
+  }
+
+  .addr-hero-banner .com-hero-title {
+    font-size: 16.5px !important;
+    padding-right: 125px !important;
+  }
+
+  .addr-hero-banner .com-hero-desc {
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+    margin: 0 0 10px 0 !important;
+  }
+
+  .addr-add-btn-wrap {
+    top: 13px !important;
+    right: 12px !important;
+  }
+
+  .addr-add-btn-wrap #addr-page-add-toggle-btn {
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    border-radius: 7px !important;
+  }
+
+  .addr-hero-banner .com-hero-perks {
+    gap: 4px !important;
+  }
+
+  .addr-hero-banner .perk-pill {
+    font-size: 8.5px !important;
+    padding: 5px 2px !important;
+    letter-spacing: -0.3px !important;
+  }
+}
+
 
 /* ==========================================================================
    STORE PAGE — MOBILE FILTER DROPDOWNS + 2-COLUMN PRODUCT GRID

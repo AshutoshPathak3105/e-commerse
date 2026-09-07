@@ -6932,18 +6932,18 @@ function initPageRouter() {
     pageContainer.innerHTML = `
       <div class="commercial-window-wrap">
         <!-- Hero Banner -->
-        <div class="com-hero-banner" style="background: linear-gradient(135deg, #091e3a 0%, #1e3a8a 100%); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; padding: 28px 32px; border-radius: 16px; margin-bottom: 24px;">
-          <div class="com-hero-left" style="flex: 1; min-width: 280px;">
-            <h1 class="com-hero-title" style="margin: 0 0 8px; font-size: 26px; font-weight: 800; color: #ffffff;">Your Delivery Addresses</h1>
-            <p class="com-hero-desc" style="margin: 0 0 16px; font-size: 13.5px; color: #cbd5e1; line-height: 1.5;">Manage your primary shipping destinations, residence & office locations, and PIN codes for 1-click express checkout.</p>
-            <div class="com-hero-perks" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+        <div class="com-hero-banner addr-hero-banner">
+          <div class="com-hero-left">
+            <h1 class="com-hero-title">Your Delivery Addresses</h1>
+            <p class="com-hero-desc">Manage your primary shipping destinations, residence & office locations, and PIN codes for 1-click express checkout.</p>
+            <div class="com-hero-perks">
               <div class="perk-pill"><span>19,000+ PIN Codes</span></div>
               <div class="perk-pill"><span>Fast Checkout</span></div>
               <div class="perk-pill"><span>Secure OTP</span></div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: flex-start; margin-top: 14px;">
-            <button id="addr-page-add-toggle-btn" class="com-btn-primary" style="background: #ff9700; color: #000000; font-weight: 800; border: none; padding: 13px 26px; border-radius: 10px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 14px rgba(255,151,0,0.35); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;">+ Add New Address</button>
+          <div class="addr-add-btn-wrap">
+            <button id="addr-page-add-toggle-btn" class="com-btn-primary">+ Add New Address</button>
           </div>
         </div>
 
