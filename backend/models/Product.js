@@ -2,10 +2,18 @@ const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema(
   {
-    user:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    name:    { type: String, required: true },
-    rating:  { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, required: true, maxlength: 1000 },
+    user:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+    name:        { type: String, required: true },
+    title:       { type: String, default: '' },
+    rating:      { type: Number, required: true, min: 1, max: 5 },
+    comment:     { type: String, required: true, maxlength: 2000 },
+    status:      { type: String, enum: ['Approved', 'Pending', 'Flagged'], default: 'Approved' },
+    verified:    { type: Boolean, default: true },
+    helpful:     { type: Number, default: 0 },
+    adminReply:  { type: String, default: '' },
+    flagReason:  { type: String, default: '' },
+    sentiment:   { type: String, default: 'Positive' },
+    spamScore:   { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -83,6 +91,20 @@ const productSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    sellerEmail: {
+      type: String,
+    },
+    sellerStoreName: {
+      type: String,
+    },
+    isSellerDeactivated: {
+      type: Boolean,
+      default: false,
     },
     deliveryInfo: {
       type: String,

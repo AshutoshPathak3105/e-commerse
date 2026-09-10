@@ -18,6 +18,28 @@ const shippingAddressSchema = new mongoose.Schema({
   phone:   { type: String, required: true },
 });
 
+const returnRequestSchema = new mongoose.Schema(
+  {
+    rmaNumber:     { type: String },
+    reason:        { type: String },
+    comments:      { type: String },
+    pickupAddress: { type: mongoose.Schema.Types.Mixed },
+    refundMethod:  { type: String, default: 'wallet' },
+    status:        {
+      type: String,
+      enum: ['Requested', 'Approved', 'Item_Picked_Up', 'Refunded', 'Rejected'],
+      default: 'Requested',
+    },
+    reverseAwb:    { type: String },
+    refundAmount:  { type: Number },
+    refundUtr:     { type: String },
+    refundedAt:    { type: Date },
+    adminNotes:    { type: String },
+    requestedAt:   { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     user: {
@@ -44,16 +66,37 @@ const orderSchema = new mongoose.Schema(
     totalPrice:    { type: Number, required: true, default: 0 },
     status: {
       type: String,
-      enum: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
+      enum: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested', 'Refunded'],
       default: 'Pending',
     },
-    isPaid:       { type: Boolean, default: false },
-    paidAt:       Date,
-    isDelivered:  { type: Boolean, default: false },
-    deliveredAt:  Date,
+    isPaid:         { type: Boolean, default: false },
+    paidAt:         Date,
+    isDelivered:    { type: Boolean, default: false },
+    deliveredAt:    Date,
     trackingNumber: String,
+    trackingNo:     String,
+    carrier:        { type: String, default: 'Delhivery Express' },
     estimatedDelivery: Date,
-    notes: { type: String, maxlength: 500 },
+    dispatchedAt:   Date,
+    deliveryOtp:    { type: String, default: '4892' },
+    liveCoordinates: {
+      lat: { type: Number, default: 28.6139 },
+      lng: { type: Number, default: 77.2090 },
+      hubName: { type: String, default: 'Sorting Facility' },
+    },
+    checkpoints: [
+      {
+        status:      { type: String, required: true },
+        location:    { type: String, default: '' },
+        description: { type: String, default: '' },
+        timestamp:   { type: Date, default: Date.now },
+        completed:   { type: Boolean, default: true },
+      },
+    ],
+    notes:          { type: String, maxlength: 500 },
+    returnRequest:  returnRequestSchema,
+    refundApproved: { type: Boolean, default: false },
+    refundAt:       Date,
   },
   {
     timestamps: true,

@@ -8,29 +8,63 @@
       content="A high-fidelity X-Mart storefront navigation bar."
     />
     <title>X-Mart | Superstore</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+
+    <style>
+      /* Zero storefront flash when refreshing Admin Console */
+      html.admin-mode-preload {
+        background-color: #0b1329 !important;
+      }
+      html.admin-mode-preload body > *:not(#admin-panel-overlay) {
+        display: none !important;
+      }
+      html.admin-mode-preload #admin-panel-overlay {
+        display: flex !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+      }
+    </style>
+    <script>
+      (function() {
+        try {
+          var u = JSON.parse(localStorage.getItem('xmart_user') || 'null');
+          var isExplicit = localStorage.getItem('xmart_admin_active') === '1' || sessionStorage.getItem('xmart_admin_active') === '1';
+          var isAuth = u && (u.role === 'admin' || u.staffRole);
+          if (isAuth || isExplicit) {
+            document.documentElement.classList.add('admin-mode-preload');
+          }
+          // Never allow stuck visibility
+          document.documentElement.style.visibility = '';
+        } catch (e) {}
+      })();
+    </script>
+
     <link rel="icon" type="image/png" href="logo-square.png" />
     <link rel="apple-touch-icon" href="logo-square.png" />
-    <link rel="stylesheet" href="styles.css?v=14.5" />
+    <!-- Google Fonts: Playfair Display + Inter (Admin Panel + Global) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="styles.css?v=47.0" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="script.js?v=14.5" defer></script>
+    <script src="script.js?v=66.0" defer></script>
   </head>
   <body id="top">
     <header class="site-header">
       <div class="utility-bar">
-        <div class="delivery-message ticker-wrap" id="utility-ticker" aria-live="polite">
-          <div class="ticker-slide is-active">Free delivery on orders over <strong>₹499</strong></div>
-          <div class="ticker-slide">Mega Sale: Up to <strong>60% OFF</strong> Trending Deals</div>
-          <div class="ticker-slide">Flash Deal: Extra <strong>10% OFF</strong> Code: <strong>XMART10</strong></div>
-          <div class="ticker-slide">Trending: Best Offers on Mobiles & Laptops</div>
-          <div class="ticker-slide">100% Genuine Products & 7-Day Easy Returns</div>
+        <div class="utility-left-group">
+          <button class="topbar-offers-pill" id="topbar-offers-btn" type="button" aria-label="View store offers and vouchers">
+            <span>Offers &amp; Vouchers</span>
+            <span class="pill-badge" id="topbar-offers-count">4 Live</span>
+          </button>
+          <div class="delivery-message ticker-wrap" id="utility-ticker" aria-live="polite">
+            <div class="ticker-slide is-active">Free delivery on orders over <strong>₹499</strong></div>
+            <div class="ticker-slide">Mega Sale: Up to <strong>60% OFF</strong> Trending Deals</div>
+            <div class="ticker-slide">Flash Deal: Extra <strong>10% OFF</strong> Code: <strong>XMART10</strong></div>
+            <div class="ticker-slide">Trending: Best Offers on Mobiles & Laptops</div>
+            <div class="ticker-slide">100% Genuine Products & 7-Day Easy Returns</div>
+          </div>
         </div>
 
         <nav class="utility-links" aria-label="Utility navigation">
@@ -95,7 +129,7 @@
               </div>
             </div>
             <label class="visually-hidden" for="product-search">Search X-Mart products</label>
-            <input id="product-search" type="search" placeholder="Search X-Mart products..." />
+            <input id="product-search" type="search" />
             <button class="search-submit" type="submit" aria-label="Search">
               <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
             </button>
@@ -1344,9 +1378,9 @@
                 Subscribe for exclusive drop alerts, flash sale secrets, and personalized recommendations.
               </p>
               <div class="newsletter-perks">
-                <span class="perk-badge">✓ Flash Deals</span>
-                <span class="perk-badge">✓ Early Access</span>
-                <span class="perk-badge">✓ Zero Spam</span>
+                <span class="perk-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>Flash Deals</span>
+                <span class="perk-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>Early Access</span>
+                <span class="perk-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>Zero Spam</span>
               </div>
             </div>
 
@@ -1361,7 +1395,6 @@
                       id="newsletter-email"
                       name="email"
                       class="newsletter-input"
-                      placeholder="Enter your work or personal email..."
                       required
                       autocomplete="email"
                     />
@@ -1593,9 +1626,9 @@
             </nav>
           </div>
 
-          <!-- Made with ❤️ in India -->
+          <!-- Made with Care in India -->
           <div class="footer-made-in-india">
-            <span>Made with <span class="footer-heart">❤️</span> in India</span>
+            <span>Made with <svg width="13" height="13" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" style="vertical-align:-1px;display:inline-block;margin:0 2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> in India</span>
           </div>
         </div>
       </section>
@@ -1613,5 +1646,8 @@
       }
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Admin Command Centre Overlay Mount Point -->
+    <div id="admin-panel-overlay"></div>
   </body>
 </html>

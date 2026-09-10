@@ -1,17 +1,11 @@
-const dns = require('dns');
 const mongoose = require('mongoose');
-
-// Configure public DNS resolvers to prevent querySrv ECONNREFUSED from local ISP/router DNS
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch (e) {
-  // Ignore if unsupported
-}
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
     });
 
     console.log(`\n🟢  MongoDB Atlas Connected: ${conn.connection.host}\n`);

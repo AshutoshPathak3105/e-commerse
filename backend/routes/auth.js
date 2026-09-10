@@ -73,8 +73,8 @@ router.post(
     );
 
     console.log(`\n══════════════════════════════════════════════════════`);
-    console.log(`🔑 [X-MART REGISTRATION OTP] Email: ${email}`);
-    console.log(`👉 CODE: ${otp} (Expires in 15 min)`);
+    console.log(`[X-MART REGISTRATION OTP] Email: ${email}`);
+    console.log(`CODE: ${otp} (Expires in 15 min)`);
     console.log(`══════════════════════════════════════════════════════\n`);
 
     // Send Registration OTP Email via Brevo
@@ -181,6 +181,161 @@ router.post(
   })
 );
 
+// ── POST /api/auth/admin-register ─── Create or Update Admin Account ──
+router.post(
+  '/admin-register',
+  asyncHandler(async (req, res) => {
+    const { name, email, password, phone } = req.body;
+    if (!email || !password) {
+      res.status(400);
+      throw new Error('Email and password are required');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    let user = await User.findOne({ email: cleanEmail });
+    if (user) {
+      user.role = 'admin';
+      if (password) user.password = password;
+      if (name) user.name = name;
+      if (phone) user.phone = phone;
+      user.isActive = true;
+      await user.save();
+    } else {
+      user = await User.create({
+        name: name || 'Admin Master',
+        email: cleanEmail,
+        password,
+        phone: phone || '9999999999',
+        role: 'admin',
+        isActive: true,
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin account created successfully',
+      data: {
+        _id:   user._id,
+        name:  user.name,
+        email: user.email,
+        phone: user.phone,
+        role:  user.role,
+        token: generateToken(user._id),
+      },
+    });
+  })
+);
+
+// ── POST /api/auth/admin-register-send-otp ─── Step 1: Send admin registration OTP
+router.post(
+  '/admin-register-send-otp',
+  registerRules,
+  validate,
+  asyncHandler(async (req, res) => {
+    const { name, email, password, phone } = req.body;
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingAdmin = await User.findOne({ email: cleanEmail, role: 'admin' });
+    if (existingAdmin) {
+      res.status(409);
+      throw new Error('An administrator account with this email already exists. Please sign in instead.');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store pending credentials with 15-minute expiry
+    await PendingUser.findOneAndUpdate(
+      { email: cleanEmail },
+      { name, email: cleanEmail, phone, password, otp, createdAt: new Date() },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    console.log(`\n══════════════════════════════════════════════════════`);
+    console.log(`[X-MART ADMIN REGISTRATION OTP] Email: ${cleanEmail}`);
+    console.log(`CODE: ${otp} (Expires in 15 min)`);
+    console.log(`══════════════════════════════════════════════════════\n`);
+
+    sendPasswordResetEmail({ email: cleanEmail, name, otp, type: 'register' }).catch(err => {
+      console.error('[Brevo Admin Register OTP Failed]:', err);
+    });
+
+    res.json({
+      success: true,
+      message: `Verification code sent to ${cleanEmail}. Please check your email to complete admin setup.`,
+      data: { email: cleanEmail }
+    });
+  })
+);
+
+// ── POST /api/auth/admin-register-verify-otp ── Step 2: Verify OTP & create admin
+router.post(
+  '/admin-register-verify-otp',
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    const cleanEmail = email.toLowerCase().trim();
+
+    const pending = await PendingUser.findOne({ email: cleanEmail, otp });
+    if (!pending) {
+      res.status(400);
+      throw new Error('Invalid or expired verification code. Please request a new code.');
+    }
+
+    let user = await User.findOne({ email: cleanEmail });
+    if (user) {
+      user.role = 'admin';
+      if (pending.password) user.password = pending.password;
+      if (pending.name) user.name = pending.name;
+      if (pending.phone) user.phone = pending.phone;
+      user.isActive = true;
+      await user.save();
+    } else {
+      user = await User.create({
+        name: pending.name,
+        email: pending.email,
+        phone: pending.phone,
+        password: pending.password,
+        role: 'admin',
+        isActive: true,
+      });
+    }
+
+    await PendingUser.deleteOne({ _id: pending._id });
+
+    sendWelcomeEmail({ email: user.email, name: user.name }).catch(err => {
+      console.error('[Brevo Admin Welcome Email Failed]:', err);
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin account verified and created successfully! Welcome to X-Mart Command Centre.',
+      data: {
+        _id:   user._id,
+        name:  user.name,
+        email: user.email,
+        phone: user.phone,
+        role:  user.role,
+        token: generateToken(user._id),
+      },
+    });
+  })
+);
+
+// ── GET /api/auth/admin-check ─── Check if Admin Account Exists ───────
+router.get(
+  '/admin-check',
+  asyncHandler(async (req, res) => {
+    const adminExists = await User.exists({ role: 'admin' });
+    res.json({
+      success: true,
+      hasAdmin: !!adminExists,
+    });
+  })
+);
+
 // ── POST /api/auth/login ─────────────────────────────────────
 router.post(
   '/login',
@@ -208,11 +363,13 @@ router.post(
         _id:       user._id,
         name:      user.name,
         email:     user.email,
-        role:      user.role,
-        phone:     user.phone,
-        avatar:    user.avatar,
-        addresses: user.addresses,
-        token:     generateToken(user._id),
+        role:        user.role,
+        staffRole:   user.staffRole || (user.role === 'admin' ? 'Super Administrator' : 'Staff'),
+        permissions: user.permissions || [],
+        phone:       user.phone,
+        avatar:      user.avatar,
+        addresses:   user.addresses,
+        token:       generateToken(user._id),
       },
     });
   })
@@ -289,9 +446,11 @@ router.post(
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        phone: user.phone,
-        avatar: user.avatar,
+        role:        user.role,
+        staffRole:   user.staffRole || (user.role === 'admin' ? 'Super Administrator' : 'Staff'),
+        permissions: user.permissions || [],
+        phone:       user.phone,
+        avatar:      user.avatar,
         addresses: user.addresses,
         token: generateToken(user._id),
       }
@@ -354,8 +513,8 @@ router.post(
     await user.save();
 
     console.log(`\n══════════════════════════════════════════════════════`);
-    console.log(`🔑 [X-MART PROFILE UPDATE OTP] User: ${user.email} (Target: ${email})`);
-    console.log(`👉 CODE: ${otp} (Expires in 15 min)`);
+    console.log(`[X-MART PROFILE UPDATE OTP] User: ${user.email} (Target: ${email})`);
+    console.log(`CODE: ${otp} (Expires in 15 min)`);
     console.log(`══════════════════════════════════════════════════════\n`);
 
     // Send OTP to user's registered email
@@ -564,8 +723,151 @@ router.post(
 
     res.json({
       success: true,
-      message: `🎉 Merchant account "${user.sellerProfile.storeName}" is verified! You are now eligible to list products on X-Mart.`,
+      message: `Merchant account "${user.sellerProfile.storeName}" is verified! You are now eligible to list products on X-Mart.`,
       data: updated.sellerProfile,
+    });
+  })
+);
+
+// ── DELETE /api/auth/seller/remove ─── Remove/deactivate seller account ──
+router.delete(
+  '/seller/remove',
+  protect,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404);
+      throw new Error('User account not found');
+    }
+
+    user.sellerProfile = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Seller account removed successfully.',
+    });
+  })
+);
+
+// ── POST /api/auth/seller/send-toggle-otp ─── Send OTP for seller activation/deactivation ──
+router.post(
+  '/seller/send-toggle-otp',
+  protect,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select('+otp +otpExpiry +otpType');
+    if (!user || !user.sellerProfile) {
+      res.status(404);
+      throw new Error('No seller profile found for this account.');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.otpType = 'seller-toggle';
+    await user.save();
+
+    console.log(`\n══════════════════════════════════════════════════════`);
+    console.log(`[X-MART SELLER TOGGLE OTP] Email: ${user.email}`);
+    console.log(`CODE: ${otp} (Expires in 10 min)`);
+    console.log(`══════════════════════════════════════════════════════\n`);
+
+    sendPasswordResetEmail({
+      email: user.email,
+      name: user.sellerProfile.storeName || user.name,
+      otp,
+      type: 'seller-toggle'
+    }).catch(err => {
+      console.error('[Brevo Seller Toggle OTP Failed]:', err);
+    });
+
+    res.json({
+      success: true,
+      message: `OTP sent to ${user.email}. Enter it to confirm seller account status change.`,
+      data: { email: user.email }
+    });
+  })
+);
+
+// ── POST /api/auth/seller/toggle-status ─── Verify OTP & activate/deactivate/remove seller ──
+router.post(
+  '/seller/toggle-status',
+  protect,
+  [
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit OTP code is required'),
+    body('action').isIn(['activate', 'deactivate', 'remove']).withMessage('Action must be activate, deactivate, or remove'),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { otp, action } = req.body;
+    const user = await User.findById(req.user._id).select('+otp +otpExpiry +otpType');
+    if (!user || !user.sellerProfile) {
+      res.status(404);
+      throw new Error('No seller profile found.');
+    }
+
+    if (!user.otp || user.otp !== otp.trim()) {
+      res.status(400);
+      throw new Error('Invalid verification code.');
+    }
+
+    if (!user.otpExpiry || user.otpExpiry < Date.now()) {
+      res.status(400);
+      throw new Error('Verification code has expired. Please request a new one.');
+    }
+
+    if (user.otpType !== 'seller-toggle') {
+      res.status(400);
+      throw new Error('Invalid OTP session.');
+    }
+
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    user.otpType = undefined;
+
+    let responseMessage = '';
+    const Product = require('../models/Product');
+    const storeName = user.sellerProfile?.storeName;
+    const sellerQuery = {
+      $or: [
+        { seller: user._id },
+        { sellerEmail: user.email.toLowerCase() },
+        ...(storeName ? [{ brand: storeName }, { sellerStoreName: storeName }] : [])
+      ]
+    };
+
+    if (action === 'activate') {
+      user.sellerProfile.isActive = true;
+      responseMessage = 'Seller account activated successfully! Your storefront and listings are now active.';
+      try {
+        await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: false } });
+      } catch (prodErr) {
+        console.warn('[Product Activate Sync Notice]:', prodErr.message);
+      }
+    } else if (action === 'deactivate') {
+      user.sellerProfile.isActive = false;
+      responseMessage = 'Seller account deactivated. Your listings are paused from public view.';
+      try {
+        await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: true } });
+      } catch (prodErr) {
+        console.warn('[Product Deactivate Sync Notice]:', prodErr.message);
+      }
+    } else if (action === 'remove') {
+      user.sellerProfile = undefined;
+      responseMessage = 'Seller account permanently removed. All seller privileges have been revoked.';
+      try {
+        await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: true } });
+      } catch (prodErr) {
+        console.warn('[Product Remove Sync Notice]:', prodErr.message);
+      }
+    }
+
+    const updated = await user.save();
+
+    res.json({
+      success: true,
+      message: responseMessage,
+      data: updated.sellerProfile || null,
     });
   })
 );
@@ -637,8 +939,8 @@ router.post(
     await user.save();
 
     console.log(`\n══════════════════════════════════════════════════════`);
-    console.log(`🔑 [X-MART ${type.toUpperCase()} OTP] Email: ${user.email}`);
-    console.log(`👉 CODE: ${otp} (Expires in ${expiryMinutes} min)`);
+    console.log(`[X-MART ${type.toUpperCase()} OTP] Email: ${user.email}`);
+    console.log(`CODE: ${otp} (Expires in ${expiryMinutes} min)`);
     console.log(`══════════════════════════════════════════════════════\n`);
 
     // Send OTP via Brevo

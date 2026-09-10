@@ -22,6 +22,7 @@ const sellerProfileSchema = new mongoose.Schema({
   bankIfsc:   { type: String, trim: true, uppercase: true, required: true },
   category:   { type: String, default: 'Electronics' },
   isVerified: { type: Boolean, default: true },
+  isActive:   { type: Boolean, default: true },
   verifiedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
@@ -68,6 +69,14 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    staffRole: {
+      type: String,
+      default: 'Super Administrator',
+    },
+    permissions: {
+      type: [String],
+      default: ['All Modules', 'Orders', 'Catalog', 'Settings', 'Staff', 'CMS', 'Stores', 'Analytics'],
+    },
     avatar: {
       type: String,
       default: '',
@@ -97,7 +106,7 @@ const userSchema = new mongoose.Schema(
     },
     otpType: {
       type: String,
-      enum: ['login', 'reset', 'profile'],
+      enum: ['login', 'reset', 'profile', 'seller-toggle', 'register'],
       select: false,
     },
     pendingProfile: {

@@ -2,29 +2,28 @@
  * X-Mart Superstore — Express REST API
  * Entry point: server.js
  */
-const dns  = require('dns');
-try { dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']); } catch(e) {}
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-const express      = require('express');
-const cors         = require('cors');
-const helmet       = require('helmet');
-const morgan       = require('morgan');
-const rateLimit    = require('express-rate-limit');
-const { exec }     = require('child_process');
-const os           = require('os');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const { exec } = require('child_process');
+const os = require('os');
 
-const connectDB    = require('./config/db');
+const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // ── Route imports ────────────────────────────────────────────
-const authRoutes       = require('./routes/auth');
-const productRoutes    = require('./routes/products');
-const cartRoutes       = require('./routes/cart');
-const orderRoutes      = require('./routes/orders');
-const wishlistRoutes   = require('./routes/wishlist');
+const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/products');
+const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/orders');
+const wishlistRoutes = require('./routes/wishlist');
 const newsletterRoutes = require('./routes/newsletter');
-const paymentRoutes    = require('./routes/payment');
+const paymentRoutes = require('./routes/payment');
+const adminRoutes = require('./routes/admin');
 
 // ── Connect to MongoDB Atlas ─────────────────────────────────
 connectDB();
@@ -79,19 +78,94 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     status: 'running',
-    env:    process.env.NODE_ENV || 'development',
-    time:   new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+    time: new Date().toISOString(),
   });
 });
 
 // ── API routes ───────────────────────────────────────────────
-app.use('/api/auth',       authLimiter, authRoutes);
-app.use('/api/products',   productRoutes);
-app.use('/api/cart',       cartRoutes);
-app.use('/api/orders',     orderRoutes);
-app.use('/api/wishlist',   wishlistRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/newsletter', newsletterRoutes);
-app.use('/api/payment',    paymentRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/admin', adminRoutes);
+
+// ── Public Storefront CMS & Vouchers Endpoint ─────────────────
+const CmsConfig = require('./models/CmsConfig');
+app.get('/api/cms', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const now = new Date();
+    const activePromos = (config.promotions || []).filter(p => {
+      if (!p.active) return false;
+      if (p.validUntil && new Date(p.validUntil) < now) return false;
+      if (p.validFrom && new Date(p.validFrom) > now) return false;
+      return true;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        announcementText: config.announcementActive ? config.announcementText : '',
+        announcementActive: config.announcementActive,
+        heroBanners: (config.heroBanners || []).filter(b => b.active),
+        promotions: activePromos,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── Public Storefront Platform & Commerce Settings Endpoint ─
+const PlatformSetting = require('./models/PlatformSetting');
+app.get('/api/settings', async (req, res) => {
+  try {
+    const s = await PlatformSetting.getOrCreate();
+    res.json({
+      success: true,
+      data: {
+        platformFeePct: s.platformFeePct,
+        freeShippingThreshold: s.freeShippingThreshold,
+        standardShippingFee: s.standardShippingFee,
+        codFee: s.codFee,
+        codMaxLimit: s.codMaxLimit,
+        codEnabled: s.codEnabled,
+        businessName: s.businessName,
+        gstin: s.gstin,
+        panNumber: s.panNumber,
+        standardTaxRate: s.standardTaxRate,
+        taxInclusive: s.taxInclusive,
+        autoInvoicing: s.autoInvoicing,
+        returnWindowDays: s.returnWindowDays,
+        replacementWindowDays: s.replacementWindowDays,
+        unpaidOrderTimeoutHours: s.unpaidOrderTimeoutHours,
+        expressCutoffTime: s.expressCutoffTime,
+        deliveryLeadTime: s.deliveryLeadTime,
+        timezone: s.timezone,
+        supportEmail: s.supportEmail,
+        supportPhone: s.supportPhone,
+        whatsappSupport: s.whatsappSupport,
+        grievanceEmail: s.grievanceEmail,
+        supportHours: s.supportHours,
+        corporateAddress: s.corporateAddress,
+        lowStockThreshold: s.lowStockThreshold,
+        allowBackorders: s.allowBackorders,
+        minOrderQty: s.minOrderQty,
+        maxOrderQty: s.maxOrderQty,
+        maintenanceMode: s.maintenanceMode,
+        maintenanceNotice: s.maintenanceNotice,
+        inactivityTimeoutMins: s.inactivityTimeoutMins,
+        fraudVelocityShield: s.fraudVelocityShield,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // ── Serve Frontend Static Files with Cache-Busting for Dev ──
 const frontendPath = path.join(__dirname, '..');
@@ -105,7 +179,7 @@ app.use(express.static(frontendPath));
 app.get('/api', (req, res) => {
   res.json({
     success: true,
-    name:    'X-Mart Superstore API',
+    name: 'X-Mart Superstore API',
     version: '1.0.0',
     endpoints: [
       'GET  /api/health',

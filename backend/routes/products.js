@@ -194,8 +194,30 @@ router.post(
       isActive: true
     };
 
+    // Prevent deactivated seller from listing products
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'xmart_secret_key_2024');
+        const User = require('../models/User');
+        const user = await User.findById(decoded.id);
+        if (user && user.sellerProfile && user.sellerProfile.isActive === false) {
+          res.status(403);
+          throw new Error('Your seller account is currently deactivated. You are not eligible to list new products until your storefront is reactivated.');
+        }
+        if (user) {
+          productData.seller = user._id;
+          productData.sellerEmail = user.email;
+          productData.sellerStoreName = user.sellerProfile?.storeName || productData.brand;
+        }
+      } catch (authErr) {
+        if (authErr.message && authErr.message.includes('deactivated')) throw authErr;
+      }
+    }
+
     const product = await Product.create(productData);
-    res.status(201).json({ success: true, message: '🎉 Product successfully listed on X-Mart!', data: product });
+    res.status(201).json({ success: true, message: 'Product successfully listed on X-Mart!', data: product });
   })
 );
 
