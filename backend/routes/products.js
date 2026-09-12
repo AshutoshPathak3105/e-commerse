@@ -183,9 +183,22 @@ router.post(
   asyncHandler(async (req, res) => {
     const productData = {
       ...req.body,
+      model: req.body.model || req.body.name,
+      warranty: req.body.warranty || '1 to 2 Years Manufacturer Warranty',
+      deliverySpeed: req.body.deliverySpeed || req.body.deliveryInfo || 'Delivered in 2-4 business days with Prime Express',
+      deliveryInfo: req.body.deliveryInfo || req.body.deliverySpeed || 'Delivered in 2-4 business days with Prime Express',
+      condition: req.body.condition || 'Brand New • 100% Sealed Original Box',
+      specifications: Array.isArray(req.body.specifications) ? req.body.specifications : [],
       stock: req.body.stock !== undefined ? Number(req.body.stock) : 50,
       discount: req.body.discount !== undefined ? Number(req.body.discount) : 10,
       originalPrice: req.body.originalPrice || Math.round(Number(req.body.price) * 1.25),
+      angleImages: req.body.angleImages || {
+        front: (Array.isArray(req.body.images) && req.body.images[0]) || req.body.img || '',
+        left: (Array.isArray(req.body.images) && req.body.images[1]) || '',
+        top: (Array.isArray(req.body.images) && req.body.images[2]) || '',
+        right: (Array.isArray(req.body.images) && req.body.images[3]) || '',
+        back: (Array.isArray(req.body.images) && req.body.images[4]) || '',
+      },
       images: Array.isArray(req.body.images) && req.body.images.length > 0 
         ? req.body.images 
         : (req.body.img ? [req.body.img] : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500']),

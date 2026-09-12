@@ -1383,16 +1383,20 @@ router.put('/cms', async (req, res) => {
 });
 
 // ── BANNERS ──
-// Add new featured banner (automatically replaces previous banners)
+// Add new featured banner (appends to hero carousel)
 router.post('/cms/banners', async (req, res) => {
   try {
-    const { title, subtitle, tag, image, link, active } = req.body;
+    const { title, subtitle, tag, image, link, active, order } = req.body;
     if (!title || !image) {
       return res.status(400).json({ success: false, message: 'Headline and Image URL are required for featured banners.' });
     }
     const config = await CmsConfig.getOrCreate();
-    // Auto-delete all previous banners when adding a new one
-    config.heroBanners = [];
+    if (!Array.isArray(config.heroBanners)) {
+      config.heroBanners = [];
+    }
+    
+    // Append new banner to hero carousel
+    const newOrder = order !== undefined && order !== null && order !== '' ? Number(order) : config.heroBanners.length;
     config.heroBanners.push({
       title: title.trim(),
       subtitle: (subtitle || '').trim(),
@@ -1400,10 +1404,11 @@ router.post('/cms/banners', async (req, res) => {
       image: image.trim(),
       link: (link || '#deals').trim(),
       active: active !== undefined ? Boolean(active) : true,
-      order: 0,
+      order: isNaN(newOrder) ? config.heroBanners.length : newOrder,
     });
+    config.markModified('heroBanners');
     await config.save();
-    res.json({ success: true, message: 'Featured banner added successfully (replaced previous banners).', data: config });
+    res.json({ success: true, message: 'Featured banner added successfully.', data: config });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1413,17 +1418,26 @@ router.post('/cms/banners', async (req, res) => {
 router.put('/cms/banners/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    const banner = config.heroBanners.id(req.params.id);
+    const bannerIdStr = String(req.params.id);
+    let banner = config.heroBanners.id(req.params.id);
+    if (!banner) {
+      banner = config.heroBanners.find(b => String(b._id || b.id) === bannerIdStr);
+    }
     if (!banner) return res.status(404).json({ success: false, message: 'Banner not found.' });
 
-    const { title, subtitle, tag, image, link, active } = req.body;
+    const { title, subtitle, tag, image, link, active, order } = req.body;
     if (title !== undefined) banner.title = title.trim();
     if (subtitle !== undefined) banner.subtitle = subtitle.trim();
     if (tag !== undefined) banner.tag = tag.trim();
     if (image !== undefined) banner.image = image.trim();
     if (link !== undefined) banner.link = link.trim();
     if (active !== undefined) banner.active = Boolean(active);
+    if (order !== undefined && order !== null && order !== '') {
+      const parsedOrder = Number(order);
+      banner.order = isNaN(parsedOrder) ? 0 : parsedOrder;
+    }
 
+    config.markModified('heroBanners');
     await config.save();
     res.json({ success: true, message: 'Featured banner updated successfully.', data: config });
   } catch (err) {
@@ -1435,9 +1449,14 @@ router.put('/cms/banners/:id', async (req, res) => {
 router.delete('/cms/banners/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    config.heroBanners.pull(req.params.id);
+    const bannerIdStr = String(req.params.id);
+    
+    // Atomically filter out the banner by ID
+    config.heroBanners = config.heroBanners.filter(b => String(b._id || b.id) !== bannerIdStr);
+    
+    config.markModified('heroBanners');
     await config.save();
-    res.json({ success: true, message: 'Banner removed.', data: config });
+    res.json({ success: true, message: 'Banner removed successfully.', data: config });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

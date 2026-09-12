@@ -14,7 +14,7 @@
       html.admin-mode-preload {
         background-color: #0b1329 !important;
       }
-      html.admin-mode-preload body > *:not(#admin-panel-overlay) {
+      html.admin-mode-preload body > *:not(#admin-panel-overlay):not(.ap-modal-backdrop):not(.ap-crm-drawer-backdrop):not(.ap-toast-container):not(.ap-toast) {
         display: none !important;
       }
       html.admin-mode-preload #admin-panel-overlay {
@@ -38,32 +38,32 @@
       })();
     </script>
 
-    <link rel="icon" type="image/png" href="logo-square.png" />
-    <link rel="apple-touch-icon" href="logo-square.png" />
+    <link rel="icon" type="image/png" href="logo-square.png?v=2.0" />
+    <link rel="apple-touch-icon" href="logo-square.png?v=2.0" />
     <!-- Google Fonts: Playfair Display + Inter (Admin Panel + Global) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="styles.css?v=47.0" />
+    <link rel="stylesheet" href="styles.css?v=58.0" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="script.js?v=66.0" defer></script>
+    <script src="script.js?v=80.0" defer></script>
   </head>
   <body id="top">
     <header class="site-header">
       <div class="utility-bar">
         <div class="utility-left-group">
-          <button class="topbar-offers-pill" id="topbar-offers-btn" type="button" aria-label="View store offers and vouchers">
-            <span>Offers &amp; Vouchers</span>
-            <span class="pill-badge" id="topbar-offers-count">4 Live</span>
-          </button>
           <div class="delivery-message ticker-wrap" id="utility-ticker" aria-live="polite">
-            <div class="ticker-slide is-active">Free delivery on orders over <strong>₹499</strong></div>
-            <div class="ticker-slide">Mega Sale: Up to <strong>60% OFF</strong> Trending Deals</div>
-            <div class="ticker-slide">Flash Deal: Extra <strong>10% OFF</strong> Code: <strong>XMART10</strong></div>
-            <div class="ticker-slide">Trending: Best Offers on Mobiles & Laptops</div>
-            <div class="ticker-slide">100% Genuine Products & 7-Day Easy Returns</div>
+            <div class="ticker-slide is-active">Mega Festive Super Sale: Up to 60% OFF Across All Electronics &amp; Fashion + Extra 10% on Axis Bank!</div>
+            <div class="ticker-slide">10% Storewide Mega Discount: Up to 10% OFF Across All Products + Extra Savings with Code XMART10 (Min. ₹999)!</div>
+            <div class="ticker-slide">20% Festive Super Saver: Up to 20% OFF Across All Festive Orders + Extra Discount with Code FESTIVE20 (Min. ₹2,499)!</div>
+            <div class="ticker-slide">Apex Tech Exclusive: Up to 25% OFF Across Apex Tech Store + Extra Discount with Code APEX25 (Min. ₹1,499)!</div>
+            <div class="ticker-slide">UPI Payment Bonanza: Flat ₹100 Cashback Across All Orders + Extra Savings with Code UPI100 on UPI!</div>
+            <div class="ticker-slide">SBI Card Super Deal: Flat ₹500 OFF Across SBI Debit &amp; Credit Cards + Extra Discount with Code SBICARD500!</div>
+            <div class="ticker-slide">Axis Bank Instant Savings: Flat ₹300 OFF Across Axis Bank Cards + Extra Discount with Code AXIS300!</div>
+            <div class="ticker-slide">All Bank Cards Flash Offer: Flat ₹200 OFF Across Any Debit or Credit Card + Extra Savings with Code ALLCARDS200!</div>
+            <div class="ticker-slide">Multi-Bank Card Bonanza: Flat ₹500 OFF Across HDFC, SBI, Axis &amp; ICICI Cards + Extra Discount with Code MULTI_CARD_BONANZA!</div>
           </div>
         </div>
 
@@ -129,7 +129,7 @@
               </div>
             </div>
             <label class="visually-hidden" for="product-search">Search X-Mart products</label>
-            <input id="product-search" type="search" />
+            <input id="product-search" type="search" placeholder="Search X-Mart products, brands, and categories..." autocomplete="off" />
             <button class="search-submit" type="submit" aria-label="Search">
               <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
             </button>

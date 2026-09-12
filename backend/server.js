@@ -9,7 +9,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const os = require('os');
 
 const connectDB = require('./config/db');
@@ -111,7 +111,9 @@ app.get('/api/cms', async (req, res) => {
       data: {
         announcementText: config.announcementActive ? config.announcementText : '',
         announcementActive: config.announcementActive,
-        heroBanners: (config.heroBanners || []).filter(b => b.active),
+        heroBanners: (config.heroBanners || [])
+          .filter(b => b.active !== false)
+          .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
         promotions: activePromos,
       },
     });
@@ -241,6 +243,35 @@ const server = app.listen(PORT, () => {
         exec(fallback);
       }
     });
+  }
+});
+
+let hasRetriedPort = false;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    if (!hasRetriedPort && process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+      hasRetriedPort = true;
+      console.log(`\n⚠️  Port ${PORT} is occupied by another process. Automatically freeing port ${PORT}...`);
+      try {
+        if (os.platform() === 'win32') {
+          execSync(`powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort ${PORT} -ErrorAction SilentlyContinue; if ($c) { Stop-Process -Id $c.OwningProcess -Force }"`);
+        } else {
+          execSync(`lsof -ti:${PORT} | xargs kill -9`);
+        }
+        console.log(`✅ Port ${PORT} released successfully. Reconnecting server...`);
+        setTimeout(() => {
+          server.listen(PORT);
+        }, 600);
+        return;
+      } catch (recoveryErr) {
+        // Fallback to error message
+      }
+    }
+    console.error(`\n⚠️  Port ${PORT} is already occupied by another running instance of X-Mart.`);
+    console.error(`👉 Close the existing terminal or stop the process on port ${PORT} and try again.\n`);
+    process.exit(1);
+  } else {
+    throw err;
   }
 });
 

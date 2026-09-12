@@ -49,6 +49,13 @@ const productSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    angleImages: {
+      front: { type: String, default: '' },
+      left: { type: String, default: '' },
+      top: { type: String, default: '' },
+      right: { type: String, default: '' },
+      back: { type: String, default: '' },
+    },
     price: {
       type: Number,
       required: [true, 'Price is required'],
@@ -106,14 +113,32 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    model: {
+      type: String,
+      default: '',
+    },
     deliveryInfo: {
       type: String,
-      default: 'Delivered in 2-5 business days',
+      default: 'Delivered in 2-4 business days with Prime Express',
+    },
+    deliverySpeed: {
+      type: String,
+      default: 'Delivered in 2-4 business days with Prime Express',
     },
     warranty: {
       type: String,
-      default: '1 Year Manufacturer Warranty',
+      default: '1 to 2 Years Manufacturer Warranty',
     },
+    condition: {
+      type: String,
+      default: 'Brand New • 100% Sealed Original Box',
+    },
+    specifications: [
+      {
+        key: { type: String, default: '' },
+        value: { type: String, default: '' },
+      },
+    ],
     offers: [
       {
         tag: { type: String, default: 'Special Offer' },
@@ -123,6 +148,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    strict: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }

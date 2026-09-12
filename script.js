@@ -158,26 +158,45 @@ window._reRenderHomePrices = () => {
 };
 
 /* ── Sliding Announcement Ticker (Utility Bar) ─────────────── */
+let utilityTickerInterval = null;
 function initUtilityTicker() {
   const ticker = document.getElementById('utility-ticker');
   if (!ticker) return;
+  if (utilityTickerInterval) {
+    clearInterval(utilityTickerInterval);
+    utilityTickerInterval = null;
+  }
   const slides = ticker.querySelectorAll('.ticker-slide');
   if (slides.length <= 1) return;
 
   let current = 0;
-  setInterval(() => {
-    const prev = slides[current];
-    prev.classList.remove('is-active');
-    prev.classList.add('is-exiting');
+  for (let i = 0; i < slides.length; i++) {
+    if (slides[i].classList.contains('is-active')) {
+      current = i;
+      break;
+    }
+  }
 
-    setTimeout(() => {
-      prev.classList.remove('is-exiting');
-    }, 500);
+  utilityTickerInterval = setInterval(() => {
+    const activeSlides = ticker.querySelectorAll('.ticker-slide');
+    if (activeSlides.length <= 1) return;
 
-    current = (current + 1) % slides.length;
-    slides[current].classList.add('is-active');
+    const prev = activeSlides[current];
+    if (prev) {
+      prev.classList.remove('is-active');
+      prev.classList.add('is-exiting');
+      setTimeout(() => {
+        prev.classList.remove('is-exiting');
+      }, 500);
+    }
+
+    current = (current + 1) % activeSlides.length;
+    if (activeSlides[current]) {
+      activeSlides[current].classList.add('is-active');
+    }
   }, 3500);
 }
+window.initUtilityTicker = initUtilityTicker;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -12037,8 +12056,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           if (!bannerList.length) {
             return `<tr><td colspan="7" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No active featured banners found. Click <strong>"+ Add Featured Banner"</strong> to publish your banner!</td></tr>`;
           }
-          return bannerList.map(b => `
-            <tr data-banner-id="${b._id}">
+          return bannerList.map(b => {
+            const bannerId = String(b._id || b.id);
+            return `
+            <tr data-banner-id="${bannerId}">
               <td style="width:100px;">
                 <img class="ap-banner-thumb" src="${esc(b.image)}" alt="${esc(b.title)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=200';" />
               </td>
@@ -12050,16 +12071,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <td><code style="font-size:11.5px; color:#2563eb; background:#eff6ff; padding:2px 6px; border-radius:4px;">${esc(b.link || '#')}</code></td>
               <td><span class="ap-badge gray" style="font-weight:700;">#${b.order ?? 0}</span></td>
               <td>
-                <button type="button" class="ap-btn-tiny ap-banner-toggle-btn ${b.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${b._id}" data-active="${b.active}" style="cursor:pointer; border:none; font-weight:800;">
-                  ${b.active ? '● Active' : '○ Paused'}
+                <button type="button" class="ap-btn-tiny ap-banner-toggle-btn ${b.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${bannerId}" data-active="${b.active}" title="Click to toggle Active / Paused status" style="cursor:pointer; border:none; font-weight:800; padding:3px 8px;">
+                  ${b.active ? 'Active' : 'Paused'}
                 </button>
               </td>
               <td style="white-space:nowrap; text-align:right;">
-                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${b._id}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
-                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${b._id}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${bannerId}" title="Edit banner headline, image, or link" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${bannerId}" title="Delete banner" style="padding:4px 10px; font-size:12px;">Delete</button>
               </td>
             </tr>
-          `).join('');
+          `;
+          }).join('');
         }
 
         function getFilteredPromotions() {
@@ -12269,8 +12291,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               productsBadge = `<div style="font-size:11px; color:#000000; font-weight:700; margin-top:4px;" title="Applies to: ${esc(p.applicableProducts.join(', '))}">Applies to: ${p.applicableProducts.slice(0, 2).map(esc).join(', ')}${p.applicableProducts.length > 2 ? ` +${p.applicableProducts.length - 2}` : ''}</div>`;
             }
 
+            const promoId = String(p._id || p.id);
             return `
-              <tr data-promo-id="${p._id}">
+              <tr data-promo-id="${promoId}">
                 <td>
                   <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">${esc(p.code)}</div>
                   <div style="margin-top:2px;">${typeBadge}</div>
@@ -12290,14 +12313,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                       Expired
                     </span>
                   ` : `
-                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${p._id}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800;">
+                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${promoId}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800;">
                       ${p.active ? '● Active' : '○ Paused'}
                     </button>
                   `}
                 </td>
                 <td style="white-space:nowrap; text-align:right;">
-                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${p._id}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${p._id}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${promoId}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${promoId}" style="padding:4px 10px; font-size:12px;">Delete</button>
                 </td>
               </tr>
             `;
@@ -12362,7 +12385,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                   <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:700; color:#000000;">${banners.length} Banners</span>
-                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; color:#000000; font-weight:800;">
+                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; color:#ffffff !important; font-weight:800;">
                     + Add Featured Banner
                   </button>
                 </div>
@@ -12460,22 +12483,32 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         `;
 
         // Wire Refresh
-        document.getElementById('ap-cms-refresh-btn')?.addEventListener('click', load);
+        const refreshBtn = document.getElementById('ap-cms-refresh-btn');
+        refreshBtn?.addEventListener('click', async () => {
+          if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = `<svg style="width:14px;height:14px;animation:apSpin 0.8s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refreshing...`;
+          }
+          await load();
+          showToast('Storefront CMS & promotional data refreshed successfully!', 'success');
+        });
 
         // Wire Announcement Bar Update
         document.getElementById('ap-save-cms-announcement-btn')?.addEventListener('click', async () => {
-          const announcementText = document.getElementById('ap-cms-announcement-input')?.value;
+          const announcementInput = document.getElementById('ap-cms-announcement-input');
+          const announcementText = announcementInput?.value ?? '';
           const btn = document.getElementById('ap-save-cms-announcement-btn');
           if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
           try {
             await adminFetch('/cms', {
               method: 'PUT',
-              body: JSON.stringify({ announcementText }),
+              body: JSON.stringify({ announcementText, announcementActive: true }),
             });
             showToast('Storefront announcement bar updated successfully!', 'success');
-            // Update live ticker in storefront if present
-            const tickerFirst = document.querySelector('#utility-ticker .ticker-slide');
-            if (tickerFirst) tickerFirst.innerHTML = esc(announcementText);
+            // Update live ticker across storefront
+            document.querySelectorAll('#utility-ticker .ticker-slide, .utility-ticker-text, #store-announcement-bar, .announcement-bar-text').forEach(el => {
+              el.textContent = announcementText;
+            });
           } catch (e) {
             showToast(e.message, 'error');
           } finally {
@@ -12525,26 +12558,37 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         function updatePromosTable() {
           const tbody = document.getElementById('ap-promos-table-body');
+          const countBadge = document.getElementById('ap-promo-count-badge');
+          const filtered = getFilteredPromotions();
           if (tbody) {
-            tbody.innerHTML = renderPromoRows(getFilteredPromotions());
+            tbody.innerHTML = renderPromoRows(filtered);
             attachPromoRowHandlers();
+          }
+          if (countBadge) {
+            countBadge.textContent = `${filtered.length} Offer${filtered.length === 1 ? '' : 's'}${filtered.length !== promotions.length ? ` (of ${promotions.length})` : ''}`;
           }
         }
 
         // Wire Add Banner Buttons
-        document.getElementById('ap-top-add-banner-btn')?.addEventListener('click', () => showBannerModal(null));
-        document.getElementById('ap-cms-add-banner-btn')?.addEventListener('click', () => showBannerModal(null));
-
-        // Wire Add Promo Buttons
-        document.getElementById('ap-top-add-promo-btn')?.addEventListener('click', () => showPromoModal(null));
-        document.getElementById('ap-cms-add-promo-btn')?.addEventListener('click', () => showPromoModal(null));
+        document.getElementById('ap-top-add-banner-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showBannerModal(null);
+        });
+        document.getElementById('ap-cms-add-banner-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showBannerModal(null);
+        });
 
         // Banner Row Handlers
         function attachBannerRowHandlers() {
+          // Toggle Active/Paused status
           body.querySelectorAll('.ap-banner-toggle-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
               const id = btn.dataset.id;
               const currentActive = btn.dataset.active === 'true';
+              btn.disabled = true;
+              btn.style.opacity = '0.6';
               try {
                 await adminFetch(`/cms/banners/${id}`, {
                   method: 'PUT',
@@ -12552,26 +12596,73 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 });
                 showToast(`Banner ${!currentActive ? 'activated' : 'paused'} successfully!`, 'success');
                 load();
-              } catch (e) { showToast(e.message, 'error'); }
+              } catch (e) {
+                showToast(e.message, 'error');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+              }
             });
           });
 
+          // Edit Banner
           body.querySelectorAll('.ap-edit-banner-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const banner = banners.find(b => b._id === btn.dataset.id);
-              if (banner) showBannerModal(banner);
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const banner = banners.find(b => String(b._id || b.id) === String(btn.dataset.id));
+              if (banner) {
+                showBannerModal(banner);
+              } else {
+                showToast('Banner record not found.', 'error');
+              }
             });
           });
 
+          // Delete Banner with In-Overlay Dialog
           body.querySelectorAll('.ap-delete-banner-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
               const id = btn.dataset.id;
-              if (!confirm('Are you sure you want to permanently remove this featured banner?')) return;
-              try {
-                await adminFetch(`/cms/banners/${id}`, { method: 'DELETE' });
-                showToast('Banner removed successfully!', 'success');
-                load();
-              } catch (e) { showToast(e.message, 'error'); }
+              const banner = banners.find(b => String(b._id || b.id) === String(id));
+              const bannerTitle = banner?.title || 'this featured banner';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Featured Banner?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to permanently remove <strong>"${esc(bannerTitle)}"</strong>? This banner will be removed from the homepage hero slider immediately.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-cancel-btn" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-confirm-btn" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Banner</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-cancel-btn')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', (ev) => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-confirm-btn')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-confirm-btn');
+                if (delBtn) { delBtn.disabled = true; delBtn.textContent = 'Deleting...'; }
+                try {
+                  await adminFetch(`/cms/banners/${id}`, { method: 'DELETE' });
+                  showToast('Banner removed successfully!', 'success'); window._fetchStorefrontCMS?.();
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  closeConfirm();
+                }
+              });
             });
           });
         }
@@ -12579,10 +12670,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         // Promo Row Handlers
         function attachPromoRowHandlers() {
+          // Toggle Promo active
           body.querySelectorAll('.ap-promo-toggle-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
               const id = btn.dataset.id;
               const currentActive = btn.dataset.active === 'true';
+              btn.disabled = true;
+              btn.style.opacity = '0.6';
               try {
                 await adminFetch(`/cms/promotions/${id}`, {
                   method: 'PUT',
@@ -12590,26 +12685,73 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 });
                 showToast(`Offer ${!currentActive ? 'activated' : 'paused'} successfully!`, 'success');
                 load();
-              } catch (e) { showToast(e.message, 'error'); }
+              } catch (e) {
+                showToast(e.message, 'error');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+              }
             });
           });
 
+          // Edit Promo
           body.querySelectorAll('.ap-edit-promo-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const promo = promotions.find(p => p._id === btn.dataset.id);
-              if (promo) showPromoModal(promo);
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const promo = promotions.find(p => String(p._id || p.id) === String(btn.dataset.id));
+              if (promo) {
+                showPromoModal(promo);
+              } else {
+                showToast('Promotional offer not found.', 'error');
+              }
             });
           });
 
+          // Delete Promo with In-Overlay Dialog
           body.querySelectorAll('.ap-delete-promo-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
               const id = btn.dataset.id;
-              if (!confirm('Are you sure you want to permanently remove this promotional code?')) return;
-              try {
-                await adminFetch(`/cms/promotions/${id}`, { method: 'DELETE' });
-                showToast('Promotion removed successfully!', 'success');
-                load();
-              } catch (e) { showToast(e.message, 'error'); }
+              const promo = promotions.find(p => String(p._id || p.id) === String(id));
+              const promoCode = promo?.code || 'this promotion';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Promotion?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to remove code <strong style="font-family:monospace; color:#0284c7;">"${esc(promoCode)}"</strong>? Customers will no longer be able to redeem this coupon at checkout.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-promo-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-promo-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Offer</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-promo-cancel')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', (ev) => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-promo-confirm')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-promo-confirm');
+                if (delBtn) { delBtn.disabled = true; delBtn.textContent = 'Deleting...'; }
+                try {
+                  await adminFetch(`/cms/promotions/${id}`, { method: 'DELETE' });
+                  showToast('Promotion removed successfully!', 'success');
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  closeConfirm();
+                }
+              });
             });
           });
         }
@@ -12621,7 +12763,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           const backdrop = document.createElement('div');
           backdrop.className = 'ap-modal-backdrop';
 
-          const defaultImg = existingBanner?.image || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';
+          const defaultImg = existingBanner?.image || '';
 
           backdrop.innerHTML = `
             <div class="ap-modal-dialog" style="max-width:580px;">
@@ -12630,30 +12772,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800;">
                     ${isEdit ? 'Edit Featured Banner' : 'Add New Featured Banner'}
                   </h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL, headline, and link for customer storefront.</p>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload an image file, headline, and link for customer storefront.</p>
                 </div>
                 <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="color:#ffffff;">✕</button>
               </div>
 
               <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
-                ${!isEdit ? `
-                  <div style="background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:8px; padding:10px 12px; margin-bottom:16px;">
-                    <div style="font-size:12px; color:#000000; font-weight:700; line-height:1.4;">
-                      Auto-Replace Active: Adding a new featured banner will automatically replace and delete any existing hero banners on your storefront.
-                    </div>
-                  </div>
-                ` : ''}
-
                 <!-- Headline -->
                 <div class="ap-form-group" style="margin-bottom:14px;">
                   <label for="banner-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Banner Headline</label>
-                  <input type="text" id="banner-modal-title" class="ap-input" value="${esc(existingBanner?.title || '')}" style="width:100%; color:#000000; font-weight:600;" />
+                  <input type="text" id="banner-modal-title" class="ap-input" value="${esc(existingBanner?.title || '')}" style="width:100%; color:#000000; font-weight:600;" placeholder="e.g. Flagship Smartphone Mega Launch" />
                 </div>
 
                 <!-- Subtitle -->
                 <div class="ap-form-group" style="margin-bottom:14px;">
                   <label for="banner-modal-subtitle" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Subtitle / Tagline</label>
-                  <input type="text" id="banner-modal-subtitle" class="ap-input" value="${esc(existingBanner?.subtitle || '')}" style="width:100%; color:#000000; font-weight:600;" />
+                  <input type="text" id="banner-modal-subtitle" class="ap-input" value="${esc(existingBanner?.subtitle || '')}" style="width:100%; color:#000000; font-weight:600;" placeholder="e.g. Starting from ₹14,999 with No Cost EMI" />
                 </div>
 
                 <!-- Category Tag -->
@@ -12715,7 +12849,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <!-- Actions -->
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
                   <button type="button" class="ap-btn ghost" id="ap-banner-modal-cancel">Cancel</button>
-                  <button type="button" class="ap-btn primary" id="ap-banner-modal-save" style="padding:8px 22px;">
+                  <button type="button" class="ap-btn primary" id="ap-banner-modal-save" style="padding:8px 22px; color:#ffffff !important;">
                     ${isEdit ? 'Save Changes' : 'Publish Banner'}
                   </button>
                 </div>
@@ -12723,7 +12857,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
           `;
 
-          document.body.appendChild(backdrop);
+          backdrop.style.zIndex = '100050';
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
 
           // Close modal
           const closeModal = () => backdrop.remove();
@@ -12770,18 +12906,19 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
             try {
-              if (isEdit) {
-                await adminFetch(`/cms/banners/${existingBanner._id}`, {
+              const bannerId = existingBanner?._id || existingBanner?.id;
+              if (isEdit && bannerId) {
+                await adminFetch(`/cms/banners/${bannerId}`, {
                   method: 'PUT',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('Featured banner updated successfully!', 'success');
+                showToast('Featured banner updated successfully!', 'success'); window._fetchStorefrontCMS?.();
               } else {
                 await adminFetch('/cms/banners', {
                   method: 'POST',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('New featured banner published!', 'success');
+                showToast('New featured banner published!', 'success'); window._fetchStorefrontCMS?.();
               }
               closeModal();
               load();
@@ -12792,7 +12929,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           });
         }
 
-        /* ── MODAL: CREATE / EDIT PROMOTIONAL OFFER / VOUCHER / BANK / UPI ── */
         /* ── MODAL: CREATE / EDIT PROMOTIONAL OFFER / VOUCHER / BANK / UPI ── */
         function showPromoModal(existingPromo = null) {
           const isEdit = !!existingPromo;
@@ -13064,7 +13200,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <!-- Actions -->
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
                   <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel">Cancel</button>
-                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="padding:8px 22px; background:#ea580c; border-color:#c2410c; color:#000000; font-weight:800;">
+                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="padding:8px 22px; background:#ea580c; border-color:#c2410c; color:#ffffff !important; font-weight:800;">
                     ${isEdit ? 'Save Offer' : 'Create Offer'}
                   </button>
                 </div>
@@ -13072,7 +13208,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
           `;
 
-          document.body.appendChild(backdrop);
+          backdrop.style.zIndex = '100050';
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
 
           // Close modal
           const closeModal = () => backdrop.remove();
@@ -16747,10 +16885,16 @@ function buildCheckoutModal() {
               <strong id="chk-step1-tax" style="color:#0f172a;font-size:14px;">₹0</strong>
             </div>
 
-            <!-- Coupon Input -->
+            <!-- Coupon Discount Row (hidden by default) -->
+            <div class="chk-price-row" id="chk-step1-coupon-row" style="display:none;color:#16a34a;">
+              <span id="chk-step1-coupon-label">Coupon Discount:</span>
+              <strong id="chk-step1-discount" style="color:#16a34a;font-size:14px;">-₹0</strong>
+            </div>
+
+            <!-- Coupon Input & Apply/Remove Button -->
             <div style="display:flex;gap:8px;margin:12px 0 14px;">
-              <input type="text" id="chk-coupon-input" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;outline:none;text-transform:uppercase;font-weight:700;" />
-              <button type="button" id="chk-coupon-apply-btn" style="background:#19324c;color:#fff;border:none;padding:9px 15px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;">Apply</button>
+              <input type="text" id="chk-coupon-input" placeholder="Enter coupon code" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;outline:none;text-transform:uppercase;font-weight:700;transition:border-color 0.2s;" />
+              <button type="button" id="chk-coupon-apply-btn" style="background:#19324c;color:#fff;border:none;padding:9px 15px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;transition:all 0.2s ease;">Apply</button>
             </div>
 
             <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
@@ -17049,13 +17193,83 @@ function buildCheckoutModal() {
     const subtotal = Store.cartTotal();
     const count = Store.cartCount();
     const tax = Math.round(subtotal * 0.18);
-    const grandTotal = subtotal + tax;
+
+    // Auto-fill preselected coupon from product page offer card
+    if (window._preselectedCouponCode && modal.querySelector('#chk-coupon-input')) {
+      const curInp = modal.querySelector('#chk-coupon-input');
+      if (!curInp.value) {
+        curInp.value = window._preselectedCouponCode;
+        setTimeout(() => {
+          const chkApplyBtn = modal.querySelector('#chk-coupon-apply-btn');
+          if (chkApplyBtn && chkApplyBtn.dataset.state !== 'applied') {
+            chkApplyBtn.click();
+          }
+        }, 60);
+      }
+    }
+
+    // Synchronize coupon discount with current subtotal
+    const activeCoupon = (typeof appliedCoupon !== 'undefined' && appliedCoupon) || window.appliedCoupon || null;
+    let couponDiscount = 0;
+    if (activeCoupon) {
+      if (subtotal < (activeCoupon.minOrder || 0)) {
+        if (typeof appliedCoupon !== 'undefined') appliedCoupon = null;
+        window.appliedCoupon = null;
+        if (typeof showToast === 'function') {
+          showToast('Coupon removed: bag total is below the minimum required ₹' + (activeCoupon.minOrder || 0).toLocaleString('en-IN') + '.', 'warn');
+        }
+      } else {
+        if (activeCoupon.discountType === 'percent') {
+          couponDiscount = Math.round((subtotal * activeCoupon.discountValue) / 100);
+          if (activeCoupon.maxDiscount && couponDiscount > activeCoupon.maxDiscount) {
+            couponDiscount = activeCoupon.maxDiscount;
+          }
+        } else {
+          couponDiscount = activeCoupon.discountValue;
+        }
+        activeCoupon.discountAmount = couponDiscount;
+      }
+    }
+
+    const grandTotal = Math.max(0, subtotal + tax - couponDiscount);
 
     modal.querySelector('#chk-step1-count').textContent = count;
     modal.querySelector('#chk-step1-summary-count').textContent = count;
     modal.querySelector('#chk-step1-subtotal').textContent = Currency.format(subtotal);
     modal.querySelector('#chk-step1-tax').textContent = Currency.format(tax);
     modal.querySelector('#chk-step1-grand-total').textContent = Currency.format(grandTotal);
+
+    // Sync Step 1 coupon row and apply/remove button state
+    const couponRow = modal.querySelector('#chk-step1-coupon-row');
+    const couponLabel = modal.querySelector('#chk-step1-coupon-label');
+    const discountEl = modal.querySelector('#chk-step1-discount');
+    const couponInput = modal.querySelector('#chk-coupon-input');
+    const couponApplyBtn = modal.querySelector('#chk-coupon-apply-btn');
+
+    if (couponRow && discountEl) {
+      if (couponDiscount > 0 && activeCoupon) {
+        couponRow.style.display = 'flex';
+        if (couponLabel) couponLabel.textContent = 'Coupon (' + activeCoupon.code + '):';
+        discountEl.textContent = '-₹' + couponDiscount.toLocaleString('en-IN');
+        if (couponInput && !couponInput.value) couponInput.value = activeCoupon.code;
+        if (couponApplyBtn) {
+          couponApplyBtn.disabled = false;
+          couponApplyBtn.dataset.state = 'applied';
+          couponApplyBtn.textContent = 'Remove';
+          couponApplyBtn.style.background = '#ef4444';
+          couponApplyBtn.style.color = '#ffffff';
+        }
+      } else {
+        couponRow.style.display = 'none';
+        if (couponApplyBtn && couponApplyBtn.dataset.state !== 'applied') {
+          couponApplyBtn.disabled = false;
+          couponApplyBtn.dataset.state = '';
+          couponApplyBtn.textContent = 'Apply';
+          couponApplyBtn.style.background = '#19324c';
+          couponApplyBtn.style.color = '#ffffff';
+        }
+      }
+    }
 
     const itemsList = modal.querySelector('#chk-step1-items-list');
     if (Store.cart.length === 0) {
@@ -17332,8 +17546,9 @@ function buildCheckoutModal() {
   function calculateCheckoutTotals() {
     const subtotal = Store.cartTotal();
     const tax = Math.round(subtotal * 0.18);
-    const couponDiscount = (typeof appliedCoupon !== 'undefined' && appliedCoupon?.discountAmount)
-      ? appliedCoupon.discountAmount
+    const activeCoupon = (typeof appliedCoupon !== 'undefined' && appliedCoupon) || window.appliedCoupon || null;
+    const couponDiscount = (activeCoupon && activeCoupon.discountAmount)
+      ? activeCoupon.discountAmount
       : 0;
 
     const selectedMethod = modal.querySelector('input[name="checkoutPaymentMethod"]:checked')?.value || 'COD';
@@ -17831,7 +18046,7 @@ function buildCheckoutModal() {
               cardType: totals.selectedCardType
             });
 
-            Store.clearCart();
+            Store.clearCart(); window.appliedCoupon = null;
             modal._close();
             showToast(`Payment Verified & Order Confirmed! Ref: ${finalOrderRef}`, 'success', 5000);
             window._openOrders?.();
@@ -17886,7 +18101,7 @@ function buildCheckoutModal() {
         offerCode: totals.payPromo?.code || null
       });
 
-      Store.clearCart();
+      Store.clearCart(); window.appliedCoupon = null;
       modal._close();
 
       showToast(`Order Placed Successfully! Order Ref: ${finalOrderRef}`, 'success', 5000);
@@ -18658,6 +18873,12 @@ function initPageRouter() {
                         <small class="form-hint">Include Brand, Model, Key Feature, Color/Size for maximum search discovery.</small>
                       </div>
 
+                      <div class="form-group span-2">
+                        <label for="prod-model"><span>Model / Item Specification</span></label>
+                        <input type="text" id="prod-model" class="seller-input" placeholder="e.g. OnePlus Nord CE 4 5G (8GB RAM, 256GB Celadon Marble)">
+                        <small class="form-hint">Displayed under 'Model / Item' in Product Specifications card. If left blank, defaults to product title.</small>
+                      </div>
+
                       <div class="form-group">
                         <label for="prod-cat">Store Category *</label>
                         <select id="prod-cat" class="seller-input" required>
@@ -18710,49 +18931,155 @@ function initPageRouter() {
 
                       <div class="form-group">
                         <label for="prod-warranty">Warranty Terms</label>
-                        <input type="text" id="prod-warranty" class="seller-input" value="1 Year Manufacturer Warranty">
+                        <input type="text" id="prod-warranty" class="seller-input" value="1 to 2 Years Manufacturer Warranty">
+                      </div>
+
+                      <div class="form-group">
+                        <label for="prod-delivery-speed">Delivery Speed &amp; Dispatch</label>
+                        <input type="text" id="prod-delivery-speed" class="seller-input" value="Delivered in 2-4 business days with Prime Express">
+                        <small class="form-hint">Displayed on specifications card and delivery promise.</small>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="prod-condition">Item Condition</label>
+                        <input type="text" id="prod-condition" class="seller-input" value="Brand New • 100% Sealed Original Box">
+                        <small class="form-hint">e.g. Brand New • 100% Sealed Original Box, Refurbished, etc.</small>
                       </div>
                     </div>
                   </div>
 
                   <!-- Section 4: Media & Image Gallery -->
-                  <div class="seller-section-card">
+                  <div class="seller-section-card" id="seller-media-section">
                     <div class="seller-section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                      <h3 style="margin:0;">4. Visual Media & Image Assets</h3>
-                      <span style="font-size:12px;color:#64748b;font-weight:700;">Multi-angle gallery supported (Up to 5 photos)</span>
-                    </div>
-                    <div class="form-group span-2">
-                      <label for="prod-img">Primary Product Image URL (Cover / Front View) *</label>
-                      <div class="image-input-wrap">
-                        <input type="text" id="prod-img" class="seller-input" required>
-                        <button type="button" id="btn-preview-img" class="seller-btn-secondary" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;">Preview</button>
+                      <div>
+                        <h3 style="margin:0;font-size:16px;color:#0f172a;">4. Visual Media &amp; Image Assets</h3>
+                        <p style="margin:4px 0 0;font-size:12.5px;color:#64748b;">
+                          Multi-angle gallery supported (Up to 5 photos). All <strong>5 perspective view images are compulsory</strong> to power the FRONT, LEFT, TOP, RIGHT, and BACK 360° explorer.
+                        </p>
                       </div>
-                      <div class="seller-img-presets">
-                        <span class="preset-label">Quick Presets:</span>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700">Headphones</button>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700">Smartwatch</button>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700">Shoes</button>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=700">Smartphone</button>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=700">Coffee</button>
-                        <button type="button" class="img-chip-btn" data-url="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=700">Skincare</button>
+                      <span class="seller-pill-badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:20px;">
+                        ★ 5 Required Views (Compulsory)
+                      </span>
+                    </div>
+
+                    <!-- Quick Presets matching Image 1 -->
+                    <div class="seller-img-presets" style="margin-bottom:16px;background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <span class="preset-label" style="font-size:12px;font-weight:800;color:#0f172a;">Quick Presets:</span>
+                      <button type="button" class="img-chip-btn-all" data-preset="headphones" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Headphones</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="smartwatch" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Smartwatch</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="shoes" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Shoes</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="smartphone" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Smartphone</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="coffee" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Coffee</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="skincare" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Skincare</button>
+                    </div>
+
+                    <!-- 5 Compulsory Tagged Angle Slots -->
+                    <div class="seller-angles-container" style="display:flex;flex-direction:column;gap:12px;">
+                      <!-- 1. Front View (FRONT) -->
+                      <div class="seller-view-slot" data-angle="front" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="view-tag-badge front" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: FRONT</span>
+                            <strong style="font-size:13px;color:#0f172a;">Primary Product Image URL (Cover / Front View) <span style="color:#dc2626;">*</span></strong>
+                          </div>
+                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Main storefront thumbnail &amp; 0° front view • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
+                        </div>
+                        <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
+                          <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            <img src="" alt="FRONT" style="width:100%;height:100%;object-fit:contain;">
+                          </div>
+                          <input type="text" id="prod-img" class="seller-input seller-angle-input" data-angle="front" placeholder="https://... Front View image URL (Cover image)" required style="flex:1;">
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img" data-tag="FRONT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                        </div>
+                      </div>
+
+                      <!-- 2. Left Side View (LEFT) -->
+                      <div class="seller-view-slot" data-angle="left" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="view-tag-badge left" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: LEFT</span>
+                            <strong style="font-size:13px;color:#0f172a;">Left Side View Image URL <span style="color:#dc2626;">*</span></strong>
+                          </div>
+                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on LEFT tab in 360° viewer (90°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
+                        </div>
+                        <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
+                          <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            <img src="" alt="LEFT" style="width:100%;height:100%;object-fit:contain;">
+                          </div>
+                          <input type="text" id="prod-img-left" class="seller-input seller-angle-input" data-angle="left" placeholder="https://... Left Side View image URL" required style="flex:1;">
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-left" data-tag="LEFT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                        </div>
+                      </div>
+
+                      <!-- 3. Top View (TOP) - User highlighted requirement -->
+                      <div class="seller-view-slot" data-angle="top" style="background:#fdf4ff;padding:12px 14px;border-radius:10px;border:1.5px solid #e879f9;transition:border-color 0.2s ease;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="view-tag-badge top" style="background:#7e22ce;color:#ffffff;border:1px solid #6b21a8;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: TOP</span>
+                            <strong style="font-size:13px;color:#0f172a;">Top View Image URL (Birds-Eye Angle) <span style="color:#dc2626;">*</span></strong>
+                          </div>
+                          <span style="font-size:11.5px;color:#7e22ce;font-weight:700;">★ Displayed on the TOP view tab in customer account viewer • <span style="color:#dc2626;">Compulsory</span></span>
+                        </div>
+                        <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
+                          <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            <img src="" alt="TOP" style="width:100%;height:100%;object-fit:contain;">
+                          </div>
+                          <input type="text" id="prod-img-top" class="seller-input seller-angle-input" data-angle="top" placeholder="https://... Top View image URL (Shown under TOP tab in user account)" required style="flex:1;">
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-top" data-tag="TOP" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                        </div>
+                      </div>
+
+                      <!-- 4. Right Side View (RIGHT) -->
+                      <div class="seller-view-slot" data-angle="right" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="view-tag-badge right" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: RIGHT</span>
+                            <strong style="font-size:13px;color:#0f172a;">Right Side View Image URL <span style="color:#dc2626;">*</span></strong>
+                          </div>
+                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on RIGHT tab in 360° viewer (270°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
+                        </div>
+                        <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
+                          <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            <img src="" alt="RIGHT" style="width:100%;height:100%;object-fit:contain;">
+                          </div>
+                          <input type="text" id="prod-img-right" class="seller-input seller-angle-input" data-angle="right" placeholder="https://... Right Side View image URL" required style="flex:1;">
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-right" data-tag="RIGHT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                        </div>
+                      </div>
+
+                      <!-- 5. Back View (BACK) -->
+                      <div class="seller-view-slot" data-angle="back" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="view-tag-badge back" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: BACK</span>
+                            <strong style="font-size:13px;color:#0f172a;">Back View Image URL (Rear Angle) <span style="color:#dc2626;">*</span></strong>
+                          </div>
+                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on BACK tab in 360° viewer (360°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
+                        </div>
+                        <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
+                          <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            <img src="" alt="BACK" style="width:100%;height:100%;object-fit:contain;">
+                          </div>
+                          <input type="text" id="prod-img-back" class="seller-input seller-angle-input" data-angle="back" placeholder="https://... Back View image URL" required style="flex:1;">
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-back" data-tag="BACK" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                        </div>
                       </div>
                     </div>
 
-                    <!-- Additional Photos / Multi-Angle Gallery Container -->
-                    <div class="form-group span-2" style="margin-top:16px;border-top:1px dashed #cbd5e1;padding-top:16px;">
-                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <!-- Additional Multi-Angle Photos & Gallery (Optional Extra Shots) -->
+                    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cbd5e1;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                         <div>
-                          <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photos & Gallery</strong>
+                          <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photos &amp; Gallery</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add side view, back view, top angle, and detail shots for 360° product exploration.</small>
                         </div>
-                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;font-weight:800;cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12.5px;">
-                          <span style="font-size:16px;font-weight:900;line-height:1;">+</span>
+                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#ecfdf5;color:#047857;border:1.5px solid #6ee7b7;font-weight:800;font-size:12.5px;padding:6px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                          <span style="font-size:15px;line-height:1;">+</span>
                           <span>Add More Photos</span>
                         </button>
                       </div>
-
-                      <div id="seller-extra-photos-container" style="display:flex;flex-direction:column;gap:10px;">
-                        <!-- Dynamic rows inserted here -->
+                      <div id="seller-extra-photos-container" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+                        <!-- Dynamic tagged extra photo rows -->
                       </div>
                     </div>
                   </div>
@@ -18763,8 +19090,36 @@ function initPageRouter() {
                       <h3>5. Specifications & Customer Highlights</h3>
                     </div>
                     <div class="form-group span-2">
-                      <label for="prod-desc">Product Description & Key Specifications *</label>
+                      <label for="prod-desc">Product Description & Overview *</label>
                       <textarea id="prod-desc" class="seller-textarea" rows="4" required>Premium grade authentic product with industry-leading performance, durable build quality, and verified manufacturer certification.</textarea>
+                    </div>
+
+                    <!-- Custom Specifications Table Builder -->
+                    <div class="form-group span-2" style="margin-top:16px;border-top:1px dashed #cbd5e1;padding-top:16px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                        <div>
+                          <strong style="font-size:13px;color:#0f172a;display:block;">Product Specifications Table (Customer View)</strong>
+                          <small style="color:#64748b;font-size:11.5px;">Add custom specs like RAM, Storage, Color, Display, Processor, Material, etc. to appear directly on the specifications card.</small>
+                        </div>
+                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;font-weight:800;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12.5px;">
+                          <span style="font-size:16px;font-weight:900;line-height:1;">+</span>
+                          <span>Add Specification</span>
+                        </button>
+                      </div>
+
+                      <div id="seller-specs-container" style="display:flex;flex-direction:column;gap:8px;">
+                        <!-- Dynamic specification rows -->
+                      </div>
+
+                      <div class="seller-spec-presets" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;">
+                        <span style="font-size:11.5px;font-weight:700;color:#64748b;">Quick Suggestions:</span>
+                        <button type="button" class="spec-chip-btn" data-key="RAM & Storage" data-val="8GB RAM, 256GB Storage">+ RAM &amp; Storage</button>
+                        <button type="button" class="spec-chip-btn" data-key="Color" data-val="Celadon Marble">+ Color</button>
+                        <button type="button" class="spec-chip-btn" data-key="Display" data-val="6.7 inch 120Hz AMOLED">+ Display</button>
+                        <button type="button" class="spec-chip-btn" data-key="Battery" data-val="5500 mAh with Fast Charging">+ Battery</button>
+                        <button type="button" class="spec-chip-btn" data-key="Processor" data-val="Octa Core High Performance">+ Processor</button>
+                        <button type="button" class="spec-chip-btn" data-key="Material / Finish" data-val="Premium Glass Back">+ Material</button>
+                      </div>
                     </div>
                   </div>
 
@@ -19316,59 +19671,206 @@ function initPageRouter() {
       updateLivePreview();
     }
 
-    // ── Wire Preset Image Quick Picks ──
-    pageContainer.querySelectorAll('.img-chip-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (imgInput) {
-          imgInput.value = btn.dataset.url;
-          updateLivePreview();
-        }
-        showToast('Image preset selected!', 'info', 1500);
-      });
-    });
+    // ── 5-Perspective Angle Preset Libraries ──
+    const PERSPECTIVE_PRESETS = {
+      smartphone: {
+        name: 'Smartphone',
+        front: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800',
+        left: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800',
+        top: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=800',
+        right: 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=800',
+        back: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=800'
+      },
+      headphones: {
+        name: 'Headphones',
+        front: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+        left: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800',
+        top: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800',
+        right: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800',
+        back: 'https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?w=800'
+      },
+      smartwatch: {
+        name: 'Smartwatch',
+        front: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+        left: 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800',
+        top: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800',
+        right: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=800',
+        back: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800'
+      },
+      shoes: {
+        name: 'Shoes',
+        front: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+        left: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800',
+        top: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800',
+        right: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=800',
+        back: 'https://images.unsplash.com/photo-1515955656352-a1fa3ffcd111?w=800'
+      },
+      coffee: {
+        name: 'Coffee',
+        front: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800',
+        left: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800',
+        top: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800',
+        right: 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?w=800',
+        back: 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=800'
+      },
+      skincare: {
+        name: 'Skincare',
+        front: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800',
+        left: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=800',
+        top: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=800',
+        right: 'https://images.unsplash.com/photo-1556228852-6d35a585d566?w=800',
+        back: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800'
+      }
+    };
 
-    // ── Wire Image Preview & Clipboard Paste Support ──
-    imgInput?.addEventListener('paste', (e) => {
-      const items = (e.clipboardData || window.clipboardData)?.items;
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type && items[i].type.indexOf('image') !== -1) {
-            e.preventDefault();
-            const file = items[i].getAsFile();
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                imgInput.value = event.target.result;
-                updateLivePreview();
-                showToast('✓ Image pasted from clipboard successfully!', 'success', 2500);
-              };
-              reader.readAsDataURL(file);
-              return;
+    // Helper: Update inline thumbnail preview for any angle slot
+    const updateSlotThumb = (inputEl) => {
+      if (!inputEl) return;
+      const wrap = inputEl.closest('.image-input-wrap');
+      const thumbBox = wrap?.querySelector('.angle-thumb-box');
+      const img = thumbBox?.querySelector('img');
+      const url = inputEl.value.trim();
+      if (thumbBox && img) {
+        if (url) {
+          img.src = url;
+          thumbBox.style.display = 'flex';
+          inputEl.style.borderColor = '#cbd5e1';
+          const slot = inputEl.closest('.seller-view-slot');
+          if (slot) slot.style.borderColor = '#cbd5e1';
+        } else {
+          thumbBox.style.display = 'none';
+        }
+      }
+    };
+
+    // Wire listeners on all 5 angle inputs
+    const angleInputsList = [
+      pageContainer.querySelector('#prod-img'),
+      pageContainer.querySelector('#prod-img-left'),
+      pageContainer.querySelector('#prod-img-top'),
+      pageContainer.querySelector('#prod-img-right'),
+      pageContainer.querySelector('#prod-img-back')
+    ];
+
+    angleInputsList.forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener('input', () => {
+        updateSlotThumb(inp);
+        if (inp.id === 'prod-img') updateLivePreview();
+      });
+      inp.addEventListener('change', () => {
+        updateSlotThumb(inp);
+        if (inp.id === 'prod-img') updateLivePreview();
+      });
+
+      // Wire direct clipboard paste support on each angle input
+      inp.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || window.clipboardData)?.items;
+        if (items) {
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.indexOf('image') !== -1) {
+              e.preventDefault();
+              const file = items[i].getAsFile();
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  inp.value = event.target.result;
+                  updateSlotThumb(inp);
+                  if (inp.id === 'prod-img') updateLivePreview();
+                  showToast(`✓ ${inp.dataset.angle?.toUpperCase() || 'Angle'} view image pasted from clipboard!`, 'success', 2500);
+                };
+                reader.readAsDataURL(file);
+                return;
+              }
             }
           }
         }
-      }
-      setTimeout(updateLivePreview, 50);
+        setTimeout(() => {
+          updateSlotThumb(inp);
+          if (inp.id === 'prod-img') updateLivePreview();
+        }, 50);
+      });
     });
 
-    pageContainer.querySelector('#btn-preview-img')?.addEventListener('click', () => {
-      const url = imgInput?.value?.trim();
-      if (!url) {
-        showToast('Please paste an image URL or paste an image directly (Ctrl+V) first', 'warn');
-        return;
-      }
-      showInfoModal(
-        'Product Image Preview',
-        `<div style="text-align:center;padding:8px 4px;">
-          <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
-            <img src="${url}" alt="Product Preview" style="max-width:100%;max-height:380px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:24px;font-size:13.5px;font-weight:700;\\'>⚠️ Image preview failed to load.<br><span style=\\'font-weight:400;color:#64748b;font-size:12px;\\'>Please verify the URL or try pasting an image directly from your clipboard (Ctrl+V).</span></div>';">
-          </div>
-          <div style="margin-top:12px;font-size:12px;color:#64748b;">Live preview of the primary image that buyers will see in your store.</div>
-        </div>`
-      );
+    // ── Wire Preset 5-Angle Quick Picks ──
+    pageContainer.querySelectorAll('.img-chip-btn-all').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pKey = btn.dataset.preset;
+        const pSet = PERSPECTIVE_PRESETS[pKey];
+        if (!pSet) return;
+
+        const fInp = pageContainer.querySelector('#prod-img');
+        const lInp = pageContainer.querySelector('#prod-img-left');
+        const tInp = pageContainer.querySelector('#prod-img-top');
+        const rInp = pageContainer.querySelector('#prod-img-right');
+        const bInp = pageContainer.querySelector('#prod-img-back');
+
+        if (fInp) fInp.value = pSet.front;
+        if (lInp) lInp.value = pSet.left;
+        if (tInp) tInp.value = pSet.top;
+        if (rInp) rInp.value = pSet.right;
+        if (bInp) bInp.value = pSet.back;
+
+        [fInp, lInp, tInp, rInp, bInp].forEach(updateSlotThumb);
+        updateLivePreview();
+        showToast(`✓ Loaded 5 compulsory perspective view images for ${pSet.name}!`, 'success', 2500);
+      });
     });
 
-    // ── Wire Additional Multi-Angle Photos (Plus button) ──
+    // ── Wire Preview Buttons for All 5 Perspective Slots ──
+    pageContainer.querySelectorAll('.btn-preview-angle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const inputId = btn.dataset.inputId;
+        const tag = btn.dataset.tag || 'ANGLE';
+        const inp = pageContainer.querySelector(`#${inputId}`);
+        const url = inp?.value?.trim();
+        if (!url) {
+          showToast(`Please enter an image URL for the ${tag} view first`, 'warn');
+          inp?.focus();
+          return;
+        }
+        showInfoModal(
+          `${tag} View Preview (Tag: ${tag})`,
+          `<div style="text-align:center;padding:8px 4px;">
+            <div style="margin-bottom:10px;">
+              <span style="background:#f3e8ff;color:#7e22ce;border:1px solid #d8b4fe;font-size:12px;font-weight:900;padding:3px 12px;border-radius:20px;">TAG: ${tag}</span>
+            </div>
+            <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
+              <img src="${url}" alt="${tag} View Preview" style="max-width:100%;max-height:380px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:24px;font-size:13.5px;font-weight:700;\\'>⚠️ Image preview failed to load.<br><span style=\\'font-weight:400;color:#64748b;font-size:12px;\\'>Please check the URL or try pasting an image directly from your clipboard (Ctrl+V).</span></div>';">
+            </div>
+            <div style="margin-top:12px;font-size:12.5px;color:#64748b;">This image will appear under the <strong>${tag}</strong> tab in the customer account product viewer.</div>
+          </div>`
+        );
+      });
+    });
+
+    // ── Wire Dynamic Specifications Builder in Publish Form ──
+    const specsContainer = pageContainer.querySelector('#seller-specs-container');
+    const addSpecBtn = pageContainer.querySelector('#btn-seller-add-spec');
+
+    const renderSpecRow = (key = '', val = '') => {
+      if (!specsContainer) return;
+      const row = document.createElement('div');
+      row.className = 'seller-spec-row';
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0;';
+      row.innerHTML = `
+        <input type="text" class="seller-input seller-spec-key" placeholder="Specification Label (e.g. RAM, Color)" value="${(key || '').replace(/"/g, '&quot;')}" style="flex:1;font-size:12.5px;padding:7px 10px;" required />
+        <input type="text" class="seller-input seller-spec-val" placeholder="Specification Value (e.g. 8GB RAM, Black)" value="${(val || '').replace(/"/g, '&quot;')}" style="flex:1.5;font-size:12.5px;padding:7px 10px;" required />
+        <button type="button" class="btn-remove-spec-row" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove specification">✕</button>
+      `;
+      row.querySelector('.btn-remove-spec-row')?.addEventListener('click', () => row.remove());
+      specsContainer.appendChild(row);
+    };
+
+    addSpecBtn?.addEventListener('click', () => renderSpecRow('', ''));
+
+    pageContainer.querySelectorAll('.spec-chip-btn').forEach(chip => {
+      chip.addEventListener('click', () => {
+        renderSpecRow(chip.dataset.key || '', chip.dataset.val || '');
+      });
+    });
+
+    // ── Wire Additional Multi-Angle Photos (Plus button) with Tag Support ──
     const addPhotoBtn = pageContainer.querySelector('#btn-add-more-photo');
     const extraPhotosContainer = pageContainer.querySelector('#seller-extra-photos-container');
 
@@ -19377,14 +19879,14 @@ function initPageRouter() {
       const rows = extraPhotosContainer.querySelectorAll('.seller-extra-photo-row');
       rows.forEach((r, idx) => {
         const lbl = r.querySelector('.extra-photo-lbl');
-        if (lbl) lbl.textContent = `Photo #${idx + 2}:`;
+        if (lbl) lbl.textContent = `Extra Photo #${idx + 1}:`;
       });
       if (addPhotoBtn) {
-        if (rows.length >= 4) {
+        if (rows.length >= 8) {
           addPhotoBtn.disabled = true;
           addPhotoBtn.style.opacity = '0.5';
           addPhotoBtn.style.cursor = 'not-allowed';
-          addPhotoBtn.title = 'Maximum 5 photos reached';
+          addPhotoBtn.title = 'Maximum extra photos reached';
         } else {
           addPhotoBtn.disabled = false;
           addPhotoBtn.style.opacity = '1';
@@ -19397,22 +19899,68 @@ function initPageRouter() {
     addPhotoBtn?.addEventListener('click', () => {
       if (!extraPhotosContainer) return;
       const currentRows = extraPhotosContainer.querySelectorAll('.seller-extra-photo-row');
-      if (currentRows.length >= 4) {
-        showToast('Maximum 5 product photos reached (Cover + 4 Gallery angles).', 'warn');
+      if (currentRows.length >= 8) {
+        showToast('Maximum extra gallery photos reached.', 'warn');
         return;
       }
-      const newIdx = currentRows.length + 2;
+      const newIdx = currentRows.length + 1;
       const row = document.createElement('div');
       row.className = 'seller-extra-photo-row';
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;flex-wrap:wrap;';
       row.innerHTML = `
-        <span class="extra-photo-lbl" style="font-size:12px;font-weight:800;color:#475569;min-width:68px;">Photo #${newIdx}:</span>
-        <input type="text" class="seller-input seller-extra-photo-input" style="flex:1;" />
-        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;">Preview</button>
-        <button type="button" class="btn-remove-extra-photo" title="Remove this photo">✕</button>
+        <span class="extra-photo-lbl" style="font-size:12px;font-weight:800;color:#475569;min-width:85px;">Extra #${newIdx}:</span>
+        <select class="seller-select seller-extra-photo-tag" style="width:130px;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;">
+          <option value="DETAIL">TAG: DETAIL</option>
+          <option value="TOP">TAG: TOP</option>
+          <option value="FRONT">TAG: FRONT</option>
+          <option value="LEFT">TAG: LEFT</option>
+          <option value="RIGHT">TAG: RIGHT</option>
+          <option value="BACK">TAG: BACK</option>
+          <option value="ANGLED">TAG: ANGLED</option>
+          <option value="PACKAGING">TAG: PACKAGING</option>
+          <option value="IN-HAND">TAG: IN-HAND</option>
+          <option value="OTHER">TAG: OTHER</option>
+        </select>
+        <div class="angle-thumb-box extra-thumb-box" style="width:38px;height:38px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
+        </div>
+        <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:200px;font-size:12.5px;padding:7px 10px;" />
+        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
+        <button type="button" class="btn-remove-extra-photo" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove this photo">✕</button>
       `;
       extraPhotosContainer.appendChild(row);
 
       const extraInput = row.querySelector('.seller-extra-photo-input');
+      const extraThumbBox = row.querySelector('.extra-thumb-box');
+      const extraThumbImg = extraThumbBox?.querySelector('img');
+
+      const updateExtraThumb = () => {
+        const u = extraInput?.value.trim();
+        if (extraThumbBox && extraThumbImg) {
+          if (u) {
+            extraThumbImg.src = u;
+            extraThumbBox.style.display = 'flex';
+          } else {
+            extraThumbBox.style.display = 'none';
+          }
+        }
+      };
+
+      extraInput?.addEventListener('input', updateExtraThumb);
+      extraInput?.addEventListener('change', updateExtraThumb);
+
+      // If user sets extra photo tag to TOP and fills it, also update the main TOP slot if empty
+      row.querySelector('.seller-extra-photo-tag')?.addEventListener('change', (e) => {
+        if (e.target.value === 'TOP' && extraInput?.value.trim()) {
+          const topInp = pageContainer.querySelector('#prod-img-top');
+          if (topInp && !topInp.value.trim()) {
+            topInp.value = extraInput.value.trim();
+            updateSlotThumb(topInp);
+            showToast('✓ Linked as primary Top View image (TAG: TOP)', 'info', 2000);
+          }
+        }
+      });
+
       extraInput?.addEventListener('paste', (e) => {
         const items = (e.clipboardData || window.clipboardData)?.items;
         if (items) {
@@ -19424,7 +19972,8 @@ function initPageRouter() {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                   extraInput.value = event.target.result;
-                  showToast(`✓ Photo #${newIdx} pasted from clipboard!`, 'success', 2000);
+                  updateExtraThumb();
+                  showToast(`✓ Extra photo pasted from clipboard!`, 'success', 2000);
                 };
                 reader.readAsDataURL(file);
                 return;
@@ -19432,17 +19981,20 @@ function initPageRouter() {
             }
           }
         }
+        setTimeout(updateExtraThumb, 50);
       });
 
       row.querySelector('.btn-preview-extra')?.addEventListener('click', () => {
-        const url = row.querySelector('.seller-extra-photo-input')?.value.trim();
+        const url = extraInput?.value?.trim();
+        const tag = row.querySelector('.seller-extra-photo-tag')?.value || 'EXTRA';
         if (!url) {
           showToast('Please enter an image URL or paste an image first', 'warn');
           return;
         }
         showInfoModal(
-          `Product Photo #${newIdx} Preview`,
+          `Extra Photo Preview (${tag})`,
           `<div style="text-align:center;padding:8px 4px;">
+            <div style="margin-bottom:8px;"><span style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:900;padding:3px 10px;border-radius:12px;">TAG: ${tag}</span></div>
             <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
               <img src="${url}" alt="Preview" style="max-width:100%;max-height:360px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>⚠️ Image preview failed to load.</div>';">
             </div>
@@ -19478,19 +20030,64 @@ function initPageRouter() {
       const name = pageContainer.querySelector('#prod-name')?.value.trim();
       const category = pageContainer.querySelector('#prod-cat')?.value;
       const brand = pageContainer.querySelector('#prod-brand')?.value.trim() || currentSeller?.storeName || 'X-Mart Verified';
+      const model = pageContainer.querySelector('#prod-model')?.value.trim() || name;
       const price = parseFloat(pageContainer.querySelector('#prod-price')?.value) || 0;
       const originalPrice = parseFloat(pageContainer.querySelector('#prod-mrp')?.value) || Math.round(price * 1.25);
       const stock = parseInt(pageContainer.querySelector('#prod-stock')?.value) || 20;
-      const warranty = pageContainer.querySelector('#prod-warranty')?.value.trim() || '1 Year Manufacturer Warranty';
-      const image = pageContainer.querySelector('#prod-img')?.value.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700';
+      const warranty = pageContainer.querySelector('#prod-warranty')?.value.trim() || '1 to 2 Years Manufacturer Warranty';
+      const deliverySpeed = pageContainer.querySelector('#prod-delivery-speed')?.value.trim() || 'Delivered in 2-4 business days with Prime Express';
+      const condition = pageContainer.querySelector('#prod-condition')?.value.trim() || 'Brand New • 100% Sealed Original Box';
+      const frontImg = pageContainer.querySelector('#prod-img')?.value.trim();
+      const leftImg = pageContainer.querySelector('#prod-img-left')?.value.trim();
+      const topImg = pageContainer.querySelector('#prod-img-top')?.value.trim();
+      const rightImg = pageContainer.querySelector('#prod-img-right')?.value.trim();
+      const backImg = pageContainer.querySelector('#prod-img-back')?.value.trim();
       const description = pageContainer.querySelector('#prod-desc')?.value.trim();
 
-      // Collect all image URLs (Primary + Extra Gallery Photos)
-      const images = [image];
-      const extraInputs = pageContainer.querySelectorAll('.seller-extra-photo-input');
-      extraInputs.forEach(inp => {
-        const u = inp.value.trim();
-        if (u && !images.includes(u)) images.push(u);
+      // Compulsory Validation: All 5 Perspective Views are strictly mandatory
+      const angleInputs = [
+        { el: pageContainer.querySelector('#prod-img'), name: 'Front View (TAG: FRONT)' },
+        { el: pageContainer.querySelector('#prod-img-left'), name: 'Left Side View (TAG: LEFT)' },
+        { el: pageContainer.querySelector('#prod-img-top'), name: 'Top View (TAG: TOP)' },
+        { el: pageContainer.querySelector('#prod-img-right'), name: 'Right Side View (TAG: RIGHT)' },
+        { el: pageContainer.querySelector('#prod-img-back'), name: 'Back View (TAG: BACK)' }
+      ];
+
+      const missingAngle = angleInputs.find(a => !a.el?.value.trim());
+      if (missingAngle) {
+        showToast(`⚠️ ${missingAngle.name} is compulsory! Please provide all 5 perspective view images.`, 'error', 4500);
+        angleInputs.forEach(a => {
+          if (a.el) a.el.style.borderColor = !a.el.value.trim() ? '#dc2626' : '#cbd5e1';
+        });
+        if (missingAngle.el) {
+          missingAngle.el.focus();
+          missingAngle.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Publish Product to Live Catalog</span>';
+        }
+        return;
+      }
+
+      // Reset borders on valid input
+      angleInputs.forEach(a => { if (a.el) a.el.style.borderColor = '#cbd5e1'; });
+
+      const images = [frontImg, leftImg, topImg, rightImg, backImg];
+      const angleImages = {
+        front: frontImg,
+        left: leftImg,
+        top: topImg,
+        right: rightImg,
+        back: backImg
+      };
+
+      // Extract custom specifications
+      const specifications = [];
+      pageContainer.querySelectorAll('.seller-spec-row').forEach(row => {
+        const k = row.querySelector('.seller-spec-key')?.value.trim();
+        const v = row.querySelector('.seller-spec-val')?.value.trim();
+        if (k && v) specifications.push({ key: k, value: v });
       });
 
       const discount = (originalPrice > price) ? Math.round(((originalPrice - price) / originalPrice) * 100) : 10;
@@ -19511,13 +20108,19 @@ function initPageRouter() {
         name,
         category,
         brand,
+        model,
         price,
         originalPrice,
         discount,
         stock,
         warranty,
+        deliverySpeed,
+        deliveryInfo: deliverySpeed,
+        condition,
+        specifications,
         description,
         images,
+        angleImages,
         tags: [category.toLowerCase(), brand.toLowerCase(), 'new-arrival', 'seller-listing'],
         offers
       };
@@ -20190,6 +20793,7 @@ function initPageRouter() {
 
     // ── Seller: Manage Per-Product Offers Modal ──
     function openSellerManageOffersModal(prod) {
+      window.openSellerManageOffersModal = openSellerManageOffersModal;
       const id = prod._id || prod.id;
       // Load saved offers
       let savedOffers = Array.isArray(prod.offers) ? prod.offers : [];
@@ -20319,6 +20923,12 @@ function initPageRouter() {
             <input type="text" id="edit-name" class="seller-input" value="${prod.name}" required>
           </div>
 
+          <div style="grid-column:1/-1;">
+            <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Model / Item Specification</label>
+            <input type="text" id="edit-model" class="seller-input" value="${(prod.model || prod.name || '').replace(/"/g, '&quot;')}" placeholder="e.g. OnePlus Nord CE 4 5G (8GB RAM, 256GB Celadon Marble)">
+            <small style="color:#64748b;font-size:11px;">Shown under 'Model / Item' in Product Specifications card.</small>
+          </div>
+
           <div>
             <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Category *</label>
             <select id="edit-category" class="seller-input">
@@ -20334,6 +20944,21 @@ function initPageRouter() {
           <div>
             <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Brand</label>
             <input type="text" id="edit-brand" class="seller-input" value="${prod.brand || 'X-Mart Verified'}">
+          </div>
+
+          <div>
+            <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Warranty Terms</label>
+            <input type="text" id="edit-warranty" class="seller-input" value="${(prod.warranty || '1 to 2 Years Manufacturer Warranty').replace(/"/g, '&quot;')}">
+          </div>
+
+          <div>
+            <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Delivery Speed &amp; Dispatch</label>
+            <input type="text" id="edit-delivery-speed" class="seller-input" value="${(prod.deliverySpeed || prod.deliveryInfo || 'Delivered in 2-4 business days with Prime Express').replace(/"/g, '&quot;')}">
+          </div>
+
+          <div style="grid-column:1/-1;">
+            <label style="display:block;font-size:12.5px;font-weight:800;margin-bottom:4px;color:#1e293b;">Item Condition</label>
+            <input type="text" id="edit-condition" class="seller-input" value="${(prod.condition || 'Brand New • 100% Sealed Original Box').replace(/"/g, '&quot;')}">
           </div>
 
           <div>
@@ -20361,14 +20986,69 @@ function initPageRouter() {
           </div>
 
           <div style="grid-column:1/-1;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-              <label style="font-size:12.5px;font-weight:800;color:#1e293b;margin:0;">Product Images & Multi-Angle Photos (Max 5)</label>
-              <button type="button" id="btn-edit-add-photo" class="seller-btn-secondary" style="font-size:12px;padding:5px 12px;font-weight:800;display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;">
-                <span style="font-size:15px;font-weight:900;line-height:1;">+</span> Add Photo
-              </button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+              <div>
+                <label style="font-size:13px;font-weight:800;color:#1e293b;margin:0;display:block;">Required Perspective View Images (All 5 Compulsory) *</label>
+                <small style="color:#64748b;font-size:11.5px;">Each image maps directly to its corresponding angle tab (FRONT, LEFT, TOP, RIGHT, BACK) in the 360° viewer.</small>
+              </div>
+              <span class="seller-pill-badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-size:11px;font-weight:800;">5 Views Required</span>
             </div>
-            <div id="edit-photos-list" style="display:flex;flex-direction:column;gap:8px;">
-              <!-- Pre-populated dynamically -->
+            <div id="edit-angles-list" style="display:flex;flex-direction:column;gap:10px;">
+              <!-- 1. Front View -->
+              <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="view-tag-badge front" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: FRONT</span>
+                  <strong style="font-size:12.5px;color:#1e293b;">1. Front View (Cover) <span style="color:#dc2626;">*</span></strong>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="edit-img-front" class="seller-input edit-angle-input" data-angle="front" value="${(prod.angleImages?.front || prod.images?.[0] || prod.img || '').replace(/"/g, '&quot;')}" placeholder="Front View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-front" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                </div>
+              </div>
+              <!-- 2. Left Side View -->
+              <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="view-tag-badge left" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: LEFT</span>
+                  <strong style="font-size:12.5px;color:#1e293b;">2. Left Side View <span style="color:#dc2626;">*</span></strong>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="edit-img-left" class="seller-input edit-angle-input" data-angle="left" value="${(prod.angleImages?.left || prod.images?.[1] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Left Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-left" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                </div>
+              </div>
+              <!-- 3. Top View -->
+              <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="view-tag-badge top" style="background:#f3e8ff;color:#7e22ce;border:1px solid #e9d5ff;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: TOP</span>
+                  <strong style="font-size:12.5px;color:#1e293b;">3. Top View <span style="color:#dc2626;">*</span></strong>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="edit-img-top" class="seller-input edit-angle-input" data-angle="top" value="${(prod.angleImages?.top || prod.images?.[2] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Top View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-top" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                </div>
+              </div>
+              <!-- 4. Right Side View -->
+              <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="view-tag-badge right" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: RIGHT</span>
+                  <strong style="font-size:12.5px;color:#1e293b;">4. Right Side View <span style="color:#dc2626;">*</span></strong>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="edit-img-right" class="seller-input edit-angle-input" data-angle="right" value="${(prod.angleImages?.right || prod.images?.[3] || prod.images?.[1] || '').replace(/"/g, '&quot;')}" placeholder="Right Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-right" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                </div>
+              </div>
+              <!-- 5. Back View -->
+              <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="view-tag-badge back" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: BACK</span>
+                  <strong style="font-size:12.5px;color:#1e293b;">5. Back View <span style="color:#dc2626;">*</span></strong>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="edit-img-back" class="seller-input edit-angle-input" data-angle="back" value="${(prod.angleImages?.back || prod.images?.[4] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Back View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-back" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -20379,6 +21059,22 @@ function initPageRouter() {
             </label>
           </div>
 
+          <!-- Dynamic Custom Specifications in Edit Modal -->
+          <div style="grid-column:1/-1;margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+              <div>
+                <label style="font-size:12.5px;font-weight:800;color:#1e293b;margin:0;">Custom Technical &amp; Product Specifications</label>
+                <small style="color:#64748b;font-size:11.5px;display:block;">Specifications displayed on the product specifications card.</small>
+              </div>
+              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:5px 12px;font-weight:800;display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;">
+                <span style="font-size:15px;font-weight:900;line-height:1;">+</span> Add Specification
+              </button>
+            </div>
+            <div id="edit-specs-list" style="display:flex;flex-direction:column;gap:8px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
           <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
             <button type="button" class="seller-btn-secondary" onclick="document.getElementById('${modalId}')._close()">Cancel</button>
             <button type="submit" class="com-btn-primary">Save Changes</button>
@@ -20386,72 +21082,53 @@ function initPageRouter() {
         </form>
       `;
 
-      // Pre-populate photos
-      const editPhotosList = bodyEl.querySelector('#edit-photos-list');
-      const editAddPhotoBtn = bodyEl.querySelector('#btn-edit-add-photo');
-      const initialImgs = (Array.isArray(prod.images) && prod.images.length > 0) ? prod.images : [(prod.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700')];
-
-      const renderEditPhotoRow = (val = '', isPrimary = false) => {
-        if (!editPhotosList) return;
-        const count = editPhotosList.querySelectorAll('.edit-photo-row').length;
-        if (count >= 5) {
-          showToast('Maximum 5 photos allowed per product', 'warn');
-          return;
-        }
-        const row = document.createElement('div');
-        row.className = 'edit-photo-row';
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;';
-        row.innerHTML = `
-          <span style="font-size:11px;font-weight:800;color:#64748b;min-width:65px;">${isPrimary ? 'Cover Image:' : `Photo #${count + 1}:`}</span>
-          <input type="text" class="seller-input edit-photo-input" value="${val}" style="flex:1;padding:6px 10px;font-size:12px;" ${isPrimary ? 'required' : ''} />
-          <button type="button" class="seller-btn-secondary btn-preview-edit-photo" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;padding:4px 10px;font-size:11.5px;font-weight:800;cursor:pointer;">Preview</button>
-          ${!isPrimary ? '<button type="button" class="btn-remove-extra-photo" style="padding:4px 8px;font-size:11.5px;">✕</button>' : ''}
-        `;
-        editPhotosList.appendChild(row);
-
-        const photoInp = row.querySelector('.edit-photo-input');
-        photoInp?.addEventListener('paste', (e) => {
-          const items = (e.clipboardData || window.clipboardData)?.items;
-          if (items) {
-            for (let i = 0; i < items.length; i++) {
-              if (items[i].type && items[i].type.indexOf('image') !== -1) {
-                e.preventDefault();
-                const file = items[i].getAsFile();
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    photoInp.value = event.target.result;
-                    showToast('✓ Image pasted from clipboard!', 'success', 2000);
-                  };
-                  reader.readAsDataURL(file);
-                  return;
-                }
-              }
-            }
-          }
-        });
-
-        row.querySelector('.btn-preview-edit-photo')?.addEventListener('click', () => {
-          const u = photoInp?.value.trim();
-          if (!u) return showToast('Please enter an image URL or paste an image first', 'warn');
+      // Wire Preview buttons for Edit modal 5 perspective views
+      bodyEl.querySelectorAll('.btn-preview-edit-angle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetInp = bodyEl.querySelector(`#${btn.dataset.for}`);
+          const u = targetInp?.value.trim();
+          if (!u) return showToast('Please enter an image URL first', 'warn');
           showInfoModal(
-            'Product Image Preview',
+            'Perspective Angle Preview',
             `<div style="text-align:center;padding:8px 4px;">
-              <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
-                <img src="${u}" alt="Preview" style="max-width:100%;max-height:320px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>⚠️ Image preview failed to load.</div>';">
-              </div>
+              <img src="${u}" alt="Preview" style="max-width:100%;max-height:340px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>⚠️ Image preview failed to load.</div>';">
             </div>`
           );
         });
+      });
 
-        row.querySelector('.btn-remove-extra-photo')?.addEventListener('click', () => {
-          row.remove();
-        });
+      // Wire Dynamic Specifications in Edit Modal
+      const editSpecsList = bodyEl.querySelector('#edit-specs-list');
+      const editAddSpecBtn = bodyEl.querySelector('#btn-edit-add-spec');
+
+      const renderEditSpecRow = (key = '', val = '') => {
+        if (!editSpecsList) return;
+        const row = document.createElement('div');
+        row.className = 'edit-spec-row';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;';
+        row.innerHTML = `
+          <input type="text" class="seller-input edit-spec-key" placeholder="Specification Label (e.g. RAM, Color)" value="${key.replace(/"/g, '&quot;')}" style="flex:1;font-size:12px;padding:6px 10px;" required />
+          <input type="text" class="seller-input edit-spec-val" placeholder="Specification Value (e.g. 8GB RAM, Black)" value="${val.replace(/"/g, '&quot;')}" style="flex:1.5;font-size:12px;padding:6px 10px;" required />
+          <button type="button" class="btn-remove-edit-spec" style="padding:4px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;font-weight:800;font-size:11.5px;" title="Remove">✕</button>
+        `;
+        row.querySelector('.btn-remove-edit-spec').addEventListener('click', () => row.remove());
+        editSpecsList.appendChild(row);
       };
 
-      initialImgs.forEach((imgUrl, idx) => renderEditPhotoRow(imgUrl, idx === 0));
+      editAddSpecBtn?.addEventListener('click', () => renderEditSpecRow('', ''));
 
-      editAddPhotoBtn?.addEventListener('click', () => renderEditPhotoRow('', false));
+      // Populate existing specifications
+      if (Array.isArray(prod.specifications)) {
+        prod.specifications.forEach(s => {
+          const k = typeof s === 'object' ? (s.key || s.name || '') : '';
+          const v = typeof s === 'object' ? (s.value || s.val || '') : '';
+          if (k || v) renderEditSpecRow(k, v);
+        });
+      } else if (prod.specifications && typeof prod.specifications === 'object') {
+        Object.entries(prod.specifications).forEach(([k, v]) => {
+          if (k || v) renderEditSpecRow(k, v);
+        });
+      }
 
       // Live calculate price when discount changes
       const editPrice = bodyEl.querySelector('#edit-price');
@@ -20497,18 +21174,53 @@ function initPageRouter() {
         const updatedName = bodyEl.querySelector('#edit-name').value.trim();
         const updatedCat = bodyEl.querySelector('#edit-category').value;
         const updatedBrand = bodyEl.querySelector('#edit-brand').value.trim();
+        const updatedModel = bodyEl.querySelector('#edit-model')?.value.trim() || updatedName;
+        const updatedWarranty = bodyEl.querySelector('#edit-warranty')?.value.trim() || '1 to 2 Years Manufacturer Warranty';
+        const updatedDeliverySpeed = bodyEl.querySelector('#edit-delivery-speed')?.value.trim() || 'Delivered in 2-4 business days with Prime Express';
+        const updatedCondition = bodyEl.querySelector('#edit-condition')?.value.trim() || 'Brand New • 100% Sealed Original Box';
         const updatedPrice = parseFloat(bodyEl.querySelector('#edit-price').value) || 0;
         const updatedMRP = parseFloat(bodyEl.querySelector('#edit-mrp').value) || Math.round(updatedPrice * 1.3);
         const updatedDiscount = parseInt(bodyEl.querySelector('#edit-discount').value) || 0;
         const updatedStock = parseInt(bodyEl.querySelector('#edit-stock').value) || 0;
         const isDealChecked = bodyEl.querySelector('#edit-deal-check').checked;
 
-        // Collect updated photos
-        const updatedImages = [];
-        bodyEl.querySelectorAll('.edit-photo-input').forEach(inp => {
-          const u = inp.value.trim();
-          if (u && !updatedImages.includes(u)) updatedImages.push(u);
+        // Collect updated specifications
+        const updatedSpecs = [];
+        bodyEl.querySelectorAll('.edit-spec-row').forEach(row => {
+          const k = row.querySelector('.edit-spec-key')?.value.trim();
+          const v = row.querySelector('.edit-spec-val')?.value.trim();
+          if (k && v) updatedSpecs.push({ key: k, value: v });
         });
+
+        // Collect 5 required perspective view photos
+        const editFront = bodyEl.querySelector('#edit-img-front')?.value.trim();
+        const editLeft = bodyEl.querySelector('#edit-img-left')?.value.trim();
+        const editTop = bodyEl.querySelector('#edit-img-top')?.value.trim();
+        const editRight = bodyEl.querySelector('#edit-img-right')?.value.trim();
+        const editBack = bodyEl.querySelector('#edit-img-back')?.value.trim();
+
+        if (!editFront || !editLeft || !editTop || !editRight || !editBack) {
+          showToast('⚠️ All 5 perspective view images (Front, Left, Top, Right, Back) are compulsory!', 'error', 4500);
+          const angles = [
+            { el: bodyEl.querySelector('#edit-img-front') },
+            { el: bodyEl.querySelector('#edit-img-left') },
+            { el: bodyEl.querySelector('#edit-img-top') },
+            { el: bodyEl.querySelector('#edit-img-right') },
+            { el: bodyEl.querySelector('#edit-img-back') }
+          ];
+          const empty = angles.find(a => !a.el?.value.trim());
+          if (empty && empty.el) empty.el.focus();
+          return;
+        }
+
+        const updatedImages = [editFront, editLeft, editTop, editRight, editBack];
+        const updatedAngleImages = {
+          front: editFront,
+          left: editLeft,
+          top: editTop,
+          right: editRight,
+          back: editBack
+        };
 
         let tags = Array.isArray(prod.tags) ? [...prod.tags] : [];
         if (isDealChecked) {
@@ -20525,20 +21237,34 @@ function initPageRouter() {
           name: updatedName,
           category: updatedCat,
           brand: updatedBrand,
+          model: updatedModel,
+          warranty: updatedWarranty,
+          deliverySpeed: updatedDeliverySpeed,
+          deliveryInfo: updatedDeliverySpeed,
+          condition: updatedCondition,
+          specifications: updatedSpecs,
           price: updatedPrice,
           finalPrice: updatedPrice,
           originalPrice: updatedMRP,
           discount: updatedDiscount,
           stock: updatedStock,
           isFeatured: isDealChecked,
-          images: updatedImages.length > 0 ? updatedImages : prod.images,
+          images: updatedImages,
+          angleImages: updatedAngleImages,
           tags
         });
 
         // Sync local in-memory product
+        prod.angleImages = updatedAngleImages;
         prod.name = updatedName;
         prod.category = updatedCat;
         prod.brand = updatedBrand;
+        prod.model = updatedModel;
+        prod.warranty = updatedWarranty;
+        prod.deliverySpeed = updatedDeliverySpeed;
+        prod.deliveryInfo = updatedDeliverySpeed;
+        prod.condition = updatedCondition;
+        prod.specifications = updatedSpecs;
         prod.price = updatedPrice;
         prod.finalPrice = updatedPrice;
         prod.originalPrice = updatedMRP;
@@ -20548,6 +21274,11 @@ function initPageRouter() {
         prod.isFeatured = isDealChecked;
         if (updatedImages.length > 0) prod.images = updatedImages;
         prod.tags = tags;
+
+        // If product detail view is currently showing this product, refresh specifications card live
+        if (window._currentViewingProduct && String(window._currentViewingProduct._id || window._currentViewingProduct.id) === String(id)) {
+          window._openProductDetail(prod, false);
+        }
 
         const pIdx = Store.allProducts?.findIndex(p => String(p._id || p.id) === String(id));
         if (pIdx !== -1 && Store.allProducts) {
@@ -20566,12 +21297,19 @@ function initPageRouter() {
               name: updatedName,
               category: updatedCat,
               brand: updatedBrand,
+              model: updatedModel,
+              warranty: updatedWarranty,
+              deliverySpeed: updatedDeliverySpeed,
+              deliveryInfo: updatedDeliverySpeed,
+              condition: updatedCondition,
+              specifications: updatedSpecs,
               price: updatedPrice,
               originalPrice: updatedMRP,
               discount: updatedDiscount,
               stock: updatedStock,
               isFeatured: isDealChecked,
-              images: updatedImages.length > 0 ? updatedImages : prod.images,
+              images: updatedImages,
+              angleImages: updatedAngleImages,
               tags
             })
           });
@@ -23740,6 +24478,16 @@ function initPageRouter() {
         if (overrides[prodIdStr].stock !== undefined) prod.stock = overrides[prodIdStr].stock;
         if (overrides[prodIdStr].price !== undefined) prod.price = overrides[prodIdStr].price;
         if (overrides[prodIdStr].finalPrice !== undefined) prod.finalPrice = overrides[prodIdStr].finalPrice;
+        if (overrides[prodIdStr].name !== undefined) prod.name = overrides[prodIdStr].name;
+        if (overrides[prodIdStr].brand !== undefined) prod.brand = overrides[prodIdStr].brand;
+        if (overrides[prodIdStr].category !== undefined) prod.category = overrides[prodIdStr].category;
+        if (overrides[prodIdStr].model !== undefined) prod.model = overrides[prodIdStr].model;
+        if (overrides[prodIdStr].warranty !== undefined) prod.warranty = overrides[prodIdStr].warranty;
+        if (overrides[prodIdStr].deliverySpeed !== undefined) prod.deliverySpeed = overrides[prodIdStr].deliverySpeed;
+        if (overrides[prodIdStr].deliveryInfo !== undefined) prod.deliveryInfo = overrides[prodIdStr].deliveryInfo;
+        if (overrides[prodIdStr].condition !== undefined) prod.condition = overrides[prodIdStr].condition;
+        if (overrides[prodIdStr].specifications !== undefined) prod.specifications = overrides[prodIdStr].specifications;
+        if (overrides[prodIdStr].angleImages !== undefined) prod.angleImages = overrides[prodIdStr].angleImages;
         if (overrides[prodIdStr].isSellerDeactivated !== undefined) {
           let curSeller = null;
           try { curSeller = JSON.parse(localStorage.getItem('xmart_seller_profile') || 'null'); } catch (e) { }
@@ -23770,14 +24518,22 @@ function initPageRouter() {
       isSubscribed = notifyList.some(s => String(s.productId) === prodIdStr && (!currentEmail || s.email?.toLowerCase() === currentEmail.toLowerCase()));
     } catch (e) { isSubscribed = false; }
 
-    // Multi-angle perspectives dictionary
+    // Multi-angle perspectives dictionary matching dedicated tagged view slots
     const rawImages = (prod.images && prod.images.length > 0) ? prod.images : [baseImg];
+    const angleMap = prod.angleImages || {};
+    const frontImg = angleMap.front || rawImages[0] || baseImg;
+    const leftImg = angleMap.left || rawImages[1] || rawImages[0] || baseImg;
+    const topImg = angleMap.top || rawImages[2] || rawImages[0] || baseImg;
+    const rightImg = angleMap.right || rawImages[3] || rawImages[1] || rawImages[0] || baseImg;
+    const backImg = angleMap.back || rawImages[4] || rawImages[0] || baseImg;
+
+    const isDistinctAngles = (frontImg !== leftImg && frontImg !== topImg && frontImg !== backImg);
     const ANGLES = [
-      { id: 'front', label: 'Front View', deg: '0°', src: rawImages[0] || baseImg, style: 'transform: scale(1) rotateY(0deg);' },
-      { id: 'left', label: 'Left Side', deg: '90°', src: rawImages[1] || rawImages[0] || baseImg, style: 'transform: scale(1.04) perspective(600px) rotateY(20deg) rotateZ(-2deg);' },
-      { id: 'top', label: 'Top View', deg: '180°', src: rawImages[2] || rawImages[0] || baseImg, style: 'transform: scale(1.06) perspective(600px) rotateX(24deg);' },
-      { id: 'right', label: 'Right Side', deg: '270°', src: rawImages[3] || rawImages[1] || rawImages[0] || baseImg, style: 'transform: scale(1.04) perspective(600px) rotateY(-20deg) rotateZ(2deg);' },
-      { id: 'bottom', label: 'Back View', deg: '360°', src: rawImages[4] || rawImages[0] || baseImg, style: 'transform: scale(1.02) rotateY(180deg);' }
+      { id: 'front', tag: 'FRONT', label: 'Front View', deg: '0°', src: frontImg, style: 'transform: scale(1);' },
+      { id: 'left', tag: 'LEFT', label: 'Left Side', deg: '90°', src: leftImg, style: isDistinctAngles ? 'transform: scale(1);' : 'transform: scale(1.04) perspective(600px) rotateY(20deg) rotateZ(-2deg);' },
+      { id: 'top', tag: 'TOP', label: 'Top View', deg: '180°', src: topImg, style: isDistinctAngles ? 'transform: scale(1);' : 'transform: scale(1.06) perspective(600px) rotateX(24deg);' },
+      { id: 'right', tag: 'RIGHT', label: 'Right Side', deg: '270°', src: rightImg, style: isDistinctAngles ? 'transform: scale(1);' : 'transform: scale(1.04) perspective(600px) rotateY(-20deg) rotateZ(2deg);' },
+      { id: 'bottom', tag: 'BACK', label: 'Back View', deg: '360°', src: backImg, style: isDistinctAngles ? 'transform: scale(1);' : 'transform: scale(1.02) rotateY(180deg);' }
     ];
 
     let currentAngleIdx = 0;
@@ -23978,11 +24734,19 @@ function initPageRouter() {
       { tag: 'Cashback', text: `Get flat 5% unlimited cashback with X-Mart Prime Card` }
     ];
 
-    // Dynamically retrieve active, non-expired CMS Bank Card & UPI offers for this product
-    let cmsOffers = [];
+    // Permission Check: Allow ONLY admin or the particular seller who listed this product to edit offers
+    const authUser = currentUser || ((typeof Auth !== 'undefined' && typeof Auth.getUser === 'function') ? Auth.getUser() : null);
+    const isAdmin = authUser && (authUser.role === 'admin' || authUser.staffRole);
+    const isParticularSeller = authUser && (authUser.role === 'seller' || authUser.isSeller) && (
+      typeof _productBelongsToSeller === 'function' ? _productBelongsToSeller(prod, prod._id || prod.id, authUser) : false
+    );
+    const canEditOffers = Boolean(isAdmin || isParticularSeller);
+
+    // Active CMS promotions
+    let activePromos = [];
     if (window._storefrontCMS && Array.isArray(window._storefrontCMS.promotions)) {
       const now = new Date();
-      cmsOffers = window._storefrontCMS.promotions.filter(p => {
+      activePromos = window._storefrontCMS.promotions.filter(p => {
         if (!p.active) return false;
         if (p.validUntil && new Date(p.validUntil) < now) return false;
         if (p.validFrom && new Date(p.validFrom) > now) return false;
@@ -23990,25 +24754,218 @@ function initPageRouter() {
           const targets = p.applicableProducts.map(t => t.toLowerCase());
           const name = (prod.name || '').toLowerCase();
           const cat = (prod.category || '').toLowerCase();
-          const matches = targets.some(t => name.includes(t) || cat.includes(t));
-          if (!matches) return false;
+          return targets.some(t => name.includes(t) || cat.includes(t));
         }
         return true;
-      }).map(p => {
-        const tag = p.type === 'bank' ? `${p.bankPartner || 'Bank Card'} Offer` : p.type === 'upi' ? `${p.upiProvider || 'UPI'} Offer` : 'Special Voucher';
-        const disc = p.discountType === 'percent' ? `${p.discountValue}% Instant Discount` : `Flat ₹${p.discountValue} OFF`;
-        const cap = p.maxDiscount ? ` (Up to ₹${p.maxDiscount})` : '';
-        const min = p.minOrder ? ` on orders above ₹${p.minOrder}` : '';
-        return {
-          tag,
-          text: `${disc}${cap}${min} with code <strong>${p.code}</strong>.${p.description ? ` ${p.description}` : ''}`,
-        };
       });
     }
 
-    const baseOffers = (Array.isArray(prod.offers) && prod.offers.length > 0) ? prod.offers : dynamicDefaultOffers;
-    const displayOffers = cmsOffers.length > 0 ? [...cmsOffers, ...baseOffers.filter(b => !cmsOffers.some(c => c.tag === b.tag))] : baseOffers;
+    // Helper to generate brand logo icons for offer cards using real SVG assets
+    function getOfferCardBrandIcon(logoSrc, altText) {
+      const src = logoSrc || 'assets/banks/allbanks.svg';
+      const alt = altText || 'Bank';
+      return `
+        <div class="offer-logo-container" style="width:44px;height:32px;border-radius:6px;background:#ffffff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;padding:3px 5px;box-shadow:0 1px 3px rgba(0,0,0,0.04);flex-shrink:0;box-sizing:border-box;">
+          <img src="${src}" alt="${alt}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;" loading="lazy" />
+        </div>
+      `;
+    }
+
+    // Helper to render individual Flipkart-Style offer card
+    function renderFlipkartOfferCard(item) {
+      return `
+        <div class="offer-card-item">
+          ${item.badge ? `<span class="offer-best-pill">${item.badge}</span>` : `<div class="offer-card-placeholder-pill"></div>`}
+          <div class="offer-card-box">
+            <div class="offer-card-main">
+              <div class="offer-card-icon-col">
+                ${getOfferCardBrandIcon(item.logoSrc, item.partnerName)}
+              </div>
+              <div class="offer-card-text-col">
+                <div class="offer-card-amount" title="${item.amountOff}">${item.amountOff}</div>
+                <div class="offer-card-partner" title="${item.partnerName}">${item.partnerName}</div>
+              </div>
+              <div class="offer-card-action-col">
+                <button type="button" class="offer-card-apply-btn" data-code="${item.code || ''}">Apply</button>
+              </div>
+            </div>
+            <div class="offer-card-footer">
+              <span class="offer-card-type" title="${item.footer}">${item.footer}</span>
+              <svg class="offer-card-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Classify offers into Bank Offers and UPI Offers
+    const bankCardsList = [];
+    const upiCardsList = [];
+    const voucherCardsList = [];
+
+    // Process CMS promos first
+    activePromos.forEach(p => {
+      const isBank = p.type === 'bank' || /BANK|CARD/i.test(p.code) || p.bankPartner;
+      const isUpi = p.type === 'upi' || /UPI/i.test(p.code) || p.upiProvider;
+      const amountStr = p.discountType === 'percent' ? `${p.discountValue}% off` : `Flat ₹${p.discountValue.toLocaleString('en-IN')} off`;
+
+      if (isBank) {
+        let logoSrc = 'assets/banks/allbanks.svg';
+        let partner = p.bankPartner || 'Bank Card';
+
+        if (/MULTI/i.test(p.code)) {
+          logoSrc = 'assets/banks/hdfc.svg';
+          partner = 'HDFC, SBI, Axis & ICICI';
+        } else if (/SBI/i.test(p.code) || /^SBI/i.test(partner)) {
+          logoSrc = 'assets/banks/sbi.svg';
+          partner = 'Flipkart SBI';
+        } else if (/AXIS/i.test(p.code) || /AXIS/i.test(partner)) {
+          logoSrc = 'assets/banks/axis.svg';
+          partner = 'Flipkart Axis';
+        } else if (/HDFC/i.test(p.code) || /HDFC/i.test(partner)) {
+          logoSrc = 'assets/banks/hdfc.svg';
+          partner = 'HDFC Bank';
+        } else if (/ICICI/i.test(p.code) || /ICICI/i.test(partner)) {
+          logoSrc = 'assets/banks/icici.svg';
+          partner = 'ICICI Bank';
+        } else if (/KOTAK/i.test(p.code) || /KOTAK/i.test(partner)) {
+          logoSrc = 'assets/banks/kotak.svg';
+          partner = 'Kotak Bank';
+        } else if (/ALLCARD/i.test(p.code) || /ALL\s*BANK/i.test(partner)) {
+          logoSrc = 'assets/banks/allbanks.svg';
+          partner = 'All Banks (Any Card)';
+        }
+
+        bankCardsList.push({
+          badge: bankCardsList.length === 0 ? 'Best value for you' : '',
+          amountOff: amountStr,
+          partnerName: partner,
+          footer: 'Credit Card • Cashback',
+          code: p.code,
+          logoSrc: logoSrc
+        });
+      } else if (isUpi) {
+        let upiLogo = 'assets/upi/upi.svg';
+        const upiStr = (p.upiProvider || '').toLowerCase();
+        if (upiStr.includes('phonepe')) upiLogo = 'assets/upi/phonepe.svg';
+        else if (upiStr.includes('google') || upiStr.includes('gpay')) upiLogo = 'assets/upi/gpay.svg';
+        else if (upiStr.includes('paytm')) upiLogo = 'assets/upi/paytm.svg';
+        else if (upiStr.includes('bhim')) upiLogo = 'assets/upi/bhim.svg';
+        else upiLogo = 'assets/upi/upi.svg';
+
+        upiCardsList.push({
+          badge: 'Best value for you',
+          amountOff: amountStr,
+          partnerName: p.upiProvider || 'Google Pay, PhonePe, Paytm, BHIM',
+          footer: 'UPI App • Instant Cashback',
+          code: p.code,
+          logoSrc: upiLogo
+        });
+      } else {
+        voucherCardsList.push({
+          badge: voucherCardsList.length === 0 ? 'Best value for you' : '',
+          amountOff: amountStr,
+          partnerName: p.description ? p.description.split('.')[0] : `Code ${p.code}`,
+          footer: `Special Voucher • Min ₹${p.minOrder || 499}`,
+          code: p.code,
+          logoSrc: 'assets/banks/allbanks.svg'
+        });
+      }
+    });
+
+    // Add fallback bank cards if none from CMS
+    if (bankCardsList.length === 0) {
+      bankCardsList.push(
+        {
+          badge: 'Best value for you',
+          amountOff: 'Flat ₹500 off',
+          partnerName: 'Flipkart SBI',
+          footer: 'Credit Card • Cashback',
+          code: 'SBICARD500',
+          logoSrc: 'assets/banks/sbi.svg'
+        },
+        {
+          badge: '',
+          amountOff: 'Flat ₹300 off',
+          partnerName: 'Flipkart Axis',
+          footer: 'Credit Card • Cashback',
+          code: 'AXIS300',
+          logoSrc: 'assets/banks/axis.svg'
+        },
+        {
+          badge: '',
+          amountOff: '10% off (Up to ₹1,500)',
+          partnerName: 'HDFC & ICICI Bank',
+          footer: 'Credit Card • Instant',
+          code: 'HDFC1500',
+          logoSrc: 'assets/banks/hdfc.svg'
+        },
+        {
+          badge: '',
+          amountOff: 'Flat ₹200 off',
+          partnerName: 'All Banks (Any Card)',
+          footer: 'All Bank Cards • Instant OFF',
+          code: 'ALLCARDS200',
+          logoSrc: 'assets/banks/allbanks.svg'
+        }
+      );
+    }
+
+    // Add fallback UPI cards if none from CMS
+    if (upiCardsList.length === 0) {
+      upiCardsList.push({
+        badge: 'Best value for you',
+        amountOff: 'Flat ₹100 off',
+        partnerName: 'Google Pay, PhonePe, Paytm, BHIM',
+        footer: 'UPI App • Instant Cashback',
+        code: 'UPI100',
+        logoSrc: 'assets/upi/upi.svg'
+      });
+    }
+
+    // Add seller custom offers or default EMI
+    if (voucherCardsList.length === 0) {
+      voucherCardsList.push({
+        badge: 'Best value for you',
+        amountOff: `₹${Math.max(199, Math.round(finalPrice / 12)).toLocaleString('en-IN')}/m (12 mos)`,
+        partnerName: 'Major Bank Credit Cards',
+        footer: 'Credit Card • No Cost EMI',
+        code: 'NO_COST_EMI',
+        logoSrc: 'assets/banks/hdfc.svg'
+      });
+    }
+
+    const bankOffersCardsHtml = bankCardsList.map(renderFlipkartOfferCard).join('');
+    const upiOffersCardsHtml = upiCardsList.map(renderFlipkartOfferCard).join('');
+    const voucherOffersCardsHtml = voucherCardsList.map(renderFlipkartOfferCard).join('');
     const savedPin = localStorage.getItem('xmart_pincode') || '495001';
+
+    // Build genuine specifications rows matching exactly what seller added
+    const specBrand = prod.brand || 'X-Mart Verified';
+    const specCategory = prod.category || 'General Merchandise';
+    const specModel = prod.model || prod.name;
+    const specWarranty = prod.warranty || '1 to 2 Years Manufacturer Warranty';
+    const specDelivery = prod.deliverySpeed || prod.deliveryInfo || 'Delivered in 2-4 business days with Prime Express';
+    const specCondition = prod.condition || 'Brand New • 100% Sealed Original Box';
+
+    // Build custom seller specifications HTML
+    let customSpecsRowsHtml = '';
+    let customSpecsCount = 0;
+    if (Array.isArray(prod.specifications) && prod.specifications.length > 0) {
+      customSpecsRowsHtml = prod.specifications.map(s => {
+        const k = typeof s === 'object' ? (s.key || s.name || s.label || '') : '';
+        const v = typeof s === 'object' ? (s.value || s.val || '') : '';
+        if (!k || !v) return '';
+        customSpecsCount++;
+        return `<tr class="spec-row-collapsible" style="display:none;"><td class="spec-label">${k}</td><td class="spec-val">${v}</td></tr>`;
+      }).join('');
+    } else if (prod.specifications && typeof prod.specifications === 'object') {
+      customSpecsRowsHtml = Object.entries(prod.specifications).map(([k, v]) => {
+        if (!k || !v) return '';
+        customSpecsCount++;
+        return `<tr class="spec-row-collapsible" style="display:none;"><td class="spec-label">${k}</td><td class="spec-val">${v}</td></tr>`;
+      }).join('');
+    }
 
     pageContainer.innerHTML = `
       <div class="commercial-window-wrap">
@@ -24058,7 +25015,7 @@ function initPageRouter() {
               ${ANGLES.map((ang, idx) => `
                 <div class="prod-thumb-item ${idx === 0 ? 'is-active' : ''}" data-idx="${idx}" data-src="${ang.src}" title="${ang.label} (${ang.deg})">
                   <img src="${ang.src}" alt="${ang.label}">
-                  <span class="thumb-angle-label">${(ang.label || '').replace(/[\/\-].*$/, '').trim().split(' ')[0]}</span>
+                  <span class="thumb-angle-label">${ang.tag || (ang.label || '').replace(/[\/\-].*$/, '').trim().split(' ')[0].toUpperCase()}</span>
                 </div>
               `).join('')}
             </div>
@@ -24138,22 +25095,44 @@ function initPageRouter() {
                   <p class="prod-tax-note">Inclusive of all applicable taxes • No hidden charges</p>
                 </div>
 
-                <!-- Available Special Offers Box -->
+                <!-- Available Special Offers Box (Flipkart-Style Bank & UPI Cards) -->
                 <div class="prod-offers-box">
-                  <div class="prod-offers-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <span>Available Special Offers & Discounts</span>
+                  <div class="prod-offers-title">
+                    <span class="prod-offers-title-text">
+                      Available Special Offers &amp; Discounts
+                    </span>
+                    ${canEditOffers ? `
                     <button type="button" id="btn-seller-edit-offers" title="Seller: Add or edit special offers for this product" style="background:#ff9700;color:#000000;border:none;border-radius:6px;font-size:11px;font-weight:800;padding:4px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:all 0.15s ease;">
                       <span>+ Seller: Add / Edit Offers</span>
                     </button>
+                    ` : ''}
                   </div>
-                  <div id="detail-offers-list">
-                    ${displayOffers.map(off => `
-                      <div class="prod-offer-item">
-                        <span class="offer-tag">${off.tag || 'Special Offer'}</span>
-                        <span>${off.text}</span>
-                      </div>
-                    `).join('')}
+
+                  <!-- Bank offers section -->
+                  <div class="prod-offer-section">
+                    <h5 class="prod-offer-section-heading">Bank offers</h5>
+                    <div class="prod-offer-cards-grid">
+                      ${bankOffersCardsHtml}
+                    </div>
                   </div>
+
+                  <!-- UPI offers section -->
+                  <div class="prod-offer-section">
+                    <h5 class="prod-offer-section-heading">UPI offers</h5>
+                    <div class="prod-offer-cards-grid">
+                      ${upiOffersCardsHtml}
+                    </div>
+                  </div>
+
+                  <!-- Special vouchers & EMI section -->
+                  ${voucherOffersCardsHtml ? `
+                  <div class="prod-offer-section">
+                    <h5 class="prod-offer-section-heading">Special vouchers &amp; EMI</h5>
+                    <div class="prod-offer-cards-grid">
+                      ${voucherOffersCardsHtml}
+                    </div>
+                  </div>
+                  ` : ''}
                 </div>
 
                 <!-- Product Specifications Table -->
@@ -24161,12 +25140,12 @@ function initPageRouter() {
                   <h4 class="prod-section-heading">Product Specifications</h4>
                   <table class="prod-specs-table">
                     <tbody>
-                      <tr><td class="spec-label">Brand</td><td class="spec-val"><strong>${prod.brand || 'X-Mart'}</strong></td></tr>
-                      <tr><td class="spec-label">Category</td><td class="spec-val">${prod.category || 'General Merchandise'}</td></tr>
-                      <tr><td class="spec-label">Model / Item</td><td class="spec-val">${prod.name}</td></tr>
-                      <tr><td class="spec-label">Warranty</td><td class="spec-val">1 to 2 Years Manufacturer Warranty</td></tr>
-                      <tr><td class="spec-label">Delivery Speed</td><td class="spec-val">Delivered in 2-4 business days with Prime Express</td></tr>
-                      <tr><td class="spec-label">Condition</td><td class="spec-val">Brand New • 100% Sealed Original Box</td></tr>
+                      <tr><td class="spec-label">Brand</td><td class="spec-val"><strong>${specBrand}</strong></td></tr>
+                      <tr><td class="spec-label">Category</td><td class="spec-val">${specCategory}</td></tr>
+                      <tr><td class="spec-label">Model / Item</td><td class="spec-val">${specModel}</td></tr>
+                      <tr><td class="spec-label">Warranty</td><td class="spec-val">${specWarranty}</td></tr>
+                      <tr><td class="spec-label">Delivery Speed</td><td class="spec-val">${specDelivery}</td></tr>
+                      <tr><td class="spec-label">Condition</td><td class="spec-val">${specCondition}</td></tr>
                       <tr>
                         <td class="spec-label">Stock Availability</td>
                         <td class="spec-val" id="detail-spec-stock-val">
@@ -24177,8 +25156,17 @@ function initPageRouter() {
                           </span>
                         </td>
                       </tr>
+                      ${customSpecsRowsHtml}
                     </tbody>
                   </table>
+                  ${customSpecsCount > 0 ? `
+                  <div class="prod-specs-toggle-wrap">
+                    <button type="button" class="prod-specs-toggle-btn" id="prod-specs-toggle-btn" aria-expanded="false">
+                      <span class="specs-toggle-text">See more</span>
+                      <svg class="specs-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                  </div>
+                  ` : ''}
                 </div>
               </div>
             </div>
@@ -24448,6 +25436,35 @@ function initPageRouter() {
       </div>
     `;
 
+    // Wire Product Specifications See More / Less Toggle
+    const specsToggleBtn = pageContainer.querySelector('#prod-specs-toggle-btn');
+    const specsTable = pageContainer.querySelector('#prod-specs-table') || pageContainer.querySelector('.prod-specs-table');
+    if (specsToggleBtn && specsTable) {
+      specsToggleBtn.addEventListener('click', () => {
+        const isExpanded = specsToggleBtn.classList.contains('is-expanded');
+        const collapsibles = specsTable.querySelectorAll('.spec-row-collapsible');
+        if (isExpanded) {
+          collapsibles.forEach(r => {
+            r.style.display = 'none';
+            r.classList.remove('is-visible');
+          });
+          specsToggleBtn.classList.remove('is-expanded');
+          specsToggleBtn.setAttribute('aria-expanded', 'false');
+          const txt = specsToggleBtn.querySelector('.specs-toggle-text');
+          if (txt) txt.textContent = 'See more';
+        } else {
+          collapsibles.forEach(r => {
+            r.style.display = 'table-row';
+            r.classList.add('is-visible');
+          });
+          specsToggleBtn.classList.add('is-expanded');
+          specsToggleBtn.setAttribute('aria-expanded', 'true');
+          const txt = specsToggleBtn.querySelector('.specs-toggle-text');
+          if (txt) txt.textContent = 'See less';
+        }
+      });
+    }
+
     // Angle Switcher Helper Function
     const mainImgEl = pageContainer.querySelector('#prod-detail-main-img');
     const progressBar = pageContainer.querySelector('#prod-slide-progress-bar');
@@ -24520,7 +25537,7 @@ function initPageRouter() {
       thumb.addEventListener('click', () => {
         const idx = parseInt(thumb.dataset.idx);
         setAngle(idx, false);
-        if (isPlaying) startAutoSlide();
+        stopAutoSlide();
       });
     });
 
@@ -24624,6 +25641,39 @@ function initPageRouter() {
       if (prodSavePillEl && discount > 0) {
         prodSavePillEl.textContent = `Save ${Currency.format(currentSave)} (${discount}%)`;
       }
+    });
+
+    // Seller Manage Offers Button (Only active if user is authorized admin / seller)
+    pageContainer.querySelector('#btn-seller-edit-offers')?.addEventListener('click', () => {
+      if (typeof window.openSellerManageOffersModal === 'function') {
+        window.openSellerManageOffersModal(prod);
+      } else if (typeof openSellerManageOffersModal === 'function') {
+        openSellerManageOffersModal(prod);
+      }
+    });
+
+    // Flipkart-Style Offer Cards "Apply" Button Clicks
+    pageContainer.querySelectorAll('.offer-card-apply-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = btn.dataset.code;
+        if (!code || code === 'NO_COST_EMI') {
+          showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
+          return;
+        }
+
+        try {
+          navigator.clipboard.writeText(code);
+        } catch {}
+
+        window._preselectedCouponCode = code;
+
+        btn.textContent = 'Applied ✓';
+        btn.style.color = '#16a34a';
+        btn.disabled = true;
+
+        showToast(`Offer "${code}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+      });
     });
 
     // Add to cart with quantity
@@ -25398,6 +26448,11 @@ function initLiveSearch() {
     if (!opt.closest('#search-category-menu')) return;
     opt.addEventListener('click', () => {
       activeCategory = opt.dataset.label || 'All';
+      if (activeCategory && activeCategory !== 'All') {
+        searchInput.placeholder = `Search in ${activeCategory}...`;
+      } else {
+        searchInput.placeholder = 'Search X-Mart products, brands, and categories...';
+      }
       // If user already typed something, re-trigger search
       const q = searchInput.value.trim();
       if (q.length >= 2) {
@@ -26226,25 +27281,20 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('touchend', triggerItemNavigation, { passive: false });
   });
 
-  // ── 4. HERO SLIDER (uses #hero-slider-prev/next, .hero-slide) ──
-  const slides = document.querySelectorAll('.hero-slide');
+  // ── 4. HERO SLIDER CONTROLLER (Dynamic & Reactive to CMS Updates) ──
+  let heroSlides = [];
+  let currentSlide = 0;
+  let slideTimer = null;
   const prevBtn = document.getElementById('hero-slider-prev');
   const nextBtn = document.getElementById('hero-slider-next');
   const indicators = document.getElementById('hero-slider-indicators');
-  let currentSlide = 0;
-  let slideTimer = null;
-
-  // Build dot indicators dynamically
-  if (indicators && slides.length) {
-    indicators.innerHTML = Array.from(slides).map((_, i) =>
-      `<button class="hero-slider-dot${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-label="Go to slide ${i + 1}"></button>`
-    ).join('');
-  }
+  const heroBanner = document.querySelector('.hero-slider-section');
 
   function showSlide(idx) {
-    if (!slides.length) return;
-    currentSlide = (idx + slides.length) % slides.length;
-    slides.forEach((s, i) => {
+    heroSlides = Array.from(document.querySelectorAll('#hero-slider-track .hero-slide'));
+    if (!heroSlides.length) return;
+    currentSlide = (idx + heroSlides.length) % heroSlides.length;
+    heroSlides.forEach((s, i) => {
       s.style.display = i === currentSlide ? 'block' : 'none';
       s.classList.toggle('is-active', i === currentSlide);
     });
@@ -26255,9 +27305,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startSlideShow() {
     stopSlideShow();
+    heroSlides = Array.from(document.querySelectorAll('#hero-slider-track .hero-slide'));
+    if (heroSlides.length <= 1) return; // Single banner: no auto-scroll needed
     slideTimer = setInterval(() => {
       showSlide(currentSlide + 1);
-    }, 2500);
+    }, 3500);
   }
 
   function stopSlideShow() {
@@ -26267,6 +27319,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function navigateToBannerLink(link) {
+    if (!link) return;
+    const cleanLink = link.trim();
+    if (cleanLink.startsWith('#category/')) {
+      const parts = cleanLink.replace('#category/', '').split('?');
+      const cat = decodeURIComponent(parts[0] || '');
+      let type = '';
+      let search = '';
+      if (parts[1]) {
+        const params = new URLSearchParams(parts[1]);
+        type = params.get('type') || '';
+        search = params.get('search') || '';
+      }
+      window.location.hash = cleanLink;
+      window._openDedicatedPage?.(cat === 'all' ? '' : cat, type, search, false);
+    } else if (cleanLink.startsWith('#deals') || cleanLink === '#deal') {
+      window.location.hash = cleanLink;
+      window._openDedicatedPage?.('', 'deal', '', false);
+    } else if (cleanLink.startsWith('#')) {
+      window.location.hash = cleanLink;
+    } else {
+      window.location.href = cleanLink;
+    }
+  }
+
+  function attachSlideClickHandlers() {
+    heroSlides = Array.from(document.querySelectorAll('#hero-slider-track .hero-slide'));
+    heroSlides.forEach(slide => {
+      const link = slide.dataset.link || slide.querySelector('.hero-slide-cta')?.getAttribute('href') || '#deals';
+      slide.style.cursor = 'pointer';
+      slide.onclick = (e) => {
+        if (e.target.closest('.hero-nav-btn') || e.target.closest('.hero-slider-indicators')) return;
+        navigateToBannerLink(link);
+      };
+      const cta = slide.querySelector('.hero-slide-cta');
+      if (cta) {
+        cta.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          navigateToBannerLink(link);
+        };
+      }
+    });
+  }
+
+  window._refreshHeroSlider = function(keepIndex = false) {
+    heroSlides = Array.from(document.querySelectorAll('#hero-slider-track .hero-slide'));
+    if (indicators) {
+      if (heroSlides.length > 1) {
+        indicators.style.display = 'flex';
+        indicators.innerHTML = heroSlides.map((_, i) =>
+          `<button class="hero-slider-dot${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-label="Go to slide ${i + 1}"></button>`
+        ).join('');
+      } else {
+        indicators.style.display = 'none';
+        indicators.innerHTML = '';
+      }
+    }
+    if (prevBtn) prevBtn.style.display = heroSlides.length > 1 ? 'flex' : 'none';
+    if (nextBtn) nextBtn.style.display = heroSlides.length > 1 ? 'flex' : 'none';
+
+    attachSlideClickHandlers();
+    showSlide(keepIndex ? currentSlide : 0);
+    startSlideShow();
+  };
+
   prevBtn?.addEventListener('click', () => { showSlide(currentSlide - 1); startSlideShow(); });
   nextBtn?.addEventListener('click', () => { showSlide(currentSlide + 1); startSlideShow(); });
 
@@ -26274,8 +27392,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const dot = e.target.closest('.hero-slider-dot');
     if (dot) { showSlide(parseInt(dot.dataset.slide)); startSlideShow(); }
   });
-
-  const heroBanner = document.querySelector('.hero-slider-section');
 
   // Pause on manual interaction with buttons
   prevBtn?.addEventListener('mouseenter', stopSlideShow);
@@ -26288,7 +27404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto-resume on any scroll event anywhere on page
   window.addEventListener('scroll', () => {
-    if (!slideTimer) {
+    if (!slideTimer && heroSlides.length > 1) {
       startSlideShow();
     }
   }, { passive: true });
@@ -26297,7 +27413,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('IntersectionObserver' in window && heroBanner) {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && heroSlides.length > 1) {
           startSlideShow();
         }
       });
@@ -26307,46 +27423,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tab visibility change listener
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && heroSlides.length > 1) {
       startSlideShow();
     } else {
       stopSlideShow();
     }
   });
 
-  // Show first slide and start immediately
-  showSlide(0);
-  startSlideShow();
-
-  // ── 5. HERO SLIDE & CTA BUTTON NAVIGATION ──
-  document.querySelectorAll('.hero-slide-cta').forEach(cta => {
-    cta.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const txt = cta.textContent.toLowerCase();
-      if (txt.includes('electronic')) window._openCatalog?.('Electronics');
-      else if (txt.includes('fashion')) window._openCatalog?.('Fashion');
-      else if (txt.includes('home')) window._openCatalog?.('Home & Kitchen');
-      else if (txt.includes('beauty')) window._openCatalog?.('Beauty & Health');
-      else window._openCatalog?.();
-    });
-  });
-
-  // Enable direct tap/click navigation on the entire slide (for mobile view where orange CTA is hidden)
-  document.querySelectorAll('.hero-slide').forEach(slide => {
-    slide.addEventListener('click', e => {
-      if (e.target.closest('.hero-nav-btn') || e.target.closest('.hero-slider-indicators') || e.target.closest('.hero-slide-cta')) return;
-      const cta = slide.querySelector('.hero-slide-cta');
-      if (!cta) return;
-      const txt = cta.textContent.toLowerCase();
-      if (txt.includes('electronic')) window._openCatalog?.('Electronics');
-      else if (txt.includes('fashion')) window._openCatalog?.('Fashion');
-      else if (txt.includes('home')) window._openCatalog?.('Home & Kitchen');
-      else if (txt.includes('beauty')) window._openCatalog?.('Beauty & Health');
-      else window._openCatalog?.();
-    });
-    slide.style.cursor = 'pointer';
-  });
+  // Initial setup for default static slides
+  window._refreshHeroSlider(false);
 
   // ── Helper: Find Authentic Catalog Product for Card Clicks ──
   function findBestCatalogProduct(query, context = '') {
@@ -27173,6 +28258,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let cmsData = null;
   let appliedCoupon = null;
 
+  window._fetchStorefrontCMS = fetchStorefrontCMS;
   async function fetchStorefrontCMS() {
     try {
       const res = await fetch('/api/cms');
@@ -27202,7 +28288,7 @@ document.addEventListener('DOMContentLoaded', () => {
       countBadge.textContent = `${promos.length} Live`;
     }
 
-    // Populate Utility Ticker with CMS announcement and offers
+    // Populate Utility Ticker with CMS announcement and offers in Image 2 format
     const ticker = document.getElementById('utility-ticker');
     if (ticker) {
       const slides = [];
@@ -27211,16 +28297,57 @@ document.addEventListener('DOMContentLoaded', () => {
         slides.push(`<div class="ticker-slide is-active">${cleanAnnounce}</div>`);
       }
       promos.forEach(p => {
-        if (p.type === 'bank') {
-          slides.push(`<div class="ticker-slide"><strong>${p.bankPartner || 'Bank Card'}:</strong> ${p.discountValue}% Instant Discount with code <strong>${p.code}</strong> (Min. ₹${p.minOrder})</div>`);
-        } else if (p.type === 'upi') {
-          slides.push(`<div class="ticker-slide"><strong>${p.upiProvider || 'UPI'}:</strong> Flat ₹${p.discountValue} Cashback with code <strong>${p.code}</strong> (Min. ₹${p.minOrder})</div>`);
+        let slideText = '';
+        if (p.code === 'XMART10') {
+          slideText = '10% Storewide Mega Discount: Up to 10% OFF Across All Products + Extra Savings with Code XMART10 (Min. ₹999)!';
+        } else if (p.code === 'FESTIVE20') {
+          slideText = '20% Festive Super Saver: Up to 20% OFF Across All Festive Orders + Extra Discount with Code FESTIVE20 (Min. ₹2,499)!';
+        } else if (p.code === 'APEX25') {
+          slideText = 'Apex Tech Exclusive: Up to 25% OFF Across Apex Tech Store + Extra Discount with Code APEX25 (Min. ₹1,499)!';
+        } else if (p.code === 'UPI100') {
+          slideText = 'UPI Payment Bonanza: Flat ₹100 Cashback Across All Orders + Extra Savings with Code UPI100 on UPI!';
+        } else if (p.code === 'SBICARD500') {
+          slideText = 'SBI Card Super Deal: Flat ₹500 OFF Across SBI Debit & Credit Cards + Extra Discount with Code SBICARD500!';
+        } else if (p.code === 'AXIS300') {
+          slideText = 'Axis Bank Instant Savings: Flat ₹300 OFF Across Axis Bank Cards + Extra Discount with Code AXIS300!';
+        } else if (p.code === 'ALLCARDS200') {
+          slideText = 'All Bank Cards Flash Offer: Flat ₹200 OFF Across Any Debit or Credit Card + Extra Savings with Code ALLCARDS200!';
+        } else if (p.code === 'MULTI_CARD_BONANZA') {
+          slideText = 'Multi-Bank Card Bonanza: Flat ₹500 OFF Across HDFC, SBI, Axis & ICICI Cards + Extra Discount with Code MULTI_CARD_BONANZA!';
         } else {
-          slides.push(`<div class="ticker-slide"><strong>Voucher:</strong> Extra ${p.discountValue}% OFF with code <strong>${p.code}</strong> (Min. ₹${p.minOrder})</div>`);
+          const title = (p.title || p.code || 'Exclusive Deal').replace(/[:!]+$/, '').trim();
+          const discountDesc = p.discountType === 'percent'
+            ? `Up to ${p.discountValue}% OFF`
+            : `Flat ₹${Number(p.discountValue).toLocaleString('en-IN')} OFF`;
+          let scopeDesc = 'Across All Products';
+          if (p.scope === 'store' && p.storeName) {
+            scopeDesc = `Across ${p.storeName}`;
+          } else if (p.applicableProducts && p.applicableProducts.length > 0) {
+            scopeDesc = `Across ${p.applicableProducts.join(', ')}`;
+          } else if (p.type === 'bank') {
+            const bPartner = p.bankPartner || (p.bankPartners && p.bankPartners.length ? p.bankPartners.join(', ') : 'Bank Cards');
+            scopeDesc = `Across ${bPartner}`;
+          } else if (p.type === 'upi') {
+            scopeDesc = `Across UPI Payment Apps`;
+          }
+          const minText = p.minOrder > 0 ? ` (Min. ₹${Number(p.minOrder).toLocaleString('en-IN')})` : '';
+          slideText = `${title}: ${discountDesc} ${scopeDesc} + Extra Savings with Code ${p.code}${minText}!`;
         }
+        slides.push(`<div class="ticker-slide">${slideText}</div>`);
       });
       if (slides.length > 0) {
         ticker.innerHTML = slides.join('');
+        if (typeof window.initUtilityTicker === 'function') {
+          window.initUtilityTicker();
+        } else if (typeof initUtilityTicker === 'function') {
+          initUtilityTicker();
+        }
+      }
+      ticker.style.cursor = 'pointer';
+      ticker.setAttribute('title', 'Click to view all offers & vouchers');
+      if (!ticker.dataset.offersModalBound) {
+        ticker.dataset.offersModalBound = '1';
+        ticker.addEventListener('click', openOffersModal);
       }
     }
   }
@@ -27287,12 +28414,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     backdrop.innerHTML = `
       <div class="offers-modal-dialog">
-        <div class="offers-modal-header">
+        <div class="offers-modal-header" style="background:#19324c !important; color:#ffffff !important; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.14);">
           <div>
-            <h3 class="offers-modal-title">Active Store Offers &amp; Vouchers</h3>
-            <p class="offers-modal-sub">Apply these discount codes during checkout to save big on your orders.</p>
+            <h3 class="offers-modal-title" style="color:#ffffff !important; margin:0; font-size:18px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;">🏷️ Active Store Offers &amp; Vouchers</h3>
+            <p class="offers-modal-sub" style="color:#e2e8f0 !important; margin:5px 0 0; font-size:13px; font-weight:500; opacity:0.95;">Apply these discount codes during checkout to save big on your orders.</p>
           </div>
-          <button type="button" class="ap-modal-close-btn" id="offers-customer-modal-close" style="color:#ffffff;">✕</button>
+          <button type="button" class="ap-modal-close-btn" id="offers-customer-modal-close" style="background:#0b1329 !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; width:34px; height:34px; border-radius:8px; font-size:16px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.5); transition:all 160ms ease;" aria-label="Close offers modal">✕</button>
         </div>
         <div class="offers-modal-body">
           ${cardsHtml}
@@ -27332,44 +28459,152 @@ document.addEventListener('DOMContentLoaded', () => {
     const banners = (cmsData.heroBanners || []).filter(b => b.active !== false);
     if (!banners.length) return;
 
+    // Sort active banners by sequence order
+    banners.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
     const track = document.getElementById('hero-slider-track');
-    const indicators = document.getElementById('hero-slider-indicators');
     if (!track) return;
 
-    // Render dynamic hero slides
-    track.innerHTML = banners.map((b, i) => `
-      <div class="hero-slide${i === 0 ? ' is-active' : ''}" data-slide="${i}" style="display:${i === 0 ? 'block' : 'none'};">
-        <img class="hero-slide-img" src="${b.image}" alt="${b.title}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';" />
-        <div class="hero-slide-overlay">
-          <div class="hero-slide-content">
-            <span style="display:inline-block; background:#ff9700; color:#000000; font-size:11px; font-weight:800; text-transform:uppercase; padding:3px 10px; border-radius:999px; margin-bottom:10px; letter-spacing:0.04em;">${b.tag || 'Featured'}</span>
-            <h2 class="hero-slide-title">${b.title}</h2>
-            <p class="hero-slide-desc">${b.subtitle || ''}</p>
-            <a href="${b.link || '#deals'}" class="hero-slide-cta">Shop Now <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    function esc(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Render ALL dynamic active hero slides showcasing every feature: Tag Badge, Headline, Subtitle, Destination Link & Image
+    track.innerHTML = banners.map((b, i) => {
+      const destinationLink = b.link || '#deals';
+      const linkLow = destinationLink.toLowerCase();
+      const titleLow = (b.title || '').toLowerCase();
+      const ctaLabel = (linkLow.includes('home') || linkLow.includes('kitchen') || titleLow.includes('furniture') || titleLow.includes('living')) ? 'Upgrade Your Home'
+        : (linkLow.includes('fashion') || titleLow.includes('fashion') || titleLow.includes('style')) ? 'Explore Fashion Collection'
+        : (linkLow.includes('beauty') || linkLow.includes('health') || titleLow.includes('skincare')) ? 'Shop Beauty Deals'
+        : (linkLow.includes('gaming') || titleLow.includes('gaming') || titleLow.includes('gear') || titleLow.includes('consoles')) ? 'Level Up Your Setup'
+        : (linkLow.includes('electronic') || titleLow.includes('laptop') || titleLow.includes('audio')) ? 'Shop Electronics Deals'
+        : 'Explore Collection';
+
+      return `
+        <div class="hero-slide${i === 0 ? ' is-active' : ''}" data-slide="${i}" data-link="${esc(destinationLink)}" style="display:${i === 0 ? 'block' : 'none'}; cursor:pointer;">
+          <img class="hero-slide-img" src="${esc(b.image)}" alt="${esc(b.title)}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';" />
+          <div class="hero-slide-overlay">
+            <div class="hero-slide-content">
+              <div class="hero-slide-tag" style="background:#090d16 !important; color:#38bdf8 !important; border:1.5px solid rgba(56,189,248,0.55) !important;">
+                <span class="hero-slide-tag-dot"></span>
+                <span style="color:#38bdf8 !important; font-weight:800 !important;">${esc(b.tag || 'Featured Offer')}</span>
+              </div>
+              <h2 class="hero-slide-title">${esc(b.title)}</h2>
+              ${b.subtitle ? `<p class="hero-slide-desc">${esc(b.subtitle)}</p>` : `<p class="hero-slide-desc" style="color:rgba(255,255,255,0.85); font-size:13.5px;">Premium verified brands with instant dispatch &amp; 100% authentic warranty.</p>`}
+              <div class="hero-slide-actions" style="margin-top:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <a href="${esc(destinationLink)}" class="hero-slide-cta" data-link="${esc(destinationLink)}">
+                  <span>${ctaLabel}</span>
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+                <span class="hero-slide-dest-pill" title="Destination link">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  ${esc(destinationLink)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
-    // Rebuild indicators
-    if (indicators) {
-      indicators.innerHTML = banners.map((_, i) =>
-        `<button class="hero-slider-dot${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-label="Go to slide ${i + 1}"></button>`
-      ).join('');
+    // Reinitialize reactive hero slider controller with new slides
+    if (typeof window._refreshHeroSlider === 'function') {
+      window._refreshHeroSlider(false);
     }
   }
 
-  // Hook up checkout coupon apply
+  // Hook up checkout coupon apply & remove (guarded against duplicate listeners)
+  let _checkoutCouponHandlerBound = false;
   function initCheckoutCouponHandler() {
+    if (_checkoutCouponHandlerBound || window._checkoutCouponHandlerBound) return;
+    _checkoutCouponHandlerBound = true;
+    window._checkoutCouponHandlerBound = true;
+
+    // Listen for Apply / Remove clicks
     document.addEventListener('click', (e) => {
       const applyBtn = e.target.closest('#chk-coupon-apply-btn');
       if (!applyBtn) return;
 
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
+
+      // Debounce rapid double-clicks (prevent click bouncing)
+      const nowMs = Date.now();
+      if (applyBtn._lastActionTime && (nowMs - applyBtn._lastActionTime < 450)) {
+        return;
+      }
+      applyBtn._lastActionTime = nowMs;
+
       const input = document.getElementById('chk-coupon-input');
       if (!input) return;
+
+      // Determine current mode strictly from state at click initiation
+      const isAlreadyApplied = applyBtn.dataset.state === 'applied' ||
+                               applyBtn.textContent.trim().toLowerCase() === 'remove';
+
+      // ── REMOVE ACTION ──
+      if (isAlreadyApplied) {
+        const removedCode = (appliedCoupon && appliedCoupon.code) ||
+                            (window.appliedCoupon && window.appliedCoupon.code) ||
+                            input.value.trim().toUpperCase();
+
+        appliedCoupon = null;
+        window.appliedCoupon = null;
+
+        input.disabled = false;
+        input.value = '';
+        input.placeholder = 'Enter coupon code';
+        input.style.borderColor = '#cbd5e1';
+        input.style.backgroundColor = '#ffffff';
+
+        applyBtn.disabled = false;
+        applyBtn.dataset.state = '';
+        applyBtn.textContent = 'Apply';
+        applyBtn.style.background = '#19324c';
+        applyBtn.style.color = '#ffffff';
+
+        // Hide Step 1 coupon row
+        const couponRow = document.getElementById('chk-step1-coupon-row');
+        if (couponRow) couponRow.style.display = 'none';
+
+        // Hide Step 3 coupon row if present
+        const step3Row = document.getElementById('chk-step3-coupon-discount-row');
+        if (step3Row) step3Row.style.display = 'none';
+
+        // Recalculate Step 1 grand total
+        const subtotalEl = document.getElementById('chk-step1-subtotal');
+        const taxEl = document.getElementById('chk-step1-tax');
+        const grandTotalEl = document.getElementById('chk-step1-grand-total');
+        if (subtotalEl && grandTotalEl) {
+          const subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9.]/g, '')) || 0;
+          const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * 0.18);
+          const newTotal = subtotal + tax;
+          grandTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
+        }
+
+        // Re-render Step 3 if currently open
+        if (typeof renderStep3 === 'function') {
+          try { renderStep3(); } catch {}
+        }
+
+        input.focus();
+
+        if (typeof showToast === 'function') {
+          showToast('Coupon ' + (removedCode ? ('"' + removedCode + '" ') : '') + 'removed. You can now enter another code.', 'info');
+        }
+        return;
+      }
+
+      // ── APPLY ACTION ──
       const enteredCode = input.value.trim().toUpperCase();
       if (!enteredCode) {
         if (typeof showToast === 'function') showToast('Please enter a coupon code.', 'error');
+        input.focus();
         return;
       }
 
@@ -27380,19 +28615,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (anyMatch) {
         if (anyMatch.validUntil && new Date(anyMatch.validUntil) < now) {
           if (typeof showToast === 'function') {
-            showToast(`Coupon code "${enteredCode}" has expired and cannot be applied.`, 'error');
+            showToast('Coupon code "' + enteredCode + '" has expired and cannot be applied.', 'error');
           }
           return;
         }
         if (anyMatch.validFrom && new Date(anyMatch.validFrom) > now) {
           if (typeof showToast === 'function') {
-            showToast(`Coupon code "${enteredCode}" is not active yet.`, 'error');
+            showToast('Coupon code "' + enteredCode + '" is not active yet.', 'error');
           }
           return;
         }
         if (anyMatch.active === false) {
           if (typeof showToast === 'function') {
-            showToast(`Coupon code "${enteredCode}" is currently inactive.`, 'error');
+            showToast('Coupon code "' + enteredCode + '" is currently inactive.', 'error');
           }
           return;
         }
@@ -27407,7 +28642,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const match = activePromos.find(p => p.code.toUpperCase() === enteredCode);
 
       if (!match) {
-        if (typeof showToast === 'function') showToast(`Invalid coupon code "${enteredCode}".`, 'error');
+        if (typeof showToast === 'function') showToast('Invalid coupon code "' + enteredCode + '".', 'error');
         return;
       }
 
@@ -27416,7 +28651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let cartItems = [];
         try {
           cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-        } catch { }
+        } catch {}
         const targets = match.applicableProducts.map(t => t.toLowerCase());
         const hasApplicableItem = cartItems.some(item => {
           const name = (item.name || '').toLowerCase();
@@ -27425,7 +28660,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (cartItems.length > 0 && !hasApplicableItem) {
           if (typeof showToast === 'function') {
-            showToast(`Coupon "${match.code}" is only applicable for: ${match.applicableProducts.join(', ')}.`, 'error');
+            showToast('Coupon "' + match.code + '" is only applicable for: ' + match.applicableProducts.join(', ') + '.', 'error');
           }
           return;
         }
@@ -27440,7 +28675,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (subtotal < (match.minOrder || 0)) {
         if (typeof showToast === 'function') {
-          showToast(`Coupon ${match.code} requires a minimum bag value of ₹${match.minOrder.toLocaleString('en-IN')}.`, 'error');
+          showToast('Coupon ' + match.code + ' requires a minimum bag value of ₹' + match.minOrder.toLocaleString('en-IN') + '.', 'error');
         }
         return;
       }
@@ -27456,39 +28691,85 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       appliedCoupon = { ...match, discountAmount };
-      input.disabled = true;
-      applyBtn.disabled = true;
-      applyBtn.textContent = 'Applied ✓';
-      applyBtn.style.background = '#16a34a';
+      window.appliedCoupon = appliedCoupon;
 
-      // Update grand total display if element exists
+      // Allow removing and changing:
+      input.disabled = false;
+      input.value = match.code;
+      applyBtn.disabled = false;
+      applyBtn.dataset.state = 'applied';
+      applyBtn.textContent = 'Remove';
+      applyBtn.style.background = '#ef4444';
+      applyBtn.style.color = '#ffffff';
+
+      // Update Step 1 coupon row & discount display
+      const couponRow = document.getElementById('chk-step1-coupon-row');
+      const couponLabel = document.getElementById('chk-step1-coupon-label');
       const discountRow = document.getElementById('chk-step1-discount');
-      if (discountRow) discountRow.textContent = `-₹${discountAmount.toLocaleString('en-IN')}`;
+      if (couponRow) couponRow.style.display = 'flex';
+      if (couponLabel) couponLabel.textContent = 'Coupon (' + match.code + '):';
+      if (discountRow) discountRow.textContent = '-₹' + discountAmount.toLocaleString('en-IN');
 
+      // Update Step 1 grand total display
+      const taxEl = document.getElementById('chk-step1-tax');
+      const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * 0.18);
       const grandTotalEl = document.getElementById('chk-step1-grand-total');
       if (grandTotalEl) {
-        const currentTotal = parseFloat(grandTotalEl.textContent.replace(/[^0-9.]/g, '')) || subtotal;
-        const newTotal = Math.max(0, currentTotal - discountAmount);
-        grandTotalEl.textContent = `₹${newTotal.toLocaleString('en-IN')}`;
+        const newTotal = Math.max(0, subtotal + tax - discountAmount);
+        grandTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
+      }
+
+      // Re-render Step 3 if rendered
+      if (typeof renderStep3 === 'function') {
+        try { renderStep3(); } catch {}
       }
 
       if (typeof showToast === 'function') {
-        showToast(`Coupon "${match.code}" applied! You saved ₹${discountAmount.toLocaleString('en-IN')}.`, 'success');
+        showToast('Coupon "' + match.code + '" applied! You saved ₹' + discountAmount.toLocaleString('en-IN') + '.', 'success');
+      }
+    });
+
+    // If user changes text in input field while in applied state, switch button back to Apply
+    document.addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'chk-coupon-input') {
+        const applyBtn = document.getElementById('chk-coupon-apply-btn');
+        if (!applyBtn) return;
+        const currentCode = (appliedCoupon?.code || window.appliedCoupon?.code || '').toUpperCase();
+        const typedCode = e.target.value.trim().toUpperCase();
+        if (applyBtn.dataset.state === 'applied' && typedCode !== currentCode) {
+          applyBtn.dataset.state = '';
+          applyBtn.textContent = 'Apply';
+          applyBtn.style.background = '#19324c';
+          applyBtn.style.color = '#ffffff';
+        }
+      }
+    });
+
+    // Allow pressing Enter in input field
+    document.addEventListener('keydown', (e) => {
+      if (e.target && e.target.id === 'chk-coupon-input' && e.key === 'Enter') {
+        e.preventDefault();
+        const applyBtn = document.getElementById('chk-coupon-apply-btn');
+        if (applyBtn) applyBtn.click();
       }
     });
   }
 
-  // Bind top navbar offers button
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('topbar-offers-btn')?.addEventListener('click', openOffersModal);
-    fetchStorefrontCMS();
-    initCheckoutCouponHandler();
-  });
+  // Bind top navbar offers button and initialize features once
+  let _storefrontCMSInitStarted = false;
+  function runStorefrontCMSInit() {
+    if (_storefrontCMSInitStarted || window._storefrontCMSInitStarted) return;
+    _storefrontCMSInitStarted = true;
+    window._storefrontCMSInitStarted = true;
 
-  // Also trigger if DOM is already loaded
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
     document.getElementById('topbar-offers-btn')?.addEventListener('click', openOffersModal);
     fetchStorefrontCMS();
     initCheckoutCouponHandler();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runStorefrontCMSInit);
+  } else {
+    runStorefrontCMSInit();
   }
 })();
