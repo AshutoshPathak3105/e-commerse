@@ -460,7 +460,42 @@ router.get('/payouts', async (req, res) => {
       // Platform commission: 8.5% take rate
       const commissionPct = 8.5;
       const commissionAmount = Math.round(grossRevenue * (commissionPct / 100));
-      const netLifetimePayable = Math.max(0, grossRevenue - commissionAmount);
+
+      // Authentic seller offer subsidies to be repaid by platform (disbursement reimbursement)
+      let offerSubsidyReimbursement = 0;
+      try {
+        const sellerProducts = await Product.find({
+          $or: [
+            { sellerEmail: seller.email },
+            { seller: seller._id },
+            { sellerStoreName: seller.sellerProfile?.storeName || seller.name }
+          ],
+          $and: [
+            {
+              $or: [
+                { 'offer.discountPct': { $gt: 0 } },
+                { 'offers.0': { $exists: true } }
+              ]
+            }
+          ]
+        }).select('price offer offers sold');
+
+        sellerProducts.forEach(prod => {
+          if (prod.offer && prod.offer.discountPct > 0) {
+            const val = Math.round((prod.price * prod.offer.discountPct) / 100);
+            offerSubsidyReimbursement += val * Math.max(1, prod.sold || 1);
+          }
+          if (Array.isArray(prod.offers)) {
+            prod.offers.forEach(o => {
+              if (o.fundedBy === 'Platform Subsidy' || o.subsidyAmount > 0 || (o.tag && o.tag.includes('Bank'))) {
+                offerSubsidyReimbursement += (Number(o.subsidyAmount) || Number(o.discountValue) || 500) * Math.max(1, prod.sold || 1);
+              }
+            });
+          }
+        });
+      } catch (subErr) { }
+
+      const netLifetimePayable = Math.max(0, grossRevenue - commissionAmount + offerSubsidyReimbursement);
 
       // Find all completed disbursements from MongoDB Atlas
       const pastPayouts = await Payout.find({ seller: seller._id, status: 'Settled' }).sort({ disbursedAt: -1 });
@@ -486,6 +521,7 @@ router.get('/payouts', async (req, res) => {
         grossRevenue,
         commissionPct,
         commissionAmount,
+        offerSubsidyReimbursement,
         netLifetimePayable,
         totalSettled,
         currentEscrowBalance,
@@ -639,8 +675,12 @@ router.get('/payouts/receipt/:id', async (req, res) => {
 ───────────────────────────────────────────────────── */
 router.get('/offers', async (req, res) => {
   try {
-    const products = await Product.find({ 'offer.discountPct': { $gt: 0 } })
-      .select('name price offer sellerStoreName sellerEmail category');
+    const products = await Product.find({
+      $or: [
+        { 'offer.discountPct': { $gt: 0 } },
+        { 'offers.0': { $exists: true } }
+      ]
+    }).select('name price originalPrice discount offer offers seller sellerStoreName sellerEmail category images');
     res.json({ success: true, data: { offers: products } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -648,32 +688,38 @@ router.get('/offers', async (req, res) => {
 });
 
 /* ─────────────────────────────────────────────────────
-   CREATE OFFER — POST /api/admin/offers
-   Body: { productId, discountPct, label, validUntil }
+   CREATE / UPDATE OFFER — POST /api/admin/offers
+   Body: { productId, discountPct, label, validUntil, offers }
 ───────────────────────────────────────────────────── */
 router.post('/offers', async (req, res) => {
   try {
-    const { productId, discountPct, label = 'Admin Offer', validUntil } = req.body;
-    if (!productId || !discountPct) {
-      return res.status(400).json({ success: false, message: 'productId and discountPct are required.' });
+    const { productId, discountPct, label = 'Admin Offer', validUntil, offers } = req.body;
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'productId is required.' });
     }
-    if (discountPct < 1 || discountPct > 90) {
-      return res.status(400).json({ success: false, message: 'Discount must be between 1% and 90%.' });
+
+    const updateSet = {};
+    if (discountPct !== undefined && discountPct !== null && String(discountPct).trim() !== '') {
+      const numPct = Number(discountPct);
+      if (numPct > 0) {
+        updateSet['offer.discountPct'] = numPct;
+        updateSet['offer.label'] = label;
+        updateSet['offer.validUntil'] = validUntil ? new Date(validUntil) : null;
+        updateSet['offer.createdAt'] = new Date();
+      }
     }
+
+    if (Array.isArray(offers)) {
+      updateSet['offers'] = offers;
+    }
+
     const product = await Product.findByIdAndUpdate(
       productId,
-      {
-        $set: {
-          'offer.discountPct': Number(discountPct),
-          'offer.label':       label,
-          'offer.validUntil':  validUntil ? new Date(validUntil) : null,
-          'offer.createdAt':   new Date(),
-        },
-      },
+      { $set: updateSet },
       { new: true, strict: false }
     );
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
-    res.json({ success: true, data: { product }, message: `Offer of ${discountPct}% applied to "${product.name}".` });
+    res.json({ success: true, data: { product }, message: `Promotional offers updated for "${product.name}".` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -684,13 +730,25 @@ router.post('/offers', async (req, res) => {
 ───────────────────────────────────────────────────── */
 router.delete('/offers/:productId', async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(
-      req.params.productId,
-      { $unset: { offer: '' } },
-      { new: true, strict: false }
-    );
+    const { offerIndex } = req.query;
+    let product;
+    if (offerIndex !== undefined && offerIndex !== null && offerIndex !== '') {
+      const idx = parseInt(offerIndex, 10);
+      product = await Product.findById(req.params.productId);
+      if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+      if (Array.isArray(product.offers) && idx >= 0 && idx < product.offers.length) {
+        product.offers.splice(idx, 1);
+        await product.save();
+      }
+    } else {
+      product = await Product.findByIdAndUpdate(
+        req.params.productId,
+        { $unset: { offer: '' }, $set: { offers: [] } },
+        { new: true, strict: false }
+      );
+    }
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
-    res.json({ success: true, message: `Offer removed from "${product.name}".` });
+    res.json({ success: true, message: `Offer removed from "${product.name}".`, data: { product } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

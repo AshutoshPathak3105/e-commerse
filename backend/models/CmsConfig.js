@@ -41,7 +41,7 @@ const promotionSchema = new mongoose.Schema({
 
 const cmsConfigSchema = new mongoose.Schema({
   singletonKey:       { type: String, default: 'default_storefront_cms', unique: true },
-  announcementText:   { type: String, default: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion + Extra 10% on Axis Bank!' },
+  announcementText:   { type: String, default: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion!' },
   announcementActive: { type: Boolean, default: true },
   heroBanners:        [heroBannerSchema],
   promotions:         [promotionSchema],
@@ -53,7 +53,7 @@ cmsConfigSchema.statics.getOrCreate = async function () {
   if (!config) {
     config = await this.create({
       singletonKey: 'default_storefront_cms',
-      announcementText: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion + Extra 10% on Axis Bank!',
+      announcementText: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion!',
       announcementActive: true,
       heroBanners: [
         {

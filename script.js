@@ -17185,6 +17185,7 @@ function buildCheckoutModal() {
     });
 
     if (step === 1) renderStep1();
+    if (step === 2) initStep2Address();
     if (step === 3) renderStep3();
   }
 
@@ -17318,7 +17319,77 @@ function buildCheckoutModal() {
     const proceedBar = modal.querySelector('#chk-addr-card-proceed-bar');
     const addrFormTitle = modal.querySelector('#chk-addr-form-title');
 
-    let selectedAddrIndex = 0; // default = first (default) address
+    // ── Determine active delivery location from navbar / localStorage (Image 1) ──
+    let activePin = (localStorage.getItem('xmart_pincode') || '').trim();
+    let activeCity = '';
+    let activeState = '';
+
+    try {
+      const locData = JSON.parse(localStorage.getItem('xmart_delivery_location') || '{}');
+      if (locData.pincode && !activePin) activePin = String(locData.pincode).trim();
+      if (locData.city) activeCity = String(locData.city).trim().toLowerCase();
+      if (locData.state) activeState = String(locData.state).trim().toLowerCase();
+    } catch {}
+
+    const navStrong = document.querySelector('.location-control strong')?.textContent || '';
+    if (!activePin || !activeCity) {
+      const pinMatch = navStrong.match(/\b\d{6}\b/);
+      if (pinMatch && !activePin) activePin = pinMatch[0];
+      if (!activeCity && navStrong) {
+        const clean = navStrong.replace(/\b\d{6}\b/, '').trim().toLowerCase();
+        if (clean) activeCity = clean;
+      }
+    }
+
+    let selectedAddrIndex = 0;
+
+    if (Array.isArray(savedAddrs) && savedAddrs.length > 0) {
+      // 1. Highest priority: Match exact 6-digit PIN
+      let matchIdx = -1;
+      if (activePin) {
+        matchIdx = savedAddrs.findIndex(a => {
+          const p = String(a.pincode || '').trim();
+          if (p && p === activePin) return true;
+          const full = `${a.street || ''} ${a.city || ''} ${a.address || ''}`;
+          return full.includes(activePin);
+        });
+      }
+
+      // 2. Second priority: Match City / State / Address text
+      if (matchIdx === -1 && activeCity) {
+        matchIdx = savedAddrs.findIndex(a => {
+          const c = String(a.city || '').trim().toLowerCase();
+          const s = String(a.street || '').trim().toLowerCase();
+          const addr = String(a.address || '').trim().toLowerCase();
+          return (c && (c === activeCity || c.includes(activeCity) || activeCity.includes(c))) ||
+                 (s && s.includes(activeCity)) ||
+                 (addr && addr.includes(activeCity));
+        });
+      }
+
+      // 3. Fallback: If no location matched, prefer default address or first address
+      if (matchIdx !== -1) {
+        selectedAddrIndex = matchIdx;
+      } else {
+        const defIdx = savedAddrs.findIndex(a => a.isDefault);
+        if (defIdx !== -1) selectedAddrIndex = defIdx;
+      }
+
+      // Pre-assign savedDeliveryAddress to the matched address so Step 3 is ready immediately
+      if (savedAddrs[selectedAddrIndex]) {
+        const sel = savedAddrs[selectedAddrIndex];
+        savedDeliveryAddress = {
+          name: sel.name || user.name || '',
+          phone: sel.phone || user.phone || '',
+          street: sel.street || sel.address || '',
+          city: sel.city || '',
+          state: sel.state || '',
+          pincode: sel.pincode || activePin || '',
+          type: sel.type || 'HOME',
+          country: 'India'
+        };
+      }
+    }
 
     function showCardView() {
       savedSection.style.display = 'block';
@@ -17351,21 +17422,26 @@ function buildCheckoutModal() {
       // ── Render address cards ──────────────────────────────────────
       cardsList.innerHTML = savedAddrs.map((addr, i) => {
         const typeIcon = addr.type === 'WORK' ? '🏢' : addr.type === 'OTHER' ? '📍' : '🏠';
-        const isDefault = i === 0;
+        const isSelected = (i === selectedAddrIndex);
+        const isDefault = !!addr.isDefault;
+        const badgeLabel = isDefault ? 'Default' : (addr.type || 'HOME');
+        const badgeBg = isDefault ? '#ff9700' : '#f1f5f9';
+        const badgeColor = isDefault ? '#000' : '#64748b';
+
         return `
-          <label class="chk-addr-card ${isDefault ? 'chk-addr-card--selected' : ''}" data-addr-index="${i}" style="
+          <label class="chk-addr-card ${isSelected ? 'chk-addr-card--selected' : ''}" data-addr-index="${i}" style="
             display:flex;align-items:flex-start;gap:14px;padding:14px 16px;
-            border:2px solid ${isDefault ? '#ff9700' : '#e2e8f0'};border-radius:12px;cursor:pointer;
-            background:${isDefault ? '#fff8ee' : '#fff'};transition:all 0.18s;
+            border:2px solid ${isSelected ? '#ff9700' : '#e2e8f0'};border-radius:12px;cursor:pointer;
+            background:${isSelected ? '#fff8ee' : '#fff'};transition:all 0.18s;
           ">
-            <input type="radio" name="chk-addr-radio" value="${i}" ${isDefault ? 'checked' : ''} style="margin-top:3px;accent-color:#ff9700;width:16px;height:16px;flex-shrink:0;">
+            <input type="radio" name="chk-addr-radio" value="${i}" ${isSelected ? 'checked' : ''} style="margin-top:3px;accent-color:#ff9700;width:16px;height:16px;flex-shrink:0;">
             <div style="flex:1;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                 <span style="font-size:13px;font-weight:800;color:#0f172a;">${addr.name || user.name || ''}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${isDefault ? '#ff9700' : '#f1f5f9'};color:${isDefault ? '#000' : '#64748b'};">${typeIcon} ${isDefault ? 'Default' : (addr.type || 'HOME')}</span>
+                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${typeIcon} ${badgeLabel}</span>
               </div>
               <div style="font-size:12.5px;color:#475569;line-height:1.6;">
-                ${addr.street || ''}<br>
+                ${addr.street || addr.address || ''}<br>
                 ${addr.city || ''}, ${addr.state || ''} - <strong>${addr.pincode || ''}</strong>
               </div>
               <div style="font-size:12px;color:#94a3b8;margin-top:3px;">📞 ${addr.phone || ''}</div>
@@ -17380,10 +17456,43 @@ function buildCheckoutModal() {
           cardsList.querySelectorAll('.chk-addr-card').forEach(c => {
             c.style.borderColor = '#e2e8f0';
             c.style.background = '#fff';
+            c.classList.remove('chk-addr-card--selected');
+            const r = c.querySelector('input[type=radio]');
+            if (r) r.checked = false;
           });
           card.style.borderColor = '#ff9700';
           card.style.background = '#fff8ee';
-          card.querySelector('input[type=radio]').checked = true;
+          card.classList.add('chk-addr-card--selected');
+          const radio = card.querySelector('input[type=radio]');
+          if (radio) radio.checked = true;
+
+          const addr = savedAddrs[selectedAddrIndex];
+          if (addr) {
+            savedDeliveryAddress = {
+              name: addr.name || user.name || '',
+              phone: addr.phone || user.phone || '',
+              street: addr.street || addr.address || '',
+              city: addr.city || '',
+              state: addr.state || '',
+              pincode: addr.pincode || '',
+              type: addr.type || 'HOME',
+              country: 'India'
+            };
+            // Also sync active location back to navbar so both remain perfectly synchronized
+            if (addr.pincode) {
+              localStorage.setItem('xmart_pincode', addr.pincode);
+              localStorage.setItem('xmart_delivery_location', JSON.stringify({
+                city: addr.city || '',
+                state: addr.state || '',
+                pincode: addr.pincode,
+                address: `${addr.city || ''}, ${addr.state || ''} ${addr.pincode}`.trim()
+              }));
+              const displayText = `${addr.city || ''} ${addr.pincode}`.trim();
+              document.querySelectorAll('.location-control strong').forEach(el => {
+                el.textContent = displayText;
+              });
+            }
+          }
         });
       });
 
@@ -17397,13 +17506,27 @@ function buildCheckoutModal() {
         savedDeliveryAddress = {
           name: addr.name || user.name || '',
           phone: addr.phone || user.phone || '',
-          street: addr.street || '',
+          street: addr.street || addr.address || '',
           city: addr.city || '',
           state: addr.state || '',
           pincode: addr.pincode || '',
           type: addr.type || 'HOME',
           country: 'India'
         };
+        // Keep navbar delivery location synced
+        if (addr.pincode) {
+          localStorage.setItem('xmart_pincode', addr.pincode);
+          localStorage.setItem('xmart_delivery_location', JSON.stringify({
+            city: addr.city || '',
+            state: addr.state || '',
+            pincode: addr.pincode,
+            address: `${addr.city || ''}, ${addr.state || ''} ${addr.pincode}`.trim()
+          }));
+          const displayText = `${addr.city || ''} ${addr.pincode}`.trim();
+          document.querySelectorAll('.location-control strong').forEach(el => {
+            el.textContent = displayText;
+          });
+        }
         renderStep3();
         goToStep(3);
       });
@@ -17415,9 +17538,9 @@ function buildCheckoutModal() {
       if (user.name) modal.querySelector('#chk-step2-name').value = user.name;
       if (user.phone) modal.querySelector('#chk-step2-phone').value = user.phone;
       const pinInput = modal.querySelector('#chk-step2-pin');
-      if (pinInput && !pinInput.value) pinInput.value = localStorage.getItem('xmart_pincode') || '';
-      modal.querySelector('#chk-step2-city').value = 'Bilaspur';
-      modal.querySelector('#chk-step2-state').value = 'Chhattisgarh';
+      if (pinInput && !pinInput.value) pinInput.value = activePin || localStorage.getItem('xmart_pincode') || '';
+      if (activeCity) modal.querySelector('#chk-step2-city').value = activeCity.charAt(0).toUpperCase() + activeCity.slice(1);
+      if (activeState) modal.querySelector('#chk-step2-state').value = activeState.charAt(0).toUpperCase() + activeState.slice(1);
     }
 
     // Auto-fetch district & state from PIN
@@ -25026,8 +25149,10 @@ function initPageRouter() {
                 <span class="prod-brand-pill">${prod.brand || 'X-Mart'} • ${prod.category || 'General'}</span>
                 <h2 class="prod-main-title">${prod.name}</h2>
                 <div class="prod-rating-row">
-                  <span class="prod-rating-badge">★ ${prod.rating || '4.7'}</span>
-                  <span class="prod-reviews-count">(${prod.numReviews || '60'} ratings & reviews)</span>
+                  <a href="#reviews" class="prod-rating-link" id="prod-rating-scroll-link" title="Click to view customer ratings and reviews" aria-label="View customer ratings and reviews">
+                    <span class="prod-rating-badge">★ ${prod.rating || '4.7'}</span>
+                    <span class="prod-reviews-count">(${prod.numReviews || '60'} ratings & reviews)</span>
+                  </a>
                   <span class="prod-verified-tag">Verified Authentic</span>
                 </div>
               </div>
@@ -25301,7 +25426,7 @@ function initPageRouter() {
           </div>
 
           <!-- 4. FOURTH CONTAINER: 100% FULL-WIDTH CUSTOMER RATINGS & VERIFIED REVIEWS SHOWCASE (JUST ABOVE FOOTER) -->
-          <div class="prod-detail-card prod-reviews-container" style="width: 100%; margin-top: 10px;">
+          <div class="prod-detail-card prod-reviews-container" id="prod-reviews-section" style="width: 100%; margin-top: 10px;">
             <div class="prod-reviews-header">
               <div class="reviews-header-title-wrap">
                 <h3 class="prod-reviews-heading">Reviews & Ratings</h3>
@@ -25886,6 +26011,33 @@ function initPageRouter() {
         showToast('✓ Product link copied to clipboard!', 'success');
       }
     });
+
+    // ── Smooth Scroll Navigation to Ratings & Reviews Section ──
+    const ratingScrollLink = pageContainer.querySelector('#prod-rating-scroll-link');
+    const reviewsContainer = pageContainer.querySelector('#prod-reviews-section') || pageContainer.querySelector('.prod-reviews-container');
+
+    if (ratingScrollLink && reviewsContainer) {
+      ratingScrollLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const headerEl = document.querySelector('.site-header');
+        const headerOffset = (headerEl ? headerEl.offsetHeight : 70) + 16;
+        const rect = reviewsContainer.getBoundingClientRect();
+        const targetScrollY = rect.top + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: Math.max(0, targetScrollY),
+          behavior: 'smooth'
+        });
+
+        // Subtle arrival highlight pulse
+        reviewsContainer.classList.remove('reviews-highlight-pulse');
+        void reviewsContainer.offsetWidth; // trigger DOM reflow for re-animation
+        reviewsContainer.classList.add('reviews-highlight-pulse');
+        setTimeout(() => {
+          reviewsContainer.classList.remove('reviews-highlight-pulse');
+        }, 1800);
+      });
+    }
 
     // ── Star Rating Picker Interactivity ──
     const starPicker = pageContainer.querySelector('#star-rating-picker');
@@ -26797,7 +26949,7 @@ function buildLocationModal() {
         <!-- PIN Input Row -->
         <div style="display:flex;gap:10px;align-items:center;">
           <div style="flex:1;position:relative;">
-            <input id="pincode-modal-input" type="text" maxlength="6" style="width:100%;padding:13px 16px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;font-weight:700;color:#0f172a;outline:none;box-sizing:border-box;letter-spacing:1px;transition:border-color 0.2s;" />
+            <input id="pincode-modal-input" type="text" maxlength="6" placeholder="Enter 6-digit PIN code" style="width:100%;padding:13px 16px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;font-weight:700;color:#0f172a;outline:none;box-sizing:border-box;letter-spacing:1px;transition:border-color 0.2s;" />
             <span id="pin-modal-status-spinner" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;color:#0878f9;font-weight:700;">Fetching...</span>
           </div>
           <button id="pincode-modal-fetch-btn" type="button" style="background:#ff9700;color:#000;font-weight:800;border:none;padding:13px 22px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(255,151,0,0.3);white-space:nowrap;">
@@ -26805,16 +26957,16 @@ function buildLocationModal() {
           </button>
         </div>
 
-        <!-- Live Detected Location Card -->
-        <div id="pin-modal-result-card" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:42px;height:42px;background:#e0f2fe;color:#0284c7;border-radius:10px;display:grid;place-items:center;flex-shrink:0;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <div>
-              <div id="pin-modal-detected-city" style="font-size:15px;font-weight:800;color:#0f172a;">Bilaspur, Chhattisgarh</div>
-              <div id="pin-modal-detected-meta" style="font-size:12px;color:#64748b;">PIN: 495001</div>
-            </div>
+        <!-- Saved Addresses Section with "See all" toggle -->
+        <div id="pin-modal-addresses-section" style="display:flex;flex-direction:column;gap:10px;">
+          <div id="pin-modal-addresses-list" style="display:flex;flex-direction:column;gap:10px;">
+            <!-- Rendered dynamically -->
+          </div>
+          <div id="pin-modal-see-all-wrap" style="display:flex;justify-content:flex-end;margin-top:2px;">
+            <button id="pin-modal-see-all-btn" type="button" style="background:transparent;border:none;color:#000000;font-weight:700;font-size:13.5px;cursor:pointer;padding:4px 6px;display:inline-flex;align-items:center;gap:4px;">
+              <span id="pin-modal-see-all-text">See all saved addresses</span>
+              <svg id="pin-modal-see-all-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
         </div>
 
@@ -26836,10 +26988,10 @@ function buildLocationModal() {
   });
 
   let currentSelection = {
-    address: 'Bilaspur, Chhattisgarh 495001',
-    city: 'Bilaspur',
-    state: 'Chhattisgarh',
-    pincode: '495001'
+    address: 'Patna, Bihar 800001',
+    city: 'Patna',
+    state: 'Bihar',
+    pincode: '800001'
   };
 
   try {
@@ -26851,35 +27003,132 @@ function buildLocationModal() {
 
   const pinInput = modal.querySelector('#pincode-modal-input');
   const checkBtn = modal.querySelector('#pincode-modal-fetch-btn');
-  const cityDisplay = modal.querySelector('#pin-modal-detected-city');
-  const metaDisplay = modal.querySelector('#pin-modal-detected-meta');
   const spinner = modal.querySelector('#pin-modal-status-spinner');
   const confirmBtn = modal.querySelector('#pin-modal-confirm-btn');
+  const addressesList = modal.querySelector('#pin-modal-addresses-list');
+  const seeAllBtn = modal.querySelector('#pin-modal-see-all-btn');
+  const seeAllText = modal.querySelector('#pin-modal-see-all-text');
+  const seeAllIcon = modal.querySelector('#pin-modal-see-all-icon');
+  const seeAllWrap = modal.querySelector('#pin-modal-see-all-wrap');
 
-  // Start with empty PIN input
-  if (pinInput) pinInput.value = '';
-  if (cityDisplay) cityDisplay.textContent = `${currentSelection.city || 'Bilaspur'}, ${currentSelection.state || 'Chhattisgarh'}`;
-  if (metaDisplay) metaDisplay.textContent = `PIN: ${currentSelection.pincode || '495001'}`;
+  let isExpanded = false;
 
-  // Mobile/Tablet viewport detection (<= 1024px)
+  // Retrieve saved addresses from localStorage or default seed list
+  function getModalSavedAddresses() {
+    let list = [];
+    try {
+      const raw = localStorage.getItem('xmart_saved_addresses');
+      if (raw) list = JSON.parse(raw);
+    } catch {}
+    if (!Array.isArray(list) || list.length === 0) {
+      list = [
+        { id: 'addr_1', name: 'Home', address: 'Patna, Bihar', city: 'Patna', state: 'Bihar', pincode: '800001', isDefault: true },
+        { id: 'addr_2', name: 'Work', address: 'Bilaspur, Chhattisgarh', city: 'Bilaspur', state: 'Chhattisgarh', pincode: '495001' },
+        { id: 'addr_3', name: 'Other', address: 'Connaught Place, New Delhi', city: 'New Delhi', state: 'Delhi', pincode: '110001' },
+        { id: 'addr_4', name: 'Office', address: 'Indiranagar, Bengaluru', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' }
+      ];
+      try { localStorage.setItem('xmart_saved_addresses', JSON.stringify(list)); } catch {}
+    }
+    return list;
+  }
+
+  function renderSavedAddresses() {
+    if (!addressesList) return;
+    const allAddresses = getModalSavedAddresses();
+
+    const displayedAddresses = isExpanded ? allAddresses : allAddresses.slice(0, 1);
+
+    // Toggle button visibility & label
+    if (seeAllWrap) {
+      if (allAddresses.length <= 1) {
+        seeAllWrap.style.display = 'none';
+      } else {
+        seeAllWrap.style.display = 'flex';
+        if (isExpanded) {
+          if (seeAllText) seeAllText.textContent = 'See less';
+          if (seeAllIcon) seeAllIcon.innerHTML = '<polyline points="18 15 12 9 6 15"/>';
+        } else {
+          if (seeAllText) seeAllText.textContent = `See all saved addresses (${allAddresses.length})`;
+          if (seeAllIcon) seeAllIcon.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+        }
+      }
+    }
+
+    addressesList.innerHTML = displayedAddresses.map((addr) => {
+      const isSelected = (currentSelection.pincode === addr.pincode) ||
+        (currentSelection.city && currentSelection.city.toLowerCase() === (addr.city || '').toLowerCase());
+      const displayTitle = addr.address || `${addr.city}, ${addr.state}`;
+
+      return `
+        <div class="pin-modal-addr-card ${isSelected ? 'is-selected' : ''}" data-pin="${addr.pincode}" data-city="${addr.city}" data-state="${addr.state}" data-address="${addr.address || ''}" style="background:${isSelected ? '#f0f9ff' : '#f8fafc'};border:1.5px solid ${isSelected ? '#0284c7' : '#e2e8f0'};border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:all 0.16s ease;animation:pinModalFadeIn 0.2s ease;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;background:${isSelected ? '#dbeafe' : '#e0f2fe'};color:#000000;border-radius:10px;display:grid;place-items:center;flex-shrink:0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:800;color:#0f172a;">${displayTitle}</div>
+              <div style="font-size:12px;color:#64748b;font-weight:600;margin-top:2px;">PIN: ${addr.pincode}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${isSelected ? `
+              <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 9px;border-radius:20px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Selected
+              </span>
+            ` : `
+              <span style="font-size:12px;font-weight:600;color:#64748b;">Select</span>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    addressesList.querySelectorAll('.pin-modal-addr-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const pin = card.getAttribute('data-pin');
+        const city = card.getAttribute('data-city');
+        const state = card.getAttribute('data-state');
+        const address = card.getAttribute('data-address');
+
+        currentSelection = {
+          address: address || `${city}, ${state} ${pin}`,
+          city: city,
+          state: state,
+          pincode: pin
+        };
+
+        if (pinInput) pinInput.value = pin;
+        renderSavedAddresses();
+
+        if (isMobileOrTablet()) {
+          applyLocation(pin, true);
+        } else {
+          showToast(`Selected: ${city} (${pin})`, 'info', 1600);
+        }
+      });
+    });
+  }
+
+  seeAllBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    isExpanded = !isExpanded;
+    renderSavedAddresses();
+  });
+
   const isMobileOrTablet = () => window.innerWidth <= 1024;
 
-  // Apply location: updates navbar, persists to localStorage, syncs product page, and handles modal close
   function applyLocation(pin, isAuto = false) {
-    const activePin = pin || pinInput?.value?.trim() || currentSelection.pincode || '495001';
-    const city = currentSelection.city || 'Bilaspur';
+    const activePin = pin || pinInput?.value?.trim() || currentSelection.pincode || '800001';
+    const city = currentSelection.city || 'Patna';
     const displayText = `${city} ${activePin}`.trim();
 
-    // 1. Immediately update navbar delivery location section
     document.querySelectorAll('.location-control strong').forEach(el => {
       el.textContent = displayText;
     });
 
-    // 2. Persist to localStorage
     localStorage.setItem('xmart_pincode', activePin);
     localStorage.setItem('xmart_delivery_location', JSON.stringify(currentSelection));
 
-    // 3. Sync with product detail page if open
     const pDetailInput = document.querySelector('#detail-pincode-input');
     if (pDetailInput) {
       pDetailInput.value = activePin;
@@ -26891,41 +27140,45 @@ function buildLocationModal() {
 
     if (pinInput) pinInput.value = '';
 
-    const resultCard = modal.querySelector('#pin-modal-result-card');
-    if (resultCard) {
-      resultCard.style.borderColor = '#22c55e';
-      resultCard.style.background = '#f0fdf4';
-    }
-
     showToast(`Delivery location updated to: ${displayText}!`, 'success', 3000);
 
     if (isAuto) {
       setTimeout(() => {
         modal._close();
-        if (resultCard) {
-          resultCard.style.borderColor = '#e2e8f0';
-          resultCard.style.background = '#f8fafc';
-        }
       }, 450);
     } else {
       modal._close();
-      if (resultCard) {
-        resultCard.style.borderColor = '#e2e8f0';
-        resultCard.style.background = '#f8fafc';
-      }
     }
   }
 
-  // Fetch location from PIN
   let isFetching = false;
+
+  function setDetectedLocation(pin, city, state) {
+    currentSelection = {
+      address: `${city}, ${state} ${pin}`,
+      city: city,
+      state: state,
+      pincode: pin
+    };
+    try {
+      let list = getModalSavedAddresses();
+      const existing = list.find(a => a.pincode === pin);
+      if (!existing) {
+        list.unshift({ id: 'addr_' + Date.now(), name: city, address: `${city}, ${state}`, city, state, pincode: pin });
+        localStorage.setItem('xmart_saved_addresses', JSON.stringify(list));
+      }
+    } catch {}
+    renderSavedAddresses();
+    showToast(`PIN verified: ${city}, ${state}`, 'success');
+  }
+
   async function fetchLocationFromPin(pin) {
-    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin) || isFetching) return;
-
+    if (isFetching) return;
     isFetching = true;
-    if (spinner) spinner.style.display = 'inline-block';
+    if (spinner) spinner.style.display = 'block';
 
-    // 1. Common PIN dictionary for 0ms instant response
     const pinMap = {
+      '800001': { city: 'Patna', state: 'Bihar' },
       '495001': { city: 'Bilaspur', state: 'Chhattisgarh' },
       '495004': { city: 'Bilaspur', state: 'Chhattisgarh' },
       '492001': { city: 'Raipur', state: 'Chhattisgarh' },
@@ -26938,7 +27191,6 @@ function buildLocationModal() {
       '700001': { city: 'Kolkata', state: 'West Bengal' },
       '600001': { city: 'Chennai', state: 'Tamil Nadu' },
       '500001': { city: 'Hyderabad', state: 'Telangana' },
-      '800001': { city: 'Patna', state: 'Bihar' },
       '802101': { city: 'Buxar', state: 'Bihar' },
       '802103': { city: 'Dumraon, Buxar', state: 'Bihar' },
       '201301': { city: 'Noida', state: 'Uttar Pradesh' },
@@ -26949,12 +27201,7 @@ function buildLocationModal() {
     };
 
     if (pinMap[pin]) {
-      currentSelection.pincode = pin;
-      currentSelection.city = pinMap[pin].city;
-      currentSelection.state = pinMap[pin].state;
-      currentSelection.address = `${pinMap[pin].city}, ${pinMap[pin].state} - ${pin}`;
-      if (cityDisplay) cityDisplay.textContent = `${pinMap[pin].city}, ${pinMap[pin].state}`;
-      if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
+      setDetectedLocation(pin, pinMap[pin].city, pinMap[pin].state);
       if (spinner) spinner.style.display = 'none';
       isFetching = false;
       if (isMobileOrTablet()) {
@@ -26963,7 +27210,6 @@ function buildLocationModal() {
       return;
     }
 
-    // 2. Query Indian Postal API / Geoapify
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
       const data = await res.json();
@@ -26971,12 +27217,7 @@ function buildLocationModal() {
         const po = data[0].PostOffice[0];
         const city = po.District || po.Name || 'City';
         const state = po.State || 'India';
-        currentSelection.pincode = pin;
-        currentSelection.city = city;
-        currentSelection.state = state;
-        currentSelection.address = `${city}, ${state} - ${pin}`;
-        if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
-        if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
+        setDetectedLocation(pin, city, state);
         if (spinner) spinner.style.display = 'none';
         isFetching = false;
         if (isMobileOrTablet()) {
@@ -26986,7 +27227,6 @@ function buildLocationModal() {
       }
     } catch { }
 
-    // 3. Fallback to Geoapify
     try {
       const geoRes = await fetch(`https://api.geoapify.com/v1/geocode/search?text=${pin}&country=in&apiKey=${GEOAPIFY_API_KEY}`);
       const geoData = await geoRes.json();
@@ -26994,12 +27234,7 @@ function buildLocationModal() {
         const p = geoData.features[0].properties;
         const city = p.city || p.county || p.state_district || 'City';
         const state = p.state || 'India';
-        currentSelection.pincode = pin;
-        currentSelection.city = city;
-        currentSelection.state = state;
-        currentSelection.address = `${city}, ${state} - ${pin}`;
-        if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
-        if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
+        setDetectedLocation(pin, city, state);
         if (spinner) spinner.style.display = 'none';
         isFetching = false;
         if (isMobileOrTablet()) {
@@ -27009,13 +27244,7 @@ function buildLocationModal() {
       }
     } catch { }
 
-    // 4. Fallback if offline / unmapped PIN
-    currentSelection.pincode = pin;
-    currentSelection.city = 'PIN ' + pin;
-    currentSelection.state = 'India';
-    currentSelection.address = `PIN: ${pin}, India`;
-    if (cityDisplay) cityDisplay.textContent = `PIN: ${pin}`;
-    if (metaDisplay) metaDisplay.textContent = `Delivery Area`;
+    setDetectedLocation(pin, 'PIN ' + pin, 'India');
     if (spinner) spinner.style.display = 'none';
     isFetching = false;
     if (isMobileOrTablet()) {
@@ -27053,63 +27282,128 @@ function buildLocationModal() {
     }
   });
 
-  // GPS Current Location
-  modal.querySelector('#pin-modal-gps-btn')?.addEventListener('click', () => {
+  async function fallbackToNetworkLocation() {
+    // 1. Try IP Geolocation via ipwho.is
+    try {
+      const res = await fetch('https://ipwho.is/');
+      const data = await res.json();
+      if (data && data.success && data.postal) {
+        const pin = String(data.postal).replace(/\D/g, '').slice(0, 6);
+        if (pin && pin.length === 6) {
+          const city = data.city || 'Location';
+          const state = data.region || 'India';
+          if (pinInput) pinInput.value = pin;
+          setDetectedLocation(pin, city, state);
+          showToast(`Location detected: ${city} (${pin})`, 'success');
+          return true;
+        }
+      }
+    } catch {}
+
+    // 2. Try secondary IP Geolocation via freeipapi.com
+    try {
+      const res = await fetch('https://freeipapi.com/api/json');
+      const data = await res.json();
+      if (data && data.zipCode) {
+        const pin = String(data.zipCode).replace(/\D/g, '').slice(0, 6);
+        if (pin && pin.length === 6) {
+          const city = data.cityName || 'Location';
+          const state = data.regionName || 'India';
+          if (pinInput) pinInput.value = pin;
+          setDetectedLocation(pin, city, state);
+          showToast(`Location detected: ${city} (${pin})`, 'success');
+          return true;
+        }
+      }
+    } catch {}
+
+    // 3. Fallback to active saved address or default
+    const saved = getModalSavedAddresses();
+    const fallbackAddr = saved[0] || { pincode: '495009', city: 'Bilaspur', state: 'Chhattisgarh' };
+    if (pinInput) pinInput.value = fallbackAddr.pincode;
+    setDetectedLocation(fallbackAddr.pincode, fallbackAddr.city, fallbackAddr.state);
+    showToast(`Location set: ${fallbackAddr.city} (${fallbackAddr.pincode})`, 'success');
+    return true;
+  }
+
+  modal.querySelector('#pin-modal-gps-btn')?.addEventListener('click', async () => {
+    const btn = modal.querySelector('#pin-modal-gps-btn');
+    btn.innerHTML = 'Detecting Location...';
+    btn.disabled = true;
+
+    const restoreBtn = () => {
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/></svg> <span>Use Current GPS Location</span>`;
+      btn.disabled = false;
+    };
+
     if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by your browser.', 'error');
+      await fallbackToNetworkLocation();
+      restoreBtn();
       return;
     }
-    const btn = modal.querySelector('#pin-modal-gps-btn');
-    btn.innerHTML = 'Detecting GPS...';
-    btn.disabled = true;
+
+    let resolved = false;
+
+    // Timeout safety: fallback within 4s if browser permission prompt is ignored or blocked
+    const safetyTimer = setTimeout(async () => {
+      if (!resolved) {
+        resolved = true;
+        await fallbackToNetworkLocation();
+        restoreBtn();
+      }
+    }, 4000);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/></svg> <span>Use Current GPS Location</span>`;
-        btn.disabled = false;
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(safetyTimer);
+
+        let success = false;
         try {
           const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&apiKey=${GEOAPIFY_API_KEY}`);
           const d = await res.json();
           if (d.features && d.features.length > 0) {
             const p = d.features[0].properties;
-            const pin = p.postcode || '495001';
+            const pin = (p.postcode || '').replace(/\D/g, '').slice(0, 6) || '800001';
             const city = p.city || p.county || p.state_district || 'Location';
             const state = p.state || 'India';
-            pinInput.value = pin;
-            currentSelection = { pincode: pin, city, state, address: `${city}, ${state} - ${pin}` };
-            if (cityDisplay) cityDisplay.textContent = `${city}, ${state}`;
-            if (metaDisplay) metaDisplay.textContent = `PIN: ${pin}`;
+            if (pinInput) pinInput.value = pin;
+            setDetectedLocation(pin, city, state);
             if (isMobileOrTablet()) {
               applyLocation(pin, true);
             } else {
               showToast(`Location detected: ${city} (${pin})`, 'success');
             }
+            success = true;
           }
-        } catch {
-          showToast('GPS detected successfully', 'success');
+        } catch {}
+
+        if (!success) {
+          await fallbackToNetworkLocation();
         }
+        restoreBtn();
       },
-      () => {
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/></svg> <span>Use Current GPS Location</span>`;
-        btn.disabled = false;
-        showToast('Location permission denied or unavailable.', 'warn');
+      async () => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(safetyTimer);
+        // Seamlessly fallback without warning/error toast
+        await fallbackToNetworkLocation();
+        restoreBtn();
       },
-      { timeout: 8000 }
+      { timeout: 3500, enableHighAccuracy: false, maximumAge: 60000 }
     );
   });
 
-  // Confirm Location (Desktop manual button)
   confirmBtn?.addEventListener('click', () => {
     applyLocation(pinInput.value.trim(), false);
   });
 
   window._openLocation = () => {
     if (pinInput) pinInput.value = '';
-    const resultCard = modal.querySelector('#pin-modal-result-card');
-    if (resultCard) {
-      resultCard.style.borderColor = '#e2e8f0';
-      resultCard.style.background = '#f8fafc';
-    }
+    isExpanded = false;
+    renderSavedAddresses();
     modal._open();
     setTimeout(() => pinInput?.focus(), 120);
   };

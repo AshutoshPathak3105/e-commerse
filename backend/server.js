@@ -52,7 +52,8 @@ app.use(
 // ── Global rate limiter ──────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  max: 5000,
+  skip: (req) => !req.path.startsWith('/api') || req.ip === '127.0.0.1' || req.ip === '::1',
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
@@ -64,7 +65,7 @@ const authLimiter = rateLimit({
   message: { success: false, message: 'Too many auth attempts, please wait 15 minutes.' },
 });
 
-app.use(globalLimiter);
+app.use('/api', globalLimiter);
 
 // ── Body parsers ─────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));
