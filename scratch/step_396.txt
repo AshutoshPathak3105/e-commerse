@@ -1,0 +1,1 @@
+"        showToast(`✓ \"${headline}\" published! Platform subsidy recorded for seller repayment.`, 'success', 4000);\n      });\n    }\n    window.openSellerManageOffersModal = openSellerManageOffersModal;\n\n    // Modal to Edit Any Product Fully"

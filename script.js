@@ -198,14 +198,68 @@ function initUtilityTicker() {
 }
 window.initUtilityTicker = initUtilityTicker;
 
+/* ── Seller Table Promotions Ticker Animation Engine ── */
+let sellerPromoTickerInterval = null;
+function initSellerPromoTickers() {
+  if (sellerPromoTickerInterval) {
+    clearInterval(sellerPromoTickerInterval);
+    sellerPromoTickerInterval = null;
+  }
+
+  const tickerWraps = document.querySelectorAll('.seller-promo-ticker-wrap');
+  if (!tickerWraps || tickerWraps.length === 0) return;
+
+  sellerPromoTickerInterval = setInterval(() => {
+    const liveWraps = document.querySelectorAll('.seller-promo-ticker-wrap');
+    if (!liveWraps || liveWraps.length === 0) {
+      if (sellerPromoTickerInterval) {
+        clearInterval(sellerPromoTickerInterval);
+        sellerPromoTickerInterval = null;
+      }
+      return;
+    }
+
+    liveWraps.forEach(wrap => {
+      const slides = wrap.querySelectorAll('.seller-promo-ticker-slide');
+      if (slides.length <= 1) return;
+
+      let activeIdx = -1;
+      slides.forEach((slide, idx) => {
+        if (slide.classList.contains('is-active')) {
+          activeIdx = idx;
+        }
+      });
+
+      if (activeIdx === -1) activeIdx = 0;
+      const nextIdx = (activeIdx + 1) % slides.length;
+
+      const prev = slides[activeIdx];
+      if (prev) {
+        prev.classList.remove('is-active');
+        prev.classList.add('is-exiting');
+        setTimeout(() => {
+          prev.classList.remove('is-exiting');
+        }, 350);
+      }
+
+      if (slides[nextIdx]) {
+        slides[nextIdx].classList.add('is-active');
+      }
+    });
+  }, 2800);
+}
+window.initSellerPromoTickers = initSellerPromoTickers;
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initHomePriceConverter();
     initUtilityTicker();
+    initSellerPromoTickers();
   });
 } else {
   initHomePriceConverter();
   initUtilityTicker();
+  initSellerPromoTickers();
 }
 
 /* ── Multi-Language Translation Manager (EN, ES, FR, HI) ─────── */
@@ -341,9 +395,18 @@ const Auth = {
   logout() {
     localStorage.removeItem('xmart_token');
     localStorage.removeItem('xmart_user');
+    localStorage.removeItem('xmart_seller_profile');
+    try { sessionStorage.clear(); } catch (e) { }
     this.syncUI();
     Store.syncUI();
     showToast('Signed out successfully', 'info');
+    if (window.location.hash === '#seller' || window.location.hash === '#sell' || document.querySelector('.commercial-window-wrap')) {
+      if (typeof window._showHomeView === 'function') {
+        window._showHomeView(true);
+      } else {
+        window.location.hash = '#home';
+      }
+    }
   },
   async deleteAccount() {
     const confirmed = confirm('ARE YOU SURE YOU WANT TO PERMANENTLY DELETE YOUR ACCOUNT?\n\nThis will permanently delete your user profile, order records, saved addresses, wallet balance, and cart items from MongoDB Atlas. This action CANNOT be undone.');
@@ -883,8 +946,8 @@ function showRestockEmailDispatchedModal(emailRecord) {
       </div>
 
       <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ff9700; padding-bottom: 10px; margin-bottom: 14px;">
-          <div style="font-size: 17px; font-weight: 900; color: #0f172a;">X-MART <span style="color: #ff9700;">SUPERSTORE</span></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px;">
+          <div style="font-size: 17px; font-weight: 900; color: #0f172a;">X-MART <span style="color: #0f172a;">SUPERSTORE</span></div>
           <span style="font-size: 11px; font-weight: 700; background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 12px;">BACK IN STOCK</span>
         </div>
 
@@ -1164,7 +1227,7 @@ function buildAuthModal() {
           </div>
           <div>
             <div style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;line-height:1.1;">X-MART</div>
-            <div style="font-size:10.5px;font-weight:700;color:#ff9700;letter-spacing:1px;text-transform:uppercase;">Superstore</div>
+            <div style="font-size:10.5px;font-weight:800;color:#0f172a;letter-spacing:1px;text-transform:uppercase;">Superstore</div>
           </div>
         </div>
 
@@ -5832,7 +5895,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       });
 
     } catch (err) {
-      container.innerHTML = `<div class="ap-dash-inner">${emptyHTML('⚠️', `Failed to load dashboard: ${err.message}`)}</div>`;
+      container.innerHTML = `<div class="ap-dash-inner">${emptyHTML('', `Failed to load dashboard: ${err.message}`)}</div>`;
     }
   }
   /* ══════════════════════════════════════════════════════
@@ -5859,7 +5922,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         allUsersData = (res && res.data && res.data.users) || [];
         renderFullView();
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load directory: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load directory: ${err.message}`);
       }
     }
 
@@ -7280,7 +7343,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load sellers: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load sellers: ${err.message}`);
       }
     }
     load();
@@ -7564,7 +7627,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load order pipeline: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load order pipeline: ${err.message}`);
       }
     }
     load();
@@ -7932,7 +7995,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load returns: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load returns: ${err.message}`);
       }
     }
 
@@ -8342,7 +8405,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load payout queue: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load payout queue: ${err.message}`);
       }
     }
 
@@ -8678,7 +8741,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         `).join('') : `
           <tr>
             <td colspan="5" style="text-align:center; padding:36px; color:#94a3b8;">
-              ${emptyHTML('🏷️', 'No active marketing offers yet. Create one above.')}
+              ${emptyHTML('', 'No active marketing offers yet. Create one above.')}
             </td>
           </tr>
         `;
@@ -8834,7 +8897,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load campaigns: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load campaigns: ${err.message}`);
       }
     }
     load();
@@ -9055,7 +9118,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load product catalog: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load product catalog: ${err.message}`);
       }
     }
     load();
@@ -9196,7 +9259,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         document.getElementById('ap-analytics-refresh-btn')?.addEventListener('click', load);
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load analytics: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load analytics: ${err.message}`);
       }
     }
     load();
@@ -9807,7 +9870,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
               <div class="ap-table-footer">
                 <span>Showing <strong>${shipments.length}</strong> active 3PL consignments</span>
-                <span style="font-size:11px; color:#94a3b8;">X-Mart 3PL Network Control • Zero AI Icons</span>
+                <span style="font-size:11px; color:#94a3b8;">X-Mart 3PL Network Control • Verified Logistics</span>
               </div>
             </div>
           </div>
@@ -9851,7 +9914,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load logistics: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load logistics: ${err.message}`);
       }
     }
     load();
@@ -10056,7 +10119,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load inventory: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load inventory: ${err.message}`);
       }
     }
     load();
@@ -10096,7 +10159,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         renderUI();
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load reviews: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load reviews: ${err.message}`);
       }
     }
 
@@ -10529,7 +10592,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </span>
                 ${r.status === 'Flagged' && r.flagReason ? `
                   <span style="font-size:10px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:2px 5px; border-radius:4px; font-weight:600;" title="${r.flagReason}">
-                    ⚠️ ${r.flagReason.split(':')[0]}
+                    ${r.flagReason.split(':')[0]}
                   </span>
                 ` : ''}
                 ${r.adminReply ? `
@@ -11030,10 +11093,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </p>
             </div>
 
-            <!-- AI Telemetry & Trust Signals -->
+            <!-- Merchant Reputation & Trust Signals -->
             <div style="margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
               <h5 style="margin:0 0 8px; font-size:12px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">
-                🛡️ AI Reputation &amp; Trust Telemetry
+                Merchant Reputation &amp; Trust Telemetry
               </h5>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
                 <div>
@@ -11333,7 +11396,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         renderUI();
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load support disputes: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load support disputes: ${err.message}`);
       }
     }
 
@@ -12122,11 +12185,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           { id: 'ICICI Bank', name: 'ICICI Bank', shortName: 'ICICI Bank', rank: '#3 Most Valued (₹8.2L Cr)', logo: 'assets/banks/icici.svg', tag: 'Private #2' },
           { id: 'Axis Bank', name: 'Axis Bank', shortName: 'Axis Bank', rank: '#4 Most Valued (₹3.6L Cr)', logo: 'assets/banks/axis.svg', tag: 'Private #3' },
           { id: 'Kotak Mahindra', name: 'Kotak Mahindra Bank', shortName: 'Kotak Mahindra', rank: '#5 Most Valued (₹3.4L Cr)', logo: 'assets/banks/kotak.svg', tag: 'Private' },
-          { id: 'IndusInd Bank', name: 'IndusInd Bank', shortName: 'IndusInd Bank', rank: '#6 Most Valued (₹1.1L Cr)', logo: 'assets/banks/indus.svg', tag: 'Private' },
+          { id: 'Indian Bank', name: 'Indian Bank', shortName: 'Indian Bank', rank: 'Top PSU Bank', logo: 'assets/banks/indian.svg', tag: 'PSU' },
+          { id: 'IndusInd Bank', name: 'IndusInd Bank', shortName: 'IndusInd Bank', rank: '#6 Most Valued (₹1.1L Cr)', logo: 'assets/banks/indusind.svg', tag: 'Private' },
           { id: 'Bank of Baroda', name: 'Bank of Baroda (BoB)', shortName: 'Bank of Baroda', rank: '#7 Most Valued (₹1.3L Cr)', logo: 'assets/banks/bob.svg', tag: 'PSU #2' },
           { id: 'Punjab National Bank', name: 'Punjab National Bank (PNB)', shortName: 'Punjab National Bank', rank: '#8 Most Valued (₹1.2L Cr)', logo: 'assets/banks/pnb.svg', tag: 'PSU #3' },
           { id: 'Canara Bank', name: 'Canara Bank', shortName: 'Canara Bank', rank: '#9 Most Valued (₹1.0L Cr)', logo: 'assets/banks/canara.svg', tag: 'PSU' },
-          { id: 'Union Bank of India', name: 'Union Bank of India', shortName: 'Union Bank of India', rank: '#10 Most Valued (₹96,000 Cr)', logo: 'assets/banks/ubi.svg', tag: 'PSU' }
+          { id: 'Union Bank of India', name: 'Union Bank of India', shortName: 'Union Bank of India', rank: '#10 Most Valued (₹96,000 Cr)', logo: 'assets/banks/ubi.svg', tag: 'PSU' },
+          { id: 'IDFC FIRST Bank', name: 'IDFC FIRST Bank', shortName: 'IDFC FIRST Bank', rank: 'Private Bank', logo: 'assets/banks/idfc.svg', tag: 'Private' },
+          { id: 'Federal Bank', name: 'Federal Bank', shortName: 'Federal Bank', rank: 'Private Bank', logo: 'assets/banks/federal.svg', tag: 'Private' },
+          { id: 'Yes Bank', name: 'Yes Bank', shortName: 'Yes Bank', rank: 'Private Bank', logo: 'assets/banks/yesbank.svg', tag: 'Private' }
         ];
 
         const TOP_UPI_APPS = [
@@ -12136,7 +12203,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           { id: 'Paytm', name: 'Paytm UPI', shortName: 'Paytm', rank: '#3 Top UPI Provider in India', logo: 'assets/upi/paytm.svg', tag: 'Fast' },
           { id: 'BHIM UPI', name: 'BHIM UPI (NPCI)', shortName: 'BHIM UPI', rank: 'Official Govt / NPCI UPI App', logo: 'assets/upi/bhim.svg', tag: 'Official' },
           { id: 'Amazon Pay', name: 'Amazon Pay UPI', shortName: 'Amazon Pay', rank: 'Top E-Commerce Rewards UPI', logo: 'assets/upi/amazonpay.svg', tag: 'Rewards' },
-          { id: 'CRED UPI', name: 'CRED UPI', shortName: 'CRED UPI', rank: 'Top Premium & Cardholders UPI', logo: 'assets/upi/cred.png', tag: 'Premium' },
+          { id: 'CRED UPI', name: 'CRED UPI', shortName: 'CRED UPI', rank: 'Top Premium & Cardholders UPI', logo: 'assets/upi/cred.svg', tag: 'Premium' },
           { id: 'WhatsApp Pay', name: 'WhatsApp Pay', shortName: 'WhatsApp Pay', rank: 'Seamless In-Chat UPI Payments', logo: 'assets/upi/whatsapp.svg', tag: 'Chat' }
         ];
 
@@ -12148,11 +12215,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           if (str.includes('icici')) return 'assets/banks/icici.svg';
           if (str.includes('axis')) return 'assets/banks/axis.svg';
           if (str.includes('kotak')) return 'assets/banks/kotak.svg';
-          if (str.includes('indus')) return 'assets/banks/indus.svg';
+          if (str.includes('indus')) return 'assets/banks/indusind.svg';
           if (str.includes('baroda') || str.includes('bob')) return 'assets/banks/bob.svg';
           if (str.includes('punjab') || str.includes('pnb')) return 'assets/banks/pnb.svg';
           if (str.includes('canara')) return 'assets/banks/canara.svg';
           if (str.includes('union')) return 'assets/banks/ubi.svg';
+          if (str.includes('indian')) return 'assets/banks/indian.svg';
+          if (str.includes('idfc')) return 'assets/banks/idfc.svg';
+          if (str.includes('federal')) return 'assets/banks/federal.svg';
+          if (str.includes('yes')) return 'assets/banks/yesbank.svg';
           return 'assets/banks/allbanks.svg';
         }
 
@@ -13839,7 +13910,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         }
 
       } catch (err) {
-        body.innerHTML = emptyHTML('⚠️', `Failed to load CMS: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load CMS: ${err.message}`);
       }
     }
     load();
@@ -15712,7 +15783,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       });
 
     } catch (err) {
-      container.innerHTML = emptyHTML('⚠️', `Failed to load Admin Profile: ${err.message}`);
+      container.innerHTML = emptyHTML('', `Failed to load Admin Profile: ${err.message}`);
     }
   }
 
@@ -17054,7 +17125,7 @@ function buildCheckoutModal() {
                   <div id="chk-upi-config-box" style="margin-top:10px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:none;" onclick="event.stopPropagation();">
                     <label for="chk-upi-app-select" style="display:block; font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px;">Select Your UPI App:</label>
                     <select id="chk-upi-app-select" style="width:100%; padding:7px 10px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; outline:none;">
-                      <option value="">⚡ Best Available UPI Offer (Auto Apply)</option>
+                      <option value="">Best Available UPI Offer (Auto Apply)</option>
                     </select>
                     <div id="chk-upi-applied-offer-text" style="margin-top:6px; font-size:11px; font-weight:700; color:#16a34a;"></div>
                   </div>
@@ -17077,7 +17148,7 @@ function buildCheckoutModal() {
                       <div>
                         <label for="chk-card-bank-select" style="display:block; font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px;">Select Card Bank:</label>
                         <select id="chk-card-bank-select" style="width:100%; padding:7px 8px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; outline:none;">
-                          <option value="">⚡ Best Available Bank Offer (Auto Apply)</option>
+                          <option value="">Best Available Bank Offer (Auto Apply)</option>
                         </select>
                       </div>
                       <div>
@@ -17779,7 +17850,7 @@ function buildCheckoutModal() {
       }
 
       const currentVal = cardBankSelect.value;
-      cardBankSelect.innerHTML = '<option value="">⚡ Best Available Bank Offer (Auto Apply)</option>';
+      cardBankSelect.innerHTML = '<option value="">Best Available Bank Offer (Auto Apply)</option>';
 
       bankList.forEach(b => {
         const promo = getPaymentMethodPromo('Card', subtotal, b.id, 'all', '');
@@ -17817,7 +17888,7 @@ function buildCheckoutModal() {
       ];
 
       const currentVal = upiAppSelect.value;
-      upiAppSelect.innerHTML = '<option value="">⚡ Best Available UPI Offer (Auto Apply)</option>';
+      upiAppSelect.innerHTML = '<option value="">Best Available UPI Offer (Auto Apply)</option>';
 
       standardApps.forEach(a => {
         const promo = getPaymentMethodPromo('UPI', subtotal, '', 'all', a.id);
@@ -17870,7 +17941,7 @@ function buildCheckoutModal() {
         const discText = cardPromo.discountType === 'flat'
           ? `₹${cardPromo.discountValue} FLAT OFF`
           : `${cardPromo.discountValue}% OFF`;
-        cardBadge.textContent = `🏷️ ${discText} (${totals.selectedBank || cardPromo.bankPartner || 'All Cards'})`;
+        cardBadge.textContent = `${discText} (${totals.selectedBank || cardPromo.bankPartner || 'All Cards'})`;
         cardBadge.style.display = 'inline-block';
         if (cardDesc) cardDesc.textContent = `Special bank card discount of ${discText} will be applied automatically on Debit & Credit cards!`;
       } else {
@@ -17887,7 +17958,7 @@ function buildCheckoutModal() {
         const discText = upiPromo.discountType === 'flat'
           ? `₹${upiPromo.discountValue} FLAT OFF`
           : `${upiPromo.discountValue}% OFF`;
-        upiBadge.textContent = `🏷️ ${discText} (${totals.selectedUpiApp || upiPromo.upiProvider || 'All UPI'})`;
+        upiBadge.textContent = `${discText} (${totals.selectedUpiApp || upiPromo.upiProvider || 'All UPI'})`;
         upiBadge.style.display = 'inline-block';
         if (upiDesc) upiDesc.textContent = `Special UPI discount of ${discText} will be applied automatically!`;
       } else {
@@ -18596,6 +18667,20 @@ function initPageRouter() {
         products = products.filter(p => p.category?.toLowerCase() === category.toLowerCase());
       }
 
+      // Filter products for Today's Deals window if active
+      const isDealsWindow = window._currentDedicatedPageArgs && (window._currentDedicatedPageArgs.type === 'deal' || window._currentDedicatedPageArgs.type === 'deals');
+      if (isDealsWindow) {
+        let overrides = {};
+        try { overrides = JSON.parse(localStorage.getItem('xmart_product_overrides') || '{}'); } catch {}
+        products = products.filter(p => {
+          const id = String(p._id || p.id);
+          if (overrides[id] && overrides[id].isDeal !== undefined) {
+            return Boolean(overrides[id].isDeal);
+          }
+          return p.isDeal !== undefined ? Boolean(p.isDeal) : (Array.isArray(p.tags) && p.tags.includes('deal'));
+        });
+      }
+
       // Apply Price Filter
       if (filters.priceVal === 'under-1000') products = products.filter(p => (p.finalPrice || p.price) < 1000);
       else if (filters.priceVal === '1000-5000') products = products.filter(p => (p.finalPrice || p.price) >= 1000 && (p.finalPrice || p.price) <= 5000);
@@ -18721,18 +18806,667 @@ function initPageRouter() {
     }
   };
 
+  // ── Seller & Admin: Manage Per-Product Offers & Subsidy Modal (Admin-Grade Window) ──
+    function openSellerManageOffersModal(prod) {
+      window.openSellerManageOffersModal = openSellerManageOffersModal;
+      if (!Auth.getUser()) {
+        showToast('Seller Access Denied: Please sign in to manage seller offers.', 'warn', 4500);
+        window._openAuth?.('signin');
+        return;
+      }
+      if (!prod) return;
+      const id = String(prod._id || prod.id || '');
+
+      // Retrieve full product from memory if available
+      let targetProd = prod;
+      if (typeof Store !== 'undefined' && Array.isArray(Store.allProducts)) {
+        const found = Store.allProducts.find(p => String(p._id || p.id) === id);
+        if (found) targetProd = found;
+      }
+
+      // Load saved offers
+      let savedOffers = Array.isArray(targetProd.offers) ? [...targetProd.offers] : [];
+      try {
+        const localOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${id || targetProd.name}`) || 'null');
+        if (Array.isArray(localOffers) && localOffers.length > 0) savedOffers = localOffers;
+      } catch { }
+      savedOffers = savedOffers.filter(o => o.code !== 'ADMIN_DEAL' && o.tag !== 'Admin Deal');
+
+      const modalId = 'admin-manage-offers-modal';
+      document.getElementById(modalId)?.remove();
+
+      const pPrice = targetProd.finalPrice !== undefined ? targetProd.finalPrice : (targetProd.price || 0);
+      const pOrig = targetProd.originalPrice || Math.round(pPrice * 1.3);
+      const pDisc = targetProd.discount || (pOrig > pPrice ? Math.round(((pOrig - pPrice) / pOrig) * 100) : 0);
+      const pImg = (targetProd.images && targetProd.images[0]) || targetProd.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120';
+      const pSeller = targetProd.sellerStoreName || targetProd.sellerEmail || targetProd.brand || 'Verified Seller';
+
+      // Helper to compute metrics
+      function computeMetrics(offers) {
+        const totalCount = offers.length;
+        let totalSubsidy = 0;
+        let maxSaving = 0;
+        offers.forEach(o => {
+          const val = Number(o.subsidyAmount) || Number(o.discountValue) || 500;
+          if (o.fundedBy === 'Platform Subsidy' || !o.fundedBy || (o.tag && o.tag.includes('Bank'))) {
+            totalSubsidy += val;
+          } else if (o.fundedBy === 'Shared') {
+            totalSubsidy += Math.round(val / 2);
+          }
+          if (val > maxSaving) maxSaving = val;
+        });
+        return { totalCount, totalSubsidy, maxSaving };
+      }
+
+      // Helper to build active offers table HTML
+      function buildOffersTableHtml(offers) {
+        if (!offers || offers.length === 0) {
+          return `
+            <tr>
+              <td colspan="6" style="text-align:center; padding:32px 16px; color:#64748b; font-size:13px;">
+                <div style="font-size:28px; margin-bottom:6px;"></div>
+                <strong>No promotional offers active on this SKU yet.</strong>
+                <p style="margin:4px 0 0; font-size:12px; color:#94a3b8;">Use the campaign creator below to publish bank offers, UPI discounts, or merchant deals.</p>
+              </td>
+            </tr>
+          `;
+        }
+        return offers.map((o, idx) => {
+          const tagClass = (o.tag && o.tag.includes('Bank')) ? 'blue' : ((o.tag && o.tag.includes('UPI')) ? 'green' : 'orange');
+          const isPlatform = o.fundedBy === 'Platform Subsidy' || !o.fundedBy || (o.tag && o.tag.includes('Bank'));
+          const isShared = o.fundedBy === 'Shared';
+          const subsidyBadge = isPlatform
+            ? `<span class="ap-badge green" style="font-size:11px; font-weight:700;">Platform Subsidized</span>`
+            : (isShared
+              ? `<span class="ap-badge purple" style="font-size:11px; font-weight:700;">Shared (50/50)</span>`
+              : `<span class="ap-badge gray" style="font-size:11px; font-weight:700;">Seller Funded</span>`);
+
+          const repayAmount = isPlatform
+            ? `+${Currency.format(Number(o.subsidyAmount) || Number(o.discountValue) || 500)}`
+            : (isShared
+              ? `+${Currency.format(Math.round((Number(o.subsidyAmount) || Number(o.discountValue) || 500) / 2))}`
+              : `₹0 (Seller Borne)`);
+
+          return `
+            <tr data-offer-idx="${idx}" class="sku-offer-row">
+              <td class="sku-td-info">
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span class="ap-badge ${tagClass}" style="font-size:11px;">${o.tag || 'Bank Offer'}</span>
+                    <strong style="color:#0f172a; font-size:13px;">${o.partnerName || o.partner || 'Partner Bank'}</strong>
+                  </div>
+                  <span style="font-size:12px; color:#475569;">${o.text || o.description || o.amountOff || ''}</span>
+                </div>
+              </td>
+              <td class="sku-td-discount">
+                <span class="ap-badge orange" style="font-size:12px; font-weight:800;">
+                  ${o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? o.discountValue + '%' : '₹' + o.discountValue) : 'Active')}
+                </span>
+              </td>
+              <td class="sku-td-min-order" style="font-size:12.5px; color:#334155;">
+                <span class="sku-td-mobile-label">Min Order: </span>
+                <span>${o.minOrder ? Currency.format(o.minOrder) : 'No Min'}</span>
+              </td>
+              <td class="sku-td-funding">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                    <span class="sku-td-mobile-label">Funding: </span>
+                    ${subsidyBadge}
+                  </div>
+                  <span style="font-size:10.5px; color:#64748b;">${isPlatform ? 'Repaid in Escrow Payout' : (isShared ? 'Platform pays 50%' : 'Merchant absorbs discount')}</span>
+                </div>
+              </td>
+              <td class="sku-td-repay">
+                <span class="sku-td-mobile-label">Repayment: </span>
+                <strong style="color:${isPlatform || isShared ? '#059669' : '#64748b'}; font-size:13px;">
+                  ${repayAmount}
+                </strong>
+              </td>
+              <td class="sku-td-action">
+                <button type="button" class="ap-btn danger btn-remove-sku-offer" data-idx="${idx}" style="padding:4px 10px; font-size:11px;">
+                  Remove
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const metrics = computeMetrics(savedOffers);
+
+      const modalHtml = `
+        <div class="sku-offers-window-container" style="font-size:13.5px; color:#0f172a; display:flex; flex-direction:column; gap:18px;">
+          <!-- Product Context Header Card (Admin Design) -->
+          <div class="sku-offers-product-card" style="background:#ffffff; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+            <div class="sku-offers-prod-inner" style="display:flex; align-items:center; gap:14px;">
+              <img src="${pImg}" alt="${targetProd.name}" style="width:54px; height:54px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; flex-shrink:0;">
+              <div class="sku-offers-prod-details" style="min-width:0; flex:1;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <strong style="font-size:14.5px; color:#0f172a; word-break:break-word;">${targetProd.name}</strong>
+                  <span class="ap-badge gray" style="font-size:11px;">SKU: ${id.slice(-6).toUpperCase()}</span>
+                  <span class="ap-badge blue" style="font-size:11px;">${targetProd.category || 'General'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px; font-size:12px; color:#64748b; flex-wrap:wrap;">
+                  <span>Seller: <strong style="color:#0f172a;">${pSeller}</strong></span>
+                  <span>•</span>
+                  <span>Selling Price: <strong style="color:#059669;">${Currency.format(pPrice)}</strong></span>
+                  ${pOrig > pPrice ? `<span style="text-decoration:line-through;">${Currency.format(pOrig)}</span>` : ''}
+                  ${pDisc > 0 ? `<span class="ap-badge green" style="padding:1px 5px; font-size:10.5px;">${pDisc}% OFF</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <span class="ap-super-badge" id="modal-offer-count-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; font-size:12px; padding:6px 12px; white-space:nowrap;">
+              ${metrics.totalCount} Active Offers
+            </span>
+          </div>
+
+          <!-- KPI Metric Chips Strip -->
+          <div class="ap-stat-grid" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin:0;">
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Active Product Offers</span>
+                <span class="ap-stat-card-val" id="metric-active-count" style="color:#2563eb; font-size:20px;">${metrics.totalCount}</span>
+              </div>
+              <div class="ap-stat-card-icon blue" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </div>
+            </div>
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Platform Subsidy (Seller Repayment)</span>
+                <span class="ap-stat-card-val" id="metric-subsidy-total" style="color:#059669; font-size:20px;">${Currency.format(metrics.totalSubsidy)}</span>
+              </div>
+              <div class="ap-stat-card-icon green" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Maximum Customer Saving</span>
+                <span class="ap-stat-card-val" id="metric-max-saving" style="color:#d97706; font-size:20px;">${Currency.format(metrics.maxSaving)}</span>
+              </div>
+              <div class="ap-stat-card-icon amber" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Offers & Subsidy Repayment Table -->
+          <div class="ap-table-card sku-offers-table-card" style="margin:0; box-shadow:none; border:1.5px solid #e2e8f0; border-radius:10px;">
+            <div class="sku-offers-table-header" style="padding:12px 16px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13.5px; color:#0f172a;">Active Offers &amp; Disbursement Repayment Terms</strong>
+              <small style="color:#64748b; font-size:11.5px;">Platform subsidies are automatically credited to seller during bank disbursement</small>
+            </div>
+            <div class="ap-table-wrap">
+              <table class="ap-table">
+                <thead>
+                  <tr>
+                    <th>Offer / Campaign</th>
+                    <th>Discount</th>
+                    <th>Min Order</th>
+                    <th>Funding &amp; Subsidy Terms</th>
+                    <th>Repayment to Seller</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="sku-offers-table-tbody">
+                  ${buildOffersTableHtml(savedOffers)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Create New Promotional Offer Form (Admin Layout) -->
+          <div class="ap-form-card sku-offers-form-card" style="margin:0; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:16px;">
+            <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              <span>+ Create New Promotional Offer</span>
+              <span class="ap-badge blue" style="font-size:10px;">Instant Storefront Sync</span>
+            </h3>
+
+            <div class="ap-form-row sku-offers-form-row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  OFFER CATEGORY <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <select id="sku-offer-category" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:600; color:#0f172a;">
+                  <option value="Credit Card Offer" selected>Credit Card Offer</option>
+                  <option value="Debit Card Offer">Debit Card Offer</option>
+                  <option value="Instant UPI">Instant UPI Offer</option>
+                  <option value="No Cost EMI">No Cost EMI Offer</option>
+                  <option value="Cashback">Cashback / Rewards</option>
+                  <option value="Special Promotion">Special Discount Voucher</option>
+                </select>
+              </div>
+
+              <div class="ap-form-group">
+                <label id="sku-partner-code-label" style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  BANK / UPI NAME <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <!-- Bank / UPI Dropdown -->
+                <div id="sku-bank-upi-dropdown" style="position:relative; width:100%;">
+                  <button type="button" id="sku-bank-upi-trigger" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1.5px solid #cbd5e1; border-radius:7px; background:#ffffff; display:flex; align-items:center; justify-content:space-between; cursor:pointer; min-height:38px;">
+                    <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                      <img id="sku-selected-logo" src="assets/banks/sbi.svg" alt="Logo" style="width:24px; height:18px; object-fit:contain; border-radius:3px; background:#fff; border:1px solid #e2e8f0; padding:1px 2px; flex-shrink:0;">
+                      <span id="sku-selected-name" style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">State Bank of India (SBI)</span>
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div id="sku-bank-upi-menu" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; max-height:230px; overflow-y:auto; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.12); z-index:1000; padding:4px;">
+                    <!-- Options injected dynamically based on category -->
+                  </div>
+                  <input type="hidden" id="sku-offer-partner" value="">
+                  <input type="hidden" id="sku-offer-logo" value="">
+                </div>
+                <!-- Voucher Coupon Code Box (Shown when Special Discount Voucher is selected) -->
+                <div id="sku-coupon-code-wrap" style="display:none; width:100%;">
+                  <div style="position:relative; width:100%;">
+                    <input type="text" id="sku-offer-coupon-code" placeholder="e.g. SAVE500, FESTIVE20" style="width:100%; box-sizing:border-box; padding:8px 10px 8px 34px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0f172a;" value="">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none;"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="#64748b"/></svg>
+                  </div>
+                  <small style="color:#64748b; font-size:10.5px; margin-top:3px; display:block;">Buyers can enter this code at checkout to claim the discount.</small>
+                </div>
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  DISCOUNT VALUE &amp; TYPE <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <div style="display:flex; gap:6px;">
+                  <input type="number" id="sku-offer-val" value="" placeholder="e.g. 500" min="1" max="50000" style="flex:1; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:700;">
+                  <select id="sku-offer-val-type" style="width:80px; box-sizing:border-box; padding:8px 6px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12px;">
+                    <option value="flat">₹ Flat</option>
+                    <option value="percent">% Off</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="ap-form-row sku-offers-form-row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  MIN ORDER VALUE (₹) <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <input type="number" id="sku-offer-min-order" value="" placeholder="e.g. 1000" min="0" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  DISBURSEMENT SUBSIDY FUNDING <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <select id="sku-offer-funding" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:600; color:#166534;">
+                  <option value="Platform Subsidy" selected>Platform Subsidy (100% Repaid to Seller in Disbursement)</option>
+                  <option value="Seller Borne">Seller Borne (Merchant Absorbed)</option>
+                  <option value="Shared">Shared 50% Platform / 50% Seller</option>
+                </select>
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  EXPIRY DATE <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <input type="date" id="sku-offer-expiry" value="${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}" required style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              </div>
+            </div>
+
+            <div class="ap-form-group" style="margin-bottom:14px;">
+              <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                OFFER HEADLINE / DESCRIPTION <span style="color:#ef4444; font-weight:900;">*</span>
+              </label>
+              <input type="text" id="sku-offer-headline" value="" placeholder="e.g. Flat ₹500 off on Bank Credit Cards" style="width:100%; box-sizing:border-box; padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              <small style="color:#64748b; font-size:11px; margin-top:3px; display:block;">This text is displayed on the product page offer card and in checkout Step 3.</small>
+            </div>
+
+            <div class="sku-offers-actions-row" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:20px; flex-wrap:wrap;">
+              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#001f3f !important; color:#ffffff !important; border:1.5px solid #001f3f !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+                <span>Publish Offer &amp; Sync Subsidy</span>
+              </button>
+              <button type="button" class="ap-btn" id="sku-offers-modal-close-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; color:#000000 !important; background:#ffffff !important; border:1.5px solid #94a3b8 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('admin-manage-offers-modal')?.remove();
+      const offersModal = createModal('admin-manage-offers-modal', {
+        title: `Manage SKU Offers & Escrow Subsidies — ${targetProd.name}`,
+        large: true,
+        bodyHtml: modalHtml
+      });
+      offersModal._open();
+
+      const modalEl = document.getElementById('admin-manage-offers-modal');
+      const catEl = modalEl.querySelector('#sku-offer-category');
+      const triggerEl = modalEl.querySelector('#sku-bank-upi-trigger');
+      const menuEl = modalEl.querySelector('#sku-bank-upi-menu');
+      const selectedLogoEl = modalEl.querySelector('#sku-selected-logo');
+      const selectedNameEl = modalEl.querySelector('#sku-selected-name');
+      const couponWrap = modalEl.querySelector('#sku-coupon-code-wrap');
+      const couponInput = modalEl.querySelector('#sku-offer-coupon-code');
+      const bankDropdownWrap = modalEl.querySelector('#sku-bank-upi-dropdown');
+      const partnerCodeLabel = modalEl.querySelector('#sku-partner-code-label');
+      const partnerInput = modalEl.querySelector('#sku-offer-partner');
+      const logoInput = modalEl.querySelector('#sku-offer-logo');
+      const valEl = modalEl.querySelector('#sku-offer-val');
+      const valTypeEl = modalEl.querySelector('#sku-offer-val-type');
+      const headlineEl = modalEl.querySelector('#sku-offer-headline');
+
+      // Helper to populate Bank / UPI Dropdown based on chosen category
+      function populateBankUpiDropdown(cat) {
+        const isUpiCategory = cat === 'Instant UPI' || cat === 'Cashback';
+        const items = isUpiCategory ? (typeof UPI_PROVIDERS !== 'undefined' ? UPI_PROVIDERS : [
+          { shortName: 'Google Pay', name: 'Google Pay UPI', logo: 'assets/upi/gpay.svg' },
+          { shortName: 'PhonePe', name: 'PhonePe UPI', logo: 'assets/upi/phonepe.svg' },
+          { shortName: 'Paytm UPI', name: 'Paytm UPI', logo: 'assets/upi/paytm.svg' },
+          { shortName: 'BHIM UPI', name: 'BHIM Government UPI', logo: 'assets/upi/bhim.svg' },
+          { shortName: 'Cred Pay', name: 'Cred UPI', logo: 'assets/upi/cred.svg' },
+          { shortName: 'Amazon Pay', name: 'Amazon Pay UPI', logo: 'assets/upi/amazonpay.svg' }
+        ]) : (typeof INDIAN_BANKS !== 'undefined' ? INDIAN_BANKS : [
+          { shortName: 'SBI Bank', name: 'State Bank of India (SBI)', logo: 'assets/banks/sbi.svg' },
+          { shortName: 'HDFC Bank', name: 'HDFC Bank', logo: 'assets/banks/hdfc.svg' },
+          { shortName: 'ICICI Bank', name: 'ICICI Bank', logo: 'assets/banks/icici.svg' },
+          { shortName: 'Axis Bank', name: 'Axis Bank', logo: 'assets/banks/axis.svg' },
+          { shortName: 'Kotak Bank', name: 'Kotak Mahindra Bank', logo: 'assets/banks/kotak.svg' },
+          { shortName: 'Bank of Baroda', name: 'Bank of Baroda', logo: 'assets/banks/bob.svg' },
+          { shortName: 'Punjab National Bank', name: 'Punjab National Bank (PNB)', logo: 'assets/banks/pnb.svg' },
+          { shortName: 'Canara Bank', name: 'Canara Bank', logo: 'assets/banks/canara.svg' },
+          { shortName: 'Indian Bank', name: 'Indian Bank', logo: 'assets/banks/indian.svg' },
+          { shortName: 'IndusInd Bank', name: 'IndusInd Bank', logo: 'assets/banks/indusind.svg' },
+          { shortName: 'IDFC FIRST Bank', name: 'IDFC FIRST Bank', logo: 'assets/banks/idfc.svg' },
+          { shortName: 'Federal Bank', name: 'Federal Bank', logo: 'assets/banks/federal.svg' },
+          { shortName: 'Yes Bank', name: 'Yes Bank', logo: 'assets/banks/yesbank.svg' }
+        ]);
+        const currentPartner = partnerInput ? partnerInput.value : '';
+
+        // Auto-select first matching item or default to first
+        const match = items.find(i => i.shortName === currentPartner || i.name === currentPartner) || items[0];
+        if (partnerInput) partnerInput.value = match.shortName;
+        if (logoInput) logoInput.value = match.logo;
+        if (selectedLogoEl) {
+          selectedLogoEl.src = match.logo;
+          selectedLogoEl.onerror = function() { this.src = isUpiCategory ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg'; };
+        }
+        if (selectedNameEl) selectedNameEl.textContent = match.name;
+
+        if (!menuEl) return;
+        menuEl.innerHTML = items.map(item => {
+          const isSelected = item.shortName === match.shortName;
+          const fallbackLogo = isUpiCategory ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg';
+          return `
+            <div class="sku-bank-upi-option" data-shortname="${item.shortName}" data-fullname="${item.name}" data-logo="${item.logo}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 10px; border-radius:6px; cursor:pointer; background:${isSelected ? '#eff6ff' : 'transparent'}; transition:background 0.15s ease;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${item.logo}" onerror="this.onerror=null; this.src='${fallbackLogo}';" alt="${item.name}" style="width:24px; height:18px; object-fit:contain; border-radius:3px; background:#fff; border:1px solid #e2e8f0; padding:1px 2px; flex-shrink:0;">
+                <span style="font-size:12.5px; font-weight:600; color:${isSelected ? '#1d4ed8' : '#0f172a'};">${item.name}</span>
+              </div>
+              ${isSelected ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        // Wire option clicks
+        menuEl.querySelectorAll('.sku-bank-upi-option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sName = opt.dataset.shortname;
+            const fName = opt.dataset.fullname;
+            const lSrc = opt.dataset.logo;
+            if (partnerInput) partnerInput.value = sName;
+            if (logoInput) logoInput.value = lSrc;
+            if (selectedLogoEl) selectedLogoEl.src = lSrc;
+            if (selectedNameEl) selectedNameEl.textContent = fName;
+            menuEl.style.display = 'none';
+            syncHeadline();
+          });
+        });
+      }
+
+      // Dropdown toggle
+      triggerEl?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menuEl) {
+          menuEl.style.display = menuEl.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!bankDropdownWrap?.contains(e.target) && menuEl) {
+          menuEl.style.display = 'none';
+        }
+      });
+
+      // Category mode change sync
+      function syncCategoryMode() {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const isVoucher = cat === 'Special Promotion';
+        if (isVoucher) {
+          if (couponWrap) couponWrap.style.display = 'block';
+          if (bankDropdownWrap) bankDropdownWrap.style.display = 'none';
+          if (partnerCodeLabel) partnerCodeLabel.innerHTML = 'COUPON PROMO CODE <span style="color:#ef4444; font-weight:900;">*</span>';
+        } else {
+          if (couponWrap) couponWrap.style.display = 'none';
+          if (bankDropdownWrap) bankDropdownWrap.style.display = 'block';
+          if (partnerCodeLabel) partnerCodeLabel.innerHTML = (cat === 'Instant UPI' || cat === 'Cashback' ? 'UPI PROVIDER <span style="color:#ef4444; font-weight:900;">*</span>' : 'BANK NAME <span style="color:#ef4444; font-weight:900;">*</span>');
+          populateBankUpiDropdown(cat);
+        }
+        syncHeadline();
+      }
+
+      function syncHeadline() {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const isVoucher = cat === 'Special Promotion';
+        const pName = isVoucher ? (couponInput?.value?.trim() || 'Voucher') : (partnerInput?.value?.trim() || 'Bank');
+        const v = valEl?.value || '500';
+        const vt = valTypeEl?.value || 'flat';
+        const discStr = vt === 'percent' ? `${v}% off` : `Flat ₹${v} off`;
+        if (headlineEl) {
+          if (isVoucher) {
+            headlineEl.value = `${discStr} with coupon code ${pName.toUpperCase()}`;
+          } else {
+            headlineEl.value = `${discStr} on ${pName} ${cat.replace(' Offer', '')}s`;
+          }
+        }
+      }
+
+      catEl?.addEventListener('change', () => {
+        syncCategoryMode();
+      });
+      couponInput?.addEventListener('input', syncHeadline);
+      valEl?.addEventListener('input', syncHeadline);
+      valTypeEl?.addEventListener('change', syncHeadline);
+
+      // Initial population of dropdown and headline
+      populateBankUpiDropdown(catEl?.value || 'Credit Card Offer');
+      syncCategoryMode();
+
+      // Helper to refresh table & KPI chips in modal
+      function refreshModalUI() {
+        const tbody = modalEl.querySelector('#sku-offers-table-tbody');
+        if (tbody) tbody.innerHTML = buildOffersTableHtml(savedOffers);
+        const m = computeMetrics(savedOffers);
+        const cntEl = modalEl.querySelector('#metric-active-count');
+        const subEl = modalEl.querySelector('#metric-subsidy-total');
+        const maxEl = modalEl.querySelector('#metric-max-saving');
+        const badgeEl = modalEl.querySelector('#modal-offer-count-badge');
+        if (cntEl) cntEl.textContent = m.totalCount;
+        if (subEl) subEl.textContent = Currency.format(m.totalSubsidy);
+        if (maxEl) maxEl.textContent = Currency.format(m.maxSaving);
+        if (badgeEl) badgeEl.textContent = `${m.totalCount} Active Offers`;
+
+        // Wire remove buttons
+        tbody.querySelectorAll('.btn-remove-sku-offer').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.dataset.idx, 10);
+            if (isNaN(idx)) return;
+            const removed = savedOffers.splice(idx, 1);
+            await persistOffers();
+            refreshModalUI();
+            showToast(`Offer removed from "${targetProd.name}".`, 'info', 2500);
+          });
+        });
+      }
+
+      // Helper to persist offers to MongoDB Atlas & Local Storage
+      async function persistOffers() {
+        targetProd.offers = savedOffers;
+        if (typeof Store !== 'undefined' && Array.isArray(Store.allProducts)) {
+          const spIdx = Store.allProducts.findIndex(p => String(p._id || p.id) === id);
+          if (spIdx !== -1) Store.allProducts[spIdx].offers = savedOffers;
+        }
+        try {
+          localStorage.setItem(`xmart_custom_offers_${id || targetProd.name}`, JSON.stringify(savedOffers));
+        } catch { }
+
+        // Sync with backend API
+        try {
+          const token = Store.token || localStorage.getItem('xmart_token');
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          await Promise.all([
+            fetch(`${API_BASE}/products/${id}`, {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ offers: savedOffers })
+            }).catch(() => {}),
+            fetch(`${API_BASE}/admin/offers`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ productId: id, offers: savedOffers })
+            }).catch(() => {})
+          ]);
+        } catch (e) { }
+
+        // Update product row in seller/admin table if present
+        const row = document.querySelector(`tr[data-prod-id="${id}"]`);
+        if (row) {
+          const offersBtn = row.querySelector('.offers-btn');
+          if (offersBtn) {
+            offersBtn.innerHTML = `Offers ${savedOffers.length > 0 ? `<span style="background:#ffffff; color:#ff5722; font-size:10.5px; border-radius:10px; padding:1px 6px; font-weight:900; margin-left:3px;">${savedOffers.length}</span>` : ''}`;
+          }
+          const promoCell = row.querySelector('.btn-toggle-deal')?.parentElement || row.querySelector('td:nth-child(5)');
+          if (promoCell) {
+            let tickerWrap = promoCell.querySelector('.seller-promo-ticker-wrap');
+            if (savedOffers.length > 0) {
+              if (!tickerWrap) {
+                tickerWrap = document.createElement('div');
+                tickerWrap.className = 'seller-promo-ticker-wrap';
+                tickerWrap.setAttribute('data-prod-ticker', id);
+                tickerWrap.setAttribute('title', `Click to view & manage offers for ${targetProd.name}`);
+                promoCell.appendChild(tickerWrap);
+              }
+              tickerWrap.onclick = (e) => {
+                e.stopPropagation();
+                openSellerManageOffersModal(targetProd);
+              };
+              tickerWrap.innerHTML = savedOffers.map((o, oIdx) => `
+                <div class="seller-promo-ticker-slide ${oIdx === 0 ? 'is-active' : ''}" data-slide-idx="${oIdx}">
+                  <img src="${o.logoSrc || (o.type === 'upi' ? 'assets/upi/upi.svg' : 'assets/banks/allbanks.svg')}" alt="" style="width:18px; height:13px; object-fit:contain; border-radius:2px; flex-shrink:0;">
+                  <span class="seller-ticker-partner">${o.partnerName || o.partner || o.tag || 'Offer'}:</span>
+                  <span class="seller-ticker-val">${o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? o.discountValue + '% off' : 'Flat ₹' + o.discountValue + ' off') : 'Active')}</span>
+                </div>
+              `).join('');
+              if (typeof initSellerPromoTickers === 'function') initSellerPromoTickers();
+            } else if (tickerWrap) {
+              tickerWrap.remove();
+            }
+          }
+        }
+
+        // Live refresh of storefront and drawer voucher tickers
+        if (typeof window.refreshVoucherCouponsTicker === 'function') {
+          window.refreshVoucherCouponsTicker();
+        }
+      }
+
+      // Initial wire of remove buttons
+      refreshModalUI();
+
+      // Close button handler
+      modalEl.querySelector('#sku-offers-modal-close-btn')?.addEventListener('click', () => {
+        offersModal._close();
+      });
+
+      // Publish New Offer Click Handler (placed above Close button in DOM)
+      modalEl.querySelector('#sku-offers-modal-publish-btn')?.addEventListener('click', async () => {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const partner = partnerInput?.value?.trim() || 'Bank';
+        const couponCode = couponInput?.value?.trim().toUpperCase() || '';
+        const logo = logoInput?.value || 'assets/banks/sbi.svg';
+        const val = Number(valEl?.value || 0);
+        const discType = valTypeEl?.value || 'flat';
+        const minOrder = Number(modalEl.querySelector('#sku-offer-min-order')?.value || 0);
+        const funding = modalEl.querySelector('#sku-offer-funding')?.value || 'Platform Subsidy';
+        const expiry = modalEl.querySelector('#sku-offer-expiry')?.value;
+        const headline = headlineEl?.value?.trim() || `${partner} Offer`;
+
+        const isVoucher = cat === 'Special Promotion';
+        const isCredit = cat === 'Credit Card Offer';
+
+        if (isVoucher && !couponCode) {
+          showToast('Please enter a valid coupon promo code (e.g. SAVE500).', 'warn');
+          couponInput?.focus();
+          return;
+        }
+
+        if (!val || val <= 0) {
+          showToast('Please specify a positive discount value.', 'warn');
+          valEl?.focus();
+          return;
+        }
+
+        const newOfferItem = {
+          tag: isVoucher ? 'Special Voucher' : (cat === 'Instant UPI' ? 'Instant UPI' : (cat === 'Cashback' ? 'Cashback' : (cat === 'No Cost EMI' ? 'No Cost EMI' : (cat === 'Debit Card Offer' ? 'Debit Card Offer' : 'Bank Offer')))),
+          type: isVoucher ? 'voucher' : (cat === 'Instant UPI' ? 'upi' : 'bank'),
+          partnerName: isVoucher ? couponCode : partner,
+          couponCode: isVoucher ? couponCode : '',
+          logoSrc: logo,
+          amountOff: discType === 'percent' ? `${val}% off` : `Flat ₹${val} off`,
+          discountType: discType,
+          discountValue: val,
+          minOrder: minOrder,
+          fundedBy: funding,
+          subsidyAmount: funding === 'Platform Subsidy' ? val : (funding === 'Shared' ? Math.round(val / 2) : 0),
+          text: headline,
+          validUntil: expiry ? new Date(expiry) : null
+        };
+
+        savedOffers.push(newOfferItem);
+        await persistOffers();
+        refreshModalUI();
+
+        showToast(`✓ "${headline}" published! Platform subsidy recorded for seller repayment.`, 'success', 4000);
+      });
+    }
+    window.openSellerManageOffersModal = openSellerManageOffersModal;
+
   // ── 3. COMMERCIAL SELLER CENTRAL & MERCHANT PORTAL WINDOW ──
   window._openSellerPortal = (push = true) => {
+    // 🔒 SECURITY GATE: Block unauthenticated users from viewing Seller Central & Merchant Studio
+    const activeUser = Auth.getUser();
+    const activeToken = Auth.getToken();
+    if (!activeUser || !activeToken) {
+      if (typeof mainContent !== 'undefined' && mainContent) mainContent.style.display = 'block';
+      if (typeof pageContainer !== 'undefined' && pageContainer) pageContainer.style.display = 'none';
+      try {
+        history.replaceState({ route: 'home', type: 'home' }, '', '#home');
+      } catch (e) {}
+      showToast('Seller Access Denied: Please sign in with your seller account to access Seller Central.', 'warn', 4500);
+      if (typeof window._openAuth === 'function') {
+        window._openAuth('signin');
+      }
+      return;
+    }
+
     mainContent.style.display = 'none';
     pageContainer.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (push) pushRoute('#seller', { type: 'seller' });
 
-    // Retrieve active seller profile from storage or store
+    // Retrieve active seller profile for the authenticated user
     let currentSeller = null;
     try {
-      currentSeller = JSON.parse(localStorage.getItem('xmart_seller_profile') || 'null');
+      currentSeller = JSON.parse(localStorage.getItem(`xmart_seller_profile_${activeUser.email}`) || localStorage.getItem('xmart_seller_profile') || 'null');
     } catch { currentSeller = null; }
 
     if (!currentSeller && Store.user && Store.user.sellerProfile) {
@@ -18741,31 +19475,34 @@ function initPageRouter() {
 
     // Auto-initialize active merchant profile for registered user if none exists
     if (!currentSeller) {
-      const activeUser = Auth.getUser();
-      if (activeUser) {
-        currentSeller = {
-          bizName: `${activeUser.name || 'Merchant'} Enterprises Ltd`,
-          storeName: `${activeUser.name || 'Official'} Store`,
-          email: activeUser.email || 'seller@xmart.com',
-          phone: activeUser.phone || '9876543210',
-          gstin: '27AABCT3518Q1ZV',
-          pincode: '110001',
-          bankAcc: '918273645012',
-          bankIfsc: 'HDFC0001234',
-          isVerified: true
-        };
-        try { localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller)); } catch (e) { }
-      }
+      currentSeller = {
+        bizName: `${activeUser.name || 'Merchant'} Enterprises Ltd`,
+        storeName: `${activeUser.name || 'Official'} Store`,
+        email: activeUser.email || 'seller@xmart.com',
+        phone: activeUser.phone || '9876543210',
+        gstin: '27AABCT3518Q1ZV',
+        pincode: '110001',
+        bankAcc: '918273645012',
+        bankIfsc: 'HDFC0001234',
+        isVerified: true
+      };
+      try {
+        localStorage.setItem(`xmart_seller_profile_${activeUser.email}`, JSON.stringify(currentSeller));
+        localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller));
+      } catch (e) { }
     } else {
       // Ensure all verification flags exist
       if (!currentSeller.isVerified) currentSeller.isVerified = true;
-      if (!currentSeller.bizName) currentSeller.bizName = 'Official Retail Enterprise';
-      if (!currentSeller.storeName) currentSeller.storeName = 'X-Mart Store';
+      if (!currentSeller.bizName) currentSeller.bizName = `${activeUser.name || 'Merchant'} Enterprises Ltd`;
+      if (!currentSeller.storeName) currentSeller.storeName = `${activeUser.name || 'Official'} Store`;
       if (!currentSeller.gstin) currentSeller.gstin = '27AABCT3518Q1ZV';
       if (!currentSeller.bankAcc) currentSeller.bankAcc = '918273645012';
       if (!currentSeller.bankIfsc) currentSeller.bankIfsc = 'HDFC0001234';
       if (!currentSeller.pincode) currentSeller.pincode = '110001';
-      try { localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller)); } catch (e) { }
+      try {
+        localStorage.setItem(`xmart_seller_profile_${activeUser.email}`, JSON.stringify(currentSeller));
+        localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller));
+      } catch (e) { }
     }
 
     // Strict eligibility check: All necessary business, GSTIN & bank details must be present AND storefront must be active
@@ -18793,17 +19530,28 @@ function initPageRouter() {
           <div class="seller-hero-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
             <div class="seller-hero-info">
               <div class="seller-hero-badges">
-                ${isEligible ? `
-                  <span class="seller-pill-badge verified" style="background:rgba(52,211,153,0.2);color:#ffffff;border:1px solid rgba(52,211,153,0.5);">Verified Merchant: <strong>${currentSeller.storeName}</strong> (GST: ${currentSeller.gstin})</span>
-                  <span class="seller-pill-badge" style="background:rgba(255,255,255,0.15);color:#ffffff;border:1px solid rgba(255,255,255,0.3);">Eligible to List Products</span>
-                ` : currentSeller?.isActive === false ? `
-                  <span class="seller-pill-badge" style="background:rgba(239,68,68,0.3);color:#ffffff;border:1.5px solid #ef4444;">● Storefront Deactivated — Listing Paused</span>
-                  <span class="seller-pill-badge" style="background:rgba(245,158,11,0.25);color:#ffffff;border:1px solid #f59e0b;">Not Eligible to List Products</span>
-                ` : `
-                  <span class="seller-pill-badge" style="background:rgba(245,158,11,0.25);color:#ffffff;border:1px solid #f59e0b;">Merchant Profile &amp; Bank Security Protected</span>
-                  <span class="seller-pill-badge" style="background:rgba(239,68,68,0.25);color:#ffffff;border:1px solid #ef4444;">Verification Required</span>
-                `}
-                <span class="seller-pill-badge prime" style="background:rgba(255,255,255,0.15);color:#ffffff;border:1px solid rgba(255,255,255,0.3);">Express FBX Logistics</span>
+                <div class="seller-hero-badge-row-1">
+                  ${isEligible ? `
+                    <span class="seller-pill-badge verified seller-badge-primary-status" style="background:rgba(52,211,153,0.2);color:#ffffff;border:1px solid rgba(52,211,153,0.5);">
+                      <span class="seller-badge-line1">Verified Merchant: <strong>${currentSeller.storeName}</strong></span>
+                      <span class="seller-badge-line2">GST: ${currentSeller.gstin}</span>
+                    </span>
+                  ` : currentSeller?.isActive === false ? `
+                    <span class="seller-pill-badge seller-badge-primary-status" style="background:rgba(239,68,68,0.3);color:#ffffff;border:1.5px solid #ef4444;">● Storefront Deactivated — Listing Paused</span>
+                  ` : `
+                    <span class="seller-pill-badge seller-badge-primary-status" style="background:rgba(245,158,11,0.25);color:#ffffff;border:1px solid #f59e0b;">Merchant Profile &amp; Bank Security Protected</span>
+                  `}
+                </div>
+                <div class="seller-hero-badge-row-2">
+                  ${isEligible ? `
+                    <span class="seller-pill-badge" style="background:rgba(255,255,255,0.15);color:#ffffff;border:1px solid rgba(255,255,255,0.3);">Eligible to List Products</span>
+                  ` : currentSeller?.isActive === false ? `
+                    <span class="seller-pill-badge" style="background:rgba(245,158,11,0.25);color:#ffffff;border:1px solid #f59e0b;">Not Eligible to List Products</span>
+                  ` : `
+                    <span class="seller-pill-badge" style="background:rgba(239,68,68,0.25);color:#ffffff;border:1px solid #ef4444;">Verification Required</span>
+                  `}
+                  <span class="seller-pill-badge prime" style="background:rgba(255,255,255,0.15);color:#ffffff;border:1px solid rgba(255,255,255,0.3);">Express FBX Logistics</span>
+                </div>
               </div>
               <h1>Seller Central &amp; Merchant Studio</h1>
               <p>${isEligible
@@ -18813,9 +19561,9 @@ function initPageRouter() {
             </div>
 
             <!-- ── Top-Right Account Status Tag ── -->
-            <div style="flex-shrink:0;margin-top:4px;">
+            <div class="seller-hero-status-wrap">
               ${isEligible ? `
-                <span style="
+                <span class="seller-hero-status-badge" style="
                   display:inline-flex;align-items:center;gap:7px;
                   background:rgba(22,163,74,0.18);
                   color:#4ade80;
@@ -18830,7 +19578,7 @@ function initPageRouter() {
                   Storefront Active
                 </span>
               ` : currentSeller?.isActive === false ? `
-                <span style="
+                <span class="seller-hero-status-badge" style="
                   display:inline-flex;align-items:center;gap:7px;
                   background:rgba(245,158,11,0.18);
                   color:#fbbf24;
@@ -18839,12 +19587,13 @@ function initPageRouter() {
                   font-size:12.5px;font-weight:800;
                   letter-spacing:0.03em;
                   backdrop-filter:blur(6px);
+                  box-shadow:0 0 12px rgba(245,158,11,0.25);
                 ">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span>
                   Storefront Paused
                 </span>
               ` : `
-                <span style="
+                <span class="seller-hero-status-badge" style="
                   display:inline-flex;align-items:center;gap:7px;
                   background:rgba(239,68,68,0.15);
                   color:#f87171;
@@ -18992,7 +19741,7 @@ function initPageRouter() {
                     <div class="seller-grid-form">
                       <div class="form-group span-2">
                         <label for="prod-name"><span>Product Title / Name *</span> <span id="prod-name-counter" style="font-size:11px;color:#94a3b8;">0/120</span></label>
-                        <input type="text" id="prod-name" class="seller-input" maxlength="120" required>
+                        <input type="text" id="prod-name" class="seller-input" maxlength="120" placeholder="e.g. Samsung Galaxy S24 Ultra 12GB RAM 256GB Titanium Black" required>
                         <small class="form-hint">Include Brand, Model, Key Feature, Color/Size for maximum search discovery.</small>
                       </div>
 
@@ -19029,13 +19778,13 @@ function initPageRouter() {
                     <div class="seller-grid-form">
                       <div class="form-group">
                         <label for="prod-price">Selling Price (₹) *</label>
-                        <input type="number" id="prod-price" class="seller-input" min="1" step="1" required>
+                        <input type="number" id="prod-price" class="seller-input" min="1" step="1" placeholder="e.g. 79999" required>
                         <small class="form-hint">Final customer checkout price.</small>
                       </div>
 
                       <div class="form-group">
                         <label for="prod-mrp">MRP / Original Price (₹) *</label>
-                        <input type="number" id="prod-mrp" class="seller-input" min="1" step="1" required>
+                        <input type="number" id="prod-mrp" class="seller-input" min="1" step="1" placeholder="e.g. 99999" required>
                         <div id="prod-calc-discount" class="discount-calc-pill">Discount: 0% OFF</div>
                       </div>
                     </div>
@@ -19049,7 +19798,7 @@ function initPageRouter() {
                     <div class="seller-grid-form">
                       <div class="form-group">
                         <label for="prod-stock">Available Stock Units *</label>
-                        <input type="number" id="prod-stock" class="seller-input" min="1" required>
+                        <input type="number" id="prod-stock" class="seller-input" min="1" placeholder="e.g. 50" required>
                       </div>
 
                       <div class="form-group">
@@ -19076,7 +19825,7 @@ function initPageRouter() {
                     <div class="seller-section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                       <div>
                         <h3 style="margin:0;font-size:16px;color:#0f172a;">4. Visual Media &amp; Image Assets</h3>
-                        <p style="margin:4px 0 0;font-size:12.5px;color:#64748b;">
+                        <p style="margin:6px 0 0;font-size:12.5px;color:#64748b;line-height:1.6;word-break:break-word;">
                           Multi-angle gallery supported (Up to 5 photos). All <strong>5 perspective view images are compulsory</strong> to power the FRONT, LEFT, TOP, RIGHT, and BACK 360° explorer.
                         </p>
                       </div>
@@ -19085,7 +19834,7 @@ function initPageRouter() {
                       </span>
                     </div>
 
-                    <!-- Quick Presets matching Image 1 -->
+                    <!-- Quick Presets matching Image 2 -->
                     <div class="seller-img-presets" style="margin-bottom:16px;background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                       <span class="preset-label" style="font-size:12px;font-weight:800;color:#0f172a;">Quick Presets:</span>
                       <button type="button" class="img-chip-btn-all" data-preset="headphones" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Headphones</button>
@@ -19093,7 +19842,7 @@ function initPageRouter() {
                       <button type="button" class="img-chip-btn-all" data-preset="shoes" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Shoes</button>
                       <button type="button" class="img-chip-btn-all" data-preset="smartphone" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Smartphone</button>
                       <button type="button" class="img-chip-btn-all" data-preset="coffee" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Coffee</button>
-                      <button type="button" class="img-chip-btn-all" data-preset="skincare" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Skincare</button>
+                      <button type="button" class="img-chip-btn-all" data-preset="winners" style="cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#1e293b;transition:all 0.15s ease;">Winners</button>
                     </div>
 
                     <!-- 5 Compulsory Tagged Angle Slots -->
@@ -19102,10 +19851,9 @@ function initPageRouter() {
                       <div class="seller-view-slot" data-angle="front" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                           <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="view-tag-badge front" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: FRONT</span>
+                            <span class="view-tag-badge front" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;">FRONT</span>
                             <strong style="font-size:13px;color:#0f172a;">Primary Product Image URL (Cover / Front View) <span style="color:#dc2626;">*</span></strong>
                           </div>
-                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Main storefront thumbnail &amp; 0° front view • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
                         </div>
                         <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
                           <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
@@ -19120,10 +19868,9 @@ function initPageRouter() {
                       <div class="seller-view-slot" data-angle="left" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                           <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="view-tag-badge left" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: LEFT</span>
+                            <span class="view-tag-badge left" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;">LEFT</span>
                             <strong style="font-size:13px;color:#0f172a;">Left Side View Image URL <span style="color:#dc2626;">*</span></strong>
                           </div>
-                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on LEFT tab in 360° viewer (90°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
                         </div>
                         <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
                           <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
@@ -19134,14 +19881,13 @@ function initPageRouter() {
                         </div>
                       </div>
 
-                      <!-- 3. Top View (TOP) - User highlighted requirement -->
-                      <div class="seller-view-slot" data-angle="top" style="background:#fdf4ff;padding:12px 14px;border-radius:10px;border:1.5px solid #e879f9;transition:border-color 0.2s ease;">
+                      <!-- 3. Top View (TOP) -->
+                      <div class="seller-view-slot" data-angle="top" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                           <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="view-tag-badge top" style="background:#7e22ce;color:#ffffff;border:1px solid #6b21a8;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: TOP</span>
+                            <span class="view-tag-badge top" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;">TOP</span>
                             <strong style="font-size:13px;color:#0f172a;">Top View Image URL (Birds-Eye Angle) <span style="color:#dc2626;">*</span></strong>
                           </div>
-                          <span style="font-size:11.5px;color:#7e22ce;font-weight:700;">★ Displayed on the TOP view tab in customer account viewer • <span style="color:#dc2626;">Compulsory</span></span>
                         </div>
                         <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
                           <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
@@ -19156,10 +19902,9 @@ function initPageRouter() {
                       <div class="seller-view-slot" data-angle="right" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                           <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="view-tag-badge right" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: RIGHT</span>
+                            <span class="view-tag-badge right" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;">RIGHT</span>
                             <strong style="font-size:13px;color:#0f172a;">Right Side View Image URL <span style="color:#dc2626;">*</span></strong>
                           </div>
-                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on RIGHT tab in 360° viewer (270°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
                         </div>
                         <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
                           <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
@@ -19174,10 +19919,9 @@ function initPageRouter() {
                       <div class="seller-view-slot" data-angle="back" style="background:#f8fafc;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;transition:border-color 0.2s ease;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                           <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="view-tag-badge back" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;letter-spacing:0.5px;">TAG: BACK</span>
+                            <span class="view-tag-badge back" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;">BACK</span>
                             <strong style="font-size:13px;color:#0f172a;">Back View Image URL (Rear Angle) <span style="color:#dc2626;">*</span></strong>
                           </div>
-                          <span style="font-size:11.5px;color:#64748b;font-weight:600;">Shown on BACK tab in 360° viewer (360°) • <span style="color:#dc2626;font-weight:700;">Compulsory</span></span>
                         </div>
                         <div class="image-input-wrap" style="display:flex;gap:8px;align-items:center;">
                           <div class="angle-thumb-box" style="width:44px;height:44px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
@@ -19193,12 +19937,12 @@ function initPageRouter() {
                     <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cbd5e1;">
                       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                         <div>
-                          <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photos &amp; Gallery</strong>
+                          <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photo &amp; Gallery</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add side view, back view, top angle, and detail shots for 360° product exploration.</small>
                         </div>
-                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#ecfdf5;color:#047857;border:1.5px solid #6ee7b7;font-weight:800;font-size:12.5px;padding:6px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                          <span style="font-size:15px;line-height:1;">+</span>
-                          <span>Add More Photos</span>
+                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;font-weight:800;font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
+                          <span style="color:#ffffff !important;font-size:14px;font-weight:900;">+</span>
+                          <span style="color:#ffffff !important;font-weight:800;">Add Photo Slot</span>
                         </button>
                       </div>
                       <div id="seller-extra-photos-container" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
@@ -19224,9 +19968,9 @@ function initPageRouter() {
                           <strong style="font-size:13px;color:#0f172a;display:block;">Product Specifications Table (Customer View)</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add custom specs like RAM, Storage, Color, Display, Processor, Material, etc. to appear directly on the specifications card.</small>
                         </div>
-                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;font-weight:800;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12.5px;">
-                          <span style="font-size:16px;font-weight:900;line-height:1;">+</span>
-                          <span>Add Specification</span>
+                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;font-weight:800;cursor:pointer;padding:7px 16px;border-radius:6px;font-size:12.5px;">
+                          <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
+                          <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
                         </button>
                       </div>
 
@@ -19254,25 +19998,25 @@ function initPageRouter() {
                     <div class="seller-grid-form">
                       <div class="form-group span-2">
                         <label for="prod-offer-bank">Bank Offer Promotion</label>
-                        <input type="text" id="prod-offer-bank" class="seller-input">
+                        <input type="text" id="prod-offer-bank" class="seller-input" placeholder="e.g. Flat ₹2,000 off on SBI Credit & Debit Cards">
                         <small class="form-hint">Displayed under Special Offers with 'Bank Offer' tag.</small>
                       </div>
 
                       <div class="form-group span-2">
                         <label for="prod-offer-emi">No Cost EMI Offer</label>
-                        <input type="text" id="prod-offer-emi" class="seller-input">
+                        <input type="text" id="prod-offer-emi" class="seller-input" placeholder="e.g. No Cost EMI from ₹3,333/month on 24 months">
                         <small class="form-hint">Displayed with 'No Cost EMI' tag.</small>
                       </div>
 
                       <div class="form-group span-2">
                         <label for="prod-offer-cashback">Cashback / Rewards Offer</label>
-                        <input type="text" id="prod-offer-cashback" class="seller-input">
+                        <input type="text" id="prod-offer-cashback" class="seller-input" placeholder="e.g. 5% Unlimited Cashback via Amazon Pay ICICI Card">
                         <small class="form-hint">Displayed with 'Cashback' tag.</small>
                       </div>
 
                       <div class="form-group span-2">
                         <label for="prod-offer-special">Custom Seller Promotion (Optional)</label>
-                        <input type="text" id="prod-offer-special" class="seller-input">
+                        <input type="text" id="prod-offer-special" class="seller-input" placeholder="e.g. Buy 2 Get 10% Extra Off — Limited Stock Offer">
                         <small class="form-hint">Extra promotional offer visible on product detail page.</small>
                       </div>
                     </div>
@@ -19290,29 +20034,39 @@ function initPageRouter() {
               <!-- Right Sticky Preview Column -->
               <div class="seller-preview-sidebar">
                 <!-- Live Storefront Customer Preview Card -->
-                <div class="storefront-live-card">
+                <!-- Live Storefront Customer Preview Card -->
+                <div class="storefront-live-card" tabindex="0" title="Use Left (←) / Right (→) Arrow keys to preview all product angle images">
                   <div class="storefront-live-badge">
                     <span>LIVE STORE PREVIEW</span>
                     <small style="color:#64748b;font-weight:700;">Customer View</small>
                   </div>
-                  <div class="storefront-card-img-wrap">
-                    <img id="live-preview-img" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700" alt="Live Preview">
+                  <div class="storefront-card-img-wrap" id="live-preview-img-container" style="position:relative;width:100%;height:200px;background:#f8fafc;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                    <button type="button" class="live-preview-arrow-btn prev" id="live-preview-arrow-prev" aria-label="Previous Image (←)" title="Previous image (← Arrow)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <img id="live-preview-img" src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800" alt="Live Preview" style="width:100%;height:100%;object-fit:contain;transition:opacity 0.2s ease;">
+                    <button type="button" class="live-preview-arrow-btn next" id="live-preview-arrow-next" aria-label="Next Image (→)" title="Next image (→ Arrow)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    <span id="live-preview-tag-indicator" class="view-tag-badge" style="position:absolute;bottom:8px;left:8px;z-index:11;background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10px;font-weight:900;padding:2px 8px;border-radius:5px;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.35);">FRONT</span>
+                    <span id="live-preview-counter" style="position:absolute;bottom:8px;right:8px;z-index:11;background:rgba(15,23,42,0.75);color:#ffffff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;backdrop-filter:blur(4px);">1 / 5</span>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:#0878f9;text-transform:uppercase;margin-bottom:4px;" id="live-preview-brand">${currentSeller?.storeName || 'X-Mart Verified'}</div>
-                  <h4 class="storefront-card-title" id="live-preview-title">Sony WH-1000XM5 Wireless Noise Canceling Headphones</h4>
+                  <div id="live-preview-dots" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:-2px;margin-bottom:10px;min-height:10px;"></div>
+                  <div style="font-size:11px;font-weight:800;color:#0878f9;text-transform:uppercase;margin-bottom:4px;" id="live-preview-brand">${(currentSeller?.storeName || 'Apex Tech Store').toUpperCase()}</div>
+                  <h4 class="storefront-card-title" id="live-preview-title">FAST TRACK 1198</h4>
                   <div class="storefront-card-rating">
-                    <span>★★★★★</span>
-                    <span style="color:#64748b;font-size:11px;">(4.9) • 120+ sold</span>
+                    <span style="color:#b8860b;">★★★★★</span>
+                    <span style="color:#64748b;font-size:11px;">(4.9) • 5.8k sold</span>
                   </div>
                   <div class="storefront-card-price-row">
-                    <span class="price" id="live-preview-price">₹24,999</span>
-                    <span class="mrp" id="live-preview-mrp">₹34,990</span>
-                    <span class="disc" id="live-preview-disc">28% OFF</span>
+                    <span class="price" id="live-preview-price">₹0</span>
+                    <span class="mrp" id="live-preview-mrp">₹0</span>
+                    <span class="disc" id="live-preview-disc">0% OFF</span>
                   </div>
                   <div style="font-size:11.5px;color:#059669;font-weight:700;margin-bottom:12px;">
-                    ✓ FREE Express Delivery by Tomorrow
+                    ✓ Free express delivery by tomorrow
                   </div>
-                  <button type="button" class="storefront-sim-btn" disabled>Add to Cart</button>
+                  <button type="button" class="storefront-sim-btn" disabled>ADD TO CART</button>
                 </div>
 
                 <!-- Merchant Pro Tips Card -->
@@ -19711,27 +20465,23 @@ function initPageRouter() {
         </div>
       </div>
     `;
-
     // ── Wire Tabs Switching ──
     const tabBtns = pageContainer.querySelectorAll('.seller-tab-btn');
     const tabContents = pageContainer.querySelectorAll('.seller-tab-content');
 
     tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
         const tab = btn.dataset.tab;
-
-        // Gating: If seller hasn't created an account yet, all feature tabs are locked
-        if (!isEligible && tab !== 'account') {
-          showToast('Please create your seller account first to access this feature.', 'warn', 3500);
-          pageContainer.querySelector('#tab-btn-account')?.click();
-          return;
-        }
 
         tabBtns.forEach(b => b.classList.remove('is-active'));
         tabContents.forEach(c => c.classList.remove('is-active'));
 
         btn.classList.add('is-active');
-        pageContainer.querySelector(`#seller-tab-${tab}`)?.classList.add('is-active');
+        const targetContent = pageContainer.querySelector(`#seller-tab-${tab}`);
+        if (targetContent) {
+          targetContent.classList.add('is-active');
+        }
 
         if (tab === 'inventory') {
           loadSellerInventory();
@@ -19758,16 +20508,165 @@ function initPageRouter() {
     const prevMrp = pageContainer.querySelector('#live-preview-mrp');
     const prevDisc = pageContainer.querySelector('#live-preview-disc');
 
+    // ── Live Store Preview Multi-Image Slider State & Handlers ──
+    let livePreviewImages = [];
+    let currentLivePreviewIndex = 0;
+
+    const collectLivePreviewImages = () => {
+      const items = [];
+      const slots = [
+        { id: 'prod-img', tag: 'FRONT' },
+        { id: 'prod-img-left', tag: 'LEFT' },
+        { id: 'prod-img-top', tag: 'TOP' },
+        { id: 'prod-img-right', tag: 'RIGHT' },
+        { id: 'prod-img-back', tag: 'BACK' }
+      ];
+
+      slots.forEach(s => {
+        const inp = pageContainer.querySelector(`#${s.id}`);
+        const u = inp?.value?.trim();
+        if (u) {
+          items.push({ url: u, tag: s.tag, inputId: s.id });
+        }
+      });
+
+      // Include extra photos from dynamic rows
+      const extraRows = pageContainer.querySelectorAll('.seller-extra-photo-row');
+      extraRows.forEach((r, idx) => {
+        const extraInp = r.querySelector('.seller-extra-photo-input');
+        const extraTagSel = r.querySelector('.seller-extra-photo-tag');
+        const u = extraInp?.value?.trim();
+        if (u) {
+          const t = extraTagSel?.value?.toUpperCase() || `PHOTO ${idx + 1}`;
+          items.push({ url: u, tag: t, inputEl: extraInp });
+        }
+      });
+
+      if (items.length === 0) {
+        items.push({
+          url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+          tag: 'FRONT'
+        });
+      }
+
+      return items;
+    };
+
+    const renderLivePreviewGallery = (targetIdx = currentLivePreviewIndex, smooth = true) => {
+      livePreviewImages = collectLivePreviewImages();
+      if (targetIdx >= livePreviewImages.length) targetIdx = 0;
+      if (targetIdx < 0) targetIdx = Math.max(0, livePreviewImages.length - 1);
+      currentLivePreviewIndex = targetIdx;
+
+      const cur = livePreviewImages[currentLivePreviewIndex];
+      if (!cur) return;
+
+      if (prevImg) {
+        if (smooth) {
+          prevImg.style.opacity = '0.35';
+          setTimeout(() => {
+            prevImg.src = cur.url;
+            prevImg.style.opacity = '1';
+          }, 80);
+        } else {
+          prevImg.src = cur.url;
+        }
+      }
+
+      const tagBadge = pageContainer.querySelector('#live-preview-tag-indicator');
+      if (tagBadge) tagBadge.textContent = cur.tag;
+
+      const counterBadge = pageContainer.querySelector('#live-preview-counter');
+      if (counterBadge) counterBadge.textContent = `${currentLivePreviewIndex + 1} / ${livePreviewImages.length}`;
+
+      // Interactive Dots
+      const dotsWrap = pageContainer.querySelector('#live-preview-dots');
+      if (dotsWrap) {
+        dotsWrap.innerHTML = '';
+        if (livePreviewImages.length > 1) {
+          livePreviewImages.forEach((imgItem, idx) => {
+            const dot = document.createElement('button');
+            dot.type = 'button';
+            dot.className = `live-preview-dot ${idx === currentLivePreviewIndex ? 'is-active' : ''}`;
+            dot.title = `${imgItem.tag} (${idx + 1}/${livePreviewImages.length})`;
+            dot.setAttribute('aria-label', `Angle ${imgItem.tag}`);
+            dot.addEventListener('click', (e) => {
+              e.preventDefault();
+              renderLivePreviewGallery(idx);
+            });
+            dotsWrap.appendChild(dot);
+          });
+        }
+      }
+
+      const prevArrow = pageContainer.querySelector('#live-preview-arrow-prev');
+      const nextArrow = pageContainer.querySelector('#live-preview-arrow-next');
+      if (prevArrow && nextArrow) {
+        const hasMultiple = livePreviewImages.length > 1;
+        prevArrow.style.display = hasMultiple ? 'flex' : 'none';
+        nextArrow.style.display = hasMultiple ? 'flex' : 'none';
+      }
+    };
+
+    const nextLivePreviewImage = () => {
+      livePreviewImages = collectLivePreviewImages();
+      if (livePreviewImages.length <= 1) return;
+      const nxt = (currentLivePreviewIndex + 1) % livePreviewImages.length;
+      renderLivePreviewGallery(nxt);
+    };
+
+    const prevLivePreviewImage = () => {
+      livePreviewImages = collectLivePreviewImages();
+      if (livePreviewImages.length <= 1) return;
+      const prv = (currentLivePreviewIndex - 1 + livePreviewImages.length) % livePreviewImages.length;
+      renderLivePreviewGallery(prv);
+    };
+
+    // Wire arrow buttons
+    const prevArrowBtn = pageContainer.querySelector('#live-preview-arrow-prev');
+    const nextArrowBtn = pageContainer.querySelector('#live-preview-arrow-next');
+    prevArrowBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      prevLivePreviewImage();
+    });
+    nextArrowBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      nextLivePreviewImage();
+    });
+
+    // Wire Keyboard Arrow Keys (Left & Right)
+    const onKeyArrowNavigation = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+
+      if (e.key === 'ArrowLeft') {
+        if (!isInput || activeEl?.closest('.storefront-live-card')) {
+          if (document.querySelector('.storefront-live-card')) {
+            e.preventDefault();
+            prevLivePreviewImage();
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (!isInput || activeEl?.closest('.storefront-live-card')) {
+          if (document.querySelector('.storefront-live-card')) {
+            e.preventDefault();
+            nextLivePreviewImage();
+          }
+        }
+      }
+    };
+    window.removeEventListener('keydown', window._sellerLivePreviewKeyNav);
+    window._sellerLivePreviewKeyNav = onKeyArrowNavigation;
+    window.addEventListener('keydown', onKeyArrowNavigation);
+
     const updateLivePreview = () => {
-      const name = nameInput?.value?.trim() || 'Your Product Title';
-      const brand = brandInput?.value?.trim() || currentSeller?.storeName || 'Your Store';
+      const name = nameInput?.value?.trim() || 'FAST TRACK 1198';
+      const brand = brandInput?.value?.trim() || (currentSeller?.storeName ? currentSeller.storeName.toUpperCase() : 'APEX TECH STORE');
       const p = parseFloat(priceInput?.value) || 0;
       const m = parseFloat(mrpInput?.value) || 0;
-      const img = imgInput?.value?.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500';
 
       if (prevTitle) prevTitle.textContent = name;
-      if (prevBrand) prevBrand.textContent = brand;
-      if (prevImg) prevImg.src = img;
+      if (prevBrand) prevBrand.textContent = brand.toUpperCase();
       if (prevPrice) prevPrice.textContent = p > 0 ? `₹${p.toLocaleString('en-IN')}` : '₹0';
       if (prevMrp) prevMrp.textContent = m > 0 ? `₹${m.toLocaleString('en-IN')}` : '₹0';
 
@@ -19783,6 +20682,8 @@ function initPageRouter() {
         if (discBadge) discBadge.textContent = 'Discount: 0% OFF';
         if (prevDisc) prevDisc.textContent = '0% OFF';
       }
+
+      renderLivePreviewGallery();
     };
 
     if (nameInput) {
@@ -19843,6 +20744,14 @@ function initPageRouter() {
         top: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=800',
         right: 'https://images.unsplash.com/photo-1556228852-6d35a585d566?w=800',
         back: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800'
+      },
+      winners: {
+        name: 'Winners',
+        front: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+        left: 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800',
+        top: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800',
+        right: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=800',
+        back: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800'
       }
     };
 
@@ -19877,14 +20786,16 @@ function initPageRouter() {
 
     angleInputsList.forEach(inp => {
       if (!inp) return;
-      inp.addEventListener('input', () => {
+      const onAngleChanged = () => {
         updateSlotThumb(inp);
-        if (inp.id === 'prod-img') updateLivePreview();
-      });
-      inp.addEventListener('change', () => {
-        updateSlotThumb(inp);
-        if (inp.id === 'prod-img') updateLivePreview();
-      });
+        const tag = inp.dataset.angle?.toUpperCase();
+        livePreviewImages = collectLivePreviewImages();
+        const idx = livePreviewImages.findIndex(it => it.tag === tag);
+        renderLivePreviewGallery(idx !== -1 ? idx : currentLivePreviewIndex);
+      };
+
+      inp.addEventListener('input', onAngleChanged);
+      inp.addEventListener('change', onAngleChanged);
 
       // Wire direct clipboard paste support on each angle input
       inp.addEventListener('paste', (e) => {
@@ -19898,8 +20809,7 @@ function initPageRouter() {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                   inp.value = event.target.result;
-                  updateSlotThumb(inp);
-                  if (inp.id === 'prod-img') updateLivePreview();
+                  onAngleChanged();
                   showToast(`✓ ${inp.dataset.angle?.toUpperCase() || 'Angle'} view image pasted from clipboard!`, 'success', 2500);
                 };
                 reader.readAsDataURL(file);
@@ -19908,10 +20818,7 @@ function initPageRouter() {
             }
           }
         }
-        setTimeout(() => {
-          updateSlotThumb(inp);
-          if (inp.id === 'prod-img') updateLivePreview();
-        }, 50);
+        setTimeout(onAngleChanged, 50);
       });
     });
 
@@ -19935,8 +20842,8 @@ function initPageRouter() {
         if (bInp) bInp.value = pSet.back;
 
         [fInp, lInp, tInp, rInp, bInp].forEach(updateSlotThumb);
-        updateLivePreview();
-        showToast(`✓ Loaded 5 compulsory perspective view images for ${pSet.name}!`, 'success', 2500);
+        renderLivePreviewGallery(0);
+        showToast(`✓ Loaded 5 perspective view images for ${pSet.name}!`, 'success', 2500);
       });
     });
 
@@ -19952,16 +20859,24 @@ function initPageRouter() {
           inp?.focus();
           return;
         }
+
+        // Instantly switch the Live Store Preview to this angle
+        livePreviewImages = collectLivePreviewImages();
+        const targetIdx = livePreviewImages.findIndex(it => it.tag === tag);
+        if (targetIdx !== -1) {
+          renderLivePreviewGallery(targetIdx);
+        }
+
         showInfoModal(
-          `${tag} View Preview (Tag: ${tag})`,
+          `${tag} View Preview`,
           `<div style="text-align:center;padding:8px 4px;">
             <div style="margin-bottom:10px;">
-              <span style="background:#f3e8ff;color:#7e22ce;border:1px solid #d8b4fe;font-size:12px;font-weight:900;padding:3px 12px;border-radius:20px;">TAG: ${tag}</span>
+              <span class="view-tag-badge" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:12px;font-weight:900;padding:3px 12px;border-radius:6px;letter-spacing:0.5px;">${tag}</span>
             </div>
             <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
-              <img src="${url}" alt="${tag} View Preview" style="max-width:100%;max-height:380px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:24px;font-size:13.5px;font-weight:700;\\'>⚠️ Image preview failed to load.<br><span style=\\'font-weight:400;color:#64748b;font-size:12px;\\'>Please check the URL or try pasting an image directly from your clipboard (Ctrl+V).</span></div>';">
+              <img src="${url}" alt="${tag} View Preview" style="max-width:100%;max-height:380px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:24px;font-size:13.5px;font-weight:700;\\'>Image preview failed to load.<br><span style=\\'font-weight:400;color:#64748b;font-size:12px;\\'>Please check the URL or try pasting an image directly from your clipboard (Ctrl+V).</span></div>';">
             </div>
-            <div style="margin-top:12px;font-size:12.5px;color:#64748b;">This image will appear under the <strong>${tag}</strong> tab in the customer account product viewer.</div>
+            <div style="margin-top:12px;font-size:12.5px;color:#64748b;">This angle is now previewed on your <strong>Live Store Preview</strong> card and under the <strong>${tag}</strong> tab for customers.</div>
           </div>`
         );
       });
@@ -20031,24 +20946,13 @@ function initPageRouter() {
       row.className = 'seller-extra-photo-row';
       row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;flex-wrap:wrap;';
       row.innerHTML = `
-        <span class="extra-photo-lbl" style="font-size:12px;font-weight:800;color:#475569;min-width:85px;">Extra #${newIdx}:</span>
-        <select class="seller-select seller-extra-photo-tag" style="width:130px;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;">
-          <option value="DETAIL">TAG: DETAIL</option>
-          <option value="TOP">TAG: TOP</option>
-          <option value="FRONT">TAG: FRONT</option>
-          <option value="LEFT">TAG: LEFT</option>
-          <option value="RIGHT">TAG: RIGHT</option>
-          <option value="BACK">TAG: BACK</option>
-          <option value="ANGLED">TAG: ANGLED</option>
-          <option value="PACKAGING">TAG: PACKAGING</option>
-          <option value="IN-HAND">TAG: IN-HAND</option>
-          <option value="OTHER">TAG: OTHER</option>
-        </select>
+        <span class="extra-photo-lbl" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:5px 10px;border-radius:6px;letter-spacing:0.5px;display:inline-flex;align-items:center;white-space:nowrap;">Extra Photo #${newIdx}:</span>
+        <input type="text" class="seller-input seller-extra-photo-tag" placeholder="Tag (e.g. IN-HAND)" value="IN-HAND" style="width:145px;font-size:12px;font-weight:800;padding:7px 10px;border-radius:6px;border:1.5px solid #cbd5e1;background:#ffffff;color:#0f172a;text-transform:uppercase;" />
         <div class="angle-thumb-box extra-thumb-box" style="width:38px;height:38px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
           <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
         </div>
         <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:200px;font-size:12.5px;padding:7px 10px;" />
-        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
+        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
         <button type="button" class="btn-remove-extra-photo" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove this photo">✕</button>
       `;
       extraPhotosContainer.appendChild(row);
@@ -20056,6 +20960,7 @@ function initPageRouter() {
       const extraInput = row.querySelector('.seller-extra-photo-input');
       const extraThumbBox = row.querySelector('.extra-thumb-box');
       const extraThumbImg = extraThumbBox?.querySelector('img');
+      const extraTagInput = row.querySelector('.seller-extra-photo-tag');
 
       const updateExtraThumb = () => {
         const u = extraInput?.value.trim();
@@ -20067,14 +20972,16 @@ function initPageRouter() {
             extraThumbBox.style.display = 'none';
           }
         }
+        renderLivePreviewGallery();
       };
 
       extraInput?.addEventListener('input', updateExtraThumb);
       extraInput?.addEventListener('change', updateExtraThumb);
 
-      // If user sets extra photo tag to TOP and fills it, also update the main TOP slot if empty
-      row.querySelector('.seller-extra-photo-tag')?.addEventListener('change', (e) => {
-        if (e.target.value === 'TOP' && extraInput?.value.trim()) {
+      // When user modifies the tag, dynamically update live preview and link TOP if applicable
+      const onTagChanged = () => {
+        const tagVal = extraTagInput?.value?.trim().toUpperCase();
+        if (tagVal === 'TOP' && extraInput?.value.trim()) {
           const topInp = pageContainer.querySelector('#prod-img-top');
           if (topInp && !topInp.value.trim()) {
             topInp.value = extraInput.value.trim();
@@ -20082,7 +20989,11 @@ function initPageRouter() {
             showToast('✓ Linked as primary Top View image (TAG: TOP)', 'info', 2000);
           }
         }
-      });
+        renderLivePreviewGallery();
+      };
+
+      extraTagInput?.addEventListener('input', onTagChanged);
+      extraTagInput?.addEventListener('change', onTagChanged);
 
       extraInput?.addEventListener('paste', (e) => {
         const items = (e.clipboardData || window.clipboardData)?.items;
@@ -20114,12 +21025,20 @@ function initPageRouter() {
           showToast('Please enter an image URL or paste an image first', 'warn');
           return;
         }
+
+        // Switch live preview gallery to this extra photo
+        livePreviewImages = collectLivePreviewImages();
+        const targetIdx = livePreviewImages.findIndex(it => it.inputEl === extraInput || it.url === url);
+        if (targetIdx !== -1) {
+          renderLivePreviewGallery(targetIdx);
+        }
+
         showInfoModal(
           `Extra Photo Preview (${tag})`,
           `<div style="text-align:center;padding:8px 4px;">
-            <div style="margin-bottom:8px;"><span style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:900;padding:3px 10px;border-radius:12px;">TAG: ${tag}</span></div>
+            <div style="margin-bottom:8px;"><span class="view-tag-badge" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:12px;font-weight:900;padding:3px 12px;border-radius:6px;letter-spacing:0.5px;">${tag}</span></div>
             <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1.5px dashed #cbd5e1;display:inline-block;max-width:100%;box-sizing:border-box;">
-              <img src="${url}" alt="Preview" style="max-width:100%;max-height:360px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>⚠️ Image preview failed to load.</div>';">
+              <img src="${url}" alt="Preview" style="max-width:100%;max-height:360px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>Image preview failed to load.</div>';">
             </div>
           </div>`
         );
@@ -20128,6 +21047,7 @@ function initPageRouter() {
       row.querySelector('.btn-remove-extra-photo')?.addEventListener('click', () => {
         row.remove();
         updatePhotoLabels();
+        renderLivePreviewGallery();
       });
 
       updatePhotoLabels();
@@ -20178,7 +21098,7 @@ function initPageRouter() {
 
       const missingAngle = angleInputs.find(a => !a.el?.value.trim());
       if (missingAngle) {
-        showToast(`⚠️ ${missingAngle.name} is compulsory! Please provide all 5 perspective view images.`, 'error', 4500);
+        showToast(`${missingAngle.name} is compulsory! Please provide all 5 perspective view images.`, 'error', 4500);
         angleInputs.forEach(a => {
           if (a.el) a.el.style.borderColor = !a.el.value.trim() ? '#dc2626' : '#cbd5e1';
         });
@@ -20408,7 +21328,7 @@ function initPageRouter() {
           Store.user.sellerProfile = profilePayload;
         }
 
-        showToast(`🎉 Fresh Seller Account "${storeName}" created successfully! All features unlocked with a clean slate.`, 'success', 5000);
+        showToast(`Fresh Seller Account "${storeName}" created successfully! All features unlocked with a clean slate.`, 'success', 5000);
 
         // Re-open seller portal with full eligibility unlocked
         window._openSellerPortal();
@@ -20494,7 +21414,7 @@ function initPageRouter() {
           tbody.innerHTML = `
             <tr>
               <td colspan="6" style="text-align:center;padding:48px 20px;color:#64748b;">
-                <div style="font-size:36px;margin-bottom:8px;">📦</div>
+                
                 <strong style="font-size:16px;color:#0f172a;display:block;margin-bottom:4px;">No products in your store yet</strong>
                 <p style="font-size:13.5px;max-width:440px;margin:0 auto 16px;line-height:1.5;color:#64748b;">Your inventory is completely clean and ready. Click the button below to publish your first item to X-Mart.</p>
                 <button type="button" class="com-btn-primary" onclick="document.getElementById('tab-btn-list').click()">+ List Your First Product</button>
@@ -20511,7 +21431,17 @@ function initPageRouter() {
           const orig = item.originalPrice || Math.round(p * 1.3);
           const disc = item.discount !== undefined ? item.discount : 10;
           const stock = item.stock !== undefined ? item.stock : 25;
-          const isDeal = (item.tags && item.tags.includes('deal')) || disc >= 35 || item.isFeatured;
+          const isDeal = item.isDeal !== undefined
+            ? Boolean(item.isDeal)
+            : (Array.isArray(item.tags) ? item.tags.includes('deal') : false);
+
+          // Retrieve saved offers for product
+          let savedOffers = Array.isArray(item.offers) ? [...item.offers] : [];
+          try {
+            const localOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${id || item.name}`) || 'null');
+            if (Array.isArray(localOffers) && localOffers.length > 0) savedOffers = localOffers;
+          } catch { }
+          savedOffers = savedOffers.filter(o => o.code !== 'ADMIN_DEAL' && o.tag !== 'Admin Deal');
 
           return `
             <tr data-prod-id="${id}">
@@ -20565,11 +21495,24 @@ function initPageRouter() {
                 </div>
               </td>
 
-              <!-- Deal / Promotion Status -->
+              <!-- Deal / Promotion Status & Live Ticker -->
               <td>
-                <button type="button" class="btn-toggle-deal ${isDeal ? 'is-active-deal' : ''}" data-id="${id}" title="Click to toggle Today's Deal promotion">
-                  ${isDeal ? 'Deal Active' : '+ Add to Deals'}
-                </button>
+                <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;width:100%;">
+                  <button type="button" class="btn-toggle-deal ${isDeal ? 'is-active-deal' : ''}" data-id="${id}" title="Click to toggle Today's Deal promotion">
+                    ${isDeal ? 'Today\'s Deal' : '+ Add to Deals'}
+                  </button>
+                  ${savedOffers.length > 0 ? `
+                    <div class="seller-promo-ticker-wrap" data-prod-ticker="${id}" title="Click to view & manage offers for ${item.name}">
+                      ${savedOffers.map((o, oIdx) => `
+                        <div class="seller-promo-ticker-slide ${oIdx === 0 ? 'is-active' : ''}" data-slide-idx="${oIdx}">
+                          <img src="${o.logoSrc || (o.type === 'upi' ? 'assets/upi/upi.svg' : 'assets/banks/allbanks.svg')}" alt="" style="width:18px; height:13px; object-fit:contain; border-radius:2px; flex-shrink:0;">
+                          <span class="seller-ticker-partner">${o.partnerName || o.partner || o.tag || 'Offer'}:</span>
+                          <span class="seller-ticker-val">${o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? o.discountValue + '% off' : 'Flat ₹' + o.discountValue + ' off') : 'Active')}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                </div>
               </td>
 
               <!-- Action Buttons -->
@@ -20578,8 +21521,8 @@ function initPageRouter() {
                   <button type="button" class="seller-action-btn edit-btn" data-id="${id}" title="Edit Product Details">
                     Edit
                   </button>
-                  <button type="button" class="seller-action-btn offers-btn" data-id="${id}" title="Manage Offers & Promotions" style="background:#fff7ed;color:#b45309;border:1.5px solid #fed7aa;">
-                    Offers
+                  <button type="button" class="seller-action-btn offers-btn" data-id="${id}" title="Manage Offers & Promotions">
+                    Offers ${savedOffers.length > 0 ? `<span style="background:#ffffff; color:#ff5722; font-size:10.5px; border-radius:10px; padding:1px 6px; font-weight:900; margin-left:3px;">${savedOffers.length}</span>` : ''}
                   </button>
                   <button type="button" class="seller-action-btn delete-btn" data-id="${id}" title="Delete Product">
                     Delete
@@ -20776,7 +21719,7 @@ function initPageRouter() {
             const row = btn.closest('tr');
             if (row) {
               btn.classList.toggle('is-active-deal', !isCurrentlyDeal);
-              btn.textContent = !isCurrentlyDeal ? 'Deal Active' : '+ Add to Deals';
+              btn.textContent = !isCurrentlyDeal ? "Today's Deal" : '+ Add to Deals';
 
               const priceEl = row.querySelector('.seller-price-main strong');
               const origEl = row.querySelector('.seller-orig-striked');
@@ -20832,11 +21775,20 @@ function initPageRouter() {
               });
             } catch (err) { }
 
+            // Live refresh of Storefront & Today's Deals section/window if currently active
+            if (typeof fetchAndRenderCommercialProducts === 'function' && window._currentDedicatedPageArgs) {
+              fetchAndRenderCommercialProducts(
+                window._currentDedicatedPageArgs.category || '',
+                window._currentDedicatedPageArgs.search || '',
+                window._currentDedicatedPageArgs
+              );
+            }
+
             showToast(
               !isCurrentlyDeal
-                ? `🎉 "${prod.name}" added to Today's Lightning Deals with ${updatedDiscount}% OFF!`
+                ? `"${prod.name}" added to Today's Lightning Deals with ${updatedDiscount}% OFF!`
                 : `Removed "${prod.name}" from Today's Deals`,
-              'success',
+              !isCurrentlyDeal ? 'success' : 'info',
               3500
             );
           });
@@ -20909,118 +21861,665 @@ function initPageRouter() {
           });
         });
 
+        // Wire Ticker Click Handlers (Clicking anywhere on ticker box opens Manage Offers Modal)
+        tbody.querySelectorAll('.seller-promo-ticker-wrap').forEach(wrap => {
+          wrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = wrap.getAttribute('data-prod-ticker');
+            const prod = products.find(p => String(p._id || p.id) === String(id));
+            if (prod && typeof openSellerManageOffersModal === 'function') {
+              openSellerManageOffersModal(prod);
+            }
+          });
+        });
+
+        // Initialize live ticker animation loop for seller promo tickers
+        if (typeof initSellerPromoTickers === 'function') {
+          initSellerPromoTickers();
+        }
+
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#dc2626;">Error: ${err.message}</td></tr>`;
       }
     }
 
-    // ── Seller: Manage Per-Product Offers Modal ──
+    // ── Seller & Admin: Manage Per-Product Offers & Subsidy Modal (Admin-Grade Window) ──
     function openSellerManageOffersModal(prod) {
       window.openSellerManageOffersModal = openSellerManageOffersModal;
-      const id = prod._id || prod.id;
+      if (!prod) return;
+      const id = String(prod._id || prod.id || '');
+
+      // Retrieve full product from memory if available
+      let targetProd = prod;
+      if (typeof Store !== 'undefined' && Array.isArray(Store.allProducts)) {
+        const found = Store.allProducts.find(p => String(p._id || p.id) === id);
+        if (found) targetProd = found;
+      }
+
       // Load saved offers
-      let savedOffers = Array.isArray(prod.offers) ? prod.offers : [];
+      let savedOffers = Array.isArray(targetProd.offers) ? [...targetProd.offers] : [];
       try {
-        const localOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${id || prod.name}`) || 'null');
-        if (localOffers && Array.isArray(localOffers) && localOffers.length > 0) savedOffers = localOffers;
+        const localOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${id || targetProd.name}`) || 'null');
+        if (Array.isArray(localOffers) && localOffers.length > 0) savedOffers = localOffers;
       } catch { }
+      savedOffers = savedOffers.filter(o => o.code !== 'ADMIN_DEAL' && o.tag !== 'Admin Deal');
 
-      const exBank = savedOffers.find(o => o.tag === 'Bank Offer')?.text || '';
-      const exEmi = savedOffers.find(o => o.tag === 'No Cost EMI')?.text || '';
-      const exCashback = savedOffers.find(o => o.tag === 'Cashback')?.text || '';
-      const exSpecial = savedOffers.find(o => o.tag !== 'Bank Offer' && o.tag !== 'No Cost EMI' && o.tag !== 'Cashback')?.text || '';
-
-      const modalId = 'seller-manage-offers-modal';
+      const modalId = 'admin-manage-offers-modal';
       document.getElementById(modalId)?.remove();
 
-      const offersModal = createModal(modalId, {
-        title: `Manage Offers — ${prod.name}`,
-        large: true,
-        bodyHtml: `
-          <div style="font-size:13.5px;color:#0f172a;">
-            <p style="margin-bottom:16px;color:#475569;font-size:13px;">Set or update the promotional offers for <strong>${prod.name}</strong>. These will appear on the product detail page visible to customers.</p>
-            <div style="display:flex;flex-direction:column;gap:14px;">
-              <div>
-                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">1. Bank Offer Promotion</label>
-                <input type="text" id="seller-offer-bank" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exBank.replace(/"/g, '&quot;')}">
-                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'Bank Offer' tag on the product page.</small>
-              </div>
-              <div>
-                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">2. No Cost EMI Offer</label>
-                <input type="text" id="seller-offer-emi" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exEmi.replace(/"/g, '&quot;')}">
-                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'No Cost EMI' tag.</small>
-              </div>
-              <div>
-                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">3. Cashback / Rewards Offer</label>
-                <input type="text" id="seller-offer-cashback" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exCashback.replace(/"/g, '&quot;')}">
-                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Displayed with 'Cashback' tag.</small>
-              </div>
-              <div>
-                <label style="font-size:12px;font-weight:800;color:#0f172a;display:block;margin-bottom:5px;">4. Custom Promotion (Optional)</label>
-                <input type="text" id="seller-offer-special" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;" value="${exSpecial.replace(/"/g, '&quot;')}">
-                <small style="color:#64748b;font-size:11.5px;margin-top:3px;display:block;">Extra promotional text visible to buyers.</small>
+      const pPrice = targetProd.finalPrice !== undefined ? targetProd.finalPrice : (targetProd.price || 0);
+      const pOrig = targetProd.originalPrice || Math.round(pPrice * 1.3);
+      const pDisc = targetProd.discount || (pOrig > pPrice ? Math.round(((pOrig - pPrice) / pOrig) * 100) : 0);
+      const pImg = (targetProd.images && targetProd.images[0]) || targetProd.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120';
+      const pSeller = targetProd.sellerStoreName || targetProd.sellerEmail || targetProd.brand || 'Verified Seller';
+
+      // Helper to compute metrics
+      function computeMetrics(offers) {
+        const totalCount = offers.length;
+        let totalSubsidy = 0;
+        let maxSaving = 0;
+        offers.forEach(o => {
+          const val = Number(o.subsidyAmount) || Number(o.discountValue) || 500;
+          if (o.fundedBy === 'Platform Subsidy' || !o.fundedBy || (o.tag && o.tag.includes('Bank'))) {
+            totalSubsidy += val;
+          } else if (o.fundedBy === 'Shared') {
+            totalSubsidy += Math.round(val / 2);
+          }
+          if (val > maxSaving) maxSaving = val;
+        });
+        return { totalCount, totalSubsidy, maxSaving };
+      }
+
+      // Helper to build active offers table HTML
+      function buildOffersTableHtml(offers) {
+        if (!offers || offers.length === 0) {
+          return `
+            <tr>
+              <td colspan="6" style="text-align:center; padding:32px 16px; color:#64748b; font-size:13px;">
+                <div style="font-size:28px; margin-bottom:6px;"></div>
+                <strong>No promotional offers active on this SKU yet.</strong>
+                <p style="margin:4px 0 0; font-size:12px; color:#94a3b8;">Use the campaign creator below to publish bank offers, UPI discounts, or merchant deals.</p>
+              </td>
+            </tr>
+          `;
+        }
+        return offers.map((o, idx) => {
+          const tagClass = (o.tag && o.tag.includes('Bank')) ? 'blue' : ((o.tag && o.tag.includes('UPI')) ? 'green' : 'orange');
+          const isPlatform = o.fundedBy === 'Platform Subsidy' || !o.fundedBy || (o.tag && o.tag.includes('Bank'));
+          const isShared = o.fundedBy === 'Shared';
+          const subsidyBadge = isPlatform
+            ? `<span class="ap-badge green" style="font-size:11px; font-weight:700;">Platform Subsidized</span>`
+            : (isShared
+              ? `<span class="ap-badge purple" style="font-size:11px; font-weight:700;">Shared (50/50)</span>`
+              : `<span class="ap-badge gray" style="font-size:11px; font-weight:700;">Seller Funded</span>`);
+
+          const repayAmount = isPlatform
+            ? `+${Currency.format(Number(o.subsidyAmount) || Number(o.discountValue) || 500)}`
+            : (isShared
+              ? `+${Currency.format(Math.round((Number(o.subsidyAmount) || Number(o.discountValue) || 500) / 2))}`
+              : `₹0 (Seller Borne)`);
+
+          return `
+            <tr data-offer-idx="${idx}" class="sku-offer-row">
+              <td class="sku-td-info">
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span class="ap-badge ${tagClass}" style="font-size:11px;">${o.tag || 'Bank Offer'}</span>
+                    <strong style="color:#0f172a; font-size:13px;">${o.partnerName || o.partner || 'Partner Bank'}</strong>
+                  </div>
+                  <span style="font-size:12px; color:#475569;">${o.text || o.description || o.amountOff || ''}</span>
+                </div>
+              </td>
+              <td class="sku-td-discount">
+                <span class="ap-badge orange" style="font-size:12px; font-weight:800;">
+                  ${o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? o.discountValue + '%' : '₹' + o.discountValue) : 'Active')}
+                </span>
+              </td>
+              <td class="sku-td-min-order" style="font-size:12.5px; color:#334155;">
+                <span class="sku-td-mobile-label">Min Order: </span>
+                <span>${o.minOrder ? Currency.format(o.minOrder) : 'No Min'}</span>
+              </td>
+              <td class="sku-td-funding">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                    <span class="sku-td-mobile-label">Funding: </span>
+                    ${subsidyBadge}
+                  </div>
+                  <span style="font-size:10.5px; color:#64748b;">${isPlatform ? 'Repaid in Escrow Payout' : (isShared ? 'Platform pays 50%' : 'Merchant absorbs discount')}</span>
+                </div>
+              </td>
+              <td class="sku-td-repay">
+                <span class="sku-td-mobile-label">Repayment: </span>
+                <strong style="color:${isPlatform || isShared ? '#059669' : '#64748b'}; font-size:13px;">
+                  ${repayAmount}
+                </strong>
+              </td>
+              <td class="sku-td-action">
+                <button type="button" class="ap-btn danger btn-remove-sku-offer" data-idx="${idx}" style="padding:4px 10px; font-size:11px;">
+                  Remove
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const metrics = computeMetrics(savedOffers);
+
+      const modalHtml = `
+        <div class="sku-offers-window-container" style="font-size:13.5px; color:#0f172a; display:flex; flex-direction:column; gap:18px;">
+          <!-- Product Context Header Card (Admin Design) -->
+          <div class="sku-offers-product-card" style="background:#ffffff; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+            <div class="sku-offers-prod-inner" style="display:flex; align-items:center; gap:14px;">
+              <img src="${pImg}" alt="${targetProd.name}" style="width:54px; height:54px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; flex-shrink:0;">
+              <div class="sku-offers-prod-details" style="min-width:0; flex:1;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <strong style="font-size:14.5px; color:#0f172a; word-break:break-word;">${targetProd.name}</strong>
+                  <span class="ap-badge gray" style="font-size:11px;">SKU: ${id.slice(-6).toUpperCase()}</span>
+                  <span class="ap-badge blue" style="font-size:11px;">${targetProd.category || 'General'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px; font-size:12px; color:#64748b; flex-wrap:wrap;">
+                  <span>Seller: <strong style="color:#0f172a;">${pSeller}</strong></span>
+                  <span>•</span>
+                  <span>Selling Price: <strong style="color:#059669;">${Currency.format(pPrice)}</strong></span>
+                  ${pOrig > pPrice ? `<span style="text-decoration:line-through;">${Currency.format(pOrig)}</span>` : ''}
+                  ${pDisc > 0 ? `<span class="ap-badge green" style="padding:1px 5px; font-size:10.5px;">${pDisc}% OFF</span>` : ''}
+                </div>
               </div>
             </div>
-            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
-              <button type="button" id="seller-offers-modal-cancel" style="padding:10px 18px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
-              <button type="button" id="seller-offers-modal-save" style="padding:10px 22px;background:#f59e0b;color:#000;border:none;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.3);">Publish Offers</button>
+            <span class="ap-super-badge" id="modal-offer-count-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; font-size:12px; padding:6px 12px; white-space:nowrap;">
+              ${metrics.totalCount} Active Offers
+            </span>
+          </div>
+
+          <!-- KPI Metric Chips Strip -->
+          <div class="ap-stat-grid" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin:0;">
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Active Product Offers</span>
+                <span class="ap-stat-card-val" id="metric-active-count" style="color:#2563eb; font-size:20px;">${metrics.totalCount}</span>
+              </div>
+              <div class="ap-stat-card-icon blue" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </div>
+            </div>
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Platform Subsidy (Seller Repayment)</span>
+                <span class="ap-stat-card-val" id="metric-subsidy-total" style="color:#059669; font-size:20px;">${Currency.format(metrics.totalSubsidy)}</span>
+              </div>
+              <div class="ap-stat-card-icon green" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+            <div class="ap-stat-card" style="padding:12px 14px;">
+              <div class="ap-stat-card-left">
+                <span class="ap-stat-card-lbl">Maximum Customer Saving</span>
+                <span class="ap-stat-card-val" id="metric-max-saving" style="color:#d97706; font-size:20px;">${Currency.format(metrics.maxSaving)}</span>
+              </div>
+              <div class="ap-stat-card-icon amber" style="width:36px; height:36px;">
+                <svg viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
             </div>
           </div>
-        `
+
+          <!-- Active Offers & Subsidy Repayment Table -->
+          <div class="ap-table-card sku-offers-table-card" style="margin:0; box-shadow:none; border:1.5px solid #e2e8f0; border-radius:10px;">
+            <div class="sku-offers-table-header" style="padding:12px 16px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13.5px; color:#0f172a;">Active Offers &amp; Disbursement Repayment Terms</strong>
+              <small style="color:#64748b; font-size:11.5px;">Platform subsidies are automatically credited to seller during bank disbursement</small>
+            </div>
+            <div class="ap-table-wrap">
+              <table class="ap-table">
+                <thead>
+                  <tr>
+                    <th>Offer / Campaign</th>
+                    <th>Discount</th>
+                    <th>Min Order</th>
+                    <th>Funding &amp; Subsidy Terms</th>
+                    <th>Repayment to Seller</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="sku-offers-table-tbody">
+                  ${buildOffersTableHtml(savedOffers)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Create New Promotional Offer Form (Admin Layout) -->
+          <div class="ap-form-card sku-offers-form-card" style="margin:0; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:16px;">
+            <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              <span>+ Create New Promotional Offer</span>
+              <span class="ap-badge blue" style="font-size:10px;">Instant Storefront Sync</span>
+            </h3>
+
+            <div class="ap-form-row sku-offers-form-row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  OFFER CATEGORY <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <select id="sku-offer-category" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:600; color:#0f172a;">
+                  <option value="Credit Card Offer" selected>Credit Card Offer</option>
+                  <option value="Debit Card Offer">Debit Card Offer</option>
+                  <option value="Instant UPI">Instant UPI Offer</option>
+                  <option value="No Cost EMI">No Cost EMI Offer</option>
+                  <option value="Cashback">Cashback / Rewards</option>
+                  <option value="Special Promotion">Special Discount Voucher</option>
+                </select>
+              </div>
+
+              <div class="ap-form-group">
+                <label id="sku-partner-code-label" style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  BANK / UPI NAME <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <!-- Bank / UPI Dropdown -->
+                <div id="sku-bank-upi-dropdown" style="position:relative; width:100%;">
+                  <button type="button" id="sku-bank-upi-trigger" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1.5px solid #cbd5e1; border-radius:7px; background:#ffffff; display:flex; align-items:center; justify-content:space-between; cursor:pointer; min-height:38px;">
+                    <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                      <img id="sku-selected-logo" src="assets/banks/sbi.svg" alt="Logo" style="width:24px; height:18px; object-fit:contain; border-radius:3px; background:#fff; border:1px solid #e2e8f0; padding:1px 2px; flex-shrink:0;">
+                      <span id="sku-selected-name" style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">State Bank of India (SBI)</span>
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div id="sku-bank-upi-menu" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; max-height:230px; overflow-y:auto; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.12); z-index:1000; padding:4px;">
+                    <!-- Options injected dynamically based on category -->
+                  </div>
+                  <input type="hidden" id="sku-offer-partner" value="">
+                  <input type="hidden" id="sku-offer-logo" value="">
+                </div>
+                <!-- Voucher Coupon Code Box (Shown when Special Discount Voucher is selected) -->
+                <div id="sku-coupon-code-wrap" style="display:none; width:100%;">
+                  <div style="position:relative; width:100%;">
+                    <input type="text" id="sku-offer-coupon-code" placeholder="e.g. SAVE500, FESTIVE20" style="width:100%; box-sizing:border-box; padding:8px 10px 8px 34px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0f172a;" value="">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none;"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="#64748b"/></svg>
+                  </div>
+                  <small style="color:#64748b; font-size:10.5px; margin-top:3px; display:block;">Buyers can enter this code at checkout to claim the discount.</small>
+                </div>
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  DISCOUNT VALUE &amp; TYPE <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <div style="display:flex; gap:6px;">
+                  <input type="number" id="sku-offer-val" value="" placeholder="e.g. 500" min="1" max="50000" style="flex:1; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:700;">
+                  <select id="sku-offer-val-type" style="width:80px; box-sizing:border-box; padding:8px 6px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12px;">
+                    <option value="flat">₹ Flat</option>
+                    <option value="percent">% Off</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="ap-form-row sku-offers-form-row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  MIN ORDER VALUE (₹) <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <input type="number" id="sku-offer-min-order" value="" placeholder="e.g. 1000" min="0" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  DISBURSEMENT SUBSIDY FUNDING <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <select id="sku-offer-funding" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px; font-weight:600; color:#166534;">
+                  <option value="Platform Subsidy" selected>Platform Subsidy (100% Repaid to Seller in Disbursement)</option>
+                  <option value="Seller Borne">Seller Borne (Merchant Absorbed)</option>
+                  <option value="Shared">Shared 50% Platform / 50% Seller</option>
+                </select>
+              </div>
+
+              <div class="ap-form-group">
+                <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                  EXPIRY DATE <span style="color:#ef4444; font-weight:900;">*</span>
+                </label>
+                <input type="date" id="sku-offer-expiry" value="${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}" required style="width:100%; box-sizing:border-box; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              </div>
+            </div>
+
+            <div class="ap-form-group" style="margin-bottom:14px;">
+              <label style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px; display:block;">
+                OFFER HEADLINE / DESCRIPTION <span style="color:#ef4444; font-weight:900;">*</span>
+              </label>
+              <input type="text" id="sku-offer-headline" value="" placeholder="e.g. Flat ₹500 off on Bank Credit Cards" style="width:100%; box-sizing:border-box; padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12.5px;">
+              <small style="color:#64748b; font-size:11px; margin-top:3px; display:block;">This text is displayed on the product page offer card and in checkout Step 3.</small>
+            </div>
+
+            <div class="sku-offers-actions-row" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:20px; flex-wrap:wrap;">
+              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#001f3f !important; color:#ffffff !important; border:1.5px solid #001f3f !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+                <span>Publish Offer &amp; Sync Subsidy</span>
+              </button>
+              <button type="button" class="ap-btn" id="sku-offers-modal-close-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; color:#000000 !important; background:#ffffff !important; border:1.5px solid #94a3b8 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('admin-manage-offers-modal')?.remove();
+      const offersModal = createModal('admin-manage-offers-modal', {
+        title: `Manage SKU Offers & Escrow Subsidies — ${targetProd.name}`,
+        large: true,
+        bodyHtml: modalHtml
       });
       offersModal._open();
 
-      const modalEl = document.getElementById(modalId);
-      modalEl?.querySelector('#seller-offers-modal-cancel')?.addEventListener('click', () => offersModal._close());
+      const modalEl = document.getElementById('admin-manage-offers-modal');
+      const catEl = modalEl.querySelector('#sku-offer-category');
+      const triggerEl = modalEl.querySelector('#sku-bank-upi-trigger');
+      const menuEl = modalEl.querySelector('#sku-bank-upi-menu');
+      const selectedLogoEl = modalEl.querySelector('#sku-selected-logo');
+      const selectedNameEl = modalEl.querySelector('#sku-selected-name');
+      const couponWrap = modalEl.querySelector('#sku-coupon-code-wrap');
+      const couponInput = modalEl.querySelector('#sku-offer-coupon-code');
+      const bankDropdownWrap = modalEl.querySelector('#sku-bank-upi-dropdown');
+      const partnerCodeLabel = modalEl.querySelector('#sku-partner-code-label');
+      const partnerInput = modalEl.querySelector('#sku-offer-partner');
+      const logoInput = modalEl.querySelector('#sku-offer-logo');
+      const valEl = modalEl.querySelector('#sku-offer-val');
+      const valTypeEl = modalEl.querySelector('#sku-offer-val-type');
+      const headlineEl = modalEl.querySelector('#sku-offer-headline');
 
-      modalEl?.querySelector('#seller-offers-modal-save')?.addEventListener('click', async () => {
-        const b = modalEl.querySelector('#seller-offer-bank')?.value.trim();
-        const e = modalEl.querySelector('#seller-offer-emi')?.value.trim();
-        const c = modalEl.querySelector('#seller-offer-cashback')?.value.trim();
-        const s = modalEl.querySelector('#seller-offer-special')?.value.trim();
+      // Helper to populate Bank / UPI Dropdown based on chosen category
+      function populateBankUpiDropdown(cat) {
+        const isUpiCategory = cat === 'Instant UPI' || cat === 'Cashback';
+        const items = isUpiCategory ? (typeof UPI_PROVIDERS !== 'undefined' ? UPI_PROVIDERS : [
+          { shortName: 'Google Pay', name: 'Google Pay UPI', logo: 'assets/upi/gpay.svg' },
+          { shortName: 'PhonePe', name: 'PhonePe UPI', logo: 'assets/upi/phonepe.svg' },
+          { shortName: 'Paytm UPI', name: 'Paytm UPI', logo: 'assets/upi/paytm.svg' },
+          { shortName: 'BHIM UPI', name: 'BHIM Government UPI', logo: 'assets/upi/bhim.svg' },
+          { shortName: 'Cred Pay', name: 'Cred UPI', logo: 'assets/upi/cred.svg' },
+          { shortName: 'Amazon Pay', name: 'Amazon Pay UPI', logo: 'assets/upi/amazonpay.svg' }
+        ]) : (typeof INDIAN_BANKS !== 'undefined' ? INDIAN_BANKS : [
+          { shortName: 'SBI Bank', name: 'State Bank of India (SBI)', logo: 'assets/banks/sbi.svg' },
+          { shortName: 'HDFC Bank', name: 'HDFC Bank', logo: 'assets/banks/hdfc.svg' },
+          { shortName: 'ICICI Bank', name: 'ICICI Bank', logo: 'assets/banks/icici.svg' },
+          { shortName: 'Axis Bank', name: 'Axis Bank', logo: 'assets/banks/axis.svg' },
+          { shortName: 'Kotak Bank', name: 'Kotak Mahindra Bank', logo: 'assets/banks/kotak.svg' },
+          { shortName: 'Bank of Baroda', name: 'Bank of Baroda', logo: 'assets/banks/bob.svg' },
+          { shortName: 'Punjab National Bank', name: 'Punjab National Bank (PNB)', logo: 'assets/banks/pnb.svg' },
+          { shortName: 'Canara Bank', name: 'Canara Bank', logo: 'assets/banks/canara.svg' },
+          { shortName: 'Indian Bank', name: 'Indian Bank', logo: 'assets/banks/indian.svg' },
+          { shortName: 'IndusInd Bank', name: 'IndusInd Bank', logo: 'assets/banks/indusind.svg' },
+          { shortName: 'IDFC FIRST Bank', name: 'IDFC FIRST Bank', logo: 'assets/banks/idfc.svg' },
+          { shortName: 'Federal Bank', name: 'Federal Bank', logo: 'assets/banks/federal.svg' },
+          { shortName: 'Yes Bank', name: 'Yes Bank', logo: 'assets/banks/yesbank.svg' }
+        ]);
+        const currentPartner = partnerInput ? partnerInput.value : '';
 
-        const newOffers = [];
-        if (b) newOffers.push({ tag: 'Bank Offer', text: b });
-        if (e) newOffers.push({ tag: 'No Cost EMI', text: e });
-        if (c) newOffers.push({ tag: 'Cashback', text: c });
-        if (s) newOffers.push({ tag: 'Special Offer', text: s });
+        // Auto-select first matching item or default to first
+        const match = items.find(i => i.shortName === currentPartner || i.name === currentPartner) || items[0];
+        if (partnerInput) partnerInput.value = match.shortName;
+        if (logoInput) logoInput.value = match.logo;
+        if (selectedLogoEl) {
+          selectedLogoEl.src = match.logo;
+          selectedLogoEl.onerror = function() { this.src = isUpiCategory ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg'; };
+        }
+        if (selectedNameEl) selectedNameEl.textContent = match.name;
 
-        if (newOffers.length === 0) {
-          showToast('Please enter at least one offer before publishing.', 'warn');
+        if (!menuEl) return;
+        menuEl.innerHTML = items.map(item => {
+          const isSelected = item.shortName === match.shortName;
+          const fallbackLogo = isUpiCategory ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg';
+          return `
+            <div class="sku-bank-upi-option" data-shortname="${item.shortName}" data-fullname="${item.name}" data-logo="${item.logo}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 10px; border-radius:6px; cursor:pointer; background:${isSelected ? '#eff6ff' : 'transparent'}; transition:background 0.15s ease;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${item.logo}" onerror="this.onerror=null; this.src='${fallbackLogo}';" alt="${item.name}" style="width:24px; height:18px; object-fit:contain; border-radius:3px; background:#fff; border:1px solid #e2e8f0; padding:1px 2px; flex-shrink:0;">
+                <span style="font-size:12.5px; font-weight:600; color:${isSelected ? '#1d4ed8' : '#0f172a'};">${item.name}</span>
+              </div>
+              ${isSelected ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        // Wire option clicks
+        menuEl.querySelectorAll('.sku-bank-upi-option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sName = opt.dataset.shortname;
+            const fName = opt.dataset.fullname;
+            const lSrc = opt.dataset.logo;
+            if (partnerInput) partnerInput.value = sName;
+            if (logoInput) logoInput.value = lSrc;
+            if (selectedLogoEl) selectedLogoEl.src = lSrc;
+            if (selectedNameEl) selectedNameEl.textContent = fName;
+            menuEl.style.display = 'none';
+            syncHeadline();
+          });
+        });
+      }
+
+      // Dropdown toggle
+      triggerEl?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menuEl) {
+          menuEl.style.display = menuEl.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!bankDropdownWrap?.contains(e.target) && menuEl) {
+          menuEl.style.display = 'none';
+        }
+      });
+
+      // Category mode change sync
+      function syncCategoryMode() {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const isVoucher = cat === 'Special Promotion';
+        if (isVoucher) {
+          if (couponWrap) couponWrap.style.display = 'block';
+          if (bankDropdownWrap) bankDropdownWrap.style.display = 'none';
+          if (partnerCodeLabel) partnerCodeLabel.innerHTML = 'COUPON PROMO CODE <span style="color:#ef4444; font-weight:900;">*</span>';
+        } else {
+          if (couponWrap) couponWrap.style.display = 'none';
+          if (bankDropdownWrap) bankDropdownWrap.style.display = 'block';
+          if (partnerCodeLabel) partnerCodeLabel.innerHTML = (cat === 'Instant UPI' || cat === 'Cashback' ? 'UPI PROVIDER <span style="color:#ef4444; font-weight:900;">*</span>' : 'BANK NAME <span style="color:#ef4444; font-weight:900;">*</span>');
+          populateBankUpiDropdown(cat);
+        }
+        syncHeadline();
+      }
+
+      function syncHeadline() {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const isVoucher = cat === 'Special Promotion';
+        const pName = isVoucher ? (couponInput?.value?.trim() || 'Voucher') : (partnerInput?.value?.trim() || 'Bank');
+        const v = valEl?.value || '500';
+        const vt = valTypeEl?.value || 'flat';
+        const discStr = vt === 'percent' ? `${v}% off` : `Flat ₹${v} off`;
+        if (headlineEl) {
+          if (isVoucher) {
+            headlineEl.value = `${discStr} with coupon code ${pName.toUpperCase()}`;
+          } else {
+            headlineEl.value = `${discStr} on ${pName} ${cat.replace(' Offer', '')}s`;
+          }
+        }
+      }
+
+      catEl?.addEventListener('change', () => {
+        syncCategoryMode();
+      });
+      couponInput?.addEventListener('input', syncHeadline);
+      valEl?.addEventListener('input', syncHeadline);
+      valTypeEl?.addEventListener('change', syncHeadline);
+
+      // Initial population of dropdown and headline
+      populateBankUpiDropdown(catEl?.value || 'Credit Card Offer');
+      syncCategoryMode();
+
+      // Helper to refresh table & KPI chips in modal
+      function refreshModalUI() {
+        const tbody = modalEl.querySelector('#sku-offers-table-tbody');
+        if (tbody) tbody.innerHTML = buildOffersTableHtml(savedOffers);
+        const m = computeMetrics(savedOffers);
+        const cntEl = modalEl.querySelector('#metric-active-count');
+        const subEl = modalEl.querySelector('#metric-subsidy-total');
+        const maxEl = modalEl.querySelector('#metric-max-saving');
+        const badgeEl = modalEl.querySelector('#modal-offer-count-badge');
+        if (cntEl) cntEl.textContent = m.totalCount;
+        if (subEl) subEl.textContent = Currency.format(m.totalSubsidy);
+        if (maxEl) maxEl.textContent = Currency.format(m.maxSaving);
+        if (badgeEl) badgeEl.textContent = `${m.totalCount} Active Offers`;
+
+        // Wire remove buttons
+        tbody.querySelectorAll('.btn-remove-sku-offer').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.dataset.idx, 10);
+            if (isNaN(idx)) return;
+            const removed = savedOffers.splice(idx, 1);
+            await persistOffers();
+            refreshModalUI();
+            showToast(`Offer removed from "${targetProd.name}".`, 'info', 2500);
+          });
+        });
+      }
+
+      // Helper to persist offers to MongoDB Atlas & Local Storage
+      async function persistOffers() {
+        targetProd.offers = savedOffers;
+        if (typeof Store !== 'undefined' && Array.isArray(Store.allProducts)) {
+          const spIdx = Store.allProducts.findIndex(p => String(p._id || p.id) === id);
+          if (spIdx !== -1) Store.allProducts[spIdx].offers = savedOffers;
+        }
+        try {
+          localStorage.setItem(`xmart_custom_offers_${id || targetProd.name}`, JSON.stringify(savedOffers));
+        } catch { }
+
+        // Sync with backend API
+        try {
+          const token = Store.token || localStorage.getItem('xmart_token');
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          await Promise.all([
+            fetch(`${API_BASE}/products/${id}`, {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ offers: savedOffers })
+            }).catch(() => {}),
+            fetch(`${API_BASE}/admin/offers`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ productId: id, offers: savedOffers })
+            }).catch(() => {})
+          ]);
+        } catch (e) { }
+
+        // Update product row in seller/admin table if present
+        const row = document.querySelector(`tr[data-prod-id="${id}"]`);
+        if (row) {
+          const offersBtn = row.querySelector('.offers-btn');
+          if (offersBtn) {
+            offersBtn.innerHTML = `Offers ${savedOffers.length > 0 ? `<span style="background:#ffffff; color:#ff5722; font-size:10.5px; border-radius:10px; padding:1px 6px; font-weight:900; margin-left:3px;">${savedOffers.length}</span>` : ''}`;
+          }
+          const promoCell = row.querySelector('.btn-toggle-deal')?.parentElement || row.querySelector('td:nth-child(5)');
+          if (promoCell) {
+            let tickerWrap = promoCell.querySelector('.seller-promo-ticker-wrap');
+            if (savedOffers.length > 0) {
+              if (!tickerWrap) {
+                tickerWrap = document.createElement('div');
+                tickerWrap.className = 'seller-promo-ticker-wrap';
+                tickerWrap.setAttribute('data-prod-ticker', id);
+                tickerWrap.setAttribute('title', `Click to view & manage offers for ${targetProd.name}`);
+                promoCell.appendChild(tickerWrap);
+              }
+              tickerWrap.onclick = (e) => {
+                e.stopPropagation();
+                openSellerManageOffersModal(targetProd);
+              };
+              tickerWrap.innerHTML = savedOffers.map((o, oIdx) => `
+                <div class="seller-promo-ticker-slide ${oIdx === 0 ? 'is-active' : ''}" data-slide-idx="${oIdx}">
+                  <img src="${o.logoSrc || (o.type === 'upi' ? 'assets/upi/upi.svg' : 'assets/banks/allbanks.svg')}" alt="" style="width:18px; height:13px; object-fit:contain; border-radius:2px; flex-shrink:0;">
+                  <span class="seller-ticker-partner">${o.partnerName || o.partner || o.tag || 'Offer'}:</span>
+                  <span class="seller-ticker-val">${o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? o.discountValue + '% off' : 'Flat ₹' + o.discountValue + ' off') : 'Active')}</span>
+                </div>
+              `).join('');
+              if (typeof initSellerPromoTickers === 'function') initSellerPromoTickers();
+            } else if (tickerWrap) {
+              tickerWrap.remove();
+            }
+          }
+        }
+
+        // Live refresh of storefront and drawer voucher tickers
+        if (typeof window.refreshVoucherCouponsTicker === 'function') {
+          window.refreshVoucherCouponsTicker();
+        }
+      }
+
+      // Initial wire of remove buttons
+      refreshModalUI();
+
+      // Close button handler
+      modalEl.querySelector('#sku-offers-modal-close-btn')?.addEventListener('click', () => {
+        offersModal._close();
+      });
+
+      // Publish New Offer Click Handler (placed above Close button in DOM)
+      modalEl.querySelector('#sku-offers-modal-publish-btn')?.addEventListener('click', async () => {
+        const cat = catEl?.value || 'Credit Card Offer';
+        const partner = partnerInput?.value?.trim() || 'Bank';
+        const couponCode = couponInput?.value?.trim().toUpperCase() || '';
+        const logo = logoInput?.value || 'assets/banks/sbi.svg';
+        const val = Number(valEl?.value || 0);
+        const discType = valTypeEl?.value || 'flat';
+        const minOrder = Number(modalEl.querySelector('#sku-offer-min-order')?.value || 0);
+        const funding = modalEl.querySelector('#sku-offer-funding')?.value || 'Platform Subsidy';
+        const expiry = modalEl.querySelector('#sku-offer-expiry')?.value;
+        const headline = headlineEl?.value?.trim() || `${partner} Offer`;
+
+        const isVoucher = cat === 'Special Promotion';
+        const isCredit = cat === 'Credit Card Offer';
+
+        if (isVoucher && !couponCode) {
+          showToast('Please enter a valid coupon promo code (e.g. SAVE500).', 'warn');
+          couponInput?.focus();
           return;
         }
 
-        // Update in-memory
-        prod.offers = newOffers;
-        const pIdx = Store.allProducts?.findIndex(p => (p._id || p.id) === id);
-        if (pIdx !== -1 && Store.allProducts) Store.allProducts[pIdx] = { ...Store.allProducts[pIdx], offers: newOffers };
-
-        // Persist to localStorage
-        try {
-          localStorage.setItem(`xmart_custom_offers_${id || prod.name}`, JSON.stringify(newOffers));
-        } catch { }
-
-        // Persist to MongoDB backend
-        if (id) {
-          try {
-            const token = Store.token || localStorage.getItem('xmart_token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            await fetch(`${API_BASE}/products/${id}`, {
-              method: 'PUT',
-              headers,
-              body: JSON.stringify({ offers: newOffers })
-            });
-          } catch { }
+        if (!val || val <= 0) {
+          showToast('Please specify a positive discount value.', 'warn');
+          valEl?.focus();
+          return;
         }
 
-        showToast(`✓ Offers for "${prod.name}" published successfully!`, 'success', 4000);
-        offersModal._close();
+        const newOfferItem = {
+          tag: isVoucher ? 'Special Voucher' : (cat === 'Instant UPI' ? 'Instant UPI' : (cat === 'Cashback' ? 'Cashback' : (cat === 'No Cost EMI' ? 'No Cost EMI' : (cat === 'Debit Card Offer' ? 'Debit Card Offer' : 'Bank Offer')))),
+          type: isVoucher ? 'voucher' : (cat === 'Instant UPI' ? 'upi' : 'bank'),
+          partnerName: isVoucher ? couponCode : partner,
+          couponCode: isVoucher ? couponCode : '',
+          logoSrc: logo,
+          amountOff: discType === 'percent' ? `${val}% off` : `Flat ₹${val} off`,
+          discountType: discType,
+          discountValue: val,
+          minOrder: minOrder,
+          fundedBy: funding,
+          subsidyAmount: funding === 'Platform Subsidy' ? val : (funding === 'Shared' ? Math.round(val / 2) : 0),
+          text: headline,
+          validUntil: expiry ? new Date(expiry) : null
+        };
+
+        savedOffers.push(newOfferItem);
+        await persistOffers();
+        refreshModalUI();
+
+        showToast(`✓ "${headline}" published! Platform subsidy recorded for seller repayment.`, 'success', 4000);
       });
     }
+    window.openSellerManageOffersModal = openSellerManageOffersModal;
+
+
 
     // Modal to Edit Any Product Fully
     function openSellerEditProductModal(prod) {
+      if (!Auth.getUser()) {
+        showToast('Seller Access Denied: Please sign in to edit products.', 'warn', 4500);
+        window._openAuth?.('signin');
+        return;
+      }
       const id = prod._id || prod.id;
       const modalId = 'seller-edit-product-modal';
       let modal = document.getElementById(modalId);
@@ -21118,9 +22617,10 @@ function initPageRouter() {
             </div>
             <div id="edit-angles-list" style="display:flex;flex-direction:column;gap:10px;">
               <!-- 1. Front View -->
+              <!-- 1. Front View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span class="view-tag-badge front" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: FRONT</span>
+                  <span class="view-tag-badge front" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">FRONT</span>
                   <strong style="font-size:12.5px;color:#1e293b;">1. Front View (Cover) <span style="color:#dc2626;">*</span></strong>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -21131,7 +22631,7 @@ function initPageRouter() {
               <!-- 2. Left Side View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span class="view-tag-badge left" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: LEFT</span>
+                  <span class="view-tag-badge left" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">LEFT</span>
                   <strong style="font-size:12.5px;color:#1e293b;">2. Left Side View <span style="color:#dc2626;">*</span></strong>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -21142,7 +22642,7 @@ function initPageRouter() {
               <!-- 3. Top View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span class="view-tag-badge top" style="background:#f3e8ff;color:#7e22ce;border:1px solid #e9d5ff;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: TOP</span>
+                  <span class="view-tag-badge top" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">TOP</span>
                   <strong style="font-size:12.5px;color:#1e293b;">3. Top View <span style="color:#dc2626;">*</span></strong>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -21153,7 +22653,7 @@ function initPageRouter() {
               <!-- 4. Right Side View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span class="view-tag-badge right" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: RIGHT</span>
+                  <span class="view-tag-badge right" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">RIGHT</span>
                   <strong style="font-size:12.5px;color:#1e293b;">4. Right Side View <span style="color:#dc2626;">*</span></strong>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -21164,7 +22664,7 @@ function initPageRouter() {
               <!-- 5. Back View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span class="view-tag-badge back" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:4px;">TAG: BACK</span>
+                  <span class="view-tag-badge back" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">BACK</span>
                   <strong style="font-size:12.5px;color:#1e293b;">5. Back View <span style="color:#dc2626;">*</span></strong>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -21189,8 +22689,9 @@ function initPageRouter() {
                 <label style="font-size:12.5px;font-weight:800;color:#1e293b;margin:0;">Custom Technical &amp; Product Specifications</label>
                 <small style="color:#64748b;font-size:11.5px;display:block;">Specifications displayed on the product specifications card.</small>
               </div>
-              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:5px 12px;font-weight:800;display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;">
-                <span style="font-size:15px;font-weight:900;line-height:1;">+</span> Add Specification
+              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:6px 14px;font-weight:800;display:inline-flex;align-items:center;gap:6px;background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;border-radius:6px;cursor:pointer;">
+                <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
+                <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
               </button>
             </div>
             <div id="edit-specs-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -21214,7 +22715,7 @@ function initPageRouter() {
           showInfoModal(
             'Perspective Angle Preview',
             `<div style="text-align:center;padding:8px 4px;">
-              <img src="${u}" alt="Preview" style="max-width:100%;max-height:340px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>⚠️ Image preview failed to load.</div>';">
+              <img src="${u}" alt="Preview" style="max-width:100%;max-height:340px;border-radius:8px;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'color:#dc2626;padding:20px;font-size:13px;font-weight:700;\\'>Image preview failed to load.</div>';">
             </div>`
           );
         });
@@ -21323,7 +22824,7 @@ function initPageRouter() {
         const editBack = bodyEl.querySelector('#edit-img-back')?.value.trim();
 
         if (!editFront || !editLeft || !editTop || !editRight || !editBack) {
-          showToast('⚠️ All 5 perspective view images (Front, Left, Top, Right, Back) are compulsory!', 'error', 4500);
+          showToast('All 5 perspective view images (Front, Left, Top, Right, Back) are compulsory!', 'error', 4500);
           const angles = [
             { el: bodyEl.querySelector('#edit-img-front') },
             { el: bodyEl.querySelector('#edit-img-left') },
@@ -21653,7 +23154,7 @@ function initPageRouter() {
           tbody.innerHTML = `
             <tr>
               <td colspan="6" style="text-align:center;padding:50px 20px;color:#64748b;">
-                <div style="font-size:36px;margin-bottom:8px;">📋</div>
+                
                 <strong style="font-size:16px;color:#0f172a;display:block;margin-bottom:4px;">No customer orders yet</strong>
                 <p style="font-size:13px;max-width:440px;margin:0 auto;line-height:1.5;color:#64748b;">As customers purchase your listed items, orders will appear here automatically with packaging slips and courier dispatch tools.</p>
               </td>
@@ -21867,7 +23368,7 @@ function initPageRouter() {
           tbody.innerHTML = `
             <tr>
               <td colspan="8" style="text-align:center;padding:48px 20px;color:#64748b;">
-                <div style="font-size:36px;margin-bottom:8px;">🏦</div>
+                
                 <strong style="font-size:16px;color:#0f172a;display:block;margin-bottom:4px;">No bank settlements recorded yet</strong>
                 <p style="font-size:13px;max-width:480px;margin:0 auto;line-height:1.5;color:#64748b;">
                   Your linked bank account (<strong>${currentSeller?.bankIfsc ? currentSeller.bankIfsc.slice(0, 4) + ' Bank' : 'Verified Bank'}</strong> ••••${(currentSeller?.bankAcc || '0000').slice(-4)}) is verified and active.
@@ -21923,6 +23424,11 @@ function initPageRouter() {
 
       // 6. Tax Invoice Modal
       function openSellerTaxInvoiceModal(orderId) {
+        if (!Auth.getUser()) {
+          showToast('Seller Access Denied: Please sign in to access Tax Invoices.', 'warn', 4500);
+          window._openAuth?.('signin');
+          return;
+        }
         const orders = getSellerOrders();
         const ord = orders.find(o => o.id === orderId);
         if (!ord) return;
@@ -22210,7 +23716,7 @@ function initPageRouter() {
           </div>
         </div>
 
-        <!-- Interactive AI Support Chat & Ticket Window -->
+        <!-- Interactive Live Support Chat & Ticket Window -->
         <div class="cs-chat-section">
           <div class="cs-chat-header">
             <h3>Instant Concierge Live Chat</h3>
@@ -22219,9 +23725,9 @@ function initPageRouter() {
           <div id="cs-chat-messages" class="cs-chat-messages">
             <div class="chat-msg bot">
               <div class="chat-avatar" style="background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;width:32px;height:32px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="6" rx="2"/><circle cx="8" cy="13" r="1.5"/><circle cx="16" cy="13" r="1.5"/><path d="M9 17h6"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
               </div>
-              <div class="chat-bubble">Hello! I am X-Mart Concierge. How can I assist you with your orders, returns, or product inquiries today?</div>
+              <div class="chat-bubble">Hello! I am X-Mart Support Concierge. How can I assist you with your orders, returns, or product inquiries today?</div>
             </div>
           </div>
           <form id="cs-chat-form" class="cs-chat-input-bar">
@@ -22278,7 +23784,7 @@ function initPageRouter() {
       chatInput.value = '';
       chatMessages.scrollTop = chatMessages.scrollHeight;
 
-      // Simulate Smart AI Response
+      // Simulate Live Support Response
       setTimeout(() => {
         let reply = "Thank you for reaching out! Our team is looking into this. For urgent requests, call our 24/7 hotline at 1800-555-0199.";
         const q = query.toLowerCase();
@@ -22295,7 +23801,7 @@ function initPageRouter() {
         chatMessages.innerHTML += `
           <div class="chat-msg bot">
             <div class="chat-avatar" style="background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;width:32px;height:32px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="6" rx="2"/><circle cx="8" cy="13" r="1.5"/><circle cx="16" cy="13" r="1.5"/><path d="M9 17h6"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
             </div>
             <div class="chat-bubble">${reply}</div>
           </div>
@@ -24156,7 +25662,7 @@ function initPageRouter() {
       if (!methods || methods.length === 0) {
         methodsListEl.innerHTML = `
           <div style="text-align:center;padding:28px 16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;">
-            <div style="font-size:24px;margin-bottom:6px;">🏦</div>
+            
             <div style="font-size:13.5px;font-weight:700;color:#0f172a;margin-bottom:2px;">No Saved Payment Methods</div>
             <div style="font-size:12px;color:#64748b;">Click <strong>+ Add Method</strong> above to save a UPI ID or Card for 1-click checkout.</div>
           </div>
@@ -24206,7 +25712,7 @@ function initPageRouter() {
       if (!txns || txns.length === 0) {
         txnsListEl.innerHTML = `
           <div style="text-align:center;padding:32px 16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;">
-            <div style="font-size:24px;margin-bottom:6px;">💳</div>
+            
             <div style="font-size:13.5px;font-weight:700;color:#0f172a;margin-bottom:2px;">No Wallet Transactions Yet</div>
             <div style="font-size:12px;color:#64748b;">Top up cash or redeem a gift card voucher to start your statement.</div>
           </div>
@@ -24889,17 +26395,164 @@ function initPageRouter() {
       const alt = altText || 'Bank';
       return `
         <div class="offer-logo-container" style="width:44px;height:32px;border-radius:6px;background:#ffffff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;padding:3px 5px;box-shadow:0 1px 3px rgba(0,0,0,0.04);flex-shrink:0;box-sizing:border-box;">
-          <img src="${src}" alt="${alt}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;" loading="lazy" />
+          <img src="${src}" alt="${alt}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;" loading="lazy" onerror="this.onerror=null; this.src='assets/banks/allbanks.svg';" />
         </div>
       `;
     }
 
+    function formatOfferValidity(dateStr) {
+      if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Active Today';
+      if (/^\d{4}-\d{2}-\d{2}/.test(dateStr) || dateStr.includes('T')) {
+        try {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            const day = d.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[d.getMonth()];
+            const year = d.getFullYear();
+            return `${day} ${month} ${year}`;
+          }
+        } catch (e) {}
+      }
+      return dateStr;
+    }
+
+    // Modal display for Offer Details & Terms when clicking Chevron Arrow (>) or Card Footer
+    function openSkuOfferDetailsModal(item, pageApplyBtn) {
+      if (!item) return;
+
+      const modalId = 'sku-offer-details-modal';
+      let modal = document.getElementById(modalId);
+      if (!modal) {
+        modal = createModal(modalId, {
+          title: 'Offer Details & Terms',
+          bodyHtml: '',
+          footerHtml: ''
+        });
+      }
+
+      const isAlreadyApplied = window._preselectedCouponCode && window._preselectedCouponCode === item.code;
+      const formattedValidity = formatOfferValidity(item.validUntil);
+
+      const bodyHtml = `
+        <div class="sku-offer-detail-modal-content" style="padding: 4px 0;">
+          <!-- Header Highlight Box -->
+          <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1.5px solid #bae6fd; border-radius: 12px; padding: 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 56px; height: 42px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); flex-shrink: 0;">
+                <img src="${item.logoSrc || 'assets/banks/allbanks.svg'}" alt="${item.partnerName || 'Bank'}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='assets/banks/allbanks.svg';">
+              </div>
+              <div>
+                <span style="display: inline-block; background: #fef08a; color: #000000; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;">${item.badge || 'Best value for you'}</span>
+                <h4 style="margin: 0; font-size: 17px; font-weight: 800; color: #000000;">${item.amountOff || 'Special Offer'}</h4>
+                <div style="font-size: 13px; font-weight: 700; color: #0284c7; margin-top: 2px;">${item.partnerName || 'Partner Bank'}</div>
+              </div>
+            </div>
+            ${item.code ? `
+              <div style="text-align: right; flex-shrink: 0;">
+                <div style="font-size: 11px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">Offer Code</div>
+                <div style="background: #ffffff; border: 1.5px dashed #0f172a; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-weight: 800; font-size: 13px; color: #000000; display: inline-block;">${item.code}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Highlights Grid (3 Tags Aligned in 1 Single Line on Mobile & Desktop) -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 8px; overflow: hidden;">
+              <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Offer Type</div>
+              <div style="font-size: 12px; font-weight: 800; color: #000000; line-height: 1.35; word-break: break-word;">${item.footer || 'Instant Discount'}</div>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 8px; overflow: hidden;">
+              <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Min Order Value</div>
+              <div style="font-size: 12px; font-weight: 800; color: #000000; line-height: 1.35; word-break: break-word;">${item.minOrder ? '₹' + Number(item.minOrder).toLocaleString('en-IN') : 'No Minimum'}</div>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 8px; overflow: hidden;">
+              <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Validity</div>
+              <div style="font-size: 12px; font-weight: 800; color: #000000; line-height: 1.35; word-break: break-word;">${formattedValidity}</div>
+            </div>
+          </div>
+
+          <!-- Description / Terms & Conditions -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;">
+            <h5 style="margin: 0 0 10px 0; font-size: 13.5px; font-weight: 800; color: #000000; display: flex; align-items: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Terms & Conditions
+            </h5>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12.5px; color: #334155; line-height: 1.6;">
+              ${item.description ? `<li>${item.description}</li>` : ''}
+              <li>Applicable when paying with <strong style="color: #000000;">${item.partnerName}</strong> at payment step during checkout.</li>
+              <li>Instant discount is directly applied to total amount upon coupon activation or payment selection.</li>
+              <li>Valid for single redemption per customer account during active campaign period.</li>
+              <li>Non-transferable and cannot be combined with unauthorized promo codes.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+
+      const footerHtml = `
+        <div style="display: flex; gap: 10px; width: 100%; justify-content: flex-end; align-items: center;">
+          <button type="button" class="btn btn-secondary modal-close-btn-action" style="padding: 9px 18px; font-size: 13px; font-weight: 700; border-radius: 6px;">Close</button>
+          <button type="button" class="btn btn-primary modal-apply-offer-btn" ${isAlreadyApplied ? 'disabled' : ''} style="background: ${isAlreadyApplied ? '#16a34a' : '#0f172a'}; border-color: ${isAlreadyApplied ? '#16a34a' : '#0f172a'}; padding: 9px 22px; font-size: 13.5px; font-weight: 800; color: #ffffff; border-radius: 6px; cursor: ${isAlreadyApplied ? 'default' : 'pointer'};">
+            ${isAlreadyApplied ? 'Applied ✓' : 'Apply Offer to Checkout'}
+          </button>
+        </div>
+      `;
+
+      modal.querySelector('.xmodal-header h3').textContent = 'Offer Details & Terms';
+      modal.querySelector('.xmodal-body').innerHTML = bodyHtml;
+
+      let footerEl = modal.querySelector('.xmodal-footer');
+      if (!footerEl) {
+        footerEl = document.createElement('div');
+        footerEl.className = 'xmodal-footer';
+        modal.querySelector('.xmodal-window').appendChild(footerEl);
+      }
+      footerEl.innerHTML = footerHtml;
+
+      // Close button
+      footerEl.querySelector('.modal-close-btn-action')?.addEventListener('click', () => {
+        modal.classList.remove('is-active');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      });
+
+      // Apply button inside modal
+      const modalApplyBtn = footerEl.querySelector('.modal-apply-offer-btn');
+      if (modalApplyBtn && !isAlreadyApplied) {
+        modalApplyBtn.addEventListener('click', () => {
+          const code = item.code;
+          if (!code || code === 'NO_COST_EMI') {
+            showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
+          } else {
+            try { navigator.clipboard.writeText(code); } catch {}
+            window._preselectedCouponCode = code;
+
+            modalApplyBtn.textContent = 'Applied ✓';
+            modalApplyBtn.style.background = '#16a34a';
+            modalApplyBtn.style.borderColor = '#16a34a';
+            modalApplyBtn.disabled = true;
+
+            if (pageApplyBtn) {
+              pageApplyBtn.textContent = 'Applied ✓';
+              pageApplyBtn.style.color = '#16a34a';
+              pageApplyBtn.disabled = true;
+            }
+
+            showToast(`Offer "${code || item.amountOff}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+          }
+        });
+      }
+
+      modal._open();
+    }
+
     // Helper to render individual Flipkart-Style offer card
     function renderFlipkartOfferCard(item) {
+      const offerJsonEscaped = encodeURIComponent(JSON.stringify(item));
       return `
-        <div class="offer-card-item">
+        <div class="offer-card-item" data-offer-data="${offerJsonEscaped}">
           ${item.badge ? `<span class="offer-best-pill">${item.badge}</span>` : `<div class="offer-card-placeholder-pill"></div>`}
-          <div class="offer-card-box">
+          <div class="offer-card-box" style="cursor: pointer;" title="Click chevron arrow or card for Offer Terms & Details">
             <div class="offer-card-main">
               <div class="offer-card-icon-col">
                 ${getOfferCardBrandIcon(item.logoSrc, item.partnerName)}
@@ -24912,7 +26565,7 @@ function initPageRouter() {
                 <button type="button" class="offer-card-apply-btn" data-code="${item.code || ''}">Apply</button>
               </div>
             </div>
-            <div class="offer-card-footer">
+            <div class="offer-card-footer" title="Click arrow to view details and terms">
               <span class="offer-card-type" title="${item.footer}">${item.footer}</span>
               <svg class="offer-card-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
             </div>
@@ -24921,142 +26574,48 @@ function initPageRouter() {
       `;
     }
 
-    // Classify offers into Bank Offers and UPI Offers
+    // Classify offers into Bank Offers, UPI Offers, and Vouchers
     const bankCardsList = [];
     const upiCardsList = [];
     const voucherCardsList = [];
 
-    // Process CMS promos first
-    activePromos.forEach(p => {
-      const isBank = p.type === 'bank' || /BANK|CARD/i.test(p.code) || p.bankPartner;
-      const isUpi = p.type === 'upi' || /UPI/i.test(p.code) || p.upiProvider;
-      const amountStr = p.discountType === 'percent' ? `${p.discountValue}% off` : `Flat ₹${p.discountValue.toLocaleString('en-IN')} off`;
-
-      if (isBank) {
-        let logoSrc = 'assets/banks/allbanks.svg';
-        let partner = p.bankPartner || 'Bank Card';
-
-        if (/MULTI/i.test(p.code)) {
-          logoSrc = 'assets/banks/hdfc.svg';
-          partner = 'HDFC, SBI, Axis & ICICI';
-        } else if (/SBI/i.test(p.code) || /^SBI/i.test(partner)) {
-          logoSrc = 'assets/banks/sbi.svg';
-          partner = 'Flipkart SBI';
-        } else if (/AXIS/i.test(p.code) || /AXIS/i.test(partner)) {
-          logoSrc = 'assets/banks/axis.svg';
-          partner = 'Flipkart Axis';
-        } else if (/HDFC/i.test(p.code) || /HDFC/i.test(partner)) {
-          logoSrc = 'assets/banks/hdfc.svg';
-          partner = 'HDFC Bank';
-        } else if (/ICICI/i.test(p.code) || /ICICI/i.test(partner)) {
-          logoSrc = 'assets/banks/icici.svg';
-          partner = 'ICICI Bank';
-        } else if (/KOTAK/i.test(p.code) || /KOTAK/i.test(partner)) {
-          logoSrc = 'assets/banks/kotak.svg';
-          partner = 'Kotak Bank';
-        } else if (/ALLCARD/i.test(p.code) || /ALL\s*BANK/i.test(partner)) {
-          logoSrc = 'assets/banks/allbanks.svg';
-          partner = 'All Banks (Any Card)';
-        }
-
-        bankCardsList.push({
-          badge: bankCardsList.length === 0 ? 'Best value for you' : '',
-          amountOff: amountStr,
-          partnerName: partner,
-          footer: 'Credit Card • Cashback',
-          code: p.code,
-          logoSrc: logoSrc
-        });
-      } else if (isUpi) {
-        let upiLogo = 'assets/upi/upi.svg';
-        const upiStr = (p.upiProvider || '').toLowerCase();
-        if (upiStr.includes('phonepe')) upiLogo = 'assets/upi/phonepe.svg';
-        else if (upiStr.includes('google') || upiStr.includes('gpay')) upiLogo = 'assets/upi/gpay.svg';
-        else if (upiStr.includes('paytm')) upiLogo = 'assets/upi/paytm.svg';
-        else if (upiStr.includes('bhim')) upiLogo = 'assets/upi/bhim.svg';
-        else upiLogo = 'assets/upi/upi.svg';
-
-        upiCardsList.push({
-          badge: 'Best value for you',
-          amountOff: amountStr,
-          partnerName: p.upiProvider || 'Google Pay, PhonePe, Paytm, BHIM',
-          footer: 'UPI App • Instant Cashback',
-          code: p.code,
-          logoSrc: upiLogo
-        });
-      } else {
-        voucherCardsList.push({
-          badge: voucherCardsList.length === 0 ? 'Best value for you' : '',
-          amountOff: amountStr,
-          partnerName: p.description ? p.description.split('.')[0] : `Code ${p.code}`,
-          footer: `Special Voucher • Min ₹${p.minOrder || 499}`,
-          code: p.code,
-          logoSrc: 'assets/banks/allbanks.svg'
-        });
+    // Retrieve real seller-defined offers for this product
+    let productCustomOffers = Array.isArray(prod.offers) ? [...prod.offers] : [];
+    try {
+      const savedCustomOffers = JSON.parse(localStorage.getItem(`xmart_custom_offers_${prod._id || prod.id || prod.name}`) || 'null');
+      if (savedCustomOffers && Array.isArray(savedCustomOffers) && savedCustomOffers.length > 0) {
+        productCustomOffers = savedCustomOffers;
       }
+    } catch { }
+    productCustomOffers = productCustomOffers.filter(o => o.code !== 'ADMIN_DEAL' && o.tag !== 'Admin Deal');
+
+    // 1. Process custom seller offers attached to this product
+    productCustomOffers.forEach(o => {
+      const isBank = o.type === 'bank' || (o.tag && /BANK|CARD/i.test(o.tag)) || (o.partnerName && /BANK|CARD/i.test(o.partnerName));
+      const isUpi = o.type === 'upi' || (o.tag && /UPI/i.test(o.tag)) || (o.partnerName && /UPI/i.test(o.partnerName));
+      const amountStr = o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? `${o.discountValue}% off` : `Flat ₹${o.discountValue} off`) : 'Active Offer');
+      const partnerStr = o.partnerName || o.partner || o.tag || 'Promotional Offer';
+      const logo = o.logoSrc || (isUpi ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg');
+      const footerStr = isUpi ? 'UPI App • Instant Discount' : (isBank ? 'Bank Card • Instant Discount' : `Special Voucher ${o.minOrder ? '• Min ₹' + o.minOrder : ''}`);
+
+      const cardObj = {
+        badge: o.badge || 'Best value for you',
+        amountOff: amountStr,
+        partnerName: partnerStr,
+        footer: footerStr,
+        code: o.code || '',
+        logoSrc: logo,
+        minOrder: o.minOrder || o.minPurchase || null,
+        validUntil: o.validUntil || o.expiryDate || 'Valid till month end',
+        description: o.description || o.terms || ''
+      };
+
+      if (isBank) bankCardsList.push(cardObj);
+      else if (isUpi) upiCardsList.push(cardObj);
+      else voucherCardsList.push(cardObj);
     });
 
-    // Add fallback bank cards if none from CMS
-    if (bankCardsList.length === 0) {
-      bankCardsList.push(
-        {
-          badge: 'Best value for you',
-          amountOff: 'Flat ₹500 off',
-          partnerName: 'Flipkart SBI',
-          footer: 'Credit Card • Cashback',
-          code: 'SBICARD500',
-          logoSrc: 'assets/banks/sbi.svg'
-        },
-        {
-          badge: '',
-          amountOff: 'Flat ₹300 off',
-          partnerName: 'Flipkart Axis',
-          footer: 'Credit Card • Cashback',
-          code: 'AXIS300',
-          logoSrc: 'assets/banks/axis.svg'
-        },
-        {
-          badge: '',
-          amountOff: '10% off (Up to ₹1,500)',
-          partnerName: 'HDFC & ICICI Bank',
-          footer: 'Credit Card • Instant',
-          code: 'HDFC1500',
-          logoSrc: 'assets/banks/hdfc.svg'
-        },
-        {
-          badge: '',
-          amountOff: 'Flat ₹200 off',
-          partnerName: 'All Banks (Any Card)',
-          footer: 'All Bank Cards • Instant OFF',
-          code: 'ALLCARDS200',
-          logoSrc: 'assets/banks/allbanks.svg'
-        }
-      );
-    }
 
-    // Add fallback UPI cards if none from CMS
-    if (upiCardsList.length === 0) {
-      upiCardsList.push({
-        badge: 'Best value for you',
-        amountOff: 'Flat ₹100 off',
-        partnerName: 'Google Pay, PhonePe, Paytm, BHIM',
-        footer: 'UPI App • Instant Cashback',
-        code: 'UPI100',
-        logoSrc: 'assets/upi/upi.svg'
-      });
-    }
-
-    // Add seller custom offers or default EMI
-    if (voucherCardsList.length === 0) {
-      voucherCardsList.push({
-        badge: 'Best value for you',
-        amountOff: `₹${Math.max(199, Math.round(finalPrice / 12)).toLocaleString('en-IN')}/m (12 mos)`,
-        partnerName: 'Major Bank Credit Cards',
-        footer: 'Credit Card • No Cost EMI',
-        code: 'NO_COST_EMI',
-        logoSrc: 'assets/banks/hdfc.svg'
-      });
-    }
 
     const bankOffersCardsHtml = bankCardsList.map(renderFlipkartOfferCard).join('');
     const upiOffersCardsHtml = upiCardsList.map(renderFlipkartOfferCard).join('');
@@ -25220,7 +26779,7 @@ function initPageRouter() {
                   <p class="prod-tax-note">Inclusive of all applicable taxes • No hidden charges</p>
                 </div>
 
-                <!-- Available Special Offers Box (Flipkart-Style Bank & UPI Cards) -->
+                <!-- Available Special Offers Box (Bank & UPI Cards) -->
                 <div class="prod-offers-box">
                   <div class="prod-offers-title">
                     <span class="prod-offers-title-text">
@@ -25233,31 +26792,42 @@ function initPageRouter() {
                     ` : ''}
                   </div>
 
-                  <!-- Bank offers section -->
-                  <div class="prod-offer-section">
-                    <h5 class="prod-offer-section-heading">Bank offers</h5>
-                    <div class="prod-offer-cards-grid">
-                      ${bankOffersCardsHtml}
+                  ${(bankCardsList.length > 0 || upiCardsList.length > 0 || voucherCardsList.length > 0) ? `
+                    ${bankCardsList.length > 0 ? `
+                    <!-- Bank offers section -->
+                    <div class="prod-offer-section">
+                      <h5 class="prod-offer-section-heading">Bank offers</h5>
+                      <div class="prod-offer-cards-grid">
+                        ${bankOffersCardsHtml}
+                      </div>
                     </div>
-                  </div>
+                    ` : ''}
 
-                  <!-- UPI offers section -->
-                  <div class="prod-offer-section">
-                    <h5 class="prod-offer-section-heading">UPI offers</h5>
-                    <div class="prod-offer-cards-grid">
-                      ${upiOffersCardsHtml}
+                    ${upiCardsList.length > 0 ? `
+                    <!-- UPI offers section -->
+                    <div class="prod-offer-section">
+                      <h5 class="prod-offer-section-heading">UPI offers</h5>
+                      <div class="prod-offer-cards-grid">
+                        ${upiOffersCardsHtml}
+                      </div>
                     </div>
-                  </div>
+                    ` : ''}
 
-                  <!-- Special vouchers & EMI section -->
-                  ${voucherOffersCardsHtml ? `
-                  <div class="prod-offer-section">
-                    <h5 class="prod-offer-section-heading">Special vouchers &amp; EMI</h5>
-                    <div class="prod-offer-cards-grid">
-                      ${voucherOffersCardsHtml}
+                    ${voucherCardsList.length > 0 ? `
+                    <!-- Special vouchers & EMI section -->
+                    <div class="prod-offer-section">
+                      <h5 class="prod-offer-section-heading">Special vouchers &amp; EMI</h5>
+                      <div class="prod-offer-cards-grid">
+                        ${voucherOffersCardsHtml}
+                      </div>
                     </div>
-                  </div>
-                  ` : ''}
+                    ` : ''}
+                  ` : `
+                    <div style="padding:16px 14px; text-align:center; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; color:#64748b; font-size:12.5px; margin-top:8px;">
+                      <strong>No promotional offers currently active for this product.</strong>
+                      ${canEditOffers ? `<p style="margin:4px 0 0; font-size:11.5px; color:#0284c7;">As seller, click "+ Seller: Add / Edit Offers" above to create bank or voucher discounts.</p>` : ''}
+                    </div>
+                  `}
                 </div>
 
                 <!-- Product Specifications Table -->
@@ -25777,28 +27347,52 @@ function initPageRouter() {
       }
     });
 
-    // Flipkart-Style Offer Cards "Apply" Button Clicks
-    pageContainer.querySelectorAll('.offer-card-apply-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const code = btn.dataset.code;
-        if (!code || code === 'NO_COST_EMI') {
-          showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
-          return;
+    // Flipkart-Style Offer Cards Event Listeners (Apply button + Card/Footer/Chevron Details Modal)
+    pageContainer.querySelectorAll('.offer-card-item').forEach(cardItem => {
+      let offerData = null;
+      try {
+        const rawData = cardItem.dataset.offerData;
+        if (rawData) {
+          offerData = JSON.parse(decodeURIComponent(rawData));
         }
+      } catch (e) {
+        console.error('Failed to parse offer data', e);
+      }
 
-        try {
-          navigator.clipboard.writeText(code);
-        } catch {}
+      const applyBtn = cardItem.querySelector('.offer-card-apply-btn');
 
-        window._preselectedCouponCode = code;
+      // 1. Direct Apply button click
+      if (applyBtn) {
+        applyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const code = applyBtn.dataset.code;
+          if (!code || code === 'NO_COST_EMI') {
+            showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
+            return;
+          }
 
-        btn.textContent = 'Applied ✓';
-        btn.style.color = '#16a34a';
-        btn.disabled = true;
+          try {
+            navigator.clipboard.writeText(code);
+          } catch {}
 
-        showToast(`Offer "${code}" applied! It will be automatically activated at checkout.`, 'success', 4000);
-      });
+          window._preselectedCouponCode = code;
+
+          applyBtn.textContent = 'Applied ✓';
+          applyBtn.style.color = '#16a34a';
+          applyBtn.disabled = true;
+
+          showToast(`Offer "${code}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+        });
+      }
+
+      // 2. Click on card box / footer / chevron arrow -> Open Offer Terms & Details Modal
+      const clickableBox = cardItem.querySelector('.offer-card-box');
+      if (clickableBox && offerData) {
+        clickableBox.addEventListener('click', (e) => {
+          if (e.target.closest('.offer-card-apply-btn')) return;
+          openSkuOfferDetailsModal(offerData, applyBtn);
+        });
+      }
     });
 
     // Add to cart with quantity
@@ -28710,7 +30304,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="offers-modal-dialog">
         <div class="offers-modal-header" style="background:#19324c !important; color:#ffffff !important; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.14);">
           <div>
-            <h3 class="offers-modal-title" style="color:#ffffff !important; margin:0; font-size:18px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;">🏷️ Active Store Offers &amp; Vouchers</h3>
+            <h3 class="offers-modal-title" style="color:#ffffff !important; margin:0; font-size:18px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;">Active Store Offers &amp; Vouchers</h3>
             <p class="offers-modal-sub" style="color:#e2e8f0 !important; margin:5px 0 0; font-size:13px; font-weight:500; opacity:0.95;">Apply these discount codes during checkout to save big on your orders.</p>
           </div>
           <button type="button" class="ap-modal-close-btn" id="offers-customer-modal-close" style="background:#0b1329 !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; width:34px; height:34px; border-radius:8px; font-size:16px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.5); transition:all 160ms ease;" aria-label="Close offers modal">✕</button>
@@ -28792,10 +30386,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   <span>${ctaLabel}</span>
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </a>
-                <span class="hero-slide-dest-pill" title="Destination link">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                  ${esc(destinationLink)}
-                </span>
               </div>
             </div>
           </div>

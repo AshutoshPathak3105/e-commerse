@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 36" width="48" height="36">
+  <rect width="48" height="36" rx="4" fill="#002B49"/>
+  <path d="M7 10 h16 v4 h-11 v4 h9 v4 h-9 v8 h-5 Z" fill="#FDB913"/>
+  <text x="24" y="22" font-family="Arial, sans-serif" font-weight="800" font-size="7.5" fill="#FFFFFF">FEDERAL</text>
+</svg>
