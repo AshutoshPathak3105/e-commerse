@@ -375,6 +375,35 @@ router.post(
   })
 );
 
+// ── POST /api/auth/verify-password ──────────────────────────
+router.post(
+  '/verify-password',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400);
+      throw new Error('Email and password are required');
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    if (!user || !user.isActive) {
+      res.status(401);
+      throw new Error('Account not found or inactive');
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      res.status(401);
+      throw new Error('Incorrect password. Access denied.');
+    }
+
+    res.json({
+      success: true,
+      message: 'Password verified successfully',
+    });
+  })
+);
+
 // ── POST /api/auth/google ─── Google OAuth 2.0 Login / Registration ──
 router.post(
   '/google',
