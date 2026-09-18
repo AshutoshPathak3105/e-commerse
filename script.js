@@ -162,6 +162,34 @@ let utilityTickerInterval = null;
 function initUtilityTicker() {
   const ticker = document.getElementById('utility-ticker');
   if (!ticker) return;
+
+  // ── Bind click and keyboard handlers so ticker is interactive ──
+  const parentGroup = ticker.closest('.utility-left-group') || ticker;
+  if (!ticker.dataset.clickBound) {
+    ticker.dataset.clickBound = 'true';
+
+    const handleTickerClick = (e) => {
+      e.preventDefault();
+      if (typeof window.openOffersModal === 'function') {
+        window.openOffersModal();
+      } else if (typeof openOffersModal === 'function') {
+        openOffersModal();
+      }
+    };
+
+    ticker.addEventListener('click', handleTickerClick);
+    if (parentGroup && parentGroup !== ticker) {
+      parentGroup.addEventListener('click', handleTickerClick);
+    }
+
+    ticker.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleTickerClick(e);
+      }
+    });
+  }
+
   if (utilityTickerInterval) {
     clearInterval(utilityTickerInterval);
     utilityTickerInterval = null;
@@ -28920,17 +28948,43 @@ function initLiveSearch() {
   // ── Category tracking (from "All" dropdown) ───────────────
   let activeCategory = 'All';
 
-  // ── Trending suggestions (shown when input is focused but empty) ──
-  const TRENDING = [
-    { label: 'Smartphones & Mobiles', category: 'Electronics' },
-    { label: "Women's Fashion Tops", category: 'Fashion' },
-    { label: 'Wireless Earbuds', category: 'Electronics' },
-    { label: 'Running Shoes Men', category: 'Fashion' },
-    { label: 'Home Decor Items', category: 'Home' },
-    { label: 'Skincare & Beauty', category: 'Beauty' },
-    { label: 'Smart Watches', category: 'Electronics' },
-    { label: "Today's Deals", category: 'All' },
-  ];
+  // ── Recent Searches Helper & State ───────────────────────
+  const RECENT_SEARCHES_KEY = 'xmart_recent_searches';
+
+  function getRecentSearches() {
+    try {
+      const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRecentSearch(query) {
+    if (!query || !query.trim()) return;
+    const q = query.trim();
+    let searches = getRecentSearches();
+    searches = searches.filter(s => s.toLowerCase() !== q.toLowerCase());
+    searches.unshift(q);
+    if (searches.length > 20) searches = searches.slice(0, 20);
+    try {
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+    } catch {}
+  }
+
+  function removeRecentSearch(query) {
+    let searches = getRecentSearches();
+    searches = searches.filter(s => s.toLowerCase() !== query.toLowerCase());
+    try {
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+    } catch {}
+  }
+
+  function clearRecentSearches() {
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch {}
+  }
 
   // ── Helper: highlight matched text ───────────────────────
   function highlight(text, query) {
@@ -28939,28 +28993,76 @@ function initLiveSearch() {
     return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="search-highlight">$1</mark>');
   }
 
-  // ── Helper: show trending suggestions ────────────────────
-  function showTrending() {
-    dropdown.innerHTML = `
-      <div class="search-dropdown-header">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        Trending Searches
-      </div>
-      ${TRENDING.map(t => `
-        <div class="search-trending-row" data-query="${t.label}">
-          <span class="search-trending-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
-          <span class="search-trending-label">${t.label}</span>
-          <span class="search-cat-badge">${t.category}</span>
+  // ── Helper: show recent searches ──────────────────────────
+  function showRecentSearches() {
+    const isMobileOrTab = window.innerWidth < 1024;
+    const limit = isMobileOrTab ? 5 : 10;
+    const searches = getRecentSearches().slice(0, limit);
+
+    if (searches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="search-dropdown-header">
+          <span style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Recent Searches
+          </span>
         </div>
-      `).join('')}
-    `;
-    dropdown.querySelectorAll('.search-trending-row').forEach(row => {
-      row.addEventListener('click', () => {
-        searchInput.value = row.dataset.query;
-        dropdown.classList.remove('is-active');
-        window._openCatalog?.('', row.dataset.query);
+        <div class="search-no-history" style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;font-weight:500;">
+          No recent searches
+        </div>
+      `;
+    } else {
+      dropdown.innerHTML = `
+        <div class="search-dropdown-header">
+          <span style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Recent Searches
+          </span>
+          <button type="button" class="search-history-clear-btn" id="clear-all-recent-btn">Clear All</button>
+        </div>
+        ${searches.map(s => {
+          const safeQuery = s.replace(/"/g, '&quot;');
+          return `
+            <div class="search-history-row" data-query="${safeQuery}">
+              <span class="search-history-clock">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </span>
+              <span class="search-history-text">${s}</span>
+              <button type="button" class="search-history-del-btn" title="Remove search" data-del-query="${safeQuery}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          `;
+        }).join('')}
+      `;
+
+      dropdown.querySelectorAll('.search-history-row').forEach(row => {
+        row.addEventListener('click', e => {
+          if (e.target.closest('.search-history-del-btn')) return;
+          const q = row.dataset.query;
+          searchInput.value = q;
+          saveRecentSearch(q);
+          dropdown.classList.remove('is-active');
+          const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
+          window._openDedicatedPage?.(targetCat, '', q);
+        });
       });
-    });
+
+      dropdown.querySelectorAll('.search-history-del-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const q = btn.dataset.delQuery;
+          removeRecentSearch(q);
+          showRecentSearches();
+        });
+      });
+
+      dropdown.querySelector('#clear-all-recent-btn')?.addEventListener('click', e => {
+        e.stopPropagation();
+        clearRecentSearches();
+        showRecentSearches();
+      });
+    }
     dropdown.classList.add('is-active');
   }
 
@@ -28989,7 +29091,7 @@ function initLiveSearch() {
   // ── Keyboard navigation state ─────────────────────────────
   let activeIdx = -1;
   function getRows() {
-    return [...dropdown.querySelectorAll('.search-result-row, .search-trending-row')];
+    return [...dropdown.querySelectorAll('.search-result-row, .search-history-row')];
   }
   function setActive(idx) {
     const rows = getRows();
@@ -29021,10 +29123,10 @@ function initLiveSearch() {
     }
   });
 
-  // ── Focus → show trending ─────────────────────────────────
+  // ── Focus → show recent searches ──────────────────────────
   searchInput.addEventListener('focus', () => {
     activeIdx = -1;
-    if (searchInput.value.trim().length < 2) showTrending();
+    if (searchInput.value.trim().length < 2) showRecentSearches();
   });
 
   // ── Input → live search ───────────────────────────────────
@@ -29034,7 +29136,7 @@ function initLiveSearch() {
     activeIdx = -1;
     const q = searchInput.value.trim();
     if (q.length < 2) {
-      showTrending();
+      showRecentSearches();
       return;
     }
 
@@ -29148,6 +29250,7 @@ function initLiveSearch() {
               if (item) {
                 dropdown.classList.remove('is-active');
                 searchInput.value = item.name;
+                saveRecentSearch(item.name);
                 window._openProductDetail?.(item);
               }
             });
@@ -29155,6 +29258,7 @@ function initLiveSearch() {
 
           dropdown.querySelector('.search-view-all')?.addEventListener('click', () => {
             dropdown.classList.remove('is-active');
+            saveRecentSearch(q);
             const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
             window._openDedicatedPage?.(targetCat, '', q);
           });
@@ -29190,6 +29294,7 @@ function initLiveSearch() {
     dropdown.classList.remove('is-active');
     activeIdx = -1;
     if (q) {
+      saveRecentSearch(q);
       const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
       window._openDedicatedPage?.(targetCat, '', q);
     }
