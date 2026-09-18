@@ -8504,7 +8504,7 @@ body:has(.cart-drawer.is-open) {
 
 /* Wishlist drawer — navy blue header */
 #wishlist-interactive-drawer .xmodal-header {
-  background: #0f1f3d;
+  background: #022F43 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0 !important;
 }
@@ -8514,13 +8514,20 @@ body:has(.cart-drawer.is-open) {
 #wishlist-interactive-drawer .xmodal-header h3 {
   color: #ffffff;
 }
-#wishlist-interactive-drawer .xmodal-close-btn {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+#wishlist-interactive-drawer .xmodal-close-btn,
+#cart-panel-close {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   border-radius: 8px !important;
+  transition: none !important;
 }
-#wishlist-interactive-drawer .xmodal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+#wishlist-interactive-drawer .xmodal-close-btn:hover,
+#cart-panel-close:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: none !important;
 }
 .xmodal-body { padding: 20px; }
 .xmodal-footer {
@@ -11697,29 +11704,45 @@ body:has(.cart-drawer.is-open) {
 /* Extra photos dynamic styling */
 .seller-extra-photo-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   background: #f8fafc;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
   transition: border-color 140ms ease;
 }
 
 .seller-extra-photo-row:hover {
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
+}
+
+.extra-photo-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.extra-photo-row-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .btn-remove-extra-photo {
   background: #fee2e2;
-  color: #991b1b;
+  color: #dc2626;
   border: 1px solid #fca5a5;
-  padding: 6px 10px;
+  padding: 5px 12px;
   border-radius: 6px;
   font-weight: 900;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   transition: background 120ms ease;
+  line-height: 1;
 }
 
 .btn-remove-extra-photo:hover {
@@ -12325,15 +12348,41 @@ body:has(.cart-drawer.is-open) {
   background: #047857;
 }
 
-.seller-btn-outline {
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #cbd5e1;
+.btn-track-seller-order {
+  background-color: #022F43 !important;
+  background: #022F43 !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
-.seller-btn-outline:hover {
-  background: #f1f5f9;
-  color: #111827;
+.btn-track-seller-order svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.btn-track-seller-order span {
+  color: #ffffff !important;
+}
+
+.btn-view-invoice {
+  background-color: #FF9400 !important;
+  background: #FF9400 !important;
+  color: #000000 !important;
+  border: none !important;
+}
+
+.btn-view-invoice span {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+.btn-cancel-seller-order {
+  white-space: nowrap !important;
+}
+
+.seller-actions-cell span {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
 }
 
 /* Payments & Settlements Layout */
@@ -13166,19 +13215,56 @@ body:has(.cart-drawer.is-open) {
     font-size: 12px !important;
   }
 
-  .seller-table-prod {
-    gap: 10px !important;
+  /* Premium E-Commerce Mobile Layout for Product & Qty Cell */
+  .seller-orders-table th:nth-child(2),
+  .seller-orders-table td:nth-child(2) {
+    min-width: 230px !important;
   }
 
-  .seller-table-prod img {
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 6px !important;
+  .seller-table-prod,
+  .seller-summary-prod-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
   }
 
-  .seller-table-prod-name {
+  .seller-table-prod img,
+  .seller-summary-prod-item img {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    border-radius: 8px !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    margin-bottom: 0 !important;
+  }
+
+  .seller-table-prod-details {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+  }
+
+  .seller-table-prod-name,
+  .seller-summary-prod-item strong {
     font-size: 12.5px !important;
-    max-width: 180px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1.35 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 175px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
   }
 
   .seller-tbl-btn {
@@ -14701,39 +14787,39 @@ body:has(.cart-drawer.is-open) {
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
   }
 
-  /* Wishlist side drawer — square edges */
+  /* Wishlist side drawer — flush top=0 on mobile */
   .xmodal-window--side,
   #wishlist-interactive-drawer .xmodal-window,
   #wishlist-interactive-drawer .xmodal-window--side {
-    top: 14px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+    top: 0 !important;
+    bottom: 0 !important;
     border-radius: 0 !important;
-    max-height: calc(100vh - 28px - env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
     max-width: 92vw !important;
     width: 92vw !important;
     overflow: hidden !important;
     overscroll-behavior: contain !important;
   }
 
-  /* Cart panel — square edges */
+  /* Cart panel — flush top=0 on mobile */
   #cart-panel {
-    top: 14px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+    top: 0 !important;
+    bottom: 0 !important;
     border-radius: 0 !important;
-    max-height: calc(100vh - 28px - env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
     overflow: hidden !important;
     overscroll-behavior: contain !important;
   }
 
-  /* Department sidebar / Hamburger menu — reduced top margin & rounded edges on mobile */
+  /* Department sidebar / Hamburger menu — flush top=0 on mobile */
   #dept-sidebar-panel {
-    top: 14px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+    top: 0 !important;
+    bottom: 0 !important;
     border-radius: 0 !important;
-    max-height: calc(100vh - 28px - env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
     overflow: hidden !important;
     overscroll-behavior: contain !important;
   }
@@ -19981,11 +20067,11 @@ html.admin-mode-preload #admin-panel-overlay {
 
 .offers-modal-header .ap-modal-close-btn,
 #offers-customer-modal-close {
-  background: #0b1329 !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  width: 34px !important;
-  height: 34px !important;
+  width: 32px !important;
+  height: 32px !important;
   border-radius: 8px !important;
   display: flex !important;
   align-items: center !important;
@@ -19993,13 +20079,13 @@ html.admin-mode-preload #admin-panel-overlay {
   cursor: pointer !important;
   font-size: 16px !important;
   font-weight: 800 !important;
-  transition: all 160ms ease !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  transition: none !important;
+  box-shadow: none !important;
 }
 
 .offers-modal-header .ap-modal-close-btn:hover,
 #offers-customer-modal-close:hover {
-  background: #0b1329 !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
   transform: none !important;
@@ -20151,7 +20237,7 @@ html.admin-mode-preload #admin-panel-overlay {
     z-index: 999999 !important;
     overflow: hidden !important;
     touch-action: none !important;
-    padding: 24px 12px 28px 12px !important;
+    padding: 10px 12px 10px 12px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -20160,7 +20246,8 @@ html.admin-mode-preload #admin-panel-overlay {
 
   .offers-modal-dialog {
     margin: auto !important;
-    max-height: calc(100vh - 56px) !important;
+    max-height: calc(100vh - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
     border-radius: 16px !important;
     width: 100% !important;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45) !important;
@@ -23289,22 +23376,25 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 
 #seller-order-summary-modal .xmodal-header,
-#seller-order-summary-empty-modal .xmodal-header {
-  background: #0f172a !important;
+#seller-order-summary-empty-modal .xmodal-header,
+#seller-order-tracking-modal .xmodal-header {
+  background: #022F43 !important;
   color: #ffffff !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
   padding: 16px 20px !important;
 }
 
 #seller-order-summary-modal .xmodal-header h3,
-#seller-order-summary-empty-modal .xmodal-header h3 {
+#seller-order-summary-empty-modal .xmodal-header h3,
+#seller-order-tracking-modal .xmodal-header h3 {
   color: #ffffff !important;
   font-weight: 800 !important;
   font-size: 16px !important;
 }
 
 #seller-order-summary-modal .xmodal-close-btn,
-#seller-order-summary-empty-modal .xmodal-close-btn {
+#seller-order-summary-empty-modal .xmodal-close-btn,
+#seller-order-tracking-modal .xmodal-close-btn {
   background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
@@ -23318,7 +23408,8 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 
 #seller-order-summary-modal .xmodal-close-btn:hover,
-#seller-order-summary-empty-modal .xmodal-close-btn:hover {
+#seller-order-summary-empty-modal .xmodal-close-btn:hover,
+#seller-order-tracking-modal .xmodal-close-btn:hover {
   background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
@@ -23688,10 +23779,10 @@ button[type="submit"] *,
   stroke: #000000 !important;
 }
 
-.btn-preview-angle:hover,
-.btn-preview-extra:hover,
-.btn-preview-edit-angle:hover,
-.btn-preview-edit-photo:hover,
+#btn-preview-angle:hover,
+#btn-preview-extra:hover,
+#btn-preview-edit-angle:hover,
+#btn-preview-edit-photo:hover,
 #btn-preview-img:hover,
 #btn-add-more-photo:hover,
 #btn-seller-add-spec:hover,
@@ -23700,6 +23791,47 @@ button[type="submit"] *,
   background: #e68800 !important;
   color: #000000 !important;
   border-color: #e68800 !important;
+}
+
+/* ── Seller Commercial Tax Invoice Modal Mobile Optimization ── */
+#seller-tax-invoice-modal .xmodal-window {
+  max-width: 820px !important;
+  width: 100% !important;
+}
+
+.seller-invoice-wrap {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.seller-inv-address-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 640px) {
+  #seller-tax-invoice-modal .xmodal-overlay {
+    padding: 10px 6px !important;
+  }
+  #seller-tax-invoice-modal .xmodal-window {
+    max-width: 100% !important;
+    border-radius: 12px !important;
+    max-height: calc(100vh - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+  #seller-tax-invoice-modal .xmodal-body {
+    padding: 12px 10px !important;
+  }
+  .seller-inv-header-meta {
+    text-align: left !important;
+    margin-top: 4px;
+  }
 }
 
 

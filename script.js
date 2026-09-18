@@ -750,8 +750,10 @@ function createModal(id, options = {}) {
   document.body.appendChild(overlay);
 
   const close = () => {
-    overlay.classList.remove('is-active');
+    overlay.classList.remove('is-active', 'open', 'show');
     overlay.style.display = 'none';
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     updateGlobalScrollLock();
     if (typeof options.onClose === 'function') {
       try { options.onClose(); } catch (err) { console.error(err); }
@@ -775,22 +777,45 @@ function createModal(id, options = {}) {
   return overlay;
 }
 
-/* ── Disable Background Vertical Scrolling When Any Modal/Popup is Open ── */
+/* ── Disable Background Vertical Scrolling ONLY When A Popup/Modal is ACTUALLY OPEN ── */
 function updateGlobalScrollLock() {
-  const hasModal = !!document.querySelector('.xmodal-overlay.is-active, #dept-sidebar-overlay.is-open, .modal.is-active, .offers-modal-backdrop, #offers-customer-modal-backdrop, [class*="modal-backdrop"]');
-  if (hasModal) {
+  const activeModals = document.querySelectorAll(
+    '.xmodal-overlay.is-active, .xmodal-overlay.open, #dept-sidebar-overlay.is-open, #dept-sidebar-panel.is-open, .modal.is-active, .modal.open, .modal.show, .cart-drawer.is-open, .cart-drawer.open, .offers-modal-backdrop.is-active, .offers-modal-backdrop.open, #offers-customer-modal-backdrop.is-active, #offers-customer-modal-backdrop.open, .auth-modal.is-active, .auth-modal.open, .ap-modal-backdrop.is-active, .ap-modal-backdrop.open, .admin-modal.is-active, .admin-modal.open'
+  );
+  
+  let hasOpenModal = false;
+  activeModals.forEach(el => {
+    if (el && (el.offsetWidth > 0 || el.offsetHeight > 0) && window.getComputedStyle(el).display !== 'none' && window.getComputedStyle(el).visibility !== 'hidden') {
+      hasOpenModal = true;
+    }
+  });
+
+  if (hasOpenModal) {
     document.documentElement.classList.add('modal-open', 'no-scroll');
     document.body.classList.add('modal-open', 'no-scroll');
+    document.body.style.overflow = 'hidden';
   } else {
-    document.documentElement.classList.remove('modal-open', 'no-scroll');
-    document.body.classList.remove('modal-open', 'no-scroll');
+    document.documentElement.classList.remove('modal-open', 'no-scroll', 'panel-open');
+    document.body.classList.remove('modal-open', 'no-scroll', 'panel-open');
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.touchAction = '';
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.touchAction = '';
   }
+}
+
+// Ensure scroll lock is updated on initial script load and DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', updateGlobalScrollLock);
+} else {
+  updateGlobalScrollLock();
 }
 
 // Touch event listener for mobile/tablet background scroll prevention
 document.addEventListener('touchmove', (e) => {
   if (document.body.classList.contains('modal-open') || document.documentElement.classList.contains('modal-open')) {
-    const isInsideScrollableModal = e.target.closest('.xmodal-body, .xmodal-window, .offers-modal-body, .dept-sidebar-panel, [class*="modal-body"], [class*="modal-dialog"], [class*="modal-content"]');
+    const isInsideScrollableModal = e.target.closest('.xmodal-body, .xmodal-window, .offers-modal-body, .dept-sidebar-panel, [class*="modal-body"], [class*="modal-dialog"], [class*="modal-content"], .seller-invoice-wrap, .order-body-wrap');
     if (!isInsideScrollableModal) {
       e.preventDefault();
     }
@@ -4799,10 +4824,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             { id: 'b2', title: 'Top Tier Audio & Headphones', subtitle: 'Sony & Bose with Active ANC up to 45% OFF', tag: 'Bestseller' },
             { id: 'b3', title: 'Designer Ethnic & Winter Wear', subtitle: 'Curated Premium Collections for 2026', tag: 'Trending' },
           ],
-          promotions: [
-            { code: 'XMART10', discountPct: 10, minOrder: 999, active: true },
-            { code: 'FESTIVE20', discountPct: 20, minOrder: 2499, active: true },
-          ],
+          promotions: [],
         }),
       };
     }
@@ -20351,8 +20373,8 @@ function initPageRouter() {
                   <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Enterprise-level tracking of customer orders, courier dispatch pipeline, marketplace commissions, and automated bank disbursements.</p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <button type="button" id="btn-seller-export-report" class="seller-btn-outline" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;font-weight:800;background:#ffffff;color:#1e293b;cursor:pointer;">
-                    <span>Export Financial Report</span>
+                  <button type="button" id="btn-seller-export-report" class="seller-btn-outline" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none !important;border-radius:8px;font-size:12.5px;font-weight:900;background:#FF9400 !important;color:#000000 !important;cursor:pointer;box-shadow:0 2px 8px rgba(255,148,0,0.35);" title="Export Financial Report">
+                    <span style="color:#000000 !important;font-weight:900;">Export Financial Report</span>
                   </button>
                 </div>
               </div>
@@ -20397,7 +20419,7 @@ function initPageRouter() {
                 <div class="seller-orders-toolbar">
                   <div class="seller-search-box">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="seller-orders-search">
+                    <input type="text" id="seller-orders-search" placeholder="Search by Order ID, Product Name, Customer Name, AWB or SKU...">
                   </div>
                   <div class="seller-filter-group">
                     <select id="seller-orders-period" class="seller-toolbar-select">
@@ -21168,16 +21190,22 @@ function initPageRouter() {
       const newIdx = currentRows.length + 1;
       const row = document.createElement('div');
       row.className = 'seller-extra-photo-row';
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;flex-wrap:wrap;';
+      row.style.cssText = 'display:flex;flex-direction:column;gap:10px;background:#f8fafc;padding:12px 14px;border-radius:10px;border:1px solid #cbd5e1;';
       row.innerHTML = `
-        <span class="extra-photo-lbl" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11px;font-weight:900;padding:5px 10px;border-radius:6px;letter-spacing:0.5px;display:inline-flex;align-items:center;white-space:nowrap;">Extra Photo #${newIdx}:</span>
-        <input type="text" class="seller-input seller-extra-photo-tag" placeholder="Tag (e.g. IN-HAND)" value="IN-HAND" style="width:145px;font-size:12px;font-weight:800;padding:7px 10px;border-radius:6px;border:1.5px solid #cbd5e1;background:#ffffff;color:#0f172a;text-transform:uppercase;" />
-        <div class="angle-thumb-box extra-thumb-box" style="width:38px;height:38px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
-          <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
+        <div class="extra-photo-row-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <span class="extra-photo-lbl" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:11.5px;font-weight:900;padding:5px 12px;border-radius:6px;letter-spacing:0.5px;display:inline-flex;align-items:center;white-space:nowrap;">Extra Photo #${newIdx}:</span>
+          <button type="button" class="btn-remove-extra-photo" style="padding:5px 12px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:900;font-size:13px;line-height:1;" title="Remove this photo">✕</button>
         </div>
-        <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:200px;font-size:12.5px;padding:7px 10px;" />
-        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
-        <button type="button" class="btn-remove-extra-photo" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove this photo">✕</button>
+        <div class="extra-photo-row-tag-wrap" style="width:100%;">
+          <input type="text" class="seller-input seller-extra-photo-tag" placeholder="Tag (e.g. IN-HAND)" style="width:100%;font-size:12px;font-weight:800;padding:8px 12px;border-radius:6px;border:1.5px solid #cbd5e1;background:#ffffff;color:#0f172a;text-transform:uppercase;box-sizing:border-box;" />
+        </div>
+        <div class="extra-photo-row-url-wrap" style="display:flex;align-items:center;gap:8px;width:100%;">
+          <div class="angle-thumb-box extra-thumb-box" style="width:38px;height:38px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+            <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
+          </div>
+          <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:0;font-size:12.5px;padding:8px 12px;box-sizing:border-box;" />
+          <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;white-space:nowrap;flex-shrink:0;">Preview</button>
+        </div>
       `;
       extraPhotosContainer.appendChild(row);
 
@@ -23248,13 +23276,17 @@ function initPageRouter() {
         orders = [];
       }
 
+      // Filter out any legacy mock demo orders
+      orders = orders.filter(o => o && !String(o.id || o._id || '').includes('demo'));
+
       // Automatically reconcile and merge any customer orders from xmart_customer_orders
       try {
         const custOrders = JSON.parse(localStorage.getItem('xmart_customer_orders') || '[]');
         if (Array.isArray(custOrders) && custOrders.length > 0) {
+          const realCustOrders = custOrders.filter(c => c && !String(c.id || c._id || c.orderId || '').includes('demo'));
           const existingIds = new Set(orders.map(o => String(o.id || o.orderId)));
           let didMerge = false;
-          custOrders.forEach(co => {
+          realCustOrders.forEach(co => {
             const oId = String(co.orderId || co.id || co._id);
             if (!existingIds.has(oId)) {
               existingIds.add(oId);
@@ -23527,15 +23559,19 @@ function initPageRouter() {
 
               <!-- Product & SKU -->
               <td>
-                <div class="seller-table-prod">
-                  <img src="${firstItem.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${firstItem.name}">
-                  <div class="seller-table-prod-details">
-                    <strong class="seller-table-prod-name" title="${firstItem.name}">${firstItem.name}${moreCount}</strong>
-                    <div style="display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap;">
-                      <span class="seller-sku-badge">${firstItem.sku || 'SKU-STD-01'}</span>
-                      <small style="color:#64748b;font-weight:700;">Qty: ${firstItem.quantity || 1}</small>
+                <div class="seller-table-prod-group" style="display:flex;flex-direction:column;gap:12px;">
+                  ${((ord.items && ord.items.length > 0) ? ord.items : [firstItem]).map(it => `
+                    <div class="seller-table-prod">
+                      <img src="${it.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${it.name}">
+                      <div class="seller-table-prod-details">
+                        <strong class="seller-table-prod-name" title="${it.name}">${it.name}</strong>
+                        <div style="display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap;">
+                          <span class="seller-sku-badge">${it.sku || 'SKU-STD-01'}</span>
+                          <small style="color:#64748b;font-weight:700;">Qty: ${it.quantity || 1}</small>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  `).join('<div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>')}
                 </div>
               </td>
 
@@ -23576,9 +23612,9 @@ function initPageRouter() {
 
               <!-- 6. Track Status -->
               <td style="text-align:center;vertical-align:middle;">
-                <button type="button" class="seller-btn-sm btn-track-seller-order" data-id="${ord.id}" style="background:#0878f9;color:#ffffff;border:none;padding:7px 12px;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(8,120,249,0.25);" title="Track Live Order Courier Journey">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-                  <span>Track Status</span>
+                <button type="button" class="seller-btn-sm btn-track-seller-order" data-id="${ord.id}" style="background:#022F43 !important;color:#ffffff !important;border:none;padding:7px 12px;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(2,47,67,0.25);white-space:nowrap;" title="Track Live Order Courier Journey">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="stroke:#ffffff !important;color:#ffffff !important;"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span style="color:#ffffff !important;">Track Status</span>
                 </button>
               </td>
 
@@ -23586,30 +23622,30 @@ function initPageRouter() {
               <td>
                 <div class="seller-actions-cell" style="display:flex;flex-direction:column;gap:6px;">
                   ${isPending ? `
-                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Cancel Order & Notify Buyer">
-                      <span>✖ Cancel Order</span>
+                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;" title="Cancel Order & Notify Buyer">
+                      <span>Cancel Order</span>
                     </button>
                   ` : ''}
                   ${isShipped ? `
                     <button type="button" class="seller-btn-sm seller-btn-success btn-deliver-order" data-id="${ord.id}" title="Mark Delivered upon Buyer OTP Verification">
                       <span>✓ Mark Delivered</span>
                     </button>
-                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Cancel Order & Notify Buyer">
-                      <span>✖ Cancel Order</span>
+                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;" title="Cancel Order & Notify Buyer">
+                      <span>Cancel Order</span>
                     </button>
                   ` : ''}
                   ${isCancelled ? `
-                    <span style="font-size:11px;color:#dc2626;font-weight:800;background:#fef2f2;padding:5px 10px;border-radius:6px;border:1px solid #fecaca;display:inline-block;text-align:center;">
-                      ✖ Cancelled by ${ord.cancelledBy === 'seller' ? 'Seller' : 'User'}
+                    <span style="font-size:11.5px;color:#dc2626;font-weight:800;background:#fef2f2;padding:6px 10px;border-radius:6px;border:1px solid #fecaca;display:inline-flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap !important;word-break:keep-all !important;width:100%;box-sizing:border-box;">
+                      Cancelled by ${ord.cancelledBy === 'seller' ? 'Seller' : 'User'}
                     </span>
                   ` : ''}
                   ${isDelivered ? `
-                    <span style="font-size:11px;color:#16a34a;font-weight:800;background:#f0fdf4;padding:5px 10px;border-radius:6px;border:1px solid #bbf7d0;display:inline-block;text-align:center;">
+                    <span style="font-size:11px;color:#16a34a;font-weight:800;background:#f0fdf4;padding:5px 10px;border-radius:6px;border:1px solid #bbf7d0;display:inline-block;text-align:center;white-space:nowrap !important;">
                       ✓ Delivered
                     </span>
                   ` : ''}
-                  <button type="button" class="seller-btn-sm seller-btn-outline btn-view-invoice" data-id="${ord.id}">
-                    <span>Tax Invoice</span>
+                  <button type="button" class="seller-btn-sm btn-view-invoice" data-id="${ord.id}" style="background:#FF9400 !important;color:#000000 !important;border:none;padding:7px 12px;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;box-shadow:0 2px 6px rgba(255,148,0,0.25);">
+                    <span style="color:#000000 !important;font-weight:800;">Tax Invoice</span>
                   </button>
                 </div>
               </td>
@@ -23767,6 +23803,14 @@ function initPageRouter() {
         const destCity = ord.shippingAddress ? `${ord.shippingAddress.city}, ${ord.shippingAddress.state}` : 'Destination Address';
         const custName = ord.customerName || 'Customer';
 
+        const orderDateObj = new Date(ord.orderDate || Date.now());
+        const formatDateShort = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+        const step1Date = formatDateShort(orderDateObj);
+        const step2Date = formatDateShort(ord.dispatchedAt || new Date(orderDateObj.getTime() + 1 * 86400000));
+        const step3Date = formatDateShort(ord.inTransitAt || new Date(orderDateObj.getTime() + 2 * 86400000));
+        const step4Date = formatDateShort(ord.deliveredAt || new Date(orderDateObj.getTime() + 3 * 86400000));
+
         const trackingModal = createModal(modalId, {
           title: `Live Courier Tracking Timeline - Order #${ord.id}`,
           large: true,
@@ -23774,7 +23818,7 @@ function initPageRouter() {
             <div style="padding:16px 20px;color:#0f172a;">
               <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <div>
-                  <div style="font-size:12px;font-weight:800;color:#0284c7;text-transform:uppercase;letter-spacing:0.5px;">FBX Express Logistics AWB</div>
+                  <div style="font-size:12px;font-weight:800;color:#16a34a;text-transform:uppercase;letter-spacing:0.5px;">FBX Express Logistics AWB</div>
                   <strong style="font-size:18px;color:#0f172a;font-family:monospace;">${trkNo}</strong>
                   <div style="font-size:12.5px;color:#64748b;margin-top:2px;">Carrier: <strong>FBX Express Air & Surface Logistics</strong></div>
                 </div>
@@ -23803,44 +23847,63 @@ function initPageRouter() {
                 <h4 style="margin:0 0 16px;font-size:14px;font-weight:800;color:#0f172a;">Live Shipment Progress Timeline</h4>
 
                 ${isCancelled ? `
-                  <div style="background:#fef2f2;border:1px solid #fecaca;padding:14px 18px;border-radius:8px;color:#dc2626;font-weight:700;display:flex;align-items:center;gap:10px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-                    <span>This order was cancelled. Courier shipment voided.</span>
+                  <div style="display:flex;align-items:center;position:relative;margin:20px 0 10px;width:240px;">
+                    <div style="position:absolute;top:15px;left:25%;right:25%;height:4px;background:#dc2626;z-index:1;"></div>
+                    
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">✓</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Order Placed</span>
+                      <small style="font-size:10.5px;color:#000000 !important;font-weight:700;display:block;margin-top:2px;">${step1Date}</small>
+                    </div>
+
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:900;font-size:13px;">✕</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#dc2626;display:block;">Cancelled</span>
+                      <small style="font-size:10.5px;color:#991b1b !important;font-weight:700;display:block;margin-top:2px;">${step1Date}</small>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#dc2626;color:#ffffff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;">✕</div>
+                    <div>
+                      <strong style="font-size:13px;color:#991b1b;display:block;">Shipment Cancelled by ${ord.cancelledBy === 'seller' ? 'Seller' : 'Customer'}</strong>
+                      <span style="font-size:12px;color:#7f1d1d;">Courier dispatch was stopped and voided. Full refund has been processed.</span>
+                    </div>
                   </div>
                 ` : `
                   <div style="display:flex;justify-content:space-between;position:relative;margin:20px 10px 10px;">
-                    <div style="position:absolute;top:15px;left:5%;right:5%;height:4px;background:${isDelivered ? '#16a34a' : (isShipped ? '#0284c7' : '#e2e8f0')};z-index:1;"></div>
+                    <div style="position:absolute;top:15px;left:12.5%;right:12.5%;height:4px;background:${isDelivered ? '#16a34a' : (isShipped ? '#16a34a' : '#e2e8f0')};z-index:1;"></div>
                     
                     <div style="text-align:center;position:relative;z-index:2;flex:1;">
-                      <div style="width:32px;height:32px;border-radius:50%;background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">✓</div>
+                      <div style="width:32px;height:32px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">✓</div>
                       <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Order Placed</span>
-                      <small style="font-size:10px;color:#64748b;">Verified</small>
+                      <small style="font-size:10.5px;color:#000000 !important;font-weight:700;display:block;margin-top:2px;">${step1Date}</small>
                     </div>
 
                     <div style="text-align:center;position:relative;z-index:2;flex:1;">
-                      <div style="width:32px;height:32px;border-radius:50%;background:${isShipped || isDelivered ? '#0284c7' : '#94a3b8'};color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isShipped || isDelivered ? '✓' : '2'}</div>
+                      <div style="width:32px;height:32px;border-radius:50%;background:${isShipped || isDelivered ? '#16a34a' : '#94a3b8'};color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isShipped || isDelivered ? '✓' : '2'}</div>
                       <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Dispatched</span>
-                      <small style="font-size:10px;color:#64748b;">${isShipped || isDelivered ? 'FBX Picked Up' : 'Pending'}</small>
+                      <small style="font-size:10.5px;color:#000000 !important;font-weight:700;display:block;margin-top:2px;">${isShipped || isDelivered ? step2Date : 'Est. ' + step2Date}</small>
                     </div>
 
                     <div style="text-align:center;position:relative;z-index:2;flex:1;">
-                      <div style="width:32px;height:32px;border-radius:50%;background:${isDelivered ? '#16a34a' : (isShipped ? '#0284c7' : '#e2e8f0')};color:${isShipped || isDelivered ? '#fff' : '#64748b'};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isDelivered ? '✓' : '3'}</div>
+                      <div style="width:32px;height:32px;border-radius:50%;background:${isShipped || isDelivered ? '#16a34a' : '#94a3b8'};color:${isShipped || isDelivered ? '#fff' : '#ffffff'};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isShipped || isDelivered ? '✓' : '3'}</div>
                       <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">In-Transit</span>
-                      <small style="font-size:10px;color:#64748b;">${isShipped ? 'Cargo Hub' : (isDelivered ? 'Passed' : 'Pending')}</small>
+                      <small style="font-size:10.5px;color:#000000 !important;font-weight:700;display:block;margin-top:2px;">${isShipped || isDelivered ? step3Date : 'Est. ' + step3Date}</small>
                     </div>
 
                     <div style="text-align:center;position:relative;z-index:2;flex:1;">
                       <div style="width:32px;height:32px;border-radius:50%;background:${isDelivered ? '#16a34a' : '#e2e8f0'};color:${isDelivered ? '#fff' : '#64748b'};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isDelivered ? '✓' : '4'}</div>
                       <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Delivered</span>
-                      <small style="font-size:10px;color:#64748b;">${isDelivered ? 'Doorstep Complete' : 'Pending'}</small>
+                      <small style="font-size:10.5px;color:#000000 !important;font-weight:700;display:block;margin-top:2px;">${isDelivered ? step4Date : 'Est. ' + step4Date}</small>
                     </div>
                   </div>
                 `}
               </div>
 
-              <div style="display:flex;justify-content:flex-end;gap:10px;">
-                <button type="button" class="com-btn-outline" onclick="this.closest('.xmodal-overlay')._close()" style="padding:8px 18px;font-size:13px;font-weight:800;border-radius:8px;">
-                  Close Window
+              <div style="display:flex;justify-content:center;margin-top:20px;">
+                <button type="button" onclick="this.closest('.xmodal-overlay')._close()" style="background:#FF9400 !important;color:#000000 !important;font-size:14px;font-weight:900;padding:11px 64px;min-width:180px;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 10px rgba(255,148,0,0.35);">
+                  Close
                 </button>
               </div>
             </div>
@@ -24240,7 +24303,7 @@ function initPageRouter() {
                       ${(ord.items || []).map(item => `
                         <tr style="border-bottom:1px solid #f1f5f9;">
                           <td style="padding:12px 14px;min-width:180px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="seller-summary-prod-item" style="display:flex;align-items:center;gap:10px;">
                               <img src="${item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${item.name}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0;">
                               <div style="min-width:0;">
                                 <strong style="color:#0f172a;display:block;margin-bottom:2px;font-size:12.5px;line-height:1.3;word-break:break-word;">${item.name}</strong>
@@ -24333,116 +24396,118 @@ function initPageRouter() {
           title: `Commercial Tax Invoice & Settlement Breakdown — ${ord.id}`,
           large: true,
           bodyHtml: `
-            <div class="seller-invoice-wrap" style="font-family:inherit;color:#0f172a;">
+            <div class="seller-invoice-wrap" style="font-family:inherit;color:#0f172a;box-sizing:border-box;">
               <!-- Invoice Header Banner -->
               <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0f172a;padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
-                <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;">
+                <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;max-width:100%;">
                   <div style="border-radius:10px;overflow:hidden;background:#000000;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:inline-block;line-height:0;">
-                    <img src="logo.png" alt="X-Mart Logo" style="height:40px;width:auto;display:block;border-radius:10px;" />
+                    <img src="logo.png" alt="X-Mart Logo" style="height:38px;width:auto;display:block;border-radius:10px;" />
                   </div>
                   <div style="text-align:left;">
-                    <h2 style="margin:0;font-size:19px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">TAX INVOICE / SETTLEMENT SHEET</h2>
-                    <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Issued under Section 31 of CGST Act, 2017 • Original for Recipient</p>
+                    <h2 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;word-break:break-word;">TAX INVOICE / SETTLEMENT SHEET</h2>
+                    <p style="margin:2px 0 0;font-size:11.5px;color:#64748b;">Issued under Section 31 of CGST Act, 2017 • Original for Recipient</p>
                   </div>
                 </div>
-                <div style="text-align:right;">
-                  <strong style="font-size:14px;color:#0f172a;font-family:monospace;">INV-XM-2026-${ord.id.replace('XM-', '')}</strong>
-                  <div style="font-size:12px;color:#64748b;">Order Date: ${formattedDate}</div>
-                  <div style="font-size:11.5px;color:#0f172a;font-weight:700;">Fulfillment: FBX Express India</div>
+                <div class="seller-inv-header-meta" style="text-align:right;">
+                  <strong style="font-size:13.5px;color:#0f172a;font-family:monospace;display:block;word-break:break-all;">INV-XM-2026-${ord.id.replace('XM-', '')}</strong>
+                  <div style="font-size:11.5px;color:#64748b;">Order Date: ${formattedDate}</div>
+                  <div style="font-size:11px;color:#0f172a;font-weight:700;">Fulfillment: FBX Express India</div>
                 </div>
               </div>
 
-              <!-- Seller & Buyer Address Grid -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
-                <div>
-                  <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">SOLD BY (REGISTERED MERCHANT)</div>
-                  <strong style="font-size:14px;color:#0f172a;">${currentSeller?.storeName || 'X-Mart Verified Store'}</strong>
-                  <div style="font-size:12.5px;color:#475569;margin-top:2px;">Legal Name: ${currentSeller?.bizName || 'Commercial Enterprise Ltd'}</div>
+              <!-- Seller & Buyer Address Grid (Responsive Stacking) -->
+              <div class="seller-inv-address-grid">
+                <div style="min-width:0;word-break:break-word;">
+                  <div style="font-size:10.5px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">SOLD BY (REGISTERED MERCHANT)</div>
+                  <strong style="font-size:13.5px;color:#0f172a;">${currentSeller?.storeName || 'X-Mart Verified Store'}</strong>
+                  <div style="font-size:12px;color:#475569;margin-top:2px;">Legal Name: ${currentSeller?.bizName || 'Commercial Enterprise Ltd'}</div>
                   <div style="font-size:12px;color:#475569;">GSTIN / Tax ID: <strong>${currentSeller?.gstin || '27AABCT3518Q1ZV'}</strong></div>
                   <div style="font-size:12px;color:#475569;">State: Maharashtra (Code 27)</div>
                 </div>
-                <div>
-                  <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BILL TO & SHIP TO (CUSTOMER)</div>
-                  <strong style="font-size:14px;color:#0f172a;">${ord.customerName}</strong>
-                  <div style="font-size:12.5px;color:#475569;margin-top:2px;">${ord.shippingAddress.street}</div>
-                  <div style="font-size:12.5px;color:#475569;">${ord.shippingAddress.city}, ${ord.shippingAddress.state} - ${ord.shippingAddress.pincode}</div>
+                <div style="min-width:0;word-break:break-word;">
+                  <div style="font-size:10.5px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BILL TO & SHIP TO (CUSTOMER)</div>
+                  <strong style="font-size:13.5px;color:#0f172a;">${ord.customerName}</strong>
+                  <div style="font-size:12px;color:#475569;margin-top:2px;">${ord.shippingAddress.street}</div>
+                  <div style="font-size:12px;color:#475569;">${ord.shippingAddress.city}, ${ord.shippingAddress.state} - ${ord.shippingAddress.pincode}</div>
                   <div style="font-size:12px;color:#475569;">Contact: ${ord.customerPhone} • ${ord.customerEmail}</div>
                 </div>
               </div>
 
-              <!-- Itemized Products Table -->
-              <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
-                <thead>
-                  <tr style="background:#0f172a;color:#ffffff;text-align:left;">
-                    <th style="padding:8px 10px;">Item Description</th>
-                    <th style="padding:8px 10px;">HSN/SAC</th>
-                    <th style="padding:8px 10px;">Qty</th>
-                    <th style="padding:8px 10px;">Gross Price</th>
-                    <th style="padding:8px 10px;">Total (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${(ord.items || []).map(it => `
-                    <tr style="border-bottom:1px solid #e2e8f0;">
-                      <td style="padding:10px;">
-                        <strong>${it.name}</strong><br>
-                        <small style="color:#64748b;font-family:monospace;">SKU: ${it.sku || 'N/A'}</small>
-                      </td>
-                      <td style="padding:10px;color:#64748b;">85183000</td>
-                      <td style="padding:10px;">${it.quantity}</td>
-                      <td style="padding:10px;">${Currency.format(it.price)}</td>
-                      <td style="padding:10px;font-weight:800;">${Currency.format(it.price * it.quantity)}</td>
+              <!-- Itemized Products Table (Mobile Scrollable) -->
+              <div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:20px;border-radius:8px;border:1px solid #e2e8f0;box-sizing:border-box;">
+                <table style="width:100%;min-width:440px;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:#0f172a;color:#ffffff;text-align:left;">
+                      <th style="padding:8px 10px;width:40%;">Item Description</th>
+                      <th style="padding:8px 10px;">HSN/SAC</th>
+                      <th style="padding:8px 10px;">Qty</th>
+                      <th style="padding:8px 10px;">Gross Price</th>
+                      <th style="padding:8px 10px;">Total (₹)</th>
                     </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    ${(ord.items || []).map(it => `
+                      <tr style="border-bottom:1px solid #e2e8f0;">
+                        <td style="padding:10px;">
+                          <strong>${it.name}</strong><br>
+                          <small style="color:#64748b;font-family:monospace;">SKU: ${it.sku || 'N/A'}</small>
+                        </td>
+                        <td style="padding:10px;color:#64748b;">85183000</td>
+                        <td style="padding:10px;">${it.quantity}</td>
+                        <td style="padding:10px;">${Currency.format(it.price)}</td>
+                        <td style="padding:10px;font-weight:800;">${Currency.format(it.price * it.quantity)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
 
               <!-- Financial & Marketplace Deduction Breakdown Card -->
-              <div style="background:#f1f5f9;border-radius:10px;padding:16px;border:1px solid #cbd5e1;margin-bottom:20px;">
-                <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;">
+              <div style="background:#f1f5f9;border-radius:10px;padding:14px;border:1px solid #cbd5e1;margin-bottom:20px;box-sizing:border-box;">
+                <h4 style="margin:0 0 10px;font-size:12.5px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;word-break:break-word;">
                   Commercial Settlement & Fee Breakdown (Amazon/Flipkart Model)
                 </h4>
-                <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-                  <div style="display:flex;justify-content:space-between;color:#0f172a;">
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;color:#0f172a;gap:8px;flex-wrap:wrap;">
                     <span>Gross Customer Paid Amount:</span>
                     <strong>${Currency.format(f.grossAmount)}</strong>
                   </div>
-                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;color:#dc2626;gap:8px;flex-wrap:wrap;">
                     <span>Less: Marketplace Referral Commission (8%):</span>
                     <strong>-${Currency.format(f.referralFee)}</strong>
                   </div>
-                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;color:#dc2626;gap:8px;flex-wrap:wrap;">
                     <span>Less: Fixed Closing & Payment Fee (2% + ₹15):</span>
                     <strong>-${Currency.format(f.closingFee)}</strong>
                   </div>
-                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;color:#dc2626;gap:8px;flex-wrap:wrap;">
                     <span>Less: FBX Express Pick & Pack Courier Logistics:</span>
                     <strong>-${Currency.format(f.logisticsFee)}</strong>
                   </div>
-                  <div style="display:flex;justify-content:space-between;color:#dc2626;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;color:#dc2626;gap:8px;flex-wrap:wrap;">
                     <span>Less: 18% GST on Marketplace Services:</span>
                     <strong>-${Currency.format(f.gstOnFees)}</strong>
                   </div>
-                  <div style="border-top:2px dashed #94a3b8;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;font-size:15px;">
-                    <strong style="color:#000000;">Net Merchant Bank Disbursement Payout:</strong>
-                    <strong style="color:#000000;font-size:17px;">${Currency.format(f.netPayout)}</strong>
+                  <div style="border-top:2px dashed #94a3b8;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <strong style="color:#000000;font-size:13.5px;">Net Merchant Bank Disbursement Payout:</strong>
+                    <strong style="color:#000000;font-size:16px;">${Currency.format(f.netPayout)}</strong>
                   </div>
                 </div>
               </div>
 
               <!-- Tracking Barcode & Modal Controls -->
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid #e2e8f0;padding-top:14px;">
-                <div>
-                  <div style="font-size:11px;font-weight:800;color:#64748b;">FBX LOGISTICS AIRWAY BILL (AWB)</div>
-                  <div style="font-family:monospace;font-size:13px;font-weight:800;color:#0f172a;letter-spacing:1px;">
+                <div style="min-width:0;">
+                  <div style="font-size:10.5px;font-weight:800;color:#64748b;">FBX LOGISTICS AIRWAY BILL (AWB)</div>
+                  <div style="font-family:monospace;font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.5px;word-break:break-all;">
                     ||||| |||| |||||||| |||| ||||| ${ord.trackingNumber || 'FBX-TRK-98421038'}
                   </div>
                 </div>
-                <div style="display:flex;gap:8px;">
-                  <button type="button" id="btn-print-seller-invoice" style="padding:9px 18px;background:#0f172a;color:#ffffff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;max-width:300px;">
+                  <button type="button" id="btn-print-seller-invoice" style="flex:1;padding:9px 14px;background:#0f172a;color:#ffffff;border:none;border-radius:8px;font-weight:800;font-size:12.5px;cursor:pointer;white-space:nowrap;">
                     Print Tax Invoice
                   </button>
-                  <button type="button" onclick="document.getElementById('${modalId}')._close()" style="padding:9px 16px;background:#e2e8f0;color:#1e293b;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                  <button type="button" onclick="document.getElementById('${modalId}')._close()" style="padding:9px 14px;background:#e2e8f0;color:#1e293b;border:none;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">
                     Close
                   </button>
                 </div>
@@ -25090,59 +25155,8 @@ function initPageRouter() {
         }
       } catch (e) { }
 
-      // Fallback sample mock orders if user hasn't made any order yet
-      if (allOrders.length === 0) {
-        allOrders = [
-          {
-            _id: 'ord_demo101',
-            orderId: 'XM-82910471',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            totalPrice: 17699,
-            status: 'Pending',
-            paymentMethod: 'COD',
-            orderItems: [
-              {
-                id: 'prod-ssd',
-                name: 'SanDisk 2TB Extreme Portable SSD USB 3.2',
-                image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=600',
-                price: 14999,
-                quantity: 1
-              },
-              {
-                id: 'prod-rucksack',
-                name: 'Wildcraft 45L Adventure Rucksack Backpack',
-                image: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600',
-                price: 2700,
-                quantity: 1
-              }
-            ]
-          },
-          {
-            _id: 'ord_demo102',
-            orderId: 'XM-51789678',
-            createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-            totalPrice: 146201,
-            status: 'Confirmed',
-            paymentMethod: 'Credit Card (Online)',
-            orderItems: [
-              {
-                id: 'prod-macbook',
-                name: 'Apple MacBook Air M3',
-                image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600',
-                price: 114900,
-                quantity: 1
-              },
-              {
-                id: 'prod-suit',
-                name: "Men's Premium Slim-Fit Suit",
-                image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600',
-                price: 8999,
-                quantity: 1
-              }
-            ]
-          }
-        ];
-      }
+      // Filter out any mock/demo entries if present
+      allOrders = allOrders.filter(o => o && !String(o._id || o.orderId || o.id || '').includes('demo'));
 
       // Sort orders descending so latest/newest order displays at the top
       allOrders.sort((a, b) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime());
@@ -25517,8 +25531,8 @@ function initPageRouter() {
               </div>
               <div>
                 <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">ESTIMATED DELIVERY</div>
-                <div style="font-size:18px;font-weight:900;color:#15803d;margin-top:3px;">${status === 'Delivered' ? 'Delivered Successfully' : (status === 'Cancelled' ? 'Order Cancelled' : 'Tomorrow by 8:00 PM')}</div>
-                <div style="font-size:12.5px;color:#000000;margin-top:4px;">${status === 'Delivered' ? 'Delivered to recipient' : 'Express Doorstep Delivery Guaranteed'}</div>
+                <div style="font-size:18px;font-weight:900;color:${status === 'Cancelled' ? '#dc2626' : '#15803d'};margin-top:3px;">${status === 'Delivered' ? 'Delivered Successfully' : (status === 'Cancelled' ? 'Order Cancelled' : 'Tomorrow by 8:00 PM')}</div>
+                <div style="font-size:12.5px;color:#000000;margin-top:4px;">${status === 'Delivered' ? 'Delivered to recipient' : (status === 'Cancelled' ? 'Courier dispatch stopped' : 'Express Doorstep Delivery Guaranteed')}</div>
               </div>
               <div>
                 <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">DELIVERY ADDRESS</div>
@@ -25553,7 +25567,7 @@ function initPageRouter() {
                 ${/cancell?ed/i.test(status || '') || order.isCancelled ? `
                   <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Order Placed</div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">1. Order Placed</div>
                       <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
@@ -25561,68 +25575,44 @@ function initPageRouter() {
 
                   <div class="track-milestone-card" style="background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 4px 12px rgba(239,68,68,0.15);">
                     <div>
-                      <div style="font-weight:900;font-size:14px;color:#dc2626;">✕ 2. Order Cancelled</div>
+                      <div style="font-weight:900;font-size:14px;color:#dc2626;">2. Order Cancelled</div>
                       <div style="font-size:12px;color:#991b1b;margin-top:3px;font-weight:600;">Cancelled on customer request</div>
                       <div style="font-size:11.5px;color:#7f1d1d;margin-top:2px;">${payMethod.includes('COD') || payMethod.includes('Cash') ? 'No payment charged (Cash on Delivery)' : 'Refund Processed to Original Payment Method'}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:#dc2626;background:#fee2e2;padding:5px 12px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;border:1px solid #fca5a5;">CANCELLED</div>
                   </div>
-
-                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
-                    <div>
-                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">3. In Transit</div>
-                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Skipped due to cancellation</div>
-                    </div>
-                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
-                  </div>
-
-                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
-                    <div>
-                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">4. Out for Delivery</div>
-                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Skipped due to cancellation</div>
-                    </div>
-                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
-                  </div>
-
-                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
-                    <div>
-                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">5. Delivered</div>
-                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Order Cancelled</div>
-                    </div>
-                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
-                  </div>
                 ` : `
                   <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Placed</div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">1. Placed</div>
                       <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
                   </div>
                   <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 2. Confirmed</div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">2. Confirmed</div>
                       <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">VERIFIED</div>
                   </div>
                   <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:${status === 'Delivered' ? 'none' : '0 2px 8px rgba(37,99,235,0.1)'};">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓ ' : ''}3. In Transit</div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">3. In Transit</div>
                       <div style="font-size:11.5px;color:#000000;margin-top:2px;">Bilaspur Hub</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : 'rgba(37,99,235,0.12)'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
                   </div>
                   <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">4. Out for Delivery</div>
                       <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
                   </div>
                   <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                     <div>
-                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">5. Delivered</div>
                       <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
                     </div>
                     <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
@@ -29842,9 +29832,9 @@ function buildCartPanel() {
   p.id = 'cart-panel';
   p.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:380px;max-width:95vw;background:#fff;z-index:99999;box-shadow:-6px 0 28px rgba(0,0,0,.2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 300ms cubic-bezier(.16,1,.3,1), visibility 300ms;font-family:inherit;visibility:hidden;pointer-events:none;';
   p.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#0f1f3d;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#022F43;">
       <h2 style="margin:0;font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;">Your Cart</h2>
-      <button id="cart-panel-close" aria-label="Close cart" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;transition:background 140ms ease;">
+      <button id="cart-panel-close" aria-label="Close cart" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);cursor:pointer;color:#fff;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;transition:none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
@@ -31720,66 +31710,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const DEFAULT_PROMOTIONS = [
-    {
-      code: 'XMART10',
-      title: '10% Storewide Mega Discount',
-      description: 'Flat 10% instant discount across all products on minimum bag value of ₹999.',
-      discountType: 'percent',
-      discountValue: 10,
-      minOrder: 999,
-      type: 'voucher',
-      scope: 'storewide',
-      active: true
-    },
-    {
-      code: 'FESTIVE20',
-      title: '20% Festive Super Saver',
-      description: 'Extra 20% discount on festive orders above ₹2,499.',
-      discountType: 'percent',
-      discountValue: 20,
-      minOrder: 2499,
-      type: 'voucher',
-      scope: 'storewide',
-      active: true
-    },
-    {
-      code: 'APEX25',
-      title: 'Apex Tech Exclusive 25% OFF',
-      description: 'Exclusive 25% discount for verified orders at Apex Tech Store.',
-      discountType: 'percent',
-      discountValue: 25,
-      minOrder: 1499,
-      type: 'voucher',
-      scope: 'store',
-      storeName: 'Apex Tech Store',
-      active: true
-    },
-    {
-      code: 'UPI100',
-      title: 'Flat ₹100 Cashback on UPI (GPay, PhonePe, Paytm)',
-      description: 'Flat ₹100 discount when paying with Google Pay, PhonePe, Paytm, or any UPI app on orders above ₹499.',
-      discountType: 'flat',
-      discountValue: 100,
-      minOrder: 499,
-      type: 'upi',
-      upiProvider: 'All UPI Apps, Google Pay, PhonePe, Paytm, BHIM UPI',
-      scope: 'storewide',
-      active: true
-    },
-    {
-      code: 'SBICARD500',
-      title: 'SBI Card Super Deal: Flat ₹500 OFF Across SBI Debit & Credit Cards',
-      description: 'Flat ₹500 instant discount on SBI Credit & Debit cards for orders above ₹2,999.',
-      discountType: 'flat',
-      discountValue: 500,
-      minOrder: 2999,
-      type: 'bank',
-      bankPartner: 'SBI Debit & Credit Cards',
-      scope: 'storewide',
-      active: true
-    }
-  ];
+  const DEFAULT_PROMOTIONS = [];
 
   function bindTickerGlobalClicks() {
     const selectors = [
@@ -31813,7 +31744,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const sourcePromos = (cmsData && Array.isArray(cmsData.promotions) && cmsData.promotions.length > 0)
       ? cmsData.promotions
-      : DEFAULT_PROMOTIONS;
+      : [];
 
     const promos = sourcePromos.filter(p => {
       if (p.active === false) return false;
@@ -31824,7 +31755,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const countBadge = document.getElementById('topbar-offers-count');
     if (countBadge) {
-      countBadge.textContent = `${promos.length} Live`;
+      countBadge.textContent = promos.length > 0 ? `${promos.length} Live` : `0 Live`;
     }
 
     // Populate Utility Ticker with CMS announcement and offers in Image 2 format
@@ -31836,42 +31767,23 @@ document.addEventListener('DOMContentLoaded', () => {
         slides.push(`<div class="ticker-slide is-active">${cleanAnnounce}</div>`);
       }
       promos.forEach(p => {
-        let slideText = '';
-        if (p.code === 'XMART10') {
-          slideText = '10% Storewide Mega Discount: Up to 10% OFF Across All Products + Extra Savings with Code XMART10 (Min. ₹999)!';
-        } else if (p.code === 'FESTIVE20') {
-          slideText = '20% Festive Super Saver: Up to 20% OFF Across All Festive Orders + Extra Discount with Code FESTIVE20 (Min. ₹2,499)!';
-        } else if (p.code === 'APEX25') {
-          slideText = 'Apex Tech Exclusive: Up to 25% OFF Across Apex Tech Store + Extra Discount with Code APEX25 (Min. ₹1,499)!';
-        } else if (p.code === 'UPI100') {
-          slideText = 'UPI Payment Bonanza: Flat ₹100 Cashback Across All Orders + Extra Savings with Code UPI100 on UPI!';
-        } else if (p.code === 'SBICARD500') {
-          slideText = 'SBI Card Super Deal: Flat ₹500 OFF Across SBI Debit & Credit Cards + Extra Discount with Code SBICARD500!';
-        } else if (p.code === 'AXIS300') {
-          slideText = 'Axis Bank Instant Savings: Flat ₹300 OFF Across Axis Bank Cards + Extra Discount with Code AXIS300!';
-        } else if (p.code === 'ALLCARDS200') {
-          slideText = 'All Bank Cards Flash Offer: Flat ₹200 OFF Across Any Debit or Credit Card + Extra Savings with Code ALLCARDS200!';
-        } else if (p.code === 'MULTI_CARD_BONANZA') {
-          slideText = 'Multi-Bank Card Bonanza: Flat ₹500 OFF Across HDFC, SBI, Axis & ICICI Cards + Extra Discount with Code MULTI_CARD_BONANZA!';
-        } else {
-          const title = (p.title || p.code || 'Exclusive Deal').replace(/[:!]+$/, '').trim();
-          const discountDesc = p.discountType === 'percent'
-            ? `Up to ${p.discountValue}% OFF`
-            : `Flat ₹${Number(p.discountValue).toLocaleString('en-IN')} OFF`;
-          let scopeDesc = 'Across All Products';
-          if (p.scope === 'store' && p.storeName) {
-            scopeDesc = `Across ${p.storeName}`;
-          } else if (p.applicableProducts && p.applicableProducts.length > 0) {
-            scopeDesc = `Across ${p.applicableProducts.join(', ')}`;
-          } else if (p.type === 'bank') {
-            const bPartner = p.bankPartner || (p.bankPartners && p.bankPartners.length ? p.bankPartners.join(', ') : 'Bank Cards');
-            scopeDesc = `Across ${bPartner}`;
-          } else if (p.type === 'upi') {
-            scopeDesc = `Across UPI Payment Apps`;
-          }
-          const minText = p.minOrder > 0 ? ` (Min. ₹${Number(p.minOrder).toLocaleString('en-IN')})` : '';
-          slideText = `${title}: ${discountDesc} ${scopeDesc} + Extra Savings with Code ${p.code}${minText}!`;
+        const title = (p.title || p.code || 'Exclusive Deal').replace(/[:!]+$/, '').trim();
+        const discountDesc = p.discountType === 'percent'
+          ? `Up to ${p.discountValue}% OFF`
+          : `Flat ₹${Number(p.discountValue).toLocaleString('en-IN')} OFF`;
+        let scopeDesc = 'Across All Products';
+        if (p.scope === 'store' && p.storeName) {
+          scopeDesc = `Across ${p.storeName}`;
+        } else if (p.applicableProducts && p.applicableProducts.length > 0) {
+          scopeDesc = `Across ${p.applicableProducts.join(', ')}`;
+        } else if (p.type === 'bank') {
+          const bPartner = p.bankPartner || (p.bankPartners && p.bankPartners.length ? p.bankPartners.join(', ') : 'Bank Cards');
+          scopeDesc = `Across ${bPartner}`;
+        } else if (p.type === 'upi') {
+          scopeDesc = `Across UPI Payment Apps`;
         }
+        const minText = p.minOrder > 0 ? ` (Min. ₹${Number(p.minOrder).toLocaleString('en-IN')})` : '';
+        const slideText = `${title}: ${discountDesc} ${scopeDesc} + Extra Savings with Code ${p.code}${minText}!`;
         slides.push(`<div class="ticker-slide">${slideText}</div>`);
       });
       if (slides.length > 0) {
@@ -31897,8 +31809,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
       });
     }
-    if (!promos || promos.length === 0) {
-      promos = DEFAULT_PROMOTIONS;
+    if (!promos || !Array.isArray(promos)) {
+      promos = [];
     }
     const existing = document.getElementById('offers-customer-modal-backdrop');
     if (existing) existing.remove();
@@ -31949,7 +31861,15 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
-    }).join('') : `<div style="text-align:center; padding:30px; color:#64748b;">No active promotions at the moment. Check back soon!</div>`;
+    }).join('') : `
+      <div style="text-align:center; padding:56px 20px; color:#64748b;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom:12px;"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8V6a5 5 0 0 1 10 0v2"/><circle cx="12" cy="14" r="1.5"/></svg>
+        <strong style="font-size:16px; color:#0f172a; display:block; margin-bottom:6px;">No active vouchers or coupons available</strong>
+        <p style="font-size:13px; max-width:420px; margin:0 auto; line-height:1.5; color:#64748b;">
+          There are currently no promotional vouchers or discount coupons active. Active store offers will appear here when created.
+        </p>
+      </div>
+    `;
 
     backdrop.innerHTML = `
       <div class="offers-modal-dialog">
@@ -31958,7 +31878,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h3 class="offers-modal-title" style="color:#ffffff !important; margin:0; font-size:18px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;">Active Store Offers &amp; Vouchers</h3>
             <p class="offers-modal-sub" style="color:#e2e8f0 !important; margin:5px 0 0; font-size:13px; font-weight:500; opacity:0.95;">Apply these discount codes during checkout to save big on your orders.</p>
           </div>
-          <button type="button" class="ap-modal-close-btn" id="offers-customer-modal-close" style="background:#0b1329 !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; width:34px; height:34px; border-radius:8px; font-size:16px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.5); transition:all 160ms ease;" aria-label="Close offers modal">✕</button>
+          <button type="button" class="ap-modal-close-btn" id="offers-customer-modal-close" style="background:rgba(255,255,255,0.15) !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; width:32px; height:32px; border-radius:8px; font-size:16px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:none;" aria-label="Close offers modal">✕</button>
         </div>
         <div class="offers-modal-body">
           ${cardsHtml}

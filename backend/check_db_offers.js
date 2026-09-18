@@ -14,17 +14,13 @@ async function checkOffersAndCms() {
     );
     console.log('Cleared DB Product offers result:', prodRes);
 
-    // 2. Clear dummy CMS promotions
+    // 2. Clear all dummy CMS promotions
     const cmsList = await CmsConfig.find({});
     for (const cms of cmsList) {
-      if (Array.isArray(cms.promotions)) {
-        cms.promotions = cms.promotions.filter(p => 
-          !['SBICARD500', 'AXIS300', 'ALLCARDS200', 'MULTI_CARD_BONANZA'].includes(p.code)
-        );
-        await cms.save();
-      }
+      cms.promotions = [];
+      await cms.save();
     }
-    console.log('Cleared dummy CMS promotions in DB.');
+    console.log('Cleared all dummy CMS promotions in DB completely.');
 
     await mongoose.disconnect();
   } catch (err) {
