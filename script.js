@@ -1137,6 +1137,11 @@ function recordPlacedOrder(orderPayload) {
     sellerOrders.unshift(sellerOrder);
     localStorage.setItem('xmart_seller_orders_v1', JSON.stringify(sellerOrders));
 
+    // Sync order to MongoDB backend database for real-time cross-device availability
+    if (typeof pushOrderToBackendDatabase === 'function') {
+      pushOrderToBackendDatabase(sellerOrder);
+    }
+
     // Auto-display order summary popup modal if seller window is active
     try {
       if (typeof window.openSellerOrderSummaryModal === 'function') {
@@ -19688,20 +19693,7 @@ function initPageRouter() {
             </div>
 
             <!-- ── Top-Right Account Status Tag ── -->
-            <div class="seller-hero-status-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-              <button type="button" id="btn-hero-open-order-summary" style="
-                display:inline-flex;align-items:center;gap:7px;
-                background:#0f172a;color:#ffffff;
-                border:1.5px solid rgba(255,255,255,0.3);
-                padding:7px 16px;border-radius:24px;
-                font-size:12.5px;font-weight:800;
-                letter-spacing:0.03em;cursor:pointer;
-                box-shadow:0 4px 12px rgba(0,0,0,0.3);
-                transition:transform 0.15s ease;
-              " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-                <span>View Order Summary Popup</span>
-              </button>
+            <div class="seller-hero-status-wrap" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
               ${isEligible ? `
                 <span class="seller-hero-status-badge" style="
                   display:inline-flex;align-items:center;gap:7px;
@@ -19747,6 +19739,19 @@ function initPageRouter() {
                   Not Verified
                 </span>
               `}
+              <button type="button" id="btn-hero-open-order-summary" style="
+                display:inline-flex;align-items:center;gap:7px;
+                background:#0f172a !important;color:#ffffff !important;
+                border:1.5px solid rgba(255,255,255,0.3);
+                padding:7px 16px;border-radius:24px;
+                font-size:12.5px;font-weight:800;
+                letter-spacing:0.03em;cursor:pointer;
+                box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                transition:transform 0.15s ease;
+              " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="stroke:#ffffff !important;"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                <span style="color:#ffffff !important;">View Order Summary</span>
+              </button>
             </div>
           </div>
 
@@ -20000,7 +20005,7 @@ function initPageRouter() {
                             <img src="" alt="FRONT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img" class="seller-input seller-angle-input" data-angle="front" placeholder="https://... Front View image URL (Cover image)" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img" data-tag="FRONT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img" data-tag="FRONT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20017,7 +20022,7 @@ function initPageRouter() {
                             <img src="" alt="LEFT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-left" class="seller-input seller-angle-input" data-angle="left" placeholder="https://... Left Side View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-left" data-tag="LEFT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-left" data-tag="LEFT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20034,7 +20039,7 @@ function initPageRouter() {
                             <img src="" alt="TOP" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-top" class="seller-input seller-angle-input" data-angle="top" placeholder="https://... Top View image URL (Shown under TOP tab in user account)" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-top" data-tag="TOP" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-top" data-tag="TOP" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20051,7 +20056,7 @@ function initPageRouter() {
                             <img src="" alt="RIGHT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-right" class="seller-input seller-angle-input" data-angle="right" placeholder="https://... Right Side View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-right" data-tag="RIGHT" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-right" data-tag="RIGHT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20068,7 +20073,7 @@ function initPageRouter() {
                             <img src="" alt="BACK" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-back" class="seller-input seller-angle-input" data-angle="back" placeholder="https://... Back View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-back" data-tag="BACK" style="background:#ff6a00;color:#ffffff;border:1px solid #ea580c;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-back" data-tag="BACK" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
                     </div>
@@ -20080,7 +20085,7 @@ function initPageRouter() {
                           <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photo &amp; Gallery</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add side view, back view, top angle, and detail shots for 360° product exploration.</small>
                         </div>
-                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;font-weight:800;font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
+                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
                           <span style="color:#ffffff !important;font-size:14px;font-weight:900;">+</span>
                           <span style="color:#ffffff !important;font-weight:800;">Add Photo Slot</span>
                         </button>
@@ -20108,7 +20113,7 @@ function initPageRouter() {
                           <strong style="font-size:13px;color:#0f172a;display:block;">Product Specifications Table (Customer View)</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add custom specs like RAM, Storage, Color, Display, Processor, Material, etc. to appear directly on the specifications card.</small>
                         </div>
-                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;font-weight:800;cursor:pointer;padding:7px 16px;border-radius:6px;font-size:12.5px;">
+                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:7px 16px;border-radius:6px;font-size:12.5px;">
                           <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
                           <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
                         </button>
@@ -20207,9 +20212,9 @@ function initPageRouter() {
                     ✓ Free express delivery by tomorrow
                   </div>
                   <button type="button" class="storefront-sim-btn" disabled>ADD TO CART</button>
-                  <button type="button" id="btn-preview-order-summary" style="margin-top:10px;width:100%;padding:10px;background:#0f172a;color:#ffffff;border:none;border-radius:8px;font-weight:800;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(0,0,0,0.18);transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-                    <span>View Order Summary Details (Popup)</span>
+                  <button type="button" id="btn-preview-order-summary" style="margin-top:10px;width:100%;padding:10px;background:#0f172a !important;color:#ffffff !important;border:none;border-radius:8px;font-weight:800;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(0,0,0,0.18);transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="stroke:#ffffff !important;"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    <span style="color:#ffffff !important;">View Order Summary Details (Popup)</span>
                   </button>
                 </div>
 
@@ -20626,13 +20631,23 @@ function initPageRouter() {
       window.openSellerOrderSummaryModal();
     });
 
-    // ── Auto-Display Order Details Summary Popup Window if customer orders exist ──
+    // ── Auto-Display Order Details Summary Popup Window if customer orders exist for TODAY ──
     setTimeout(() => {
       try {
+        const isPlacedToday = (dateStr) => {
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return false;
+          const now = new Date();
+          return d.getFullYear() === now.getFullYear() &&
+                 d.getMonth() === now.getMonth() &&
+                 d.getDate() === now.getDate();
+        };
         const sellerOrders = typeof getSellerOrders === 'function' ? getSellerOrders() : [];
-        if (sellerOrders && sellerOrders.length > 0) {
+        const todayOrders = sellerOrders.filter(o => isPlacedToday(o.orderDate));
+        if (todayOrders && todayOrders.length > 0) {
           if (typeof window.openSellerOrderSummaryModal === 'function') {
-            window.openSellerOrderSummaryModal(sellerOrders[0].id);
+            window.openSellerOrderSummaryModal(todayOrders[0].id);
           }
         }
       } catch (err) {
@@ -21141,7 +21156,7 @@ function initPageRouter() {
           <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
         </div>
         <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:200px;font-size:12.5px;padding:7px 10px;" />
-        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
+        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
         <button type="button" class="btn-remove-extra-photo" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove this photo">✕</button>
       `;
       extraPhotosContainer.appendChild(row);
@@ -22814,7 +22829,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-front" class="seller-input edit-angle-input" data-angle="front" value="${(prod.angleImages?.front || prod.images?.[0] || prod.img || '').replace(/"/g, '&quot;')}" placeholder="Front View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-front" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-front" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 2. Left Side View -->
@@ -22825,7 +22840,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-left" class="seller-input edit-angle-input" data-angle="left" value="${(prod.angleImages?.left || prod.images?.[1] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Left Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-left" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-left" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 3. Top View -->
@@ -22836,7 +22851,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-top" class="seller-input edit-angle-input" data-angle="top" value="${(prod.angleImages?.top || prod.images?.[2] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Top View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-top" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-top" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 4. Right Side View -->
@@ -22847,7 +22862,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-right" class="seller-input edit-angle-input" data-angle="right" value="${(prod.angleImages?.right || prod.images?.[3] || prod.images?.[1] || '').replace(/"/g, '&quot;')}" placeholder="Right Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-right" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-right" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 5. Back View -->
@@ -22858,7 +22873,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-back" class="seller-input edit-angle-input" data-angle="back" value="${(prod.angleImages?.back || prod.images?.[4] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Back View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-back" style="padding:4px 10px;font-size:11.5px;background:#ff6a00;color:#fff;border:1px solid #ea580c;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-back" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
             </div>
@@ -22878,7 +22893,7 @@ function initPageRouter() {
                 <label style="font-size:12.5px;font-weight:800;color:#1e293b;margin:0;">Custom Technical &amp; Product Specifications</label>
                 <small style="color:#64748b;font-size:11.5px;display:block;">Specifications displayed on the product specifications card.</small>
               </div>
-              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:6px 14px;font-weight:800;display:inline-flex;align-items:center;gap:6px;background:#ff6a00 !important;color:#ffffff !important;border:1px solid #ea580c !important;border-radius:6px;cursor:pointer;">
+              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:6px 14px;font-weight:800;display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">
                 <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
                 <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
               </button>
@@ -23139,7 +23154,70 @@ function initPageRouter() {
     // ══════════════════════════════════════════════════════════════════
     // COMMERCIAL SELLER ORDERS, PAYMENTS & SETTLEMENTS ANALYTICS ENGINE
     // ══════════════════════════════════════════════════════════════════
+    // Cross-Device Backend Database Sync Engine
+    function pushOrderToBackendDatabase(orderObj) {
+      if (!orderObj) return;
+      fetch('/api/orders/public-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderObj)
+      }).then(r => r.json()).then(data => {
+        if (data && data.success) {
+          console.log('✓ Order synced to MongoDB backend database:', orderObj.id);
+        }
+      }).catch(err => {
+        console.warn('Backend order sync notice (offline mode active):', err);
+      });
+    }
+
+    let _isSyncingOrdersDB = false;
+    function syncOrdersFromBackendDatabase() {
+      if (_isSyncingOrdersDB) return;
+      _isSyncingOrdersDB = true;
+
+      fetch('/api/orders/public-all')
+        .then(r => r.json())
+        .then(data => {
+          _isSyncingOrdersDB = false;
+          if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
+            let localOrders = [];
+            try {
+              localOrders = JSON.parse(localStorage.getItem('xmart_seller_orders_v1') || '[]');
+            } catch (e) { localOrders = []; }
+            if (!Array.isArray(localOrders)) localOrders = [];
+
+            const localMap = new Map();
+            localOrders.forEach(o => localMap.set(String(o.id), o));
+
+            let didAddRemote = false;
+            data.data.forEach(dbOrd => {
+              const oId = String(dbOrd.id);
+              if (!localMap.has(oId)) {
+                localMap.set(oId, dbOrd);
+                didAddRemote = true;
+              }
+            });
+
+            if (didAddRemote) {
+              const merged = Array.from(localMap.values()).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+              localStorage.setItem('xmart_seller_orders_v1', JSON.stringify(merged));
+              console.log('✓ Synced cross-device orders from backend database into local storage');
+            }
+          }
+        })
+        .catch(err => {
+          _isSyncingOrdersDB = false;
+        });
+    }
+
+    // Trigger initial sync & start background poll every 6 seconds for real-time mobile/desktop sync
+    syncOrdersFromBackendDatabase();
+    if (!window._ordersSyncInterval) {
+      window._ordersSyncInterval = setInterval(syncOrdersFromBackendDatabase, 6000);
+    }
+
     function getSellerOrders() {
+      syncOrdersFromBackendDatabase();
       let orders = [];
       try {
         const local = localStorage.getItem('xmart_seller_orders_v1');
@@ -23623,29 +23701,42 @@ function initPageRouter() {
         });
       }
 
-      // 5b. Global Order Details Summary Popup Modal for Seller Account
+      // 5b. Global Order Details Summary Popup Modal for Seller Account (Today's Orders Only)
       window.openSellerOrderSummaryModal = function(orderId = null) {
         if (!Auth.getUser()) {
           showToast('Seller Access Denied: Please sign in to view Order Details.', 'warn', 4500);
           window._openAuth?.('signin');
           return;
         }
-        const orders = typeof getSellerOrders === 'function' ? getSellerOrders() : [];
 
-        if (!orders || orders.length === 0) {
+        const isPlacedToday = (dateStr) => {
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return false;
+          const now = new Date();
+          return d.getFullYear() === now.getFullYear() &&
+                 d.getMonth() === now.getMonth() &&
+                 d.getDate() === now.getDate();
+        };
+
+        const allOrders = typeof getSellerOrders === 'function' ? getSellerOrders() : [];
+        // Filter strictly for TODAY'S orders (excluding past/yesterday's orders)
+        const todayOrders = allOrders.filter(o => isPlacedToday(o.orderDate));
+
+        if (!todayOrders || todayOrders.length === 0) {
           const emptyModalId = 'seller-order-summary-empty-modal';
           document.getElementById(emptyModalId)?.remove();
           const emptyModal = createModal(emptyModalId, {
-            title: 'Customer Order Summary Details',
+            title: "Today's Customer Order Summary Details",
             large: false,
             bodyHtml: `
               <div style="text-align:center;padding:30px 16px;color:#0f172a;">
                 <div style="width:54px;height:54px;background:#f1f5f9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#64748b;">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                 </div>
-                <h3 style="margin:0 0 6px;font-size:17px;font-weight:900;">No Customer Orders Received Yet</h3>
+                <h3 style="margin:0 0 6px;font-size:17px;font-weight:900;">No Customer Orders Received Today</h3>
                 <p style="font-size:13px;color:#64748b;max-width:380px;margin:0 auto 20px;line-height:1.5;">
-                  When shoppers purchase items from your live storefront, order details, buyer shipping addresses, and settlement breakdowns will be displayed in this popup modal.
+                  No orders have been placed today (${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}). When shoppers purchase items today, order details, shipping addresses, and settlement breakdowns will be displayed in this window. Past orders are not displayed here.
                 </p>
                 <button type="button" class="com-btn-primary" onclick="this.closest('.xmodal-overlay')._close()" style="padding:9px 24px;font-size:13px;font-weight:800;border-radius:8px;">
                   Close Window
@@ -23657,8 +23748,8 @@ function initPageRouter() {
           return;
         }
 
-        let ord = orderId ? orders.find(o => String(o.id) === String(orderId)) : null;
-        if (!ord) ord = orders[0];
+        let ord = orderId ? todayOrders.find(o => String(o.id) === String(orderId)) : null;
+        if (!ord) ord = todayOrders[0];
 
         const modalId = 'seller-order-summary-modal';
         document.getElementById(modalId)?.remove();
@@ -23679,96 +23770,122 @@ function initPageRouter() {
         if (ord.fulfillmentStatus === 'Delivered') statusColor = '#16a34a';
         if (ord.fulfillmentStatus === 'Cancelled') statusColor = '#dc2626';
 
+        // Render today's order selector bar if multiple orders were placed today
+        let orderSelectHtml = '';
+        if (todayOrders.length > 1) {
+          orderSelectHtml = `
+            <div style="margin-bottom:16px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#0369a1;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span>Today's Placed Orders (${todayOrders.length}):</span>
+              </div>
+              <select id="seller-summary-order-select" style="padding:6px 12px;font-size:12.5px;font-weight:700;border:1.5px solid #0284c7;border-radius:6px;background:#ffffff;color:#0f172a;outline:none;cursor:pointer;">
+                ${todayOrders.map(o => `
+                  <option value="${o.id}" ${String(o.id) === String(ord.id) ? 'selected' : ''}>
+                    Order #${o.id} - ${o.customerName} (${new Date(o.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          `;
+        }
+
         const summaryModal = createModal(modalId, {
-          title: `Order Details Summary — ${ord.id}`,
+          title: `Today's Order Details Summary — ${ord.id}`,
           large: true,
           bodyHtml: `
-            <div class="seller-order-summary-popup" style="font-family:inherit;color:#0f172a;padding:4px;">
+            <div class="seller-order-summary-popup" style="font-family:inherit;color:#0f172a;padding:2px;">
+              ${orderSelectHtml}
               <!-- Header Bar -->
-              <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div class="seller-summary-header-bar">
                 <div>
-                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-                    <h2 style="margin:0;font-size:20px;font-weight:900;color:#0f172a;">Order #${ord.id}</h2>
-                    <span style="background:${statusColor}15;color:${statusColor};border:1px solid ${statusColor}40;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;">
+                  <div class="seller-summary-badges" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                    <h2 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;word-break:break-all;">Order #${ord.id}</h2>
+                    <span style="background:${statusColor}15;color:${statusColor};border:1px solid ${statusColor}40;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;white-space:nowrap;">
                       ${ord.fulfillmentStatus}
                     </span>
+                    <span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;white-space:nowrap;">
+                      Placed Today
+                    </span>
                   </div>
-                  <p style="margin:0;font-size:12.5px;color:#64748b;">Placed on <strong>${formattedDate}</strong> via X-Mart Superstore Marketplace</p>
+                  <p style="margin:0;font-size:12px;color:#64748b;line-height:1.4;">Placed on <strong>${formattedDate}</strong> via X-Mart Marketplace</p>
                 </div>
-                <div style="text-align:right;">
+                <div class="seller-summary-header-amount">
                   <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;">TOTAL AMOUNT</div>
-                  <strong style="font-size:22px;color:#0f172a;font-weight:900;">${Currency.format(ord.totalAmount)}</strong>
+                  <strong style="font-size:20px;color:#0f172a;font-weight:900;display:block;">${Currency.format(ord.totalAmount)}</strong>
                   <div style="font-size:11.5px;font-weight:700;color:#059669;margin-top:2px;">Method: ${ord.paymentMethod}</div>
                 </div>
               </div>
 
               <!-- Customer & Shipping Grid -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+              <div class="seller-summary-grid">
                 <!-- Customer Information -->
-                <div style="background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;">
+                <div class="seller-summary-grid-card">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <h4 style="margin:0;font-size:14px;font-weight:800;color:#0f172a;">Customer Details</h4>
                   </div>
                   <div style="font-size:13px;display:flex;flex-direction:column;gap:6px;color:#334155;">
                     <div>Name: <strong style="color:#0f172a;">${ord.customerName}</strong></div>
-                    <div>Email: <strong style="color:#0f172a;">${ord.customerEmail || 'customer@example.com'}</strong></div>
+                    <div style="word-break:break-all;">Email: <strong style="color:#0f172a;">${ord.customerEmail || 'customer@example.com'}</strong></div>
                     <div>Phone: <strong style="color:#0f172a;">${ord.customerPhone || '+91 9876543210'}</strong></div>
                   </div>
                 </div>
 
                 <!-- Delivery & Shipping Address -->
-                <div style="background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;">
+                <div class="seller-summary-grid-card">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <h4 style="margin:0;font-size:14px;font-weight:800;color:#0f172a;">Shipping Address</h4>
                   </div>
                   <div style="font-size:13px;display:flex;flex-direction:column;gap:4px;color:#334155;">
-                    <strong style="color:#0f172a;">${ord.shippingAddress?.street || 'Plot 42, Commercial Sector'}</strong>
-                    <div>${ord.shippingAddress?.city || 'Mumbai'}, ${ord.shippingAddress?.state || 'Maharashtra'} - <strong>${ord.shippingAddress?.pincode || '400001'}</strong></div>
-                    <div style="margin-top:6px;font-size:12px;color:#0284c7;font-weight:700;">Courier: FBX Express • Tracking: ${ord.trackingNumber || 'Pending Dispatch'}</div>
+                    <strong style="color:#0f172a;word-break:break-word;">${ord.shippingAddress?.street || 'Plot 42, Commercial Sector'}</strong>
+                    <div style="word-break:break-word;">${ord.shippingAddress?.city || 'Mumbai'}, ${ord.shippingAddress?.state || 'Maharashtra'} - <strong>${ord.shippingAddress?.pincode || '400001'}</strong></div>
+                    <div style="margin-top:6px;font-size:12px;color:#0284c7;font-weight:700;word-break:break-all;">Courier: FBX Express • Tracking: ${ord.trackingNumber || 'Pending Dispatch'}</div>
                   </div>
                 </div>
               </div>
 
               <!-- Purchased Items Table -->
-              <div style="border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:20px;">
-                <div style="background:#0f172a;color:#ffffff;padding:12px 16px;font-size:13px;font-weight:800;">
+              <div class="seller-summary-table-container">
+                <div style="background:#0f172a;color:#ffffff;padding:12px 16px;font-size:13.5px;font-weight:800;border-top-left-radius:10px;border-top-right-radius:10px;">
                   Order Items Summary (${(ord.items || []).length} item${(ord.items || []).length > 1 ? 's' : ''})
                 </div>
-                <table style="width:100%;border-collapse:collapse;font-size:13px;background:#ffffff;">
-                  <thead>
-                    <tr style="background:#f8fafc;border-bottom:1.5px solid #e2e8f0;text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;">
-                      <th style="padding:10px 14px;">Product</th>
-                      <th style="padding:10px 14px;">SKU</th>
-                      <th style="padding:10px 14px;">Unit Price</th>
-                      <th style="padding:10px 14px;">Qty</th>
-                      <th style="padding:10px 14px;text-align:right;">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${(ord.items || []).map(item => `
-                      <tr style="border-bottom:1px solid #f1f5f9;">
-                        <td style="padding:12px 14px;">
-                          <div style="display:flex;align-items:center;gap:12px;">
-                            <img src="${item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${item.name}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">
-                            <div>
-                              <strong style="color:#0f172a;display:block;margin-bottom:2px;">${item.name}</strong>
-                            </div>
-                          </div>
-                        </td>
-                        <td style="padding:12px 14px;font-family:monospace;color:#64748b;font-size:12px;">${item.sku || 'SKU-STD-01'}</td>
-                        <td style="padding:12px 14px;color:#334155;">${Currency.format(item.price)}</td>
-                        <td style="padding:12px 14px;font-weight:800;color:#0f172a;">${item.quantity || 1}</td>
-                        <td style="padding:12px 14px;text-align:right;font-weight:800;color:#0f172a;">${Currency.format((item.price || 0) * (item.quantity || 1))}</td>
+                <div class="seller-summary-table-scroll">
+                  <table class="seller-summary-table">
+                    <thead>
+                      <tr style="background:#f8fafc;border-bottom:1.5px solid #e2e8f0;text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;">
+                        <th style="padding:10px 14px;min-width:180px;">Product</th>
+                        <th style="padding:10px 14px;white-space:nowrap;">SKU</th>
+                        <th style="padding:10px 14px;white-space:nowrap;">Unit Price</th>
+                        <th style="padding:10px 14px;white-space:nowrap;">Qty</th>
+                        <th style="padding:10px 14px;text-align:right;white-space:nowrap;">Subtotal</th>
                       </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      ${(ord.items || []).map(item => `
+                        <tr style="border-bottom:1px solid #f1f5f9;">
+                          <td style="padding:12px 14px;min-width:180px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                              <img src="${item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100'}" alt="${item.name}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0;">
+                              <div style="min-width:0;">
+                                <strong style="color:#0f172a;display:block;margin-bottom:2px;font-size:12.5px;line-height:1.3;word-break:break-word;">${item.name}</strong>
+                              </div>
+                            </div>
+                          </td>
+                          <td style="padding:12px 14px;font-family:monospace;color:#64748b;font-size:12px;white-space:nowrap;">${item.sku || 'SKU-STD-01'}</td>
+                          <td style="padding:12px 14px;color:#334155;white-space:nowrap;">${Currency.format(item.price)}</td>
+                          <td style="padding:12px 14px;font-weight:800;color:#0f172a;white-space:nowrap;">${item.quantity || 1}</td>
+                          <td style="padding:12px 14px;text-align:right;font-weight:800;color:#0f172a;white-space:nowrap;">${Currency.format((item.price || 0) * (item.quantity || 1))}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Financial & Settlement Summary -->
-              <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:20px;">
+              <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:20px;box-sizing:border-box;">
                 <h4 style="margin:0 0 12px;font-size:13.5px;font-weight:900;color:#0f172a;text-transform:uppercase;">
                   Financial Settlement & Payout Summary
                 </h4>
@@ -23793,15 +23910,14 @@ function initPageRouter() {
               </div>
 
               <!-- Modal Actions -->
-              <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:12px;">
-                <button type="button" id="btn-print-seller-summary" onclick="if(typeof window.openSellerTaxInvoiceModal==='function')window.openSellerTaxInvoiceModal('${ord.id}')" style="padding:9px 18px;background:#0f172a;color:#ffffff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;">
+              <div class="seller-summary-actions">
+                <button type="button" id="btn-print-seller-summary" onclick="if(typeof window.openSellerTaxInvoiceModal==='function')window.openSellerTaxInvoiceModal('${ord.id}')" style="padding:10px 18px;background:#ea580c;color:#ffffff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(234,88,12,0.3);">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                   Tax Invoice
                 </button>
-                <button type="button" id="btn-close-seller-summary" onclick="document.getElementById('${modalId}')._close()" style="padding:9px 18px;background:#e2e8f0;color:#0f172a;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;">
+                <button type="button" id="btn-close-seller-summary" onclick="document.getElementById('${modalId}')._close()" style="padding:10px 18px;background:#e2e8f0;color:#0f172a;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">
                   Close
                 </button>
-              </div>
             </div>
           `
         });
@@ -24075,43 +24191,43 @@ function initPageRouter() {
           </div>
         </div>
 
-        <!-- Interactive Live Support Chat & Smart Order Assistant (Navy Blue Theme) -->
-        <div class="cs-chat-section" style="margin-top:24px;border:1px solid #1e3a8a;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(9,30,58,0.4);background:#091e3a;">
-          <div class="cs-chat-header" style="display:flex;justify-content:space-between;align-items:center;background:#0f172a;color:#fff;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <!-- Interactive Live Support Chat & Smart Order Assistant -->
+        <div class="cs-chat-section" style="margin-top:24px;border:1.5px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06);background:#ffffff;">
+          <div class="cs-chat-header" style="display:flex;justify-content:space-between;align-items:center;background:#002F43;color:#ffffff;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);">
             <div style="display:flex;align-items:center;gap:10px;">
               <div style="width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981;"></div>
               <h3 style="margin:0;font-size:16px;font-weight:800;color:#ffffff;">X-Mart Support Concierge (Amazon/Flipkart Smart AI)</h3>
             </div>
-            <span class="live-status-pill" style="background:rgba(255,255,255,0.15);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;">● Agent Online 24/7</span>
+            <span class="live-status-pill" style="background:rgba(255,255,255,0.15);color:#ffffff;border:1px solid rgba(255,255,255,0.25);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;">● Agent Online 24/7</span>
           </div>
 
-          <div id="cs-chat-messages" class="cs-chat-messages" style="min-height:360px;max-height:480px;overflow-y:auto;padding:20px;background:#091e3a;color:#ffffff;display:flex;flex-direction:column;gap:14px;">
+          <div id="cs-chat-messages" class="cs-chat-messages" style="min-height:360px;max-height:480px;overflow-y:auto;padding:20px;background:#ffffff;color:#0f172a;display:flex;flex-direction:column;gap:14px;">
             <div class="chat-msg bot" style="display:flex;gap:12px;align-items:flex-start;">
               <div class="chat-avatar" style="background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;width:34px;height:34px;flex-shrink:0;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
               </div>
-              <div class="chat-bubble" style="background:#1e293b;color:#f8fafc;padding:14px 18px;border-radius:12px;max-width:85%;font-size:14px;line-height:1.6;box-shadow:0 4px 14px rgba(0,0,0,0.2);border:1.5px solid #334155;">
-                Hello! I am your <strong style="color:#ffffff;">X-Mart Smart Order Assistant</strong>.<br>
+              <div class="chat-bubble" style="background:#f8fafc;color:#0f172a;padding:14px 18px;border-radius:12px;max-width:85%;font-size:14px;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1.5px solid #e2e8f0;">
+                Hello! I am your <strong style="color:#0f172a;">X-Mart Smart Order Assistant</strong>.<br>
                 I can track your packages, process returns & refunds, issue tax invoices, or help you cancel orders instantly. How can I assist you today?
               </div>
             </div>
           </div>
 
-          <form id="cs-chat-form" class="cs-chat-input-bar" style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:#0f172a;border-top:1px solid rgba(255,255,255,0.1);">
+          <form id="cs-chat-form" class="cs-chat-input-bar" style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:#002F43;border-top:1px solid rgba(255,255,255,0.1);">
             <input type="file" id="cs-chat-file-input" accept="image/*,.pdf" style="display:none;">
             <input type="file" id="cs-chat-camera-input" accept="image/*" capture="environment" style="display:none;">
 
             <!-- Plus Icon Button -->
-            <button type="button" id="cs-btn-plus" title="Attach Invoice or Product Document" style="background:rgba(255,255,255,0.08);color:#ffffff;border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 200ms;" onmouseover="this.style.background='#ff9700';this.style.color='#000000';" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#ffffff';">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button type="button" id="cs-btn-plus" title="Attach Invoice or Product Document" style="background:#FF9700;color:#000000;border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,151,0,0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
 
             <!-- Camera Icon Button -->
-            <button type="button" id="cs-btn-camera" title="Take or Upload Product Photo" style="background:rgba(255,255,255,0.08);color:#ffffff;border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 200ms;" onmouseover="this.style.background='#ff9700';this.style.color='#000000';" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#ffffff';">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <button type="button" id="cs-btn-camera" title="Take or Upload Product Photo" style="background:#FF9700;color:#000000;border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,151,0,0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>
 
-            <input type="text" id="cs-chat-input" placeholder="Type message or attach image..." autocomplete="off" style="flex:1;padding:11px 14px;background:#1e293b;color:#ffffff;border:1.5px solid #334155;border-radius:24px;font-size:13.5px;outline:none;">
+            <input type="text" id="cs-chat-input" placeholder="Type message or attach image..." autocomplete="off" style="flex:1;padding:11px 14px;background:rgba(255,255,255,0.1);color:#ffffff;border:1.5px solid rgba(255,255,255,0.25);border-radius:24px;font-size:13.5px;outline:none;">
             <button type="submit" class="com-btn-primary" style="width:auto;padding:0 20px;height:38px;background:#ff9700;color:#000000;font-weight:800;border:none;border-radius:20px;cursor:pointer;flex-shrink:0;">Send</button>
           </form>
         </div>
@@ -24696,6 +24812,7 @@ function initPageRouter() {
             day: 'numeric', month: 'short', year: 'numeric'
           });
           const isCancelable = ['Pending', 'Confirmed'].includes(order.status);
+          const isOrderCancelled = /cancell?ed/i.test(order.status || order.orderStatus || '') || order.isCancelled === true;
 
           return `
             <div class="order-history-card">
@@ -24732,7 +24849,9 @@ function initPageRouter() {
                     </div>
                     <div class="order-item-actions">
                       <button class="order-btn-action order-btn-primary-action btn-track-pkg" data-id="${orderId}">Track Package</button>
-                      <button class="order-btn-action btn-return-item" data-order-id="${orderId}" data-item-name="${item.name}" data-item-price="${item.price}" data-item-qty="${item.quantity || 1}" data-item-img="${item.image || ''}">Return / Replace</button>
+                      ${isOrderCancelled ? '' : `
+                        <button class="order-btn-action btn-return-item" data-order-id="${orderId}" data-item-name="${item.name}" data-item-price="${item.price}" data-item-qty="${item.quantity || 1}" data-item-img="${item.image || ''}">Return / Replace</button>
+                      `}
                     </div>
                   </div>
                 `).join('')}
@@ -25052,69 +25171,131 @@ function initPageRouter() {
             <div style="margin-bottom:28px;">
               <div style="font-size:12px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">SHIPMENT MILESTONES</div>
               <div class="track-milestones-col" style="display:flex;flex-direction:column;gap:10px;">
-                <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <div>
-                    <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Placed</div>
-                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                ${/cancell?ed/i.test(status || '') || order.isCancelled ? `
+                  <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Order Placed</div>
+                      <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
-                </div>
-                <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <div>
-                    <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 2. Confirmed</div>
-                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+
+                  <div class="track-milestone-card" style="background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 4px 12px rgba(239,68,68,0.15);">
+                    <div>
+                      <div style="font-weight:900;font-size:14px;color:#dc2626;">✕ 2. Order Cancelled</div>
+                      <div style="font-size:12px;color:#991b1b;margin-top:3px;font-weight:600;">Cancelled on customer request</div>
+                      <div style="font-size:11.5px;color:#7f1d1d;margin-top:2px;">${payMethod.includes('COD') || payMethod.includes('Cash') ? 'No payment charged (Cash on Delivery)' : 'Refund Processed to Original Payment Method'}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:#dc2626;background:#fee2e2;padding:5px 12px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;border:1px solid #fca5a5;">CANCELLED</div>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">VERIFIED</div>
-                </div>
-                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:${status === 'Delivered' ? 'none' : '0 2px 8px rgba(37,99,235,0.1)'};">
-                  <div>
-                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓ ' : ''}3. In Transit</div>
-                    <div style="font-size:11.5px;color:#000000;margin-top:2px;">Bilaspur Hub</div>
+
+                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
+                    <div>
+                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">3. In Transit</div>
+                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Skipped due to cancellation</div>
+                    </div>
+                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : 'rgba(37,99,235,0.12)'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
-                </div>
-                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <div>
-                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
-                    <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
+
+                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
+                    <div>
+                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">4. Out for Delivery</div>
+                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Skipped due to cancellation</div>
+                    </div>
+                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
-                </div>
-                <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <div>
-                    <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
-                    <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
+
+                  <div class="track-milestone-card" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0.55;">
+                    <div>
+                      <div style="font-weight:800;font-size:13px;color:#64748b;text-decoration:line-through;">5. Delivered</div>
+                      <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Order Cancelled</div>
+                    </div>
+                    <div style="font-size:10.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:3px 8px;border-radius:4px;">N/A</div>
                   </div>
-                  <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
-                </div>
+                ` : `
+                  <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 1. Placed</div>
+                      <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">COMPLETED</div>
+                  </div>
+                  <div class="track-milestone-card" style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:#16a34a;">✓ 2. Confirmed</div>
+                      <div style="font-size:11.5px;color:#000000;margin-top:2px;">${dateOnly}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:#15803d;background:rgba(22,163,74,0.12);padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">VERIFIED</div>
+                  </div>
+                  <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#eff6ff'};border:2px solid ${status === 'Delivered' ? '#16a34a' : '#2563eb'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:${status === 'Delivered' ? 'none' : '0 2px 8px rgba(37,99,235,0.1)'};">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#1d4ed8'};">${status === 'Delivered' ? '✓ ' : ''}3. In Transit</div>
+                      <div style="font-size:11.5px;color:#000000;margin-top:2px;">Bilaspur Hub</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#1d4ed8'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : 'rgba(37,99,235,0.12)'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'ACTIVE'}</div>
+                  </div>
+                  <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 4. Out for Delivery</div>
+                      <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Completed' : 'Pending'}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'COMPLETED' : 'UPCOMING'}</div>
+                  </div>
+                  <div class="track-milestone-card" style="background:${status === 'Delivered' ? '#f0fdf4' : '#f8fafc'};border:${status === 'Delivered' ? '2px solid #16a34a' : '1px solid #cbd5e1'};border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:900;font-size:13.5px;color:${status === 'Delivered' ? '#16a34a' : '#64748b'};">${status === 'Delivered' ? '✓' : ''} 5. Delivered</div>
+                      <div style="font-size:11.5px;color:${status === 'Delivered' ? '#000000' : '#64748b'};margin-top:2px;">${status === 'Delivered' ? 'Delivered' : 'Pending'}</div>
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:${status === 'Delivered' ? '#15803d' : '#64748b'};background:${status === 'Delivered' ? 'rgba(22,163,74,0.12)' : '#e2e8f0'};padding:4px 10px;border-radius:6px;letter-spacing:0.5px;white-space:nowrap;">${status === 'Delivered' ? 'FINAL' : 'UPCOMING'}</div>
+                  </div>
+                `}
               </div>
             </div>
 
             <!-- Detailed Checkpoints Activity Log -->
             <h4 style="margin:0 0 14px;font-size:14px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">Live GPS Activity Log</h4>
-            <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:18px;background:#f8fafc;">
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
-                <div>
-                  <strong style="color:#000000;">Package Arrived at Local Distribution Facility</strong><br/>
-                  <span style="color:#475569;">Bilaspur Distribution Center, Chhattisgarh</span>
+            ${/cancell?ed/i.test(status || '') || order.isCancelled ? `
+              <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #fee2e2;border-radius:10px;padding:18px;background:#fff5f5;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #fecaca;padding-bottom:12px;">
+                  <div>
+                    <strong style="color:#dc2626;">Order Cancelled & Stop Shipment Issued</strong><br/>
+                    <span style="color:#7f1d1d;">Customer Portal / Automated Cancellation Confirmation</span>
+                  </div>
+                  <div style="color:#b91c1c;font-weight:700;text-align:right;">${dateStr}</div>
                 </div>
-                <div style="color:#000000;font-weight:700;text-align:right;">Today, 03:45 AM</div>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
-                <div>
-                  <strong style="color:#000000;">Shipment Picked Up & Departed Sort Center</strong><br/>
-                  <span style="color:#475569;">Raipur Main Fulfillment Center, Chhattisgarh</span>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                  <div>
+                    <strong style="color:#000000;">Order Verified & Placed</strong><br/>
+                    <span style="color:#475569;">X-Mart Customer Checkout</span>
+                  </div>
+                  <div style="color:#000000;font-weight:700;text-align:right;">${dateStr}</div>
                 </div>
-                <div style="color:#000000;font-weight:700;text-align:right;">Yesterday, 09:15 PM</div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;">
-                <div>
-                  <strong style="color:#000000;">Order Verified & Airway Bill Generated</strong><br/>
-                  <span style="color:#475569;">X-Mart Superstore Central Fulfillment Warehouse</span>
+            ` : `
+              <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #e2e8f0;border-radius:10px;padding:18px;background:#f8fafc;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
+                  <div>
+                    <strong style="color:#000000;">Package Arrived at Local Distribution Facility</strong><br/>
+                    <span style="color:#475569;">Bilaspur Distribution Center, Chhattisgarh</span>
+                  </div>
+                  <div style="color:#000000;font-weight:700;text-align:right;">Today, 03:45 AM</div>
                 </div>
-                <div style="color:#000000;font-weight:700;text-align:right;">${dateStr}</div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
+                  <div>
+                    <strong style="color:#000000;">Shipment Picked Up & Departed Sort Center</strong><br/>
+                    <span style="color:#475569;">Raipur Main Fulfillment Center, Chhattisgarh</span>
+                  </div>
+                  <div style="color:#000000;font-weight:700;text-align:right;">Yesterday, 09:15 PM</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                  <div>
+                    <strong style="color:#000000;">Order Verified & Airway Bill Generated</strong><br/>
+                    <span style="color:#475569;">X-Mart Superstore Central Fulfillment Warehouse</span>
+                  </div>
+                  <div style="color:#000000;font-weight:700;text-align:right;">${dateStr}</div>
+                </div>
               </div>
-            </div>
+            `}
           </div>
         </div>
 
@@ -27092,29 +27273,41 @@ function initPageRouter() {
 
     // ── Pure Same-Type Product Recommendation Filter ──
     const allStoreProds = (Store.allProducts && Store.allProducts.length > 0) ? Store.allProducts : DEFAULT_CATALOG;
-    const currId = prod._id || prod.id;
+    const currId = String(prod._id || prod.id || '');
     const currSubtype = getProductSubtype(prod);
     const currBrand = (prod.brand || '').toLowerCase();
     const currPrice = prod.finalPrice || prod.price || 1000;
+    const currCat = (prod.category || '').toLowerCase();
 
     // 1. Strictly isolate only products that belong to the EXACT same subtype
     let sameTypeProducts = allStoreProds.filter(candidate => {
-      const cId = candidate._id || candidate.id;
-      if (cId === currId) return false;
+      const cId = String(candidate._id || candidate.id || '');
+      if (cId && cId === currId) return false;
       const candSubtype = getProductSubtype(candidate);
       return currSubtype && candSubtype && currSubtype === candSubtype;
     });
 
-    // 2. If no exact subtype items exist, fallback strictly to the same exact category
-    if (sameTypeProducts.length === 0) {
+    // 2. If no exact subtype items exist, fallback to fuzzy/partial category match
+    if (sameTypeProducts.length === 0 && currCat) {
       sameTypeProducts = allStoreProds.filter(candidate => {
-        const cId = candidate._id || candidate.id;
-        if (cId === currId) return false;
-        return (candidate.category || '').toLowerCase() === (prod.category || '').toLowerCase();
+        const cId = String(candidate._id || candidate.id || '');
+        if (cId && cId === currId) return false;
+        const candCat = (candidate.category || '').toLowerCase();
+        return candCat === currCat || candCat.includes(currCat) || currCat.includes(candCat);
       });
     }
 
-    // 3. Rank strictly within this pure same-type collection (Same brand first, then closest price)
+    // 3. Guaranteed Fallback: If still under 6 items, backfill with store catalog items so container box is ALWAYS populated
+    if (sameTypeProducts.length < 6) {
+      const existingIds = new Set([currId, ...sameTypeProducts.map(p => String(p._id || p.id || ''))]);
+      const backfillProds = allStoreProds.filter(p => {
+        const pId = String(p._id || p.id || '');
+        return pId && !existingIds.has(pId);
+      });
+      sameTypeProducts = [...sameTypeProducts, ...backfillProds];
+    }
+
+    // 4. Rank recommendations (Same brand first, then closest price)
     sameTypeProducts.sort((a, b) => {
       const aBrandMatch = (a.brand || '').toLowerCase() === currBrand ? 1 : 0;
       const bBrandMatch = (b.brand || '').toLowerCase() === currBrand ? 1 : 0;
@@ -27724,17 +27917,10 @@ function initPageRouter() {
                     <button id="detail-add-cart" class="buybox-btn buybox-btn--cart is-out-of-stock" disabled style="background:#cbd5e1 !important;color:#dc2626 !important;border:1px solid #cbd5e1 !important;cursor:not-allowed !important;opacity:0.95;font-weight:800;width:100%;padding:14px 18px;border-radius:10px;font-size:15px;box-shadow:none;">
                       Currently Unavailable
                     </button>
-                  ` : `
-                    <button id="detail-add-cart" class="buybox-btn buybox-btn--cart ${isOutOfStock ? 'is-out-of-stock' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                      ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                  ` : (isOutOfStock ? `
+                    <button id="detail-add-cart" class="buybox-btn buybox-btn--cart is-out-of-stock" disabled style="width:100%;background:#e2e8f0;color:#dc2626;border:1px solid #cbd5e1;cursor:not-allowed;font-weight:800;padding:14px 18px;border-radius:10px;font-size:15px;">
+                      Out of Stock
                     </button>
-                    <button id="detail-buy-now" class="buybox-btn buybox-btn--buy ${isOutOfStock ? 'is-out-of-stock' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                      ${isOutOfStock ? 'Currently Unavailable' : 'Buy Now'}
-                    </button>
-                    <button id="detail-add-wishlist" class="buybox-btn buybox-btn--wishlist ${isWishlisted ? 'is-active' : ''}">
-                      ${isWishlisted ? 'In Your Wishlist' : 'Add to Wishlist'}
-                    </button>
-                    ${isOutOfStock ? `
                     <button id="detail-notify-me" class="buybox-btn buybox-btn--notify ${isSubscribed ? 'is-active' : ''}" type="button" title="${isSubscribed ? 'Alert active for back in stock' : 'Get email notification when back in stock'}">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="${isSubscribed ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -27742,8 +27928,17 @@ function initPageRouter() {
                       </svg>
                       <span id="detail-notify-text">${isSubscribed ? '✓ Notification Active for Back in Stock' : 'Notify Me'}</span>
                     </button>
-                    ` : ''}
-                  `}
+                  ` : `
+                    <button id="detail-add-cart" class="buybox-btn buybox-btn--cart">
+                      Add to Cart
+                    </button>
+                    <button id="detail-buy-now" class="buybox-btn buybox-btn--buy">
+                      Buy Now
+                    </button>
+                    <button id="detail-add-wishlist" class="buybox-btn buybox-btn--wishlist ${isWishlisted ? 'is-active' : ''}">
+                      ${isWishlisted ? 'In Your Wishlist' : 'Add to Wishlist'}
+                    </button>
+                  `)}
                 </div>
               </div>
             </div>
@@ -27804,11 +27999,52 @@ function initPageRouter() {
             </div>
           </div>
 
-          <!-- 4. FOURTH CONTAINER: 100% FULL-WIDTH CUSTOMER RATINGS & VERIFIED REVIEWS SHOWCASE (JUST ABOVE FOOTER) -->
+          <!-- 4. FOURTH CONTAINER: 100% FULL-WIDTH CUSTOMER REVIEWS & RATINGS SHOWCASE (JUST ABOVE FOOTER) -->
           <div class="prod-detail-card prod-reviews-container" id="prod-reviews-section" style="width: 100%; margin-top: 10px;">
-            <div class="prod-reviews-header">
+            
+            <!-- 1. Customer Reviews List Feed (Placed FIRST at Top) -->
+            <div class="reviews-feed-section" style="border-top: none; padding-top: 0; margin-bottom: 24px;">
+              <div class="reviews-feed-header">
+                <h4 class="reviews-feed-title">Customer Reviews (<span id="reviews-total-count">${allReviews.length}</span>)</h4>
+              </div>
+
+              <div class="reviews-items-list" id="reviews-items-list">
+                ${allReviews.map(rev => `
+                  <div class="review-item-card">
+                    <div class="review-item-top">
+                      <div class="reviewer-meta">
+                        <div class="reviewer-avatar" style="background:#f1f5f9;color:#0878f9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border-radius:50%;width:36px;height:36px;">
+                          ${typeof rev.avatar === 'string' && rev.avatar.length <= 3 ? rev.avatar : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                        </div>
+                        <div>
+                          <div class="reviewer-name-row">
+                            <strong>${rev.name}</strong>
+                          </div>
+                          <span class="review-date">${rev.date || 'Recently'}</span>
+                        </div>
+                      </div>
+                      <div class="review-item-right-col">
+                        ${rev.verified ? `<span class="verified-buyer-pill">Verified Buyer</span>` : ''}
+                        <div class="review-item-stars">${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}</div>
+                      </div>
+                    </div>
+                    <h5 class="review-item-title">${rev.title || 'Genuine Customer Review'}</h5>
+                    <p class="review-item-body">${rev.comment}</p>
+                    <div class="review-item-footer">
+                      <button type="button" class="review-helpful-btn" data-id="${rev.id}">
+                        Helpful (<span class="helpful-count">${rev.helpful || 0}</span>)
+                      </button>
+                      <span class="review-report-btn">Report</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 2. Reviews & Ratings Breakdown & Write Form (Placed BELOW Customer Reviews) -->
+            <div class="prod-reviews-header" style="border-top: 1.5px solid #e2e8f0; padding-top: 20px;">
               <div class="reviews-header-title-wrap">
-                <h3 class="prod-reviews-heading">Reviews & Ratings</h3>
+                <h3 class="prod-reviews-heading">Reviews &amp; Ratings</h3>
                 <p class="prod-reviews-subheading">Authentic feedback and ratings from verified X-Mart shoppers</p>
               </div>
             </div>
@@ -27894,45 +28130,6 @@ function initPageRouter() {
                     <span>Submit Verified Review</span>
                   </button>
                 </form>
-              </div>
-            </div>
-
-            <!-- Customer Reviews List Feed -->
-            <div class="reviews-feed-section">
-              <div class="reviews-feed-header">
-                <h4 class="reviews-feed-title">Customer Reviews (<span id="reviews-total-count">${allReviews.length}</span>)</h4>
-              </div>
-
-              <div class="reviews-items-list" id="reviews-items-list">
-                ${allReviews.map(rev => `
-                  <div class="review-item-card">
-                    <div class="review-item-top">
-                      <div class="reviewer-meta">
-                        <div class="reviewer-avatar" style="background:#f1f5f9;color:#0878f9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border-radius:50%;width:36px;height:36px;">
-                          ${typeof rev.avatar === 'string' && rev.avatar.length <= 3 ? rev.avatar : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
-                        </div>
-                        <div>
-                          <div class="reviewer-name-row">
-                            <strong>${rev.name}</strong>
-                          </div>
-                          <span class="review-date">${rev.date || 'Recently'}</span>
-                        </div>
-                      </div>
-                      <div class="review-item-right-col">
-                        ${rev.verified ? `<span class="verified-buyer-pill">Verified Buyer</span>` : ''}
-                        <div class="review-item-stars">${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}</div>
-                      </div>
-                    </div>
-                    <h5 class="review-item-title">${rev.title || 'Genuine Customer Review'}</h5>
-                    <p class="review-item-body">${rev.comment}</p>
-                    <div class="review-item-footer">
-                      <button type="button" class="review-helpful-btn" data-id="${rev.id}">
-                        Helpful (<span class="helpful-count">${rev.helpful || 0}</span>)
-                      </button>
-                      <span class="review-report-btn">Report</span>
-                    </div>
-                  </div>
-                `).join('')}
               </div>
             </div>
           </div>
@@ -29535,8 +29732,11 @@ function buildLocationModal() {
     const city = currentSelection.city || 'Patna';
     const displayText = `${city} ${activePin}`.trim();
 
-    document.querySelectorAll('.location-control strong').forEach(el => {
+    document.querySelectorAll('.location-control strong, .mobile-location-btn strong, [data-location-display]').forEach(el => {
       el.textContent = displayText;
+    });
+    document.querySelectorAll('.location-control small').forEach(el => {
+      el.textContent = 'Deliver to';
     });
 
     localStorage.setItem('xmart_pincode', activePin);
@@ -29573,6 +29773,11 @@ function buildLocationModal() {
       state: state,
       pincode: pin
     };
+
+    const displayText = `${city} ${pin}`.trim();
+    document.querySelectorAll('.location-control strong, .mobile-location-btn strong, [data-location-display]').forEach(el => {
+      el.textContent = displayText;
+    });
 
     const previewEl = modal.querySelector('#pin-modal-fetched-preview');
     const titleEl = modal.querySelector('#fetched-location-title');
@@ -29720,7 +29925,19 @@ function buildLocationModal() {
   });
 
   async function fallbackToNetworkLocation() {
-    // 1. Try IP Geolocation via ipwho.is
+    // 1. First priority: Use user's saved shipping address if available
+    const saved = getModalSavedAddresses();
+    if (saved && saved.length > 0) {
+      const activeSaved = saved.find(a => a.isDefault) || saved[0];
+      if (activeSaved && activeSaved.pincode && activeSaved.city) {
+        if (pinInput) pinInput.value = activeSaved.pincode;
+        setDetectedLocation(activeSaved.pincode, activeSaved.city, activeSaved.state || 'India');
+        showToast(`Location set from saved address: ${activeSaved.city} (${activeSaved.pincode})`, 'success');
+        return true;
+      }
+    }
+
+    // 2. Try IP Geolocation via ipwho.is
     try {
       const res = await fetch('https://ipwho.is/');
       const data = await res.json();
@@ -29737,7 +29954,7 @@ function buildLocationModal() {
       }
     } catch {}
 
-    // 2. Try secondary IP Geolocation via freeipapi.com
+    // 3. Try secondary IP Geolocation via freeipapi.com
     try {
       const res = await fetch('https://freeipapi.com/api/json');
       const data = await res.json();
@@ -29754,9 +29971,8 @@ function buildLocationModal() {
       }
     } catch {}
 
-    // 3. Fallback to active saved address or default
-    const saved = getModalSavedAddresses();
-    const fallbackAddr = saved[0] || { pincode: '495009', city: 'Bilaspur', state: 'Chhattisgarh' };
+    // 4. Fallback default
+    const fallbackAddr = { pincode: '495009', city: 'Bilaspur', state: 'Chhattisgarh' };
     if (pinInput) pinInput.value = fallbackAddr.pincode;
     setDetectedLocation(fallbackAddr.pincode, fallbackAddr.city, fallbackAddr.state);
     showToast(`Location set: ${fallbackAddr.city} (${fallbackAddr.pincode})`, 'success');
@@ -29765,7 +29981,7 @@ function buildLocationModal() {
 
   modal.querySelector('#pin-modal-gps-btn')?.addEventListener('click', async () => {
     const btn = modal.querySelector('#pin-modal-gps-btn');
-    btn.innerHTML = 'Detecting Location...';
+    btn.innerHTML = 'Detecting Accurate Location...';
     btn.disabled = true;
 
     const restoreBtn = () => {
@@ -29781,14 +29997,14 @@ function buildLocationModal() {
 
     let resolved = false;
 
-    // Timeout safety: fallback within 4s if browser permission prompt is ignored or blocked
+    // Timeout safety: 10 seconds for high-accuracy GPS positioning
     const safetyTimer = setTimeout(async () => {
       if (!resolved) {
         resolved = true;
         await fallbackToNetworkLocation();
         restoreBtn();
       }
-    }, 4000);
+    }, 10000);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -29796,27 +30012,66 @@ function buildLocationModal() {
         resolved = true;
         clearTimeout(safetyTimer);
 
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
         let success = false;
-        try {
-          const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&apiKey=${GEOAPIFY_API_KEY}`);
-          const d = await res.json();
-          if (d.features && d.features.length > 0) {
-            const p = d.features[0].properties;
-            const pin = (p.postcode || '').replace(/\D/g, '').slice(0, 6) || '800001';
-            const city = p.city || p.county || p.state_district || 'Location';
-            const state = p.state || 'India';
-            if (pinInput) pinInput.value = pin;
-            setDetectedLocation(pin, city, state);
-            if (isMobileOrTablet()) {
-              applyLocation(pin, true);
-            } else {
-              showToast(`Location detected: ${city} (${pin})`, 'success');
-            }
-            success = true;
-          }
-        } catch {}
+        let detectedPin = '';
+        let detectedCity = '';
+        let detectedState = '';
 
+        // 1. Try OpenStreetMap Nominatim (Exact city, town, village, pincode accuracy)
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`, {
+            headers: { 'Accept-Language': 'en-US,en;q=0.9' }
+          });
+          const d = await res.json();
+          if (d && d.address) {
+            const a = d.address;
+            detectedPin = (a.postcode || '').replace(/\D/g, '').slice(0, 6);
+            detectedCity = a.city || a.town || a.village || a.suburb || a.municipality || a.county || a.state_district || 'Location';
+            detectedState = a.state || 'India';
+            if (detectedCity && detectedCity !== 'Location') {
+              success = true;
+            }
+          }
+        } catch (e) {}
+
+        // 2. Try BigDataCloud Reverse Geocode API if Nominatim missed
         if (!success) {
+          try {
+            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+            const d = await res.json();
+            if (d && (d.city || d.locality)) {
+              detectedPin = (d.postcode || '').replace(/\D/g, '').slice(0, 6);
+              detectedCity = d.city || d.locality || d.principalSubdivision || 'Location';
+              detectedState = d.principalSubdivision || 'India';
+              success = true;
+            }
+          } catch (e) {}
+        }
+
+        // 3. Try Geoapify API if needed
+        if (!success) {
+          try {
+            const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${GEOAPIFY_API_KEY}`);
+            const d = await res.json();
+            if (d.features && d.features.length > 0) {
+              const p = d.features[0].properties;
+              detectedPin = (p.postcode || '').replace(/\D/g, '').slice(0, 6);
+              detectedCity = p.city || p.town || p.village || p.county || p.state_district || 'Location';
+              detectedState = p.state || 'India';
+              if (detectedCity && detectedCity !== 'Location') {
+                success = true;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (success && detectedCity) {
+          if (pinInput) pinInput.value = detectedPin || '';
+          setDetectedLocation(detectedPin || '800001', detectedCity, detectedState);
+          applyLocation(detectedPin || '800001', true);
+        } else {
           await fallbackToNetworkLocation();
         }
         restoreBtn();
@@ -29825,11 +30080,10 @@ function buildLocationModal() {
         if (resolved) return;
         resolved = true;
         clearTimeout(safetyTimer);
-        // Seamlessly fallback without warning/error toast
         await fallbackToNetworkLocation();
         restoreBtn();
       },
-      { timeout: 3500, enableHighAccuracy: false, maximumAge: 60000 }
+      { timeout: 9000, enableHighAccuracy: true, maximumAge: 0 }
     );
   });
 
@@ -29873,9 +30127,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedLoc = JSON.parse(localStorage.getItem('xmart_delivery_location') || 'null');
     const savedPin = localStorage.getItem('xmart_pincode') || (savedLoc ? savedLoc.pincode : null);
     if (savedLoc && savedLoc.city) {
-      document.querySelectorAll('.location-control strong').forEach(el => el.textContent = `${savedLoc.city} ${savedLoc.pincode || ''}`.trim());
+      const displayText = `${savedLoc.city} ${savedLoc.pincode || ''}`.trim();
+      document.querySelectorAll('.location-control strong, .mobile-location-btn strong, [data-location-display]').forEach(el => el.textContent = displayText);
     } else if (savedPin) {
-      document.querySelectorAll('.location-control strong').forEach(el => el.textContent = savedPin);
+      document.querySelectorAll('.location-control strong, .mobile-location-btn strong, [data-location-display]').forEach(el => el.textContent = savedPin);
     }
   } catch { }
 
@@ -31009,15 +31264,108 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const DEFAULT_PROMOTIONS = [
+    {
+      code: 'XMART10',
+      title: '10% Storewide Mega Discount',
+      description: 'Flat 10% instant discount across all products on minimum bag value of ₹999.',
+      discountType: 'percent',
+      discountValue: 10,
+      minOrder: 999,
+      type: 'voucher',
+      scope: 'storewide',
+      active: true
+    },
+    {
+      code: 'FESTIVE20',
+      title: '20% Festive Super Saver',
+      description: 'Extra 20% discount on festive orders above ₹2,499.',
+      discountType: 'percent',
+      discountValue: 20,
+      minOrder: 2499,
+      type: 'voucher',
+      scope: 'storewide',
+      active: true
+    },
+    {
+      code: 'APEX25',
+      title: 'Apex Tech Exclusive 25% OFF',
+      description: 'Exclusive 25% discount for verified orders at Apex Tech Store.',
+      discountType: 'percent',
+      discountValue: 25,
+      minOrder: 1499,
+      type: 'voucher',
+      scope: 'store',
+      storeName: 'Apex Tech Store',
+      active: true
+    },
+    {
+      code: 'UPI100',
+      title: 'Flat ₹100 Cashback on UPI (GPay, PhonePe, Paytm)',
+      description: 'Flat ₹100 discount when paying with Google Pay, PhonePe, Paytm, or any UPI app on orders above ₹499.',
+      discountType: 'flat',
+      discountValue: 100,
+      minOrder: 499,
+      type: 'upi',
+      upiProvider: 'All UPI Apps, Google Pay, PhonePe, Paytm, BHIM UPI',
+      scope: 'storewide',
+      active: true
+    },
+    {
+      code: 'SBICARD500',
+      title: 'SBI Card Super Deal: Flat ₹500 OFF Across SBI Debit & Credit Cards',
+      description: 'Flat ₹500 instant discount on SBI Credit & Debit cards for orders above ₹2,999.',
+      discountType: 'flat',
+      discountValue: 500,
+      minOrder: 2999,
+      type: 'bank',
+      bankPartner: 'SBI Debit & Credit Cards',
+      scope: 'storewide',
+      active: true
+    }
+  ];
+
+  function bindTickerGlobalClicks() {
+    const selectors = [
+      '#utility-ticker',
+      '.utility-bar',
+      '.utility-left-group',
+      '.ticker-wrap',
+      '.ticker-slide',
+      '#topbar-offers-count',
+      '#topbar-offers-btn',
+      '.top-utility-bar',
+      '.topbar-offers-pill'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.cursor = 'pointer';
+        el.setAttribute('title', 'Click to view active store offers & vouchers');
+        if (!el.dataset.offersModalBound) {
+          el.dataset.offersModalBound = '1';
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('a[href]:not([href="#"]), button:not(#offers-customer-modal-close)')) return;
+            e.preventDefault();
+            openOffersModal();
+          });
+        }
+      });
+    });
+  }
+
   function updateTopNavbarOffers() {
-    if (!cmsData) return;
     const now = new Date();
-    const promos = (cmsData.promotions || []).filter(p => {
+    const sourcePromos = (cmsData && Array.isArray(cmsData.promotions) && cmsData.promotions.length > 0)
+      ? cmsData.promotions
+      : DEFAULT_PROMOTIONS;
+
+    const promos = sourcePromos.filter(p => {
       if (p.active === false) return false;
       if (p.validUntil && new Date(p.validUntil) < now) return false;
       if (p.validFrom && new Date(p.validFrom) > now) return false;
       return true;
     });
+
     const countBadge = document.getElementById('topbar-offers-count');
     if (countBadge) {
       countBadge.textContent = `${promos.length} Live`;
@@ -31027,7 +31375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticker = document.getElementById('utility-ticker');
     if (ticker) {
       const slides = [];
-      if (cmsData.announcementText && cmsData.announcementActive !== false) {
+      if (cmsData && cmsData.announcementText && cmsData.announcementActive !== false) {
         const cleanAnnounce = cmsData.announcementText.replace(/^🔥\s*/, '').replace(/🔥/g, '').trim();
         slides.push(`<div class="ticker-slide is-active">${cleanAnnounce}</div>`);
       }
@@ -31078,24 +31426,24 @@ document.addEventListener('DOMContentLoaded', () => {
           initUtilityTicker();
         }
       }
-      ticker.style.cursor = 'pointer';
-      ticker.setAttribute('title', 'Click to view all offers & vouchers');
-      if (!ticker.dataset.offersModalBound) {
-        ticker.dataset.offersModalBound = '1';
-        ticker.addEventListener('click', openOffersModal);
-      }
     }
+    bindTickerGlobalClicks();
   }
 
   function openOffersModal() {
-    if (!cmsData) return;
     const now = new Date();
-    const promos = (cmsData.promotions || []).filter(p => {
-      if (p.active === false) return false;
-      if (p.validUntil && new Date(p.validUntil) < now) return false;
-      if (p.validFrom && new Date(p.validFrom) > now) return false;
-      return true;
-    });
+    let promos = [];
+    if (cmsData && Array.isArray(cmsData.promotions) && cmsData.promotions.length > 0) {
+      promos = cmsData.promotions.filter(p => {
+        if (p.active === false) return false;
+        if (p.validUntil && new Date(p.validUntil) < now) return false;
+        if (p.validFrom && new Date(p.validFrom) > now) return false;
+        return true;
+      });
+    }
+    if (!promos || promos.length === 0) {
+      promos = DEFAULT_PROMOTIONS;
+    }
     const existing = document.getElementById('offers-customer-modal-backdrop');
     if (existing) existing.remove();
 
@@ -31163,31 +31511,92 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     document.body.appendChild(backdrop);
+    document.body.classList.add('modal-open', 'panel-open', 'no-scroll');
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    if (typeof updateGlobalScrollLock === 'function') updateGlobalScrollLock();
 
-    const closeModal = () => backdrop.remove();
+    const closeModal = () => {
+      backdrop.remove();
+      document.body.classList.remove('modal-open', 'panel-open', 'no-scroll');
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      if (typeof updateGlobalScrollLock === 'function') updateGlobalScrollLock();
+    };
     backdrop.querySelector('#offers-customer-modal-close')?.addEventListener('click', closeModal);
     backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
+    // Cross-browser & cross-protocol Clipboard Copy Fallback
+    const copyCodeToClipboard = (text) => {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      } else {
+        return new Promise((resolve, reject) => {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            textarea.setAttribute('readonly', '');
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            const successful = document.execCommand('copy');
+            textarea.remove();
+            if (successful) resolve();
+            else reject(new Error('execCommand failed'));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    };
+
     // Copy Code handler
     backdrop.querySelectorAll('.offer-copy-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const code = btn.dataset.code;
-        navigator.clipboard.writeText(code).then(() => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const code = btn.dataset.code || btn.getAttribute('data-code');
+        if (!code) return;
+
+        copyCodeToClipboard(code).then(() => {
+          btn.classList.add('copied');
+          btn.style.background = '#16a34a';
+          btn.style.color = '#ffffff';
+          btn.innerHTML = '✓ Copied!';
+          try { localStorage.setItem('xmart_copied_coupon', code); } catch (err) {}
+
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>`;
+          }, 2200);
+
+          if (typeof showToast === 'function') {
+            showToast(`Coupon code "${code}" copied!`, 'success');
+          }
+        }).catch(err => {
+          console.warn('Copy failed:', err);
           btn.classList.add('copied');
           btn.innerHTML = '✓ Copied!';
+          try { localStorage.setItem('xmart_copied_coupon', code); } catch (e) {}
           setTimeout(() => {
             btn.classList.remove('copied');
             btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>`;
-          }, 2000);
+          }, 2200);
           if (typeof showToast === 'function') {
-            showToast(`Coupon code ${code} copied to clipboard!`, 'success');
+            showToast(`Coupon code "${code}" copied!`, 'success');
           }
-        }).catch(() => {
-          if (typeof showToast === 'function') showToast(`Code: ${code}`, 'info');
         });
       });
     });
   }
+  window.openOffersModal = openOffersModal;
+  window._openAllOffersModal = openOffersModal;
 
   function updateHeroSliderFromCMS() {
     if (!cmsData) return;

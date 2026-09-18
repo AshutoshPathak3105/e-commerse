@@ -1,6 +1,7 @@
 /**
  * X-Mart Superstore — Express REST API
  * Entry point: server.js
+ * Reload routes configuration
  */
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });

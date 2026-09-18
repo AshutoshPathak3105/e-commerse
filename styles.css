@@ -4825,13 +4825,16 @@ html.category-dropdown-locked {
 }
 
 /* Disable background vertical scrolling when any popup window / modal is open */
+html.modal-open,
 body.modal-open,
 body.panel-open,
 body.no-scroll,
 body:has(.xmodal-overlay.is-active),
 body:has(#dept-sidebar-overlay.is-open),
 body:has(.modal.is-active),
-body:has([class*="modal"].is-active) {
+body:has([class*="modal"].is-active),
+body:has(.offers-modal-backdrop),
+body:has(#offers-customer-modal-backdrop) {
   overflow: hidden !important;
   touch-action: none;
 }
@@ -10170,19 +10173,19 @@ body:has([class*="modal"].is-active) {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: #19324c;
-  color: #ffffff;
+  background: #002F43 !important;
+  color: #ffffff !important;
 }
 
 .cs-chat-header h3 { margin: 0; font-size: 15px; font-weight: 800; color: #ffffff !important; }
 .live-status-pill { display: inline-block; }
 
 .cs-chat-section {
-  background: linear-gradient(145deg, #091e3a 0%, #0b132b 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
   border-radius: 16px !important;
   overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
 }
 
 .cs-chat-messages {
@@ -10193,8 +10196,8 @@ body:has([class*="modal"].is-active) {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: radial-gradient(circle at top right, #1e3a8a 0%, #091e3a 70%) !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
 }
 
 .chat-msg {
@@ -12257,11 +12260,189 @@ body:has([class*="modal"].is-active) {
   vertical-align: middle;
 }
 
+/* ── Tablet View Specific Formatting for Seller Central Hero (Matches Image 1 Format) ── */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .seller-hero-enterprise {
+    padding: 24px !important;
+    border-radius: 16px !important;
+    margin-bottom: 20px !important;
+    position: relative !important;
+  }
+
+  .seller-hero-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    flex-direction: row !important;
+    position: static !important;
+    gap: 16px !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+  }
+
+  .seller-hero-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  .seller-hero-badges {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 12px !important;
+    width: auto !important;
+  }
+
+  .seller-hero-badge-row-1,
+  .seller-hero-badge-row-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    padding-right: 0 !important;
+  }
+
+  .seller-hero-status-wrap {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    z-index: 5 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .seller-hero-status-badge {
+    padding: 7px 16px !important;
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+    border-radius: 24px !important;
+    letter-spacing: 0.03em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    box-shadow: 0 0 12px rgba(22, 163, 74, 0.25) !important;
+  }
+
+  .seller-hero-status-badge span {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  #btn-hero-open-order-summary {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 7px 16px !important;
+    border-radius: 24px !important;
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+    max-width: max-content !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  #btn-hero-open-order-summary svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .seller-hero-info h1 {
+    font-size: 22px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 8px !important;
+    color: #ffffff !important;
+  }
+
+  .seller-hero-info p {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    color: #cbd5e1 !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* 2x2 Grid Layout for Executive KPI Cards on Tablet */
+  .seller-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .seller-kpi-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+  }
+
+  .seller-kpi-val {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+  }
+
+  .seller-kpi-lbl {
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    opacity: 0.95 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .seller-kpi-trend {
+    font-size: 11px !important;
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+  }
+
+  /* Align 4 Seller Tab Buttons in Pairs (2 Columns x 2 Rows) on Tablet View */
+  .seller-tabs-bar {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: 20px !important;
+  }
+
+  .seller-tab-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 11px 12px !important;
+    font-size: 12.5px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+}
+
 /* ==========================================================================
    SELLER CENTRAL & MERCHANT HUB — MOBILE RESPONSIVE LAYOUT
    Standardized to match user account, order cards, and delivery hero formats
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   /* 1. Hero Card Container */
   .seller-hero-enterprise {
     position: relative !important;
@@ -19798,22 +19979,42 @@ html.admin-mode-preload #admin-panel-overlay {
   user-select: all;
 }
 
-/* ── Mobile Layout for Active Offers & Vouchers Modal ── */
-@media (max-width: 640px) {
-  .offers-modal-backdrop {
-    padding: 0 !important;
-    align-items: flex-end !important;
+/* ── Mobile & Tablet Layout for Active Offers & Vouchers Modal ── */
+@media (max-width: 768px) {
+  .offers-modal-backdrop,
+  #offers-customer-modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
+    touch-action: none !important;
+    padding: 24px 12px 28px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
   }
 
   .offers-modal-dialog {
-    max-height: 88vh !important;
-    border-radius: 20px 20px 0 0 !important;
+    margin: auto !important;
+    max-height: calc(100vh - 56px) !important;
+    border-radius: 16px !important;
     width: 100% !important;
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    touch-action: auto !important;
   }
 
   .offers-modal-header {
     padding: 14px 16px !important;
+    flex-shrink: 0 !important;
   }
 
   .offers-modal-title,
@@ -19828,8 +20029,12 @@ html.admin-mode-preload #admin-panel-overlay {
   }
 
   .offers-modal-body {
-    padding: 12px 10px 24px !important;
-    gap: 12px !important;
+    padding: 14px 12px 40px 12px !important;
+    gap: 14px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
   }
 
   .offer-card {
@@ -22621,6 +22826,26 @@ html.admin-mode-preload #admin-panel-overlay {
     box-sizing: border-box !important;
   }
 
+  #btn-print-seller-summary {
+    background: #ea580c !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 800 !important;
+    box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3) !important;
+    transition: all 180ms ease !important;
+  }
+
+  #btn-print-seller-summary:hover {
+    background: #c2410c !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 14px rgba(234, 88, 12, 0.45) !important;
+  }
+
+  #btn-print-seller-summary:active {
+    transform: translateY(0) !important;
+  }
+
   #admin-manage-offers-modal .ap-table {
     display: block !important;
     width: 100% !important;
@@ -22893,5 +23118,424 @@ html.admin-mode-preload #admin-panel-overlay {
     margin: 0 auto !important;
   }
 }
+
+/* ============================================================
+   SELLER ORDER SUMMARY MODAL MOBILE RESPONSIVE FIXES
+   ============================================================ */
+#seller-order-summary-modal .xmodal-window,
+#seller-order-summary-empty-modal .xmodal-window {
+  max-width: 860px !important;
+  width: 95% !important;
+  margin: 10px auto !important;
+  box-sizing: border-box !important;
+}
+
+#seller-order-summary-modal .xmodal-header,
+#seller-order-summary-empty-modal .xmodal-header {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  padding: 16px 20px !important;
+}
+
+#seller-order-summary-modal .xmodal-header h3,
+#seller-order-summary-empty-modal .xmodal-header h3 {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+}
+
+#seller-order-summary-modal .xmodal-close-btn,
+#seller-order-summary-empty-modal .xmodal-close-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 50% !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+
+#seller-order-summary-modal .xmodal-close-btn:hover,
+#seller-order-summary-empty-modal .xmodal-close-btn:hover {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+  border-color: #e11d48 !important;
+}
+
+.seller-order-summary-popup {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.seller-summary-header-bar {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.seller-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.seller-summary-grid-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.seller-summary-table-container {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.seller-summary-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.seller-summary-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.seller-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  box-sizing: border-box;
+}
+
+/* Mobile & Tablet Specific Responsive Breakpoints (<= 768px & <= 640px) */
+@media (max-width: 768px) {
+  #seller-order-summary-modal.xmodal-overlay,
+  #seller-order-summary-empty-modal.xmodal-overlay {
+    padding: 3px 6px !important;
+  }
+
+  #seller-order-summary-modal .xmodal-window,
+  #seller-order-summary-empty-modal .xmodal-window {
+    width: 98% !important;
+    max-width: 100% !important;
+    margin-top: 3px !important;
+    margin-bottom: 3px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin: 3px auto !important;
+    max-height: calc(100vh - 6px) !important;
+    max-height: calc(100dvh - 6px) !important;
+    border-radius: 12px !important;
+  }
+
+  #seller-order-summary-modal .xmodal-body {
+    padding: 12px 10px !important;
+  }
+
+  .seller-summary-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .seller-summary-grid-card {
+    padding: 14px 12px !important;
+  }
+
+  .seller-summary-header-bar {
+    padding: 14px 12px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .seller-summary-header-amount {
+    text-align: left !important;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .seller-summary-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .seller-summary-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 11px 16px !important;
+  }
+
+  #btn-hero-open-order-summary {
+    padding: 4px 10px !important;
+    font-size: 10.5px !important;
+    gap: 4px !important;
+    border-radius: 16px !important;
+    white-space: nowrap !important;
+    max-width: max-content !important;
+  }
+
+  #btn-hero-open-order-summary svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #seller-order-summary-modal.xmodal-overlay,
+  #seller-order-summary-empty-modal.xmodal-overlay {
+    padding: 3px 4px !important;
+  }
+
+  #seller-order-summary-modal .xmodal-window,
+  #seller-order-summary-empty-modal .xmodal-window {
+    margin-top: 3px !important;
+    margin-bottom: 3px !important;
+    margin: 3px auto !important;
+    max-height: calc(100vh - 6px) !important;
+    max-height: calc(100dvh - 6px) !important;
+  }
+
+  .seller-summary-header-bar h2 {
+    font-size: 16px !important;
+    word-break: break-all !important;
+  }
+
+  .seller-summary-badges {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .seller-summary-grid-card strong {
+    word-break: break-all !important;
+  }
+
+  #btn-hero-open-order-summary {
+    padding: 3px 8px !important;
+    font-size: 9.5px !important;
+    gap: 3px !important;
+    border-radius: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  #btn-hero-open-order-summary svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+}
+
+/* Explicit styling override for View Order Summary buttons */
+#btn-preview-order-summary,
+#btn-hero-open-order-summary {
+  background-color: #FF9700 !important;
+  background: #FF9700 !important;
+  color: #000000 !important;
+}
+
+#btn-preview-order-summary *,
+#btn-hero-open-order-summary * {
+  color: #000000 !important;
+}
+
+#btn-preview-order-summary svg,
+#btn-hero-open-order-summary svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+/* ============================================================
+   GLOBAL PRIMARY ACTION & CTA BUTTONS - #FF9700 THEME
+   ============================================================ */
+.add-to-cart-btn,
+.btn-add-to-cart,
+.storefront-sim-btn,
+.prod-add-cart-btn,
+.wl-add-cart-btn,
+.buy-now-btn,
+.btn-buy-now,
+.prod-buy-now-btn,
+#btn-checkout-submit,
+.checkout-btn,
+.cart-checkout-btn,
+.checkout-submit-btn,
+.auth-submit-btn,
+.seller-submit-btn,
+button[type="submit"],
+#btn-print-seller-summary,
+.order-btn-primary-action,
+.newsletter-submit,
+.btn-primary,
+.hero-cta-btn,
+#nb-pay-btn,
+#card-pay-btn,
+.addr-select-btn,
+#wallet-add-btn,
+#addr-toggle-add-btn {
+  background-color: #FF9700 !important;
+  background: #FF9700 !important;
+  color: #000000 !important;
+  border-color: #FF9700 !important;
+  box-shadow: 0 4px 12px rgba(255, 151, 0, 0.28) !important;
+}
+
+.add-to-cart-btn *,
+.btn-add-to-cart *,
+.storefront-sim-btn *,
+.prod-add-cart-btn *,
+.wl-add-cart-btn *,
+.buy-now-btn *,
+.btn-buy-now *,
+.prod-buy-now-btn *,
+#btn-checkout-submit *,
+.checkout-btn *,
+.cart-checkout-btn *,
+.checkout-submit-btn *,
+.auth-submit-btn *,
+.seller-submit-btn *,
+button[type="submit"] *,
+#btn-print-seller-summary *,
+.order-btn-primary-action *,
+.newsletter-submit *,
+.btn-primary *,
+.hero-cta-btn *,
+#nb-pay-btn *,
+#card-pay-btn *,
+.addr-select-btn *,
+#wallet-add-btn *,
+#addr-toggle-add-btn * {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+/* Offer Card Apply button clean styling (No orange background) */
+.offer-card-apply-btn {
+  background-color: #eff6ff !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+  font-weight: 800 !important;
+  padding: 5px 14px !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.offer-card-apply-btn:hover {
+  background-color: #dbeafe !important;
+  background: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #93c5fd !important;
+}
+
+.offer-card-apply-btn * {
+  color: #1d4ed8 !important;
+  stroke: #1d4ed8 !important;
+}
+
+/* Restore clean white background for View Details button */
+.related-btn-view {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.related-btn-view * {
+  color: #1f2937 !important;
+}
+
+.related-btn-view:hover {
+  background-color: #f8fafc !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Plus Icon Button (+) #FF9700 background SPECIFICALLY FOR MOBILE & TABLET VIEW */
+@media (max-width: 1024px) {
+  .related-btn-cart {
+    background-color: #FF9700 !important;
+    background: #FF9700 !important;
+    color: #000000 !important;
+    border-color: #FF9700 !important;
+  }
+
+  .related-btn-cart * {
+    color: #000000 !important;
+    stroke: #000000 !important;
+  }
+}
+
+/* Seller Form & Modal Buttons: Preview, Add Photo Slot, Add Specification */
+.btn-preview-angle,
+.btn-preview-extra,
+.btn-preview-edit-angle,
+#btn-add-more-photo,
+#btn-seller-add-spec,
+#btn-edit-add-spec {
+  background-color: #FF9700 !important;
+  background: #FF9700 !important;
+  color: #ffffff !important;
+  border: 1px solid #FF9700 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(255, 151, 0, 0.28) !important;
+}
+
+.btn-preview-angle *,
+.btn-preview-extra *,
+.btn-preview-edit-angle *,
+#btn-add-more-photo *,
+#btn-seller-add-spec *,
+#btn-edit-add-spec * {
+  color: #ffffff !important;
+}
+
+.btn-preview-angle:hover,
+.btn-preview-extra:hover,
+.btn-preview-edit-angle:hover,
+#btn-add-more-photo:hover,
+#btn-seller-add-spec:hover,
+#btn-edit-add-spec:hover {
+  background-color: #e68800 !important;
+  background: #e68800 !important;
+  border-color: #e68800 !important;
+}
+
+
+
 
 

@@ -360,6 +360,158 @@ router.get(
   })
 );
 
+// ── POST /api/orders/public-sync ─── Cross-device Order Sync ────────────────
+router.post(
+  '/public-sync',
+  asyncHandler(async (req, res) => {
+    const {
+      id,
+      orderId,
+      orderDate,
+      customerName,
+      customerEmail,
+      customerPhone,
+      shippingAddress,
+      items,
+      totalAmount,
+      paymentMethod,
+      fulfillmentStatus,
+      trackingNumber,
+      courier
+    } = req.body;
+
+    const oId = String(id || orderId || `XM-${Date.now().toString().slice(-8).toUpperCase()}`);
+
+    let order = await Order.findOne({
+      $or: [
+        { trackingNo: oId },
+        { trackingNumber: oId },
+        { notes: `SYNC_ID:${oId}` }
+      ]
+    });
+
+    const itemsFormatted = (items || []).map(i => ({
+      product: i.id || i._id || i.productId || `prod-${Date.now()}`,
+      name: i.name || 'Catalog Item',
+      image: i.image || i.img || '',
+      price: Number(i.price) || 0,
+      quantity: Number(i.quantity || i.qty) || 1,
+    }));
+
+    const addr = shippingAddress || {};
+    const shippingFormatted = {
+      name: customerName || addr.name || 'Valued Customer',
+      street: addr.street || addr.addressLine1 || addr.address || 'Standard Address',
+      city: addr.city || 'Delhi',
+      state: addr.state || 'Delhi',
+      pincode: addr.pincode || '110001',
+      phone: customerPhone || addr.phone || '9876543210'
+    };
+
+    let pMethod = 'COD';
+    if (paymentMethod) {
+      const pmUpper = String(paymentMethod).toUpperCase();
+      if (pmUpper.includes('UPI')) pMethod = 'UPI';
+      else if (pmUpper.includes('CARD')) pMethod = 'Card';
+      else if (pmUpper.includes('WALLET')) pMethod = 'Wallet';
+      else if (pmUpper.includes('NET')) pMethod = 'NetBanking';
+    }
+
+    let fStatus = 'Pending';
+    if (fulfillmentStatus) {
+      if (fulfillmentStatus === 'Pending Dispatch') fStatus = 'Pending';
+      else if (['In-Transit', 'Shipped', 'Delivered', 'Cancelled'].includes(fulfillmentStatus)) {
+        fStatus = fulfillmentStatus === 'In-Transit' ? 'Shipped' : fulfillmentStatus;
+      }
+    }
+
+    if (!order) {
+      order = await Order.create({
+        orderItems: itemsFormatted,
+        shippingAddress: shippingFormatted,
+        paymentMethod: pMethod,
+        itemsPrice: Number(totalAmount) || 0,
+        shippingPrice: 0,
+        taxPrice: 0,
+        totalPrice: Number(totalAmount) || 0,
+        status: fStatus,
+        trackingNumber: trackingNumber || `FBX-EXP-${Date.now().toString().slice(-6)}`,
+        trackingNo: oId,
+        carrier: courier || 'FBX Express Air Logistics',
+        notes: `SYNC_ID:${oId}`,
+        createdAt: orderDate ? new Date(orderDate) : new Date()
+      });
+    } else {
+      order.status = fStatus;
+      if (trackingNumber) order.trackingNumber = trackingNumber;
+      await order.save();
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Order synced successfully across devices',
+      data: order
+    });
+  })
+);
+
+// ── GET /api/orders/public-all ─── Fetch All Orders for Cross-device Sync ──
+router.get(
+  '/public-all',
+  asyncHandler(async (req, res) => {
+    const orders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    const formatted = orders.map(o => {
+      let syncId = o.trackingNo;
+      if (o.notes && o.notes.includes('SYNC_ID:')) {
+        syncId = o.notes.split('SYNC_ID:')[1].trim();
+      }
+      if (!syncId) {
+        syncId = `XM-${o._id.toString().slice(-8).toUpperCase()}`;
+      }
+
+      const addr = o.shippingAddress || {};
+      const st = addr.street || addr.addressLine1 || addr.address || 'Standard Delivery Address';
+
+      return {
+        id: syncId,
+        orderDate: o.createdAt || new Date().toISOString(),
+        customerName: addr.name || (o.user ? o.user.name : 'Valued Customer'),
+        customerEmail: o.user ? o.user.email : '',
+        customerPhone: addr.phone || '',
+        shippingAddress: {
+          street: st,
+          address: st,
+          city: addr.city || 'Delhi',
+          state: addr.state || 'Delhi',
+          pincode: addr.pincode || '110001'
+        },
+        items: (o.orderItems || []).map(it => ({
+          id: String(it.product || it._id || ''),
+          name: it.name || 'Catalog Item',
+          price: it.price || 0,
+          quantity: it.quantity || 1,
+          image: it.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600',
+          sku: `SKU-${(it.name || 'XMT').substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
+        })),
+        totalAmount: o.totalPrice || 0,
+        paymentMethod: o.paymentMethod ? (o.paymentMethod.includes('COD') ? 'Cash on Delivery (COD)' : `Prepaid (${o.paymentMethod})`) : 'Cash on Delivery (COD)',
+        fulfillmentStatus: o.status === 'Delivered' ? 'Delivered' : (o.status === 'Cancelled' ? 'Cancelled' : (o.status === 'Shipped' ? 'In-Transit' : 'Pending Dispatch')),
+        trackingNumber: o.trackingNumber || `FBX-EXP-${Date.now().toString().slice(-6)}`,
+        courier: o.carrier || 'FBX Express Air Logistics'
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formatted
+    });
+  })
+);
+
 // ── GET /api/orders/:id ─── Order detail ─────────────────────
 router.get(
   '/:id',
@@ -531,3 +683,4 @@ router.get(
 );
 
 module.exports = router;
+
