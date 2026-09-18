@@ -14,7 +14,7 @@ const emailValidationRule = body('email')
   .trim()
   .isEmail()
   .withMessage('Please enter a valid email address (e.g. name@example.com)')
-  .normalizeEmail();
+  .normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false, icloud_remove_subaddress: false, outlookdotcom_remove_subaddress: false, yahoo_remove_subaddress: false });
 
 const phoneValidationRule = body('phone')
   .trim()
@@ -94,7 +94,7 @@ router.post(
 router.post(
   '/register-verify-otp',
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
     body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   ],
   validate,
@@ -270,7 +270,7 @@ router.post(
 router.post(
   '/admin-register-verify-otp',
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
     body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   ],
   validate,
@@ -933,7 +933,7 @@ router.put(
 router.post(
   '/send-otp',
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
     body('type').isIn(['login', 'reset']).withMessage('OTP type must be login or reset'),
   ],
   validate,
@@ -955,7 +955,7 @@ router.post(
       const isMatch = await user.matchPassword(password);
       if (!isMatch) {
         res.status(401);
-        throw new Error('Invalid email or password');
+        throw new Error('Incorrect password entered for this email. Please check your password or use "Forgot Password?" to reset.');
       }
     }
 
@@ -991,7 +991,7 @@ router.post(
 router.post(
   '/verify-otp',
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
     body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
     body('type').isIn(['login', 'reset']).withMessage('OTP type must be login or reset'),
   ],
@@ -1096,7 +1096,7 @@ router.post(
 // ── POST /api/auth/forgot-password ─── Legacy: kept for compatibility ─
 router.post(
   '/forgot-password',
-  [body('email').isEmail().withMessage('Valid email is required').normalizeEmail()],
+  [body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false })],
   validate,
   asyncHandler(async (req, res) => {
     const { email } = req.body;
@@ -1128,7 +1128,7 @@ router.post(
 router.post(
   '/reset-password',
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
     body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
   ],
   validate,

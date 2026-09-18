@@ -777,20 +777,25 @@ function createModal(id, options = {}) {
 
 /* ── Disable Background Vertical Scrolling When Any Modal/Popup is Open ── */
 function updateGlobalScrollLock() {
-  const activeOverlays = document.querySelectorAll('.xmodal-overlay.is-active, #dept-sidebar-overlay.is-open, .modal.is-active');
-  let isAnyModalOpen = false;
-  activeOverlays.forEach(el => {
-    if (el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden') {
-      isAnyModalOpen = true;
-    }
-  });
-
-  if (isAnyModalOpen) {
-    document.body.classList.add('modal-open', 'panel-open', 'no-scroll');
+  const hasModal = !!document.querySelector('.xmodal-overlay.is-active, #dept-sidebar-overlay.is-open, .modal.is-active, .offers-modal-backdrop, #offers-customer-modal-backdrop, [class*="modal-backdrop"]');
+  if (hasModal) {
+    document.documentElement.classList.add('modal-open', 'no-scroll');
+    document.body.classList.add('modal-open', 'no-scroll');
   } else {
-    document.body.classList.remove('modal-open', 'panel-open', 'no-scroll');
+    document.documentElement.classList.remove('modal-open', 'no-scroll');
+    document.body.classList.remove('modal-open', 'no-scroll');
   }
 }
+
+// Touch event listener for mobile/tablet background scroll prevention
+document.addEventListener('touchmove', (e) => {
+  if (document.body.classList.contains('modal-open') || document.documentElement.classList.contains('modal-open')) {
+    const isInsideScrollableModal = e.target.closest('.xmodal-body, .xmodal-window, .offers-modal-body, .dept-sidebar-panel, [class*="modal-body"], [class*="modal-dialog"], [class*="modal-content"]');
+    if (!isInsideScrollableModal) {
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
 
 /* ── Seller Storefront & Product Active Status Helper ─────── */
 function isSellerProductDeactivated(prod) {
@@ -2079,11 +2084,15 @@ function buildAuthModal() {
     } catch (err) {
       const emailEl = body.querySelector('#admin-login-email');
       const pwdEl = body.querySelector('#admin-login-password');
-      if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('No account found'))) {
+      if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('Incorrect password') || err.message.includes('Password is required'))) {
         markInputError(emailEl);
         markInputError(pwdEl);
         shakeEl(body.querySelector('#admin-login-form'));
-        showToast('Invalid administrator credentials. Check your details.', 'error', 4500);
+        showToast('Incorrect password entered for administrator account. Check your password or use "Forgot Password?" to reset.', 'error', 5000);
+      } else if (err.message && err.message.includes('No account found')) {
+        markInputError(emailEl);
+        shakeEl(body.querySelector('#admin-login-form'));
+        showToast('No administrator account found with this email. Please verify your email address.', 'error', 5000);
       } else {
         showToast(err.message || 'Error authenticating administrator.', 'error', 4500);
       }
@@ -2414,8 +2423,10 @@ function buildAuthModal() {
         }
         return;
       }
-      if (err.message.includes('Invalid email or password') || err.message.includes('No account found')) {
-        showToast('No account found or invalid credentials. Click "Create Account" to register!', 'error', 4500);
+      if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('Password is required') || err.message.includes('Incorrect password'))) {
+        showToast('Incorrect password entered for this email. Check your password or click "Forgot Password?" below.', 'error', 5000);
+      } else if (err.message && err.message.includes('No account found')) {
+        showToast('No account found with this email. Click "Create Account" tab above to register!', 'error', 5000);
       } else {
         showToast(err.message, 'error');
       }
@@ -2504,7 +2515,11 @@ function buildAuthModal() {
       startResendCountdown(body.querySelector('#reset-otp-resend'), 'reset');
       showToast('Reset code sent! Check your inbox.', 'success');
     } catch (err) {
-      showToast(err.message, 'error');
+      if (err.message && (err.message.includes('No account found') || err.message.includes('404'))) {
+        showToast('No account found with this email address. Please check your email or click "Create Account" to register.', 'error', 5000);
+      } else {
+        showToast(err.message, 'error');
+      }
     } finally {
       btn.disabled = false;
       btn.textContent = 'Send Reset Code';
@@ -19255,7 +19270,7 @@ function initPageRouter() {
             </div>
 
             <div class="sku-offers-actions-row" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:20px; flex-wrap:wrap;">
-              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#001f3f !important; color:#ffffff !important; border:1.5px solid #001f3f !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#FF9700 !important; color:#000000 !important; border:1.5px solid #FF9700 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
                 <span>Publish Offer &amp; Sync Subsidy</span>
               </button>
               <button type="button" class="ap-btn" id="sku-offers-modal-close-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; color:#000000 !important; background:#ffffff !important; border:1.5px solid #94a3b8 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
@@ -20033,7 +20048,7 @@ function initPageRouter() {
                             <img src="" alt="FRONT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img" class="seller-input seller-angle-input" data-angle="front" placeholder="https://... Front View image URL (Cover image)" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img" data-tag="FRONT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img" data-tag="FRONT" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20050,7 +20065,7 @@ function initPageRouter() {
                             <img src="" alt="LEFT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-left" class="seller-input seller-angle-input" data-angle="left" placeholder="https://... Left Side View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-left" data-tag="LEFT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-left" data-tag="LEFT" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20067,7 +20082,7 @@ function initPageRouter() {
                             <img src="" alt="TOP" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-top" class="seller-input seller-angle-input" data-angle="top" placeholder="https://... Top View image URL (Shown under TOP tab in user account)" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-top" data-tag="TOP" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-top" data-tag="TOP" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20084,7 +20099,7 @@ function initPageRouter() {
                             <img src="" alt="RIGHT" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-right" class="seller-input seller-angle-input" data-angle="right" placeholder="https://... Right Side View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-right" data-tag="RIGHT" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-right" data-tag="RIGHT" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
 
@@ -20101,7 +20116,7 @@ function initPageRouter() {
                             <img src="" alt="BACK" style="width:100%;height:100%;object-fit:contain;">
                           </div>
                           <input type="text" id="prod-img-back" class="seller-input seller-angle-input" data-angle="back" placeholder="https://... Back View image URL" required style="flex:1;">
-                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-back" data-tag="BACK" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
+                          <button type="button" class="seller-btn-secondary btn-preview-angle" data-input-id="prod-img-back" data-tag="BACK" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:8px 16px;border-radius:8px;white-space:nowrap;">Preview</button>
                         </div>
                       </div>
                     </div>
@@ -20113,9 +20128,9 @@ function initPageRouter() {
                           <strong style="font-size:13px;color:#0f172a;display:block;">Additional Multi-Angle Photo &amp; Gallery</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add side view, back view, top angle, and detail shots for 360° product exploration.</small>
                         </div>
-                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
-                          <span style="color:#ffffff !important;font-size:14px;font-weight:900;">+</span>
-                          <span style="color:#ffffff !important;font-weight:800;">Add Photo Slot</span>
+                        <button type="button" id="btn-add-more-photo" class="seller-btn-secondary" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
+                          <span style="color:#000000 !important;font-size:14px;font-weight:900;">+</span>
+                          <span style="color:#000000 !important;font-weight:800;">Add Photo Slot</span>
                         </button>
                       </div>
                       <div id="seller-extra-photos-container" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
@@ -20141,9 +20156,9 @@ function initPageRouter() {
                           <strong style="font-size:13px;color:#0f172a;display:block;">Product Specifications Table (Customer View)</strong>
                           <small style="color:#64748b;font-size:11.5px;">Add custom specs like RAM, Storage, Color, Display, Processor, Material, etc. to appear directly on the specifications card.</small>
                         </div>
-                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:7px 16px;border-radius:6px;font-size:12.5px;">
-                          <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
-                          <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
+                        <button type="button" id="btn-seller-add-spec" class="seller-btn-secondary" style="display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;font-weight:800;cursor:pointer;padding:7px 16px;border-radius:6px;font-size:12.5px;">
+                          <span style="font-size:15px;font-weight:900;line-height:1;color:#000000 !important;">+</span>
+                          <span style="color:#000000 !important;font-weight:800;">Add Specification</span>
                         </button>
                       </div>
 
@@ -20331,7 +20346,7 @@ function initPageRouter() {
                 <div>
                   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <h3 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;">Merchant Sales, Orders & Payments Console</h3>
-                    <span class="seller-pill-badge live-settlement-engine" style="font-size:11.5px;background:#091a2f;color:#34d399;border:1px solid #1e3a5f;">● Live Settlement Engine</span>
+                    <span class="seller-pill-badge live-settlement-engine" style="font-size:11.5px;background:#dcfce7 !important;color:#15803d !important;border:1px solid #86efac !important;padding:4px 12px;border-radius:20px;font-weight:800;display:inline-flex !important;flex-direction:row !important;align-items:center !important;justify-content:center !important;gap:6px;white-space:nowrap !important;flex-shrink:0;word-break:keep-all !important;line-height:1 !important;"><span style="width:7px;height:7px;border-radius:50%;background:#15803d;display:inline-block;flex-shrink:0;"></span> Live Settlement Engine</span>
                   </div>
                   <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Enterprise-level tracking of customer orders, courier dispatch pipeline, marketplace commissions, and automated bank disbursements.</p>
                 </div>
@@ -20378,29 +20393,6 @@ function initPageRouter() {
 
               <!-- 3A. SUB-VIEW: ORDERS & SHIPMENTS CONSOLE -->
               <div id="seller-subview-orders" class="seller-subview-panel is-active">
-                <!-- Status Filter Chips Bar -->
-                <div class="seller-order-status-tabs">
-                  <button type="button" class="seller-order-status-chip is-active" data-status="all">
-                    All Orders (<span id="count-status-all">0</span>)
-                  </button>
-                  <button type="button" class="seller-order-status-chip" data-status="pending">
-                    <span class="status-dot pending"></span>
-                    Pending Dispatch (<span id="count-status-pending">0</span>)
-                  </button>
-                  <button type="button" class="seller-order-status-chip" data-status="shipped">
-                    <span class="status-dot shipped"></span>
-                    In-Transit (<span id="count-status-shipped">0</span>)
-                  </button>
-                  <button type="button" class="seller-order-status-chip" data-status="delivered">
-                    <span class="status-dot delivered"></span>
-                    Delivered (<span id="count-status-delivered">0</span>)
-                  </button>
-                  <button type="button" class="seller-order-status-chip" data-status="cancelled">
-                    <span class="status-dot cancelled"></span>
-                    Cancelled (<span id="count-status-cancelled">0</span>)
-                  </button>
-                </div>
-
                 <!-- Filter & Search Toolbar -->
                 <div class="seller-orders-toolbar">
                   <div class="seller-search-box">
@@ -20428,11 +20420,11 @@ function initPageRouter() {
                     <thead>
                       <tr>
                         <th>Order Details</th>
-                        <th>Customer / Destination</th>
                         <th>Product & Qty</th>
-                        <th>Net Amount</th>
-                        <th>Payment Mode</th>
+                        <th>Customer / Destination</th>
+                        <th>Net Amount & Payment</th>
                         <th>Order Status</th>
+                        <th>Track Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -20453,9 +20445,9 @@ function initPageRouter() {
                 <div class="seller-settlement-cards-grid">
                   <!-- Card 1: Direct Bank Disbursement -->
                   <div class="seller-settlement-hero-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px;flex-wrap:nowrap;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:nowrap;">
                       <span style="font-size:12px;font-weight:800;color:#0878f9;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">Scheduled Disbursement</span>
-                      <span class="seller-pill-badge verified neft-ready-pill" style="font-size:11px;background:#091a2f;color:#34d399;border:1px solid #1e3a5f;padding:4px 12px;border-radius:20px;font-weight:800;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;word-break:keep-all;"><span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;flex-shrink:0;"></span> NEFT Ready</span>
+                      <span class="seller-pill-badge verified neft-ready-pill" style="font-size:11.5px;background:#dcfce7 !important;color:#15803d !important;border:1px solid #86efac !important;padding:4px 12px;border-radius:20px;font-weight:800;display:inline-flex !important;flex-direction:row !important;align-items:center !important;justify-content:center !important;gap:6px;white-space:nowrap !important;flex-shrink:0;word-break:keep-all !important;line-height:1 !important;"><span style="width:7px;height:7px;border-radius:50%;background:#15803d;display:inline-block;flex-shrink:0;"></span> NEFT Ready</span>
                     </div>
                     <div style="font-size:28px;font-weight:900;color:#0f172a;margin-bottom:4px;" id="settlement-hero-amount">₹0.00</div>
                     <p style="font-size:13px;color:#059669;font-weight:700;margin:0 0 12px;">✓ Scheduled for Friday Automated Bank Settlement</p>
@@ -21184,7 +21176,7 @@ function initPageRouter() {
           <img src="" alt="Extra" style="width:100%;height:100%;object-fit:contain;">
         </div>
         <input type="text" class="seller-input seller-extra-photo-input" placeholder="https://... Image URL" style="flex:1;min-width:200px;font-size:12.5px;padding:7px 10px;" />
-        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
+        <button type="button" class="seller-btn-secondary btn-preview-extra" style="background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;border-radius:6px;">Preview</button>
         <button type="button" class="btn-remove-extra-photo" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;" title="Remove this photo">✕</button>
       `;
       extraPhotosContainer.appendChild(row);
@@ -22421,7 +22413,7 @@ function initPageRouter() {
             </div>
 
             <div class="sku-offers-actions-row" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:20px; flex-wrap:wrap;">
-              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#001f3f !important; color:#ffffff !important; border:1.5px solid #001f3f !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+              <button type="button" class="ap-btn primary" id="sku-offers-modal-publish-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; background:#FF9700 !important; color:#000000 !important; border:1.5px solid #FF9700 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
                 <span>Publish Offer &amp; Sync Subsidy</span>
               </button>
               <button type="button" class="ap-btn" id="sku-offers-modal-close-btn" style="min-width:240px; height:42px; font-size:13.5px; font-weight:800; color:#000000 !important; background:#ffffff !important; border:1.5px solid #94a3b8 !important; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
@@ -22857,7 +22849,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-front" class="seller-input edit-angle-input" data-angle="front" value="${(prod.angleImages?.front || prod.images?.[0] || prod.img || '').replace(/"/g, '&quot;')}" placeholder="Front View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-front" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-front" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 2. Left Side View -->
@@ -22868,7 +22860,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-left" class="seller-input edit-angle-input" data-angle="left" value="${(prod.angleImages?.left || prod.images?.[1] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Left Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-left" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-left" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 3. Top View -->
@@ -22879,7 +22871,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-top" class="seller-input edit-angle-input" data-angle="top" value="${(prod.angleImages?.top || prod.images?.[2] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Top View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-top" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-top" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 4. Right Side View -->
@@ -22890,7 +22882,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-right" class="seller-input edit-angle-input" data-angle="right" value="${(prod.angleImages?.right || prod.images?.[3] || prod.images?.[1] || '').replace(/"/g, '&quot;')}" placeholder="Right Side View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-right" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-right" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
               <!-- 5. Back View -->
@@ -22901,7 +22893,7 @@ function initPageRouter() {
                 </div>
                 <div style="display:flex;gap:6px;">
                   <input type="text" id="edit-img-back" class="seller-input edit-angle-input" data-angle="back" value="${(prod.angleImages?.back || prod.images?.[4] || prod.images?.[0] || '').replace(/"/g, '&quot;')}" placeholder="Back View image URL" required style="flex:1;font-size:12px;padding:6px 10px;">
-                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-back" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#fff;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
+                  <button type="button" class="seller-btn-secondary btn-preview-edit-angle" data-for="edit-img-back" style="padding:4px 10px;font-size:11.5px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">Preview</button>
                 </div>
               </div>
             </div>
@@ -22921,9 +22913,9 @@ function initPageRouter() {
                 <label style="font-size:12.5px;font-weight:800;color:#1e293b;margin:0;">Custom Technical &amp; Product Specifications</label>
                 <small style="color:#64748b;font-size:11.5px;display:block;">Specifications displayed on the product specifications card.</small>
               </div>
-              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:6px 14px;font-weight:800;display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#ffffff !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">
-                <span style="font-size:15px;font-weight:900;line-height:1;color:#ffffff !important;">+</span>
-                <span style="color:#ffffff !important;font-weight:800;">Add Specification</span>
+              <button type="button" id="btn-edit-add-spec" class="seller-btn-secondary" style="font-size:12px;padding:6px 14px;font-weight:800;display:inline-flex;align-items:center;gap:6px;background:#FF9700 !important;color:#000000 !important;border:1px solid #FF9700 !important;border-radius:6px;cursor:pointer;">
+                <span style="font-size:15px;font-weight:900;line-height:1;color:#000000 !important;">+</span>
+                <span style="color:#000000 !important;font-weight:800;">Add Specification</span>
               </button>
             </div>
             <div id="edit-specs-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -23567,37 +23559,55 @@ function initPageRouter() {
                 </div>
               </td>
 
-              <!-- Fulfillment Status -->
+              <!-- 5. Order Status -->
               <td>
-                <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
                   <span class="seller-status-badge ${statusClass}">
                     <span class="status-dot ${statusClass}"></span>
                     ${ord.fulfillmentStatus}
                   </span>
                   ${ord.trackingNumber && ord.trackingNumber !== 'N/A' ? `
-                    <small style="font-size:10px;color:#64748b;font-family:monospace;" title="FBX Logistics Courier Tracking">
-                      ${ord.trackingNumber}
+                    <small style="font-size:10.5px;color:#475569;font-family:monospace;font-weight:700;" title="FBX Logistics Courier Tracking">
+                      AWB: ${ord.trackingNumber}
                     </small>
                   ` : ''}
                 </div>
               </td>
 
-              <!-- Merchant Actions -->
+              <!-- 6. Track Status -->
+              <td style="text-align:center;vertical-align:middle;">
+                <button type="button" class="seller-btn-sm btn-track-seller-order" data-id="${ord.id}" style="background:#0878f9;color:#ffffff;border:none;padding:7px 12px;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(8,120,249,0.25);" title="Track Live Order Courier Journey">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>Track Status</span>
+                </button>
+              </td>
+
+              <!-- 7. Merchant Actions -->
               <td>
                 <div class="seller-actions-cell" style="display:flex;flex-direction:column;gap:6px;">
                   ${isPending ? `
-                    <button type="button" class="seller-btn-sm seller-btn-primary btn-dispatch-order" data-id="${ord.id}" title="Generate Courier Dispatch Label">
-                      <span>Dispatch / Ship</span>
+                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Cancel Order & Notify Buyer">
+                      <span>✖ Cancel Order</span>
                     </button>
                   ` : ''}
                   ${isShipped ? `
                     <button type="button" class="seller-btn-sm seller-btn-success btn-deliver-order" data-id="${ord.id}" title="Mark Delivered upon Buyer OTP Verification">
                       <span>✓ Mark Delivered</span>
                     </button>
+                    <button type="button" class="seller-btn-sm btn-cancel-seller-order" data-id="${ord.id}" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-weight:800;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Cancel Order & Notify Buyer">
+                      <span>✖ Cancel Order</span>
+                    </button>
                   ` : ''}
-                  <button type="button" class="seller-btn-sm seller-btn-primary btn-view-summary" data-id="${ord.id}" style="background:#0f172a;color:#ffffff;font-weight:700;">
-                    <span>Order Summary</span>
-                  </button>
+                  ${isCancelled ? `
+                    <span style="font-size:11px;color:#dc2626;font-weight:800;background:#fef2f2;padding:5px 10px;border-radius:6px;border:1px solid #fecaca;display:inline-block;text-align:center;">
+                      ✖ Cancelled by ${ord.cancelledBy === 'seller' ? 'Seller' : 'User'}
+                    </span>
+                  ` : ''}
+                  ${isDelivered ? `
+                    <span style="font-size:11px;color:#16a34a;font-weight:800;background:#f0fdf4;padding:5px 10px;border-radius:6px;border:1px solid #bbf7d0;display:inline-block;text-align:center;">
+                      ✓ Delivered
+                    </span>
+                  ` : ''}
                   <button type="button" class="seller-btn-sm seller-btn-outline btn-view-invoice" data-id="${ord.id}">
                     <span>Tax Invoice</span>
                   </button>
@@ -23622,6 +23632,22 @@ function initPageRouter() {
           });
         });
 
+        tbody.querySelectorAll('.btn-cancel-seller-order').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            cancelSellerOrder(id);
+          });
+        });
+
+        tbody.querySelectorAll('.btn-track-seller-order').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            openSellerTrackingModal(id);
+          });
+        });
+
         tbody.querySelectorAll('.btn-view-summary, .seller-order-id-link').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -23639,6 +23665,41 @@ function initPageRouter() {
         });
       }
 
+      // Helper: Sync order status to customer account & backend DB
+      function syncOrderStatusToCustomerAndBackend(orderId, nextStatus, trackingNumber, cancelledBy) {
+        try {
+          const custOrders = JSON.parse(localStorage.getItem('xmart_customer_orders') || '[]');
+          let updatedCust = false;
+          custOrders.forEach(co => {
+            const coId = String(co.orderId || co.id || co._id);
+            if (coId === String(orderId) || coId.includes(String(orderId).replace('XM-', ''))) {
+              co.status = nextStatus === 'In-Transit' ? 'Shipped' : nextStatus;
+              co.fulfillmentStatus = nextStatus;
+              if (trackingNumber) co.trackingNumber = trackingNumber;
+              if (cancelledBy) co.cancelledBy = cancelledBy;
+              updatedCust = true;
+            }
+          });
+          if (updatedCust) {
+            localStorage.setItem('xmart_customer_orders', JSON.stringify(custOrders));
+          }
+        } catch(e) { }
+
+        try {
+          fetch('/api/orders/public-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: orderId,
+              orderId: orderId,
+              fulfillmentStatus: nextStatus,
+              trackingNumber: trackingNumber,
+              cancelledBy: cancelledBy
+            })
+          }).catch(() => {});
+        } catch(e) { }
+      }
+
       // 4. Update Order Status Transition
       function updateOrderStatus(orderId, nextStatus) {
         const orders = getSellerOrders();
@@ -23651,6 +23712,8 @@ function initPageRouter() {
         }
 
         saveSellerOrders(orders);
+        syncOrderStatusToCustomerAndBackend(ord.id, nextStatus, ord.trackingNumber);
+
         showToast(
           nextStatus === 'In-Transit'
             ? `✓ Order ${ord.id} marked as In-Transit! FBX courier tracking: ${ord.trackingNumber}`
@@ -23661,6 +23724,129 @@ function initPageRouter() {
 
         refreshMetrics();
         renderOrdersTable();
+      }
+
+      // 4B. Cancel Seller Order & Sync to Customer Account
+      function cancelSellerOrder(orderId) {
+        const orders = getSellerOrders();
+        const ord = orders.find(o => o.id === orderId);
+        if (!ord) return;
+
+        if (ord.fulfillmentStatus === 'Cancelled') {
+          showToast(`Order ${ord.id} is already cancelled.`, 'info');
+          return;
+        }
+
+        const isConfirmed = confirm(`Are you sure you want to CANCEL Customer Order #${ord.id}?\n\nThis will void the shipment and update order status to Cancelled in both Seller Portal and Customer Account.`);
+        if (!isConfirmed) return;
+
+        ord.fulfillmentStatus = 'Cancelled';
+        ord.cancelledBy = 'seller';
+        saveSellerOrders(orders);
+        syncOrderStatusToCustomerAndBackend(ord.id, 'Cancelled', ord.trackingNumber, 'seller');
+
+        showToast(`✓ Order #${ord.id} cancelled successfully! Customer account updated.`, 'success', 4500);
+
+        refreshMetrics();
+        renderOrdersTable();
+      }
+
+      // 4C. Live Courier Tracking Timeline Modal
+      function openSellerTrackingModal(orderId) {
+        const orders = getSellerOrders();
+        const ord = orders.find(o => o.id === orderId) || { id: orderId, fulfillmentStatus: 'Pending Dispatch' };
+
+        const modalId = 'seller-order-tracking-modal';
+        document.getElementById(modalId)?.remove();
+
+        const isShipped = ord.fulfillmentStatus === 'In-Transit';
+        const isDelivered = ord.fulfillmentStatus === 'Delivered';
+        const isCancelled = ord.fulfillmentStatus === 'Cancelled';
+
+        const trkNo = ord.trackingNumber && ord.trackingNumber !== 'N/A' ? ord.trackingNumber : `FBX-TRK-${Date.now().toString().slice(-6)}`;
+        const destCity = ord.shippingAddress ? `${ord.shippingAddress.city}, ${ord.shippingAddress.state}` : 'Destination Address';
+        const custName = ord.customerName || 'Customer';
+
+        const trackingModal = createModal(modalId, {
+          title: `Live Courier Tracking Timeline - Order #${ord.id}`,
+          large: true,
+          bodyHtml: `
+            <div style="padding:16px 20px;color:#0f172a;">
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <div style="font-size:12px;font-weight:800;color:#0284c7;text-transform:uppercase;letter-spacing:0.5px;">FBX Express Logistics AWB</div>
+                  <strong style="font-size:18px;color:#0f172a;font-family:monospace;">${trkNo}</strong>
+                  <div style="font-size:12.5px;color:#64748b;margin-top:2px;">Carrier: <strong>FBX Express Air & Surface Logistics</strong></div>
+                </div>
+                <div>
+                  <span class="seller-status-badge ${isShipped ? 'shipped' : (isDelivered ? 'delivered' : (isCancelled ? 'cancelled' : 'pending'))}" style="font-size:13px;padding:6px 14px;border-radius:20px;">
+                    <span class="status-dot ${isShipped ? 'shipped' : (isDelivered ? 'delivered' : (isCancelled ? 'cancelled' : 'pending'))}"></span>
+                    ${ord.fulfillmentStatus}
+                  </span>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+                <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:12px 14px;">
+                  <span style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;">Recipient Customer</span>
+                  <div style="font-size:14px;font-weight:800;color:#0f172a;margin-top:4px;">${custName}</div>
+                  <div style="font-size:12px;color:#475569;">${destCity} (PIN: ${ord.shippingAddress?.pincode || '110001'})</div>
+                </div>
+                <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:12px 14px;">
+                  <span style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;">Order Date & Total Value</span>
+                  <div style="font-size:14px;font-weight:800;color:#0f172a;margin-top:4px;">${Currency.format(ord.totalAmount || 0)}</div>
+                  <div style="font-size:12px;color:#475569;">${new Date(ord.orderDate || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                </div>
+              </div>
+
+              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;">
+                <h4 style="margin:0 0 16px;font-size:14px;font-weight:800;color:#0f172a;">Live Shipment Progress Timeline</h4>
+
+                ${isCancelled ? `
+                  <div style="background:#fef2f2;border:1px solid #fecaca;padding:14px 18px;border-radius:8px;color:#dc2626;font-weight:700;display:flex;align-items:center;gap:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    <span>This order was cancelled. Courier shipment voided.</span>
+                  </div>
+                ` : `
+                  <div style="display:flex;justify-content:space-between;position:relative;margin:20px 10px 10px;">
+                    <div style="position:absolute;top:15px;left:5%;right:5%;height:4px;background:${isDelivered ? '#16a34a' : (isShipped ? '#0284c7' : '#e2e8f0')};z-index:1;"></div>
+                    
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">✓</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Order Placed</span>
+                      <small style="font-size:10px;color:#64748b;">Verified</small>
+                    </div>
+
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:${isShipped || isDelivered ? '#0284c7' : '#94a3b8'};color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isShipped || isDelivered ? '✓' : '2'}</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Dispatched</span>
+                      <small style="font-size:10px;color:#64748b;">${isShipped || isDelivered ? 'FBX Picked Up' : 'Pending'}</small>
+                    </div>
+
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:${isDelivered ? '#16a34a' : (isShipped ? '#0284c7' : '#e2e8f0')};color:${isShipped || isDelivered ? '#fff' : '#64748b'};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isDelivered ? '✓' : '3'}</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">In-Transit</span>
+                      <small style="font-size:10px;color:#64748b;">${isShipped ? 'Cargo Hub' : (isDelivered ? 'Passed' : 'Pending')}</small>
+                    </div>
+
+                    <div style="text-align:center;position:relative;z-index:2;flex:1;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:${isDelivered ? '#16a34a' : '#e2e8f0'};color:${isDelivered ? '#fff' : '#64748b'};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:800;font-size:12px;">${isDelivered ? '✓' : '4'}</div>
+                      <span style="font-size:11.5px;font-weight:800;color:#0f172a;display:block;">Delivered</span>
+                      <small style="font-size:10px;color:#64748b;">${isDelivered ? 'Doorstep Complete' : 'Pending'}</small>
+                    </div>
+                  </div>
+                `}
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button type="button" class="com-btn-outline" onclick="this.closest('.xmodal-overlay')._close()" style="padding:8px 18px;font-size:13px;font-weight:800;border-radius:8px;">
+                  Close Window
+                </button>
+              </div>
+            </div>
+          `
+        });
+        trackingModal._open();
       }
 
       // 5. Render Bank Settlement Ledger
@@ -23724,9 +23910,169 @@ function initPageRouter() {
 
         tbody.querySelectorAll('.btn-download-settl').forEach(btn => {
           btn.addEventListener('click', () => {
-            showToast(`Settlement summary for ${btn.dataset.id} downloaded successfully!`, 'info', 3000);
+            const sId = btn.dataset.id;
+            const st = settlements.find(s => s.id === sId) || {
+              id: sId,
+              period: 'Order Settlement',
+              gross: 0,
+              deductions: 0,
+              net: 0,
+              utr: 'HDFCN' + Math.floor(1000000000 + Math.random() * 9000000000)
+            };
+            downloadSettlementPDF(st);
           });
         });
+      }
+
+      function downloadSettlementPDF(st) {
+        const seller = Auth.getUser() || {};
+        const sName = seller.storeName || seller.bizName || seller.name || 'Verified Merchant';
+        const sEmail = seller.email || 'seller@xmart.com';
+        const sBank = seller.bankIfsc ? seller.bankIfsc.slice(0, 4) + ' Bank' : 'Linked Commercial Bank';
+        const sAcc = `••••${(seller.bankAcc || '0000').slice(-4)}`;
+        const sIfsc = seller.bankIfsc || 'N/A';
+
+        const reportTitle = `BANK SETTLEMENT ADVICE - ${st.id}`;
+        const filename = `${st.id}_Bank_Settlement_Statement.html`;
+
+        const htmlDoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${reportTitle}</title>
+  <style>
+    @media print {
+      body { margin: 0; padding: 20px; background: #ffffff; }
+      .no-print { display: none !important; }
+      .container { border: none !important; box-shadow: none !important; }
+    }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin: 0; padding: 30px; color: #0f172a; background: #f8fafc; line-height: 1.5; }
+    .container { max-width: 800px; margin: 0 auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .header-bar { border-bottom: 3px solid #0878f9; padding-bottom: 14px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+    .logo span { color: #0878f9; }
+    .doc-type { font-size: 13px; font-weight: 800; color: #15803d; background: #dcfce7; border: 1px solid #86efac; padding: 4px 12px; border-radius: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+    .box h4 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .box p { margin: 3px 0; font-size: 13px; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 24px; }
+    th { background: #0f172a; color: #ffffff; font-size: 12px; font-weight: 800; text-align: left; padding: 10px 12px; text-transform: uppercase; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+    .net-row { background: #f0fdf4; font-weight: 900; font-size: 15px; color: #000000 !important; }
+    .net-row td { color: #000000 !important; }
+    .footer { font-size: 11px; color: #64748b; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 16px; margin-top: 30px; }
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; max-width: 800px; margin: 0 auto 16px; }
+    .btn-print { background: #022F43 !important; color: #ffffff !important; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 800; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(2,47,67,0.3); }
+    .btn-print:hover { background: #011d2a !important; }
+  </style>
+</head>
+<body>
+  <div class="action-bar no-print">
+    <div style="font-size:13px; color:#475569; font-weight:600;">Bank Settlement Statement Record</div>
+    <button class="btn-print" onclick="window.print()">Save as PDF / Print Statement</button>
+  </div>
+  <div class="container">
+    <div class="header-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <img src="${window.location.origin}/logo.png" alt="X-Mart Logo" style="height:52px;max-height:52px;width:auto;object-fit:contain;border-radius:8px;" onerror="this.onerror=null;this.src='logo.png';">
+      </div>
+      <div class="doc-type">✓ NEFT / RTGS DISBURSED</div>
+    </div>
+
+    <h2 style="margin:0 0 6px; font-size:18px; color:#0f172a;">Direct Bank Disbursement Settlement Advice</h2>
+    <p style="margin:0 0 20px; font-size:12.5px; color:#64748b;">Official Electronic Fund Transfer Advice Record for Merchant Tax & Accounting</p>
+
+    <div class="grid">
+      <div class="box">
+        <h4>Disbursement Metadata</h4>
+        <p><strong>Disbursement ID:</strong> ${st.id}</p>
+        <p><strong>Settlement Cycle:</strong> ${st.period}</p>
+        <p><strong>Bank UTR Reference:</strong> <span style="font-family:monospace; font-weight:700;">${st.utr}</span></p>
+        <p><strong>Transfer Mode:</strong> Direct NEFT / RTGS Payout</p>
+      </div>
+      <div class="box">
+        <h4>Merchant Bank Account</h4>
+        <p><strong>Store Name:</strong> ${sName}</p>
+        <p><strong>Registered Email:</strong> ${sEmail}</p>
+        <p><strong>Beneficiary Bank:</strong> ${sBank}</p>
+        <p><strong>Account Number:</strong> ${sAcc}</p>
+        <p><strong>IFSC Code:</strong> ${sIfsc}</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Financial Item Description</th>
+          <th>Calculation Basis</th>
+          <th style="text-align:right;">Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gross Order Merchandise Value (GMV)</strong></td>
+          <td>Total Delivered Customer Orders</td>
+          <td style="text-align:right;"><strong>${Currency.format(st.gross)}</strong></td>
+        </tr>
+        <tr>
+          <td>Marketplace Referral Commission</td>
+          <td>8.0% of Order Value</td>
+          <td style="text-align:right; color:#dc2626;">-${Currency.format(Math.round(st.gross * 0.08))}</td>
+        </tr>
+        <tr>
+          <td>Closing & Gateway Processing Fee</td>
+          <td>2.0% + ₹15 per Order</td>
+          <td style="text-align:right; color:#dc2626;">-${Currency.format(Math.round(st.gross * 0.02) + 15)}</td>
+        </tr>
+        <tr>
+          <td>FBX Express Pick & Pack Courier Logistics</td>
+          <td>Standard National Shipping Flat Fee</td>
+          <td style="text-align:right; color:#dc2626;">-${Currency.format(39)}</td>
+        </tr>
+        <tr>
+          <td>GST on Marketplace Services</td>
+          <td>18% on Fees (Input Tax Credit Eligible)</td>
+          <td style="text-align:right; color:#dc2626;">-${Currency.format(Math.round((st.gross * 0.10 + 54) * 0.18))}</td>
+        </tr>
+        <tr class="net-row" style="color:#000000 !important;">
+          <td style="color:#000000 !important; font-weight:900;">NET AMOUNT DISBURSED TO BANK ACCOUNT</td>
+          <td style="color:#000000 !important; font-weight:800;">Direct NEFT Payout</td>
+          <td style="text-align:right; color:#000000 !important; font-weight:900;">${Currency.format(st.net)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer">
+      This is a computer-generated bank disbursement advice document issued by X-Mart Merchant Financial Services.<br>
+      No physical signature required. Statement Date: ${new Date().toLocaleDateString('en-IN')}.
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 300);
+    };
+  </script>
+</body>
+</html>`;
+
+        const printWin = window.open('', '_blank');
+        if (printWin) {
+          printWin.document.open();
+          printWin.document.write(htmlDoc);
+          printWin.document.close();
+        } else {
+          const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        showToast(`✓ Settlement Statement for ${st.id} opened! Select "Save as PDF" to download.`, 'success', 3500);
       }
 
       // 5b. Global Order Details Summary Popup Modal for Seller Account (Today's Orders Only)
@@ -23990,14 +24336,19 @@ function initPageRouter() {
             <div class="seller-invoice-wrap" style="font-family:inherit;color:#0f172a;">
               <!-- Invoice Header Banner -->
               <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0f172a;padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
-                <div>
-                  <h2 style="margin:0;font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">TAX INVOICE / SETTLEMENT SHEET</h2>
-                  <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Issued under Section 31 of CGST Act, 2017 • Original for Recipient</p>
+                <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;">
+                  <div style="border-radius:10px;overflow:hidden;background:#000000;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:inline-block;line-height:0;">
+                    <img src="logo.png" alt="X-Mart Logo" style="height:40px;width:auto;display:block;border-radius:10px;" />
+                  </div>
+                  <div style="text-align:left;">
+                    <h2 style="margin:0;font-size:19px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">TAX INVOICE / SETTLEMENT SHEET</h2>
+                    <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Issued under Section 31 of CGST Act, 2017 • Original for Recipient</p>
+                  </div>
                 </div>
                 <div style="text-align:right;">
-                  <strong style="font-size:14px;color:#0878f9;font-family:monospace;">INV-XM-2026-${ord.id.replace('XM-', '')}</strong>
+                  <strong style="font-size:14px;color:#0f172a;font-family:monospace;">INV-XM-2026-${ord.id.replace('XM-', '')}</strong>
                   <div style="font-size:12px;color:#64748b;">Order Date: ${formattedDate}</div>
-                  <div style="font-size:11.5px;color:#059669;font-weight:700;">Fulfillment: FBX Express India</div>
+                  <div style="font-size:11.5px;color:#0f172a;font-weight:700;">Fulfillment: FBX Express India</div>
                 </div>
               </div>
 

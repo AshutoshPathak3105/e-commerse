@@ -4848,18 +4848,57 @@ html.category-dropdown-locked {
   opacity: 1;
 }
 
-/* Disable background vertical scrolling when any popup window / modal is open */
+/* Global Touch & Vertical Scrolling Defaults for Mobile & Tablet */
+html, body {
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Disable background vertical scrolling ONLY when a popup window / modal is currently OPEN */
 html.modal-open,
 body.modal-open,
+html.panel-open,
 body.panel-open,
+html.no-scroll,
 body.no-scroll,
+html:has(.xmodal-overlay.is-active),
 body:has(.xmodal-overlay.is-active),
+html:has(.xmodal-overlay.open),
+body:has(.xmodal-overlay.open),
+html:has(#dept-sidebar-overlay.is-open),
 body:has(#dept-sidebar-overlay.is-open),
+html:has(#dept-sidebar-panel.is-open),
+body:has(#dept-sidebar-panel.is-open),
+html:has(.modal.is-active),
 body:has(.modal.is-active),
+html:has(.modal.open),
+body:has(.modal.open),
+html:has(.modal.show),
+body:has(.modal.show),
+html:has([class*="modal"].is-active),
 body:has([class*="modal"].is-active),
-body:has(.offers-modal-backdrop),
-body:has(#offers-customer-modal-backdrop) {
+html:has([class*="modal"].is-open),
+body:has([class*="modal"].is-open),
+html:has([class*="modal-backdrop"].is-active),
+body:has([class*="modal-backdrop"].is-active),
+html:has([class*="modal-backdrop"].open),
+body:has([class*="modal-backdrop"].open),
+html:has(#offers-customer-modal-backdrop.is-active),
+body:has(#offers-customer-modal-backdrop.is-active),
+html:has(.offers-modal-backdrop.is-active),
+body:has(.offers-modal-backdrop.is-active),
+html:has(.auth-modal.is-active),
+body:has(.auth-modal.is-active),
+html:has(.auth-modal.open),
+body:has(.auth-modal.open),
+html:has(.ap-modal-backdrop.is-active),
+body:has(.ap-modal-backdrop.is-active),
+html:has(.admin-modal.is-active),
+body:has(.admin-modal.is-active),
+html:has(.cart-drawer.is-open),
+body:has(.cart-drawer.is-open) {
   overflow: hidden !important;
+  overflow-y: hidden !important;
   touch-action: none;
 }
 
@@ -4930,23 +4969,73 @@ body:has(#offers-customer-modal-backdrop) {
   gap: 10px;
 }
 
-.xmodal-close-btn {
-  background: rgba(255,255,255,0.12);
-  color: #ffffff;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: background 180ms ease, transform 180ms ease;
+.xmodal-close-btn,
+.ap-modal-close-btn,
+.dept-sidebar-close,
+.modal-close-btn,
+.auth-modal-close,
+[class*="close-btn"],
+[class*="modal-close"] {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background 180ms ease, border-color 180ms ease !important;
+  transform: none !important;
+  animation: none !important;
+  outline: none !important;
 }
 
-.xmodal-close-btn:hover {
-  background: #ff9700;
-  color: #000000;
-  transform: rotate(90deg);
+.xmodal-close-btn:hover,
+.ap-modal-close-btn:hover,
+.dept-sidebar-close:hover,
+.modal-close-btn:hover,
+.auth-modal-close:hover,
+[class*="close-btn"]:hover,
+[class*="modal-close"]:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.xmodal-close-btn:hover svg,
+.xmodal-close-btn:hover i,
+.xmodal-close-btn:hover span,
+[class*="close-btn"]:hover svg,
+[class*="close-btn"]:hover i,
+[class*="close-btn"]:hover span {
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Light modal header close button variant */
+.modal-header--light .xmodal-close-btn,
+.modal-header--light [class*="close-btn"],
+.xmodal-window--light .xmodal-close-btn,
+.xmodal-window--light [class*="close-btn"] {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  transform: none !important;
+}
+
+.modal-header--light .xmodal-close-btn:hover,
+.modal-header--light [class*="close-btn"]:hover,
+.xmodal-window--light .xmodal-close-btn:hover,
+.xmodal-window--light [class*="close-btn"]:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+  transform: none !important;
 }
 
 .xmodal-body {
@@ -8398,13 +8487,13 @@ body:has(#offers-customer-modal-backdrop) {
   background: #f1f5f9;
   border: none;
   width: 32px; height: 32px;
-  border-radius: 50%;
+  border-radius: 8px !important;
   cursor: pointer;
   display: grid; place-items: center;
   color: #565959;
-  transition: background 140ms;
+  transition: none;
 }
-.xmodal-close-btn:hover { background: #e2e8f0; }
+.xmodal-close-btn:hover { background: #f1f5f9; }
 
 /* Wishlist drawer — square edges */
 #wishlist-interactive-drawer .xmodal-window,
@@ -8428,9 +8517,10 @@ body:has(#offers-customer-modal-backdrop) {
 #wishlist-interactive-drawer .xmodal-close-btn {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  border-radius: 8px !important;
 }
 #wishlist-interactive-drawer .xmodal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
 }
 .xmodal-body { padding: 20px; }
 .xmodal-footer {
@@ -10701,7 +10791,7 @@ body:has(#offers-customer-modal-backdrop) {
 #btn-seller-add-spec *,
 #btn-edit-add-spec,
 #btn-edit-add-spec * {
-  color: #ffffff !important;
+  color: #000000 !important;
 }
 
 #btn-add-more-photo,
@@ -10728,17 +10818,21 @@ body:has(#offers-customer-modal-backdrop) {
 }
 
 .seller-settlement-hero-card .seller-pill-badge.verified,
-.seller-pill-badge.neft-ready-pill {
-  background: #091a2f !important;
-  color: #34d399 !important;
-  border: 1px solid #1e3a5f !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+.seller-pill-badge.neft-ready-pill,
+.neft-ready-pill {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+  box-shadow: 0 2px 6px rgba(21, 128, 61, 0.12);
   white-space: nowrap !important;
   display: inline-flex !important;
+  flex-direction: row !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 6px !important;
   flex-shrink: 0 !important;
   word-break: keep-all !important;
+  line-height: 1 !important;
 }
 
 .seller-pill-badge.prime {
@@ -11002,22 +11096,30 @@ body:has(#offers-customer-modal-backdrop) {
 #btn-preview-img,
 .btn-preview-extra,
 .btn-preview-edit-photo {
-  background: #ff6a00 !important;
-  color: #ffffff !important;
-  border: 1px solid #ea580c !important;
+  background: #FF9700 !important;
+  color: #000000 !important;
+  border: 1px solid #FF9700 !important;
   font-weight: 800;
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(255, 106, 0, 0.28);
+  box-shadow: 0 2px 6px rgba(255, 151, 0, 0.28);
   transition: all 0.2s ease;
+}
+
+#btn-preview-img *,
+.btn-preview-extra *,
+.btn-preview-edit-photo * {
+  color: #000000 !important;
+  stroke: #000000 !important;
 }
 
 #btn-preview-img:hover,
 .btn-preview-extra:hover,
 .btn-preview-edit-photo:hover {
-  background: #e65500 !important;
-  border-color: #c2410c !important;
-  box-shadow: 0 4px 12px rgba(255, 106, 0, 0.42);
+  background: #e68800 !important;
+  color: #000000 !important;
+  border-color: #e68800 !important;
+  box-shadow: 0 4px 12px rgba(255, 151, 0, 0.42);
   transform: translateY(-1px);
 }
 
@@ -11831,9 +11933,9 @@ body:has(#offers-customer-modal-backdrop) {
 }
 
 #sku-offers-modal-publish-btn {
-  background: #001f3f !important;
-  color: #ffffff !important;
-  border: 1.5px solid #001f3f !important;
+  background: #FF9700 !important;
+  color: #000000 !important;
+  border: 1.5px solid #FF9700 !important;
   font-weight: 800 !important;
   font-size: 13.5px !important;
   min-width: 240px !important;
@@ -11843,13 +11945,15 @@ body:has(#offers-customer-modal-backdrop) {
   justify-content: center !important;
   border-radius: 8px !important;
   cursor: pointer !important;
-  box-shadow: 0 2px 6px rgba(0, 31, 63, 0.2) !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+  box-shadow: 0 4px 12px rgba(255, 151, 0, 0.3) !important;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 #sku-offers-modal-publish-btn:hover {
-  background: #003366 !important;
-  border-color: #003366 !important;
+  background: #e68800 !important;
+  color: #000000 !important;
+  border-color: #e68800 !important;
+  box-shadow: 0 6px 16px rgba(255, 151, 0, 0.4) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -11917,6 +12021,12 @@ body:has(#offers-customer-modal-backdrop) {
   height: 0 !important;
 }
 
+.seller-subnav-btn,
+.seller-subnav-btn span,
+.seller-subnav-btn * {
+  color: #ffffff !important;
+}
+
 .seller-subnav-btn {
   display: inline-flex;
   align-items: center;
@@ -11924,26 +12034,35 @@ body:has(#offers-customer-modal-backdrop) {
   padding: 10px 20px;
   font-size: 13.5px;
   font-weight: 800;
-  color: #565959;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  color: #ffffff !important;
+  background: #022F43 !important;
+  border: none !important;
   cursor: pointer;
   transition: all 140ms ease;
   margin-bottom: -2px;
-  border-radius: 6px 6px 0 0;
+  border-radius: 8px 8px 0 0;
   white-space: nowrap;
 }
 
 .seller-subnav-btn:hover {
-  color: #0878f9;
-  background: #f8fafc;
+  color: #ffffff !important;
+  background: #053b54 !important;
 }
 
-.seller-subnav-btn.is-active {
-  color: #0878f9;
-  border-bottom-color: #0878f9;
-  background: #f0f7ff;
+.seller-subnav-btn.is-active,
+.seller-subnav-btn.is-active span,
+.seller-subnav-btn.is-active * {
+  color: #000000 !important;
+  border-bottom-color: transparent !important;
+  background: #FF9400 !important;
+  box-shadow: 0 4px 12px rgba(255, 148, 0, 0.35);
+}
+
+.seller-subnav-btn.is-active:hover,
+.seller-subnav-btn.is-active:hover span,
+.seller-subnav-btn.is-active:hover * {
+  color: #000000 !important;
+  background: #e68500 !important;
 }
 
 .seller-subnav-counter {
@@ -11953,6 +12072,13 @@ body:has(#offers-customer-modal-backdrop) {
   font-weight: 900;
   padding: 2px 7px;
   border-radius: 12px;
+}
+
+.btn-view-summary,
+.btn-view-summary span,
+.btn-view-summary * {
+  color: #ffffff !important;
+  background-color: #0f172a !important;
 }
 
 /* Status Filter Chips Bar */
@@ -12002,9 +12128,9 @@ body:has(#offers-customer-modal-backdrop) {
 }
 
 .seller-pill-badge.live-settlement-engine {
-  background: #091a2f !important;
-  color: #34d399 !important;
-  border: 1px solid #1e3a5f !important;
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
 }
 
 .status-dot {
@@ -14430,10 +14556,10 @@ body:has(#offers-customer-modal-backdrop) {
 }
 
 #admin-manage-offers-modal .xmodal-close-btn:hover {
-  background: #ef4444 !important;
-  border-color: #ef4444 !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
   color: #ffffff !important;
-  transform: scale(1.06) !important;
+  transform: none !important;
 }
 
 #admin-manage-offers-modal .xmodal-close-btn svg {
@@ -18682,7 +18808,7 @@ html.admin-mode-preload #admin-panel-overlay {
   justify-content: center;
   transition: all 140ms ease;
 }
-.ap-modal-close-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+.ap-modal-close-btn:hover { background: #ffffff; color: #64748b; border-color: #cbd5e1; }
 .ap-modal-content {
   padding: 22px;
   max-height: 74vh;
@@ -19873,10 +19999,10 @@ html.admin-mode-preload #admin-panel-overlay {
 
 .offers-modal-header .ap-modal-close-btn:hover,
 #offers-customer-modal-close:hover {
-  background: #e11d48 !important;
+  background: #0b1329 !important;
   color: #ffffff !important;
-  border-color: #e11d48 !important;
-  transform: scale(1.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: none !important;
 }
 
 .offers-modal-body {
@@ -23182,20 +23308,21 @@ html.admin-mode-preload #admin-panel-overlay {
   background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  border-radius: 50% !important;
+  border-radius: 8px !important;
   width: 30px !important;
   height: 30px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.15s ease !important;
+  transition: none !important;
 }
 
 #seller-order-summary-modal .xmodal-close-btn:hover,
 #seller-order-summary-empty-modal .xmodal-close-btn:hover {
-  background: #e11d48 !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
-  border-color: #e11d48 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: none !important;
 }
 
 .seller-order-summary-popup {
@@ -23536,12 +23663,14 @@ button[type="submit"] *,
 .btn-preview-angle,
 .btn-preview-extra,
 .btn-preview-edit-angle,
+.btn-preview-edit-photo,
+#btn-preview-img,
 #btn-add-more-photo,
 #btn-seller-add-spec,
 #btn-edit-add-spec {
   background-color: #FF9700 !important;
   background: #FF9700 !important;
-  color: #ffffff !important;
+  color: #000000 !important;
   border: 1px solid #FF9700 !important;
   font-weight: 800 !important;
   box-shadow: 0 2px 8px rgba(255, 151, 0, 0.28) !important;
@@ -23550,20 +23679,26 @@ button[type="submit"] *,
 .btn-preview-angle *,
 .btn-preview-extra *,
 .btn-preview-edit-angle *,
+.btn-preview-edit-photo *,
+#btn-preview-img *,
 #btn-add-more-photo *,
 #btn-seller-add-spec *,
 #btn-edit-add-spec * {
-  color: #ffffff !important;
+  color: #000000 !important;
+  stroke: #000000 !important;
 }
 
 .btn-preview-angle:hover,
 .btn-preview-extra:hover,
 .btn-preview-edit-angle:hover,
+.btn-preview-edit-photo:hover,
+#btn-preview-img:hover,
 #btn-add-more-photo:hover,
 #btn-seller-add-spec:hover,
 #btn-edit-add-spec:hover {
   background-color: #e68800 !important;
   background: #e68800 !important;
+  color: #000000 !important;
   border-color: #e68800 !important;
 }
 
