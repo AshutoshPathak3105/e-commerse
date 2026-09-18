@@ -245,8 +245,8 @@ svg {
 #utility-ticker:hover,
 #utility-ticker:hover .ticker-slide,
 #utility-ticker:hover .ticker-slide.is-active {
-  color: #ffb703 !important;
-  text-decoration: underline;
+  color: #ffffff !important;
+  text-decoration: none !important;
   cursor: pointer !important;
 }
 
