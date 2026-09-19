@@ -686,19 +686,56 @@ const SMART_SYNONYMS = {
   'tv': ['television', 'smart tv', 'oled', 'bravia', 'screen', 'display'],
 };
 
+const SPELL_CORRECTIONS = {
+  'labtop': 'laptop',
+  'laptob': 'laptop',
+  'leptop': 'laptop',
+  'laptp': 'laptop',
+  'labtops': 'laptop',
+  'laptops': 'laptop',
+  'moblie': 'mobile',
+  'mobiles': 'mobile',
+  'phon': 'phone',
+  'phones': 'phone',
+  'smartphon': 'smartphone',
+  'hedphone': 'headphone',
+  'headfone': 'headphone',
+  'earpod': 'earbuds',
+  'airpod': 'airpods',
+  'tshirt': 't-shirt',
+  'tshirst': 't-shirt',
+  'tshirts': 't-shirt',
+  'jean': 'jeans',
+  'jeans': 'jeans',
+  'watchs': 'watch',
+  'watches': 'watch',
+  'macbook': 'macbook',
+  'samson': 'samsung',
+  'iphne': 'iphone',
+};
+
 const DEFAULT_CATALOG = [
-  { _id: 'p-mob-1', name: 'OnePlus 12 5G 16GB RAM 512GB', brand: 'OnePlus', category: 'Electronics', price: 64999, originalPrice: 69999, discount: 7, rating: 4.8, images: ['https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600'] },
-  { _id: 'p-mob-2', name: 'Apple iPhone 15 Pro Max 256GB', brand: 'Apple', category: 'Electronics', price: 148900, originalPrice: 159900, discount: 7, rating: 4.9, images: ['https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600'] },
-  { _id: 'p-mob-3', name: 'Samsung Galaxy S24 Ultra 5G', brand: 'Samsung', category: 'Electronics', price: 129999, originalPrice: 144999, discount: 10, rating: 4.9, images: ['https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600'] },
-  { _id: 'p-mob-4', name: 'Nothing Phone (2) 5G 256GB White', brand: 'Nothing', category: 'Electronics', price: 36999, originalPrice: 44999, discount: 18, rating: 4.6, images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'] },
-  { _id: 'p-lap-1', name: 'Apple MacBook Air M3 15-inch', brand: 'Apple', category: 'Electronics', price: 134900, originalPrice: 149900, discount: 10, rating: 4.9, images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'] },
-  { _id: 'p-aud-1', name: 'Sony WH-1000XM5 Wireless ANC Headphones', brand: 'Sony', category: 'Electronics', price: 26990, originalPrice: 34990, discount: 23, rating: 4.8, images: ['https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=600'] },
-  { _id: 'p-aud-2', name: 'Apple AirPods Pro (2nd Gen) USB-C', brand: 'Apple', category: 'Electronics', price: 20990, originalPrice: 24900, discount: 16, rating: 4.8, images: ['https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600'] },
-  { _id: 'p-tv-1', name: 'LG 55-inch 4K OLED Smart TV evo', brand: 'LG', category: 'Electronics', price: 89999, originalPrice: 119999, discount: 25, rating: 4.7, images: ['https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600'] },
-  { _id: 'p-fsh-1', name: "Zara Women's Oversized Wool Blend Coat", brand: 'Zara', category: 'Fashion', price: 6990, originalPrice: 9990, discount: 30, rating: 4.6, images: ['https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600'] },
-  { _id: 'p-fsh-2', name: "Nike Air Force 1 '07 Classic White Sneakers", brand: 'Nike', category: 'Fashion', price: 7495, originalPrice: 8995, discount: 17, rating: 4.8, images: ['https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600'] },
-  { _id: 'p-fsh-3', name: "Levi's Men's 511 Slim Fit Stretch Jeans", brand: "Levi's", category: 'Fashion', price: 2799, originalPrice: 4299, discount: 35, rating: 4.5, images: ['https://images.unsplash.com/photo-1542272604-780c96856592?w=600'] },
-  { _id: 'p-fsh-4', name: "Women's Floral Tiered Chiffon Maxi Dress", brand: 'H&M', category: 'Fashion', price: 2299, originalPrice: 3999, discount: 43, rating: 4.6, images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600'] },
+  { _id: 'p-mob-1', name: 'OnePlus 12 5G 16GB RAM 512GB', brand: 'OnePlus', category: 'Electronics', price: 64999, originalPrice: 69999, discount: 7, rating: 4.8, numReviews: 3240, images: ['https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600'] },
+  { _id: 'p-mob-2', name: 'Apple iPhone 15 Pro Max 256GB', brand: 'Apple', category: 'Electronics', price: 148900, originalPrice: 159900, discount: 7, rating: 4.9, numReviews: 5410, images: ['https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600'] },
+  { _id: 'p-mob-3', name: 'Samsung Galaxy S24 Ultra 5G', brand: 'Samsung', category: 'Electronics', price: 129999, originalPrice: 144999, discount: 10, rating: 4.9, numReviews: 4120, images: ['https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600'] },
+  { _id: 'p-mob-4', name: 'Nothing Phone (2) 5G 256GB White', brand: 'Nothing', category: 'Electronics', price: 36999, originalPrice: 44999, discount: 18, rating: 4.6, numReviews: 1890, images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'] },
+  
+  // ── Laptops Catalog (Flipkart Exact Benchmark Items) ──
+  { _id: 'p-lap-1', name: 'Lenovo 100e Chromebook Gen 4 MediaTek Kompanio 520 - (4 GB/32 GB EMMC Storage/Chrome OS)', brand: 'Lenovo', category: 'Electronics', price: 13990, originalPrice: 22990, discount: 39, rating: 4.1, numReviews: 2329, specs: ['MediaTek Kompanio 520 Processor', '4 GB LPDDR4X RAM', 'Chrome Operating System', '29.46 cm (11.6 Inch) Display', '1 Year Carry-in Warranty'], images: ['https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600'] },
+  { _id: 'p-lap-2', name: 'ASUS Chromebook CX14 Intel Celeron Dual Core N50 - (4 GB/64 GB EMMC Storage/Chrome OS)', brand: 'ASUS', category: 'Electronics', price: 21990, originalPrice: 24990, discount: 12, rating: 3.9, numReviews: 880, specs: ['Intel Celeron Dual Core Processor', '4 GB LPDDR4X RAM', 'Chrome Operating System', '35.56 cm (14 Inch) Display', '1 Year Onsite Warranty'], images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'] },
+  { _id: 'p-lap-3', name: 'Acer Aspire 14 AMD Ryzen 3 3200U - (8 GB/256 GB SSD/Windows 11 Home) AS14-39 Notebook', brand: 'Acer', category: 'Electronics', price: 36990, originalPrice: 44990, discount: 18, rating: 4.3, numReviews: 85, specs: ['AMD Ryzen 3 Processor', '8 GB DDR4 RAM', '64 bit Windows 11 Operating System', '256 GB SSD', '35.56 cm (14 Inch) Display', '1 Year Onsite Service'], images: ['https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600'] },
+  { _id: 'p-lap-4', name: 'Primebook Wifi (2025 Model) MediaTek MT8183 - (4 GB/64 GB EMMC Storage/Prime OS) PB Wifi', brand: 'Primebook', category: 'Electronics', price: 16990, originalPrice: 21990, discount: 22, rating: 4.1, numReviews: 3628, specs: ['MediaTek MT8183 Processor', '4 GB LPDDR4 RAM', 'Android Operating System', '29.46 cm (11.6 Inch) Display', '1 Year Pick and Drop Warranty'], images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'] },
+  { _id: 'p-lap-5', name: 'Samsung Galaxy Book4 Metal Intel Core i3 13th Gen 1315U - (8 GB/512 GB SSD/Windows 11)', brand: 'Samsung', category: 'Electronics', price: 53990, originalPrice: 67990, discount: 20, rating: 4.4, numReviews: 10784, specs: ['Intel Core i3 Processor (13th Gen)', '8 GB LPDDR5X RAM', '64 bit Windows 11 Operating System', '512 GB SSD', '39.62 cm (15.6 Inch) Display', '1 Year Onsite Warranty'], images: ['https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600'] },
+  { _id: 'p-lap-6', name: 'HP Chromebook Intel Celeron Dual Core N4120 - (4 GB/64 GB EMMC Storage/Chrome OS) 14a', brand: 'HP', category: 'Electronics', price: 33500, originalPrice: 39900, discount: 16, rating: 4.2, numReviews: 1250, specs: ['Intel Celeron N4120 Dual Core Processor', '4 GB LPDDR4 RAM', 'Chrome OS Operating System', '35.56 cm (14 Inch) Display', '1 Year Onsite Warranty'], images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'] },
+  { _id: 'p-lap-7', name: 'Apple MacBook Air 15-inch M3 Chip (16GB RAM, 512GB SSD)', brand: 'Apple', category: 'Electronics', price: 134900, originalPrice: 149900, discount: 10, rating: 4.9, numReviews: 2150, specs: ['Apple M3 8-core CPU & 10-core GPU', '16GB Unified Memory', 'macOS Operating System', '38.1 cm (15 Inch) Display', '1 Year Apple Warranty'], images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'] },
+
+  { _id: 'p-aud-1', name: 'Sony WH-1000XM5 Wireless ANC Headphones', brand: 'Sony', category: 'Electronics', price: 26990, originalPrice: 34990, discount: 23, rating: 4.8, numReviews: 1420, images: ['https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=600'] },
+  { _id: 'p-aud-2', name: 'Apple AirPods Pro (2nd Gen) USB-C', brand: 'Apple', category: 'Electronics', price: 20990, originalPrice: 24900, discount: 16, rating: 4.8, numReviews: 3890, images: ['https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600'] },
+  { _id: 'p-tv-1', name: 'LG 55-inch 4K OLED Smart TV evo', brand: 'LG', category: 'Electronics', price: 89999, originalPrice: 119999, discount: 25, rating: 4.7, numReviews: 950, images: ['https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600'] },
+  { _id: 'p-fsh-1', name: "Zara Women's Oversized Wool Blend Coat", brand: 'Zara', category: 'Fashion', price: 6990, originalPrice: 9990, discount: 30, rating: 4.6, numReviews: 410, images: ['https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600'] },
+  { _id: 'p-fsh-2', name: "Nike Air Force 1 '07 Classic White Sneakers", brand: 'Nike', category: 'Fashion', price: 7495, originalPrice: 8995, discount: 17, rating: 4.8, numReviews: 2840, images: ['https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600'] },
+  { _id: 'p-fsh-3', name: "Levi's Men's 511 Slim Fit Stretch Jeans", brand: "Levi's", category: 'Fashion', price: 2799, originalPrice: 4299, discount: 35, rating: 4.5, numReviews: 1650, images: ['https://images.unsplash.com/photo-1542272604-780c96856592?w=600'] },
+  { _id: 'p-fsh-4', name: "Women's Floral Tiered Chiffon Maxi Dress", brand: 'H&M', category: 'Fashion', price: 2299, originalPrice: 3999, discount: 43, rating: 4.6, numReviews: 720, images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600'] },
 ];
 
 Store.allProducts = [...DEFAULT_CATALOG];
@@ -2424,28 +2461,23 @@ function buildAuthModal() {
         body: JSON.stringify({ email, password, type: 'login' })
       });
       _pendingEmail = email;
-      body.querySelector('#login-otp-email-display').textContent = email;
-      body.querySelector('#login-otp-input').value = '';
+      const displayEl = body.querySelector('#login-otp-email-display');
+      if (displayEl) displayEl.textContent = email;
+      const inputEl = body.querySelector('#login-otp-input');
+      if (inputEl) inputEl.value = '';
       showAuthStep('login-otp');
       startResendCountdown(body.querySelector('#login-otp-resend'), 'login');
       showToast('OTP sent to your email! Check your inbox/spam.', 'success');
     } catch (err) {
       if (err.message && err.message.includes('Cannot connect to backend server')) {
-        const activeUser = Auth.getUser();
-        const mockUser = activeUser || { name: email.split('@')[0] || 'Merchant', email, role: 'seller' };
-        Auth.setSession(mockUser, 'mock_token_' + Date.now());
-        showToast(`Welcome back, ${mockUser.name || 'Merchant'}!`, 'success');
-        modal._close();
-        if (typeof window._onAuthSuccessAction === 'function') {
-          const action = window._onAuthSuccessAction;
-          window._onAuthSuccessAction = null;
-          setTimeout(() => action(), 150);
-        } else if (window._activeAuthType === 'seller') {
-          try {
-            sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
-          } catch (e) {}
-          setTimeout(() => window._openSellerPortal?.(true, true), 150);
-        }
+        _pendingEmail = email;
+        const displayEl = body.querySelector('#login-otp-email-display');
+        if (displayEl) displayEl.textContent = email;
+        const inputEl = body.querySelector('#login-otp-input');
+        if (inputEl) inputEl.value = '';
+        showAuthStep('login-otp');
+        startResendCountdown(body.querySelector('#login-otp-resend'), 'login');
+        showToast('[Demo Mode] OTP sent to your email! (Enter any 6-digit code to verify)', 'info', 5000);
         return;
       }
       if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('Password is required') || err.message.includes('Incorrect password'))) {
@@ -2471,23 +2503,50 @@ function buildAuthModal() {
     btn.disabled = true;
     btn.textContent = 'Verifying...';
     try {
-      const data = await apiFetch('/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: _pendingEmail, otp, type: 'login' })
-      });
-      Auth.setSession(data.data, data.data.token);
-      showToast(`Welcome back, ${data.data.name}!`, 'success');
+      let data = null;
+      try {
+        data = await apiFetch('/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: _pendingEmail, otp, type: 'login' })
+        });
+      } catch (verifyErr) {
+        if (verifyErr.message && verifyErr.message.includes('Cannot connect to backend server')) {
+          const activeUser = Auth.getUser();
+          const mockUser = activeUser || { name: _pendingEmail.split('@')[0] || 'Merchant', email: _pendingEmail, role: 'seller' };
+          data = { data: mockUser, token: 'mock_token_' + Date.now() };
+        } else {
+          throw verifyErr;
+        }
+      }
+
+      Auth.setSession(data.data, data.data.token || data.token);
+      try {
+        sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+      } catch (e) {}
+
+      showToast(`Welcome back, ${data.data.name || 'Merchant'}!`, 'success');
       modal._close();
+
+      const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
+      window._pendingSellerTab = null;
+      window._currentSellerTab = targetTab;
+
       if (typeof window._onAuthSuccessAction === 'function') {
         const action = window._onAuthSuccessAction;
         window._onAuthSuccessAction = null;
-        setTimeout(() => action(), 150);
-      } else if (window._activeAuthType === 'seller') {
-        try {
-          sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
-        } catch (e) {}
-        setTimeout(() => window._openSellerPortal?.(true, true), 150);
+        if (typeof window._openSellerPortal === 'function') {
+          window._openSellerPortal(false, true, targetTab);
+        }
+        setTimeout(() => {
+          if (typeof action === 'function') action();
+          activateSellerTab(targetTab);
+        }, 150);
+      } else if (window._activeAuthType === 'seller' || targetTab === 'account') {
+        setTimeout(() => {
+          window._openSellerPortal?.(true, true, targetTab);
+          activateSellerTab(targetTab);
+        }, 150);
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -2713,15 +2772,28 @@ function buildAuthModal() {
       Auth.setSession(data.data, data.data.token);
       showToast(`Account verified! Welcome to X-Mart, ${data.data.name}!`, 'success');
       modal._close();
+      const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
+      window._pendingSellerTab = null;
+      window._currentSellerTab = targetTab;
+      try {
+        sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+      } catch (e) {}
+
       if (typeof window._onAuthSuccessAction === 'function') {
         const action = window._onAuthSuccessAction;
         window._onAuthSuccessAction = null;
-        setTimeout(() => action(), 150);
-      } else if (window._activeAuthType === 'seller') {
-        try {
-          sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
-        } catch (e) {}
-        setTimeout(() => window._openSellerPortal?.(true, true), 150);
+        if (typeof window._openSellerPortal === 'function') {
+          window._openSellerPortal(false, true, targetTab);
+        }
+        setTimeout(() => {
+          if (typeof action === 'function') action();
+          activateSellerTab(targetTab);
+        }, 150);
+      } else if (window._activeAuthType === 'seller' || targetTab === 'account') {
+        setTimeout(() => {
+          window._openSellerPortal?.(true, true, targetTab);
+          activateSellerTab(targetTab);
+        }, 150);
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -17022,13 +17094,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     target.appendChild(btn);
   }
 
-  // Hook into Auth.syncUI — auto-opens admin panel when an admin logs in,
+  // Hook into Auth.syncUI — auto-opens admin panel when an admin logs in via Admin Login,
   // and injects the sidebar link for regular users who may have admin access.
   const _origAuthSyncUI = Auth.syncUI.bind(Auth);
   Auth.syncUI = function () {
     _origAuthSyncUI();
     const u = Auth.getUser();
     if (u && (u.role === 'admin' || u.staffRole)) {
+      // Do NOT auto-open admin panel if user is performing seller authentication or on seller pages!
+      if (window._activeAuthType === 'seller' || window._pendingSellerTab || window.location.hash.includes('#seller') || window.location.hash.includes('#sell')) {
+        return;
+      }
       // If admin panel is already open, do not reset or override active tab!
       if (_overlay && _overlay.classList.contains('ap-open')) {
         return;
@@ -17051,7 +17127,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     const isAuth = user && (user.role === 'admin' || user.staffRole);
     const hasAdminHash = window.location.hash.startsWith('#admin-');
 
-    if (isAuth || isExplicit || hasAdminHash) {
+    if (window._activeAuthType === 'seller' || window._pendingSellerTab || window.location.hash.includes('#seller') || window.location.hash.includes('#sell')) {
+      document.documentElement.classList.remove('admin-mode-preload');
+      return;
+    }
+
+    if ((isExplicit || hasAdminHash) && isAuth) {
       const savedTab = getPersistedAdminTab();
       if (typeof window._openAdminPanel === 'function') {
         window._openAdminPanel(savedTab);
@@ -18617,11 +18698,14 @@ function initPageRouter() {
                 <select id="filter-category" class="com-filter-select" aria-label="Filter by Category">
                   <option value="" ${!category ? 'selected' : ''}>All Categories</option>
                   <option value="Electronics" ${category === 'Electronics' ? 'selected' : ''}>Electronics</option>
+                  <option value="Bags & Luggage" ${category === 'Bags & Luggage' ? 'selected' : ''}>Bags &amp; Luggage</option>
                   <option value="Fashion" ${category === 'Fashion' ? 'selected' : ''}>Fashion</option>
-                  <option value="Home & Kitchen" ${category === 'Home & Kitchen' ? 'selected' : ''}>Home & Kitchen</option>
-                  <option value="Beauty & Health" ${category === 'Beauty & Health' ? 'selected' : ''}>Beauty & Health</option>
-                  <option value="Sports" ${category === 'Sports' ? 'selected' : ''}>Sports & Fitness</option>
+                  <option value="Home & Kitchen" ${category === 'Home & Kitchen' ? 'selected' : ''}>Home &amp; Kitchen</option>
+                  <option value="Beauty & Health" ${category === 'Beauty & Health' ? 'selected' : ''}>Beauty &amp; Health</option>
+                  <option value="Sports" ${category === 'Sports' ? 'selected' : ''}>Sports &amp; Fitness</option>
                   <option value="Grocery" ${category === 'Grocery' ? 'selected' : ''}>Gourmet Grocery</option>
+                  <option value="Books" ${category === 'Books' ? 'selected' : ''}>Books &amp; Stationery</option>
+                  <option value="Toys" ${category === 'Toys' ? 'selected' : ''}>Toys &amp; Games</option>
                 </select>
                 <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
@@ -18650,6 +18734,8 @@ function initPageRouter() {
                   <option value="all">All Ratings</option>
                   <option value="4.5">4.5★ & above</option>
                   <option value="4.0">4.0★ & above</option>
+                  <option value="3.5">3.5★ & above</option>
+                  <option value="3.0">3.0★ & above</option>
                 </select>
                 <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
@@ -18664,6 +18750,7 @@ function initPageRouter() {
                   <option value="40">40% Off or more</option>
                   <option value="25">25% Off or more</option>
                   <option value="15">15% Off or more</option>
+                  <option value="10">10% Off or more</option>
                 </select>
                 <svg class="com-select-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
@@ -18724,15 +18811,9 @@ function initPageRouter() {
       }, 1000);
     }
 
-    // Wire Category Dropdown
-    const catSelect = pageContainer.querySelector('#filter-category');
-    catSelect?.addEventListener('change', (e) => {
-      const newCat = e.target.value;
-      window._openDedicatedPage(newCat, '', search, true);
-    });
-
-    // Wire Dynamic Filter Change
+    // Wire Dynamic Filter Change (In-place & fully functional for Search & Category)
     const filterAndRender = () => {
+      const selectedCategory = pageContainer.querySelector('#filter-category')?.value || '';
       const priceVal = pageContainer.querySelector('#filter-price')?.value || 'all';
       const ratingVal = pageContainer.querySelector('#filter-rating')?.value || 'all';
       const discVal = pageContainer.querySelector('#filter-discount')?.value || 'all';
@@ -18741,19 +18822,21 @@ function initPageRouter() {
       const priceSelect = pageContainer.querySelector('#filter-price');
       const ratingSelect = pageContainer.querySelector('#filter-rating');
       const discSelect = pageContainer.querySelector('#filter-discount');
+      const catSelect = pageContainer.querySelector('#filter-category');
       const resetBtn = pageContainer.querySelector('#com-reset-filters-btn');
 
       if (priceSelect) priceSelect.classList.toggle('has-value', priceVal !== 'all');
       if (ratingSelect) ratingSelect.classList.toggle('has-value', ratingVal !== 'all');
       if (discSelect) discSelect.classList.toggle('has-value', discVal !== 'all');
-      if (catSelect) catSelect.classList.toggle('has-value', !!catSelect.value);
+      if (catSelect) catSelect.classList.toggle('has-value', !!selectedCategory);
 
-      const hasActive = !!category || priceVal !== 'all' || ratingVal !== 'all' || discVal !== 'all';
+      const hasActive = !!selectedCategory || priceVal !== 'all' || ratingVal !== 'all' || discVal !== 'all';
       if (resetBtn) resetBtn.classList.toggle('is-active', hasActive);
 
-      fetchAndRenderCommercialProducts(category, search, { priceVal, ratingVal, discVal, sortVal });
+      fetchAndRenderCommercialProducts(selectedCategory, search, { priceVal, ratingVal, discVal, sortVal, selectedCategory });
     };
 
+    pageContainer.querySelector('#filter-category')?.addEventListener('change', filterAndRender);
     pageContainer.querySelector('#filter-price')?.addEventListener('change', filterAndRender);
     pageContainer.querySelector('#filter-rating')?.addEventListener('change', filterAndRender);
     pageContainer.querySelector('#filter-discount')?.addEventListener('change', filterAndRender);
@@ -18761,20 +18844,17 @@ function initPageRouter() {
 
     // Wire Reset Filters Button
     pageContainer.querySelector('#com-reset-filters-btn')?.addEventListener('click', () => {
-      if (category) {
-        window._openDedicatedPage('', '', search, true);
-      } else {
-        if (catSelect) catSelect.value = '';
-        const priceSelect = pageContainer.querySelector('#filter-price');
-        const ratingSelect = pageContainer.querySelector('#filter-rating');
-        const discSelect = pageContainer.querySelector('#filter-discount');
-        const sortSelect = pageContainer.querySelector('#com-sort-dropdown');
-        if (priceSelect) priceSelect.value = 'all';
-        if (ratingSelect) ratingSelect.value = 'all';
-        if (discSelect) discSelect.value = 'all';
-        if (sortSelect) sortSelect.value = 'popular';
-        filterAndRender();
-      }
+      const catSelect = pageContainer.querySelector('#filter-category');
+      const priceSelect = pageContainer.querySelector('#filter-price');
+      const ratingSelect = pageContainer.querySelector('#filter-rating');
+      const discSelect = pageContainer.querySelector('#filter-discount');
+      const sortSelect = pageContainer.querySelector('#com-sort-dropdown');
+      if (catSelect) catSelect.value = '';
+      if (priceSelect) priceSelect.value = 'all';
+      if (ratingSelect) ratingSelect.value = 'all';
+      if (discSelect) discSelect.value = 'all';
+      if (sortSelect) sortSelect.value = 'popular';
+      filterAndRender();
     });
 
     // Initial Fetch
@@ -18787,9 +18867,14 @@ function initPageRouter() {
     if (!grid) return;
 
     try {
+      const lowerRawSearch = search ? search.toLowerCase().trim() : '';
+      const correctedSearch = lowerRawSearch ? (SPELL_CORRECTIONS[lowerRawSearch] || lowerRawSearch) : '';
+      const isSpellFix = lowerRawSearch && correctedSearch !== lowerRawSearch;
+      const activeSearchQuery = correctedSearch || lowerRawSearch;
+
       let url = `${API_BASE}/products?limit=50&sort=${filters.sortVal || 'popular'}`;
       if (category) url += `&category=${encodeURIComponent(category)}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (activeSearchQuery) url += `&search=${encodeURIComponent(activeSearchQuery)}`;
 
       let products = [];
       try {
@@ -18803,15 +18888,16 @@ function initPageRouter() {
       }
 
       // If backend returned nothing or we have a search term, enrich with local smart synonym search
-      if (search) {
-        const lowerQ = search.toLowerCase().trim();
-        let searchTerms = [lowerQ];
-        for (const [key, list] of Object.entries(SMART_SYNONYMS)) {
-          if (lowerQ.includes(key) || key.includes(lowerQ)) {
-            searchTerms.push(...list);
+      if (activeSearchQuery) {
+        let searchTerms = [lowerRawSearch, correctedSearch];
+        for (const term of [lowerRawSearch, correctedSearch]) {
+          for (const [key, list] of Object.entries(SMART_SYNONYMS)) {
+            if (term.includes(key) || key.includes(term)) {
+              searchTerms.push(...list);
+            }
           }
         }
-        searchTerms = [...new Set(searchTerms)];
+        searchTerms = [...new Set(searchTerms.filter(Boolean))];
 
         const localMatches = (Store.allProducts || []).filter(p => {
           if (category && p.category?.toLowerCase() !== category.toLowerCase()) return false;
@@ -18834,11 +18920,62 @@ function initPageRouter() {
             products.push(lp);
           }
         }
+
+        // Smart Accessory Filter:
+        // When searching for a core device (laptop, mobile, phone) without explicitly requesting accessories,
+        // filter out all bags, backpacks, sleeves, cases, stands!
+        const queryWantsAccessory = lowerRawSearch.includes('bag') || lowerRawSearch.includes('backpack') || lowerRawSearch.includes('sleeve') || lowerRawSearch.includes('case') || lowerRawSearch.includes('cover') || lowerRawSearch.includes('stand') || lowerRawSearch.includes('charger') || lowerRawSearch.includes('holder') || lowerRawSearch.includes('pouch');
+        const isLaptopSearch = activeSearchQuery === 'laptop' || activeSearchQuery === 'laptops' || activeSearchQuery === 'labtop' || activeSearchQuery === 'labtops' || activeSearchQuery === 'macbook' || activeSearchQuery === 'notebook';
+        const isMobileSearch = activeSearchQuery === 'mobile' || activeSearchQuery === 'phone' || activeSearchQuery === 'smartphone' || activeSearchQuery === 'mobiles' || activeSearchQuery === 'phones';
+
+        if (!queryWantsAccessory) {
+          if (isLaptopSearch) {
+            products = products.filter(p => {
+              const name = (p.name || '').toLowerCase();
+              const cat = (p.category || '').toLowerCase();
+              const isBagOrAccessory = cat.includes('bag') || cat.includes('luggage') || name.includes('bag') || name.includes('backpack') || name.includes('sleeve') || name.includes('case') || name.includes('stand') || name.includes('briefcase') || name.includes('rucksack');
+              return !isBagOrAccessory;
+            });
+          } else if (isMobileSearch) {
+            products = products.filter(p => {
+              const name = (p.name || '').toLowerCase();
+              const cat = (p.category || '').toLowerCase();
+              return !name.includes('case') && !name.includes('cover') && !name.includes('protector') && !name.includes('tempered glass');
+            });
+          }
+        }
+
+        // Relevance Scoring
+        products.forEach(p => {
+          let score = 0;
+          const name = (p.name || '').toLowerCase();
+          const brand = (p.brand || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+
+          if (isLaptopSearch) {
+            // Massive boost for real laptops
+            if (name.includes('laptop') || name.includes('macbook') || name.includes('notebook') || name.includes('chromebook') || name.includes('thinkpad') || name.includes('zenbook') || name.includes('aspire') || name.includes('galaxy book') || name.includes('gaming') || name.includes('copilot+') || name.includes('xps') || name.includes('victus') || name.includes('omen') || name.includes('pavilion') || name.includes('ideapad') || name.includes('legion') || name.includes('loq') || name.includes('predator') || name.includes('nitro') || name.includes('surface') || name.includes('gram')) {
+              score += 200;
+            }
+          }
+
+          if (name.includes(correctedSearch) || name.includes(lowerRawSearch)) score += 100;
+          if (cat.includes(correctedSearch) || cat.includes(lowerRawSearch)) score += 80;
+          if (brand.includes(correctedSearch) || brand.includes(lowerRawSearch)) score += 50;
+          if (desc.includes(correctedSearch)) score += 5;
+
+          p._relevanceScore = score;
+        });
+
+        if (!filters.sortVal || filters.sortVal === 'popular') {
+          products.sort((a, b) => (b._relevanceScore || 0) - (a._relevanceScore || 0));
+        }
       }
 
       if (products.length === 0 && !search) {
         products = (Store.allProducts || []).filter(p => !category || p.category?.toLowerCase() === category.toLowerCase());
-      } else if (category) {
+      } else if (category && !search) {
         products = products.filter(p => p.category?.toLowerCase() === category.toLowerCase());
       }
 
@@ -18877,72 +19014,239 @@ function initPageRouter() {
       // Update count
       if (countEl) countEl.textContent = products.length;
 
+      // Hide duplicate top toolbar so Flipkart sort tabs bar & breadcrumbs are seamless
+      const duplicateToolbar = document.querySelector('.com-catalog-toolbar');
+      if (duplicateToolbar) duplicateToolbar.style.display = 'none';
+
+      // Prepare Flipkart Top Banner (Without Breadcrumb & Without Sort By row)
+      let flipkartHeaderHtml = `
+        <div class="fk-list-top-banner-wrap" style="width:100%;margin-bottom:12px;box-sizing:border-box;">
+          <div class="search-did-you-mean-bar">
+            <div>
+              Showing 1 – ${products.length} of <strong>${products.length}</strong> results for "<strong>${correctedSearch || lowerRawSearch || category || 'Products'}</strong>"
+              ${isSpellFix ? `<span style="color:#878787;font-size:13px;margin-left:6px;">(Showing results for <strong style="color:#2874f0;">${correctedSearch}</strong>)</span>` : ''}
+            </div>
+            ${isSpellFix ? `
+              <div>
+                <span style="font-size:13px;color:#64748b;">Search instead for <a href="#" class="search-did-you-mean-link" id="search-raw-instead-btn">${lowerRawSearch}</a></span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
       if (!products || products.length === 0) {
+        grid.classList.add('fk-list-mode');
+        grid.style.cssText = "";
         grid.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:70px 20px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
+          ${flipkartHeaderHtml}
+          <div style="text-align:center;padding:70px 20px;background:#fff;border-radius:8px;border:1px solid #e0e0e0;grid-column:1/-1;">
             <div style="margin-bottom:12px;color:#94a3b8;">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </div>
             <h3 style="margin:0 0 8px;font-size:18px;font-weight:800;color:#0f172a;">No Products Found For Selected Filters</h3>
-            <p style="color:#64748b;font-size:14px;margin-bottom:20px;">Try resetting the filters or searching for another category.</p>
+            <p style="color:#64748b;font-size:14px;margin-bottom:20px;">Try resetting the filters or searching for another keyword.</p>
             <button class="com-btn-primary" onclick="window._openDedicatedPage('')">Reset All Filters</button>
           </div>
         `;
         return;
       }
 
-      grid.innerHTML = products.map((prod, idx) => {
+      // Helper function to build category-smart bullet specifications
+      function getProductSpecsList(prod) {
+        if (Array.isArray(prod.specs) && prod.specs.length > 0) return prod.specs;
+        const cat = (prod.category || '').toLowerCase();
+        const name = (prod.name || '').toLowerCase();
+
+        if (cat.includes('electronics') || name.includes('laptop') || name.includes('macbook') || name.includes('notebook') || name.includes('chromebook')) {
+          return [
+            `High-Performance ${prod.brand || 'Multi-Core'} Processor`,
+            `8 GB / 16 GB High-Speed Memory Architecture`,
+            `Full HD Anti-Glare Ultra-Vivid Display`,
+            `Genuine Licensed Operating System Pre-installed`,
+            `1 Year Official Brand Warranty & Support`
+          ];
+        } else if (cat.includes('bag') || name.includes('bag') || name.includes('backpack') || name.includes('luggage') || name.includes('trolley')) {
+          return [
+            `Water-Repellent & Durable Sustainable Fabric`,
+            `Ergonomic Padded Shoulder Straps with Breathable Mesh`,
+            `Dedicated Shock-Absorbing Laptop & Tablet Compartment`,
+            `Heavy-Duty Anti-Theft Zippers & Multi-Organizer Pockets`,
+            `1 Year Official Brand Warranty`
+          ];
+        } else if (cat.includes('fashion') || name.includes('shoe') || name.includes('sneaker') || name.includes('jean') || name.includes('shirt') || name.includes('tshirt')) {
+          return [
+            `Premium High-Grade Breathable Comfort Fabric`,
+            `Ergonomic Fit Designed for All-Day Wearability`,
+            `Reinforced Stitching & Machine Wash Compatible`,
+            `100% Authentic Brand Guarantee`,
+            `Easy 7-Day Hassle-Free Returns & Exchange`
+          ];
+        } else if (cat.includes('audio') || name.includes('headphone') || name.includes('airpod') || name.includes('earbud') || name.includes('speaker')) {
+          return [
+            `Active Noise Cancellation & Crystal HD Sound`,
+            `Up to 40 Hours Ultra-Long Battery Playtime`,
+            `Bluetooth v5.3 Low Latency Instant Pairing`,
+            `IPX5 Water & Sweat Resistance Rating`,
+            `1 Year Manufacturer Warranty`
+          ];
+        } else if (cat.includes('watch') || name.includes('smartwatch')) {
+          return [
+            `High-Brightness AMOLED Always-On Display`,
+            `24/7 Heart Rate, SpO2 & Sleep Tracker Sensors`,
+            `Bluetooth Calling with Noise-Cancelling Mic`,
+            `Up to 10 Days Long Battery Life`,
+            `1 Year Brand Warranty`
+          ];
+        }
+
+        return [
+          `Authentic ${prod.brand || 'X-Mart'} Certified Quality`,
+          `Premium Durable Build & Ergonomic Craftsmanship`,
+          `100% Original Product with Official Manufacturer Backing`,
+          `Express Nationwide Delivery & Easy Returns`
+        ];
+      }
+
+      // Helper for authentic Flipkart Rating Hover Popover (Image 5)
+      function getRatingBreakdown(rating, reviews) {
+        const r = parseFloat(rating) || 4.2;
+        const rev = parseInt(reviews) || 500;
+        const total = Math.max(rev * 6, 120);
+
+        let p5 = 0.50, p4 = 0.28, p3 = 0.12, p2 = 0.05, p1 = 0.05;
+        if (r >= 4.6) {
+          p5 = 0.72; p4 = 0.18; p3 = 0.06; p2 = 0.02; p1 = 0.02;
+        } else if (r >= 4.3) {
+          p5 = 0.60; p4 = 0.25; p3 = 0.08; p2 = 0.04; p1 = 0.03;
+        } else if (r >= 4.0) {
+          p5 = 0.48; p4 = 0.30; p3 = 0.12; p2 = 0.05; p1 = 0.05;
+        } else if (r >= 3.5) {
+          p5 = 0.35; p4 = 0.30; p3 = 0.20; p2 = 0.08; p1 = 0.07;
+        } else {
+          p5 = 0.20; p4 = 0.25; p3 = 0.25; p2 = 0.15; p1 = 0.15;
+        }
+
+        const c5 = Math.round(total * p5);
+        const c4 = Math.round(total * p4);
+        const c3 = Math.round(total * p3);
+        const c2 = Math.round(total * p2);
+        const c1 = Math.max(1, total - (c5 + c4 + c3 + c2));
+
+        return {
+          total,
+          c5, c4, c3, c2, c1,
+          pct5: Math.round(p5 * 100),
+          pct4: Math.round(p4 * 100),
+          pct3: Math.round(p3 * 100),
+          pct2: Math.round(p2 * 100),
+          pct1: Math.round(p1 * 100),
+        };
+      }
+
+      // Universal Flipkart Horizontal List View Rendering for ALL products
+      grid.classList.add('fk-list-mode');
+      grid.style.cssText = "";
+      window._compareList = window._compareList || [];
+
+      grid.innerHTML = flipkartHeaderHtml + products.map(prod => {
+        const prodId = prod._id || prod.id;
         const img = (prod.images && prod.images[0]) || prod.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500';
         const finalPrice = prod.finalPrice || prod.price || 0;
         const origPrice = prod.originalPrice || Math.round(finalPrice * 1.35);
-        const discount = prod.discount || 25;
-        const isWishlisted = Store.wishlist.some(w => w.id === (prod._id || prod.id));
-        const isDeact = typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(prod);
+        const discount = prod.discount || 20;
+        const rating = prod.rating || 4.3;
+        const reviews = prod.numReviews || Math.floor(80 + Math.random() * 2500);
+        const isWishlisted = Store.wishlist.some(w => w.id === prodId);
+        const specs = getProductSpecsList(prod);
+        const exchangeVal = Math.round((finalPrice * 0.45) / 500) * 500 || 1500;
+        const b = getRatingBreakdown(rating, reviews);
+        const isCompared = window._compareList.some(c => (c._id || c.id) === prodId);
 
         return `
-          <div class="com-prod-card" data-id="${prod._id || prod.id}" style="${isDeact ? 'opacity:0.85;' : ''}">
-            <!-- Card Header Tags -->
-            <div class="com-card-top">
-              ${isDeact
-            ? `<span class="com-tag-badge" style="background:#dc2626;color:#ffffff;font-weight:800;">Currently Unavailable</span>`
-            : `<span class="com-tag-badge">${discount}% OFF</span>`}
-              <button class="com-wishlist-btn ${isWishlisted ? 'is-active' : ''}" title="Add to Wishlist" data-id="${prod._id || prod.id}">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="${isWishlisted ? '#ef4444' : 'none'}" stroke="${isWishlisted ? '#ef4444' : '#64748b'}" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <div class="fk-product-list-card" data-id="${prodId}">
+            <!-- Column 1: Image & Wishlist -->
+            <div class="fk-prod-thumb-wrap">
+              <button class="fk-wishlist-heart-btn ${isWishlisted ? 'is-active' : ''}" data-id="${prodId}" title="Wishlist">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="${isWishlisted ? '#ef4444' : 'none'}" stroke="${isWishlisted ? '#ef4444' : '#878787'}" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               </button>
-            </div>
-
-            <!-- Product Image -->
-            <div class="com-prod-img-wrap">
               <img src="${img}" alt="${prod.name}" loading="lazy">
             </div>
 
-            <!-- Product Details -->
-            <div class="com-prod-info">
-              <div class="com-brand-sub">${prod.brand || 'X-Mart'} • ${prod.category || 'General'}</div>
-              <h3 class="com-prod-name" title="${prod.name}">${prod.name}</h3>
-
-              <div class="com-rating-row">
-                <span class="com-stars">★ ${prod.rating || '4.8'}</span>
-                <span class="com-rev-count">(${prod.numReviews || '128'})</span>
-                <span class="prime-delivery-pill">Prime</span>
+            <!-- Column 2: Details & Interactive Rating Popover (Image 5 Benchmark) -->
+            <div class="fk-prod-details">
+              <h3 class="fk-prod-title">${prod.name}</h3>
+              <div class="fk-rating-row">
+                <div class="fk-rating-pill-wrap">
+                  <span class="fk-rating-pill" role="button" aria-label="Rating">${rating} ★</span>
+                  <div class="fk-rating-popover">
+                    <div class="fk-rating-pop-caret"></div>
+                    <div class="fk-rating-pop-body">
+                      <div class="fk-rating-pop-left">
+                        <div class="fk-rating-pop-score">${rating} ★</div>
+                        <div class="fk-rating-pop-counts">${b.total.toLocaleString()} Ratings &amp;<br>${reviews.toLocaleString()} Reviews</div>
+                      </div>
+                      <div class="fk-rating-pop-right">
+                        <div class="fk-pop-bar-row">
+                          <span class="fk-pop-star-label">5 ★</span>
+                          <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct5}%;"></div></div>
+                          <span class="fk-pop-count-label">${b.c5.toLocaleString()}</span>
+                        </div>
+                        <div class="fk-pop-bar-row">
+                          <span class="fk-pop-star-label">4 ★</span>
+                          <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct4}%;"></div></div>
+                          <span class="fk-pop-count-label">${b.c4.toLocaleString()}</span>
+                        </div>
+                        <div class="fk-pop-bar-row">
+                          <span class="fk-pop-star-label">3 ★</span>
+                          <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct3}%;"></div></div>
+                          <span class="fk-pop-count-label">${b.c3.toLocaleString()}</span>
+                        </div>
+                        <div class="fk-pop-bar-row">
+                          <span class="fk-pop-star-label">2 ★</span>
+                          <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-orange" style="width: ${b.pct2}%;"></div></div>
+                          <span class="fk-pop-count-label">${b.c2.toLocaleString()}</span>
+                        </div>
+                        <div class="fk-pop-bar-row">
+                          <span class="fk-pop-star-label">1 ★</span>
+                          <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-red" style="width: ${b.pct1}%;"></div></div>
+                          <span class="fk-pop-count-label">${b.c1.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <span class="fk-rating-count">${reviews.toLocaleString()} Ratings &amp; ${Math.round(reviews / 7)} Reviews</span>
+                <span class="fk-assured-tag">✓ Assured</span>
               </div>
+              <ul class="fk-specs-list">
+                ${specs.slice(0, 5).map(s => `<li>${s}</li>`).join('')}
+              </ul>
+            </div>
 
-              <div class="com-pricing-row">
-                <span class="com-final-price">${Currency.format(finalPrice)}</span>
-                <span class="com-orig-price">${Currency.format(origPrice)}</span>
-                <span class="com-save-text">Save ${Currency.format(origPrice - finalPrice)}</span>
+            <!-- Column 3: Pricing & Offers -->
+            <div class="fk-prod-pricing-col">
+              <div class="fk-current-price">${Currency.format(finalPrice)}</div>
+              <div class="fk-orig-price-row">
+                <span class="fk-orig-price">${Currency.format(origPrice)}</span>
+                <span class="fk-disc-badge">${discount}% off</span>
               </div>
-
-              ${isDeact
-            ? `<p style="color:#dc2626;font-size:12.5px;font-weight:800;margin:6px 0 0;">● Currently Unavailable</p>`
-            : `<p class="com-delivery-note">FREE Delivery <strong>Tomorrow by 2 PM</strong></p>`}
-
+              <div class="fk-delivery-tag">Free delivery</div>
+              <div class="fk-offer-tag">Bank Offer 5% Cashback on Axis Bank Card</div>
+              <div class="fk-exchange-tag">Upto ₹${exchangeVal.toLocaleString()} Off on Exchange</div>
             </div>
           </div>
         `;
       }).join('');
 
-      grid.querySelectorAll('.com-wishlist-btn').forEach(btn => {
+      // Wire search instead link if present
+      document.getElementById('search-raw-instead-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window._openDedicatedPage?.(category, '', lowerRawSearch, true);
+      });
+
+      // Wire Wishlist heart buttons
+      grid.querySelectorAll('.fk-wishlist-heart-btn').forEach(btn => {
         btn.addEventListener('click', e => {
           e.stopPropagation();
           const prod = products.find(p => (p._id || p.id) === btn.dataset.id);
@@ -18958,7 +19262,125 @@ function initPageRouter() {
         });
       });
 
-      grid.querySelectorAll('.com-prod-card').forEach(card => {
+      // Remove any lingering compare dock
+      const lingeringDock = document.getElementById('fk-compare-dock');
+      if (lingeringDock) lingeringDock.remove();
+
+      // Wire Rating Pill click to toggle rating popover (mobile, tablet & desktop)
+      // Helper: Position rating popover dynamically within viewport boundaries
+      function positionRatingPopover(wrap) {
+        const popover = wrap.querySelector('.fk-rating-popover');
+        const caret = wrap.querySelector('.fk-rating-pop-caret');
+        if (!popover) return;
+
+        popover.style.removeProperty('left');
+        popover.style.removeProperty('right');
+        if (caret) {
+          caret.style.removeProperty('left');
+          caret.style.removeProperty('right');
+        }
+
+        requestAnimationFrame(() => {
+          const wrapRect = wrap.getBoundingClientRect();
+          const popRect = popover.getBoundingClientRect();
+          const screenW = window.innerWidth;
+          const margin = 8; // 8px minimum safe margin from viewport edges
+
+          // Natural left in viewport coordinates
+          let viewLeft = wrapRect.left - 10;
+
+          // Clamp within right viewport boundary
+          if (viewLeft + popRect.width > screenW - margin) {
+            viewLeft = screenW - margin - popRect.width;
+          }
+
+          // Clamp within left viewport boundary
+          if (viewLeft < margin) {
+            viewLeft = margin;
+          }
+
+          // Convert viewport coordinate to wrap-relative coordinate
+          const relativeLeft = Math.round(viewLeft - wrapRect.left);
+          popover.style.setProperty('left', `${relativeLeft}px`, 'important');
+          popover.style.setProperty('right', 'auto', 'important');
+
+          // Align caret precisely under rating pill center
+          if (caret) {
+            const pillCenterInViewport = wrapRect.left + (wrapRect.width / 2);
+            let caretLeft = pillCenterInViewport - viewLeft - 5;
+            const minCaret = 16;
+            const maxCaret = popRect.width - 24;
+            caretLeft = Math.max(minCaret, Math.min(maxCaret, caretLeft));
+
+            caret.style.setProperty('left', `${Math.round(caretLeft)}px`, 'important');
+            caret.style.setProperty('right', 'auto', 'important');
+          }
+        });
+      }
+
+      // Wire Rating Pill click to toggle rating popover (mobile, tablet & desktop)
+      grid.querySelectorAll('.fk-rating-pill-wrap').forEach(wrap => {
+        wrap.addEventListener('click', (e) => {
+          // If clicking inside the popover content, don't toggle
+          if (e.target.closest('.fk-rating-popover')) {
+            e.stopPropagation();
+            return;
+          }
+
+          e.preventDefault();
+          e.stopPropagation(); // Don't trigger product detail card navigation
+
+          const isAlreadyOpen = wrap.classList.contains('is-open');
+
+          // Close all open rating popovers
+          document.querySelectorAll('.fk-rating-pill-wrap.is-open').forEach(w => {
+            w.classList.remove('is-open');
+          });
+
+          // Toggle: if it wasn't already open, open it
+          if (!isAlreadyOpen) {
+            wrap.classList.add('is-open');
+            positionRatingPopover(wrap);
+          }
+        });
+
+        // Dynamic alignment on desktop hover
+        wrap.addEventListener('mouseenter', () => {
+          positionRatingPopover(wrap);
+        });
+      });
+
+      // Prevent clicks inside popover content from bubbling up
+      grid.querySelectorAll('.fk-rating-popover').forEach(pop => {
+        pop.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      });
+
+      // Global click-outside listener to dismiss rating popovers
+      if (!window._fkRatingPopoverOutsideListenerAttached) {
+        window._fkRatingPopoverOutsideListenerAttached = true;
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.fk-rating-pill-wrap')) {
+            document.querySelectorAll('.fk-rating-pill-wrap.is-open').forEach(w => {
+              w.classList.remove('is-open');
+            });
+          }
+        });
+      }
+
+      // Re-position on screen resize / phone rotation
+      if (!window._fkRatingPopoverResizeListenerAttached) {
+        window._fkRatingPopoverResizeListenerAttached = true;
+        window.addEventListener('resize', () => {
+          document.querySelectorAll('.fk-rating-pill-wrap.is-open').forEach(wrap => {
+            positionRatingPopover(wrap);
+          });
+        }, { passive: true });
+      }
+
+      // Wire card navigation to product details
+      grid.querySelectorAll('.fk-product-list-card').forEach(card => {
         card.addEventListener('click', () => {
           const prod = products.find(p => (p._id || p.id) === card.dataset.id);
           if (prod) window._openProductDetail?.(prod);
@@ -18969,6 +19391,126 @@ function initPageRouter() {
       grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#dc2626;"><p>${err.message}</p></div>`;
     }
   }
+
+  // ── Flipkart Style Product Comparison System (Image 4 Benchmark) ──
+  window._renderCompareDock = function() {
+    let dock = document.getElementById('fk-compare-dock');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'fk-compare-dock';
+      dock.className = 'fk-compare-dock';
+      document.body.appendChild(dock);
+    }
+
+    if (!window._compareList || window._compareList.length === 0) {
+      dock.classList.remove('is-visible');
+      return;
+    }
+
+    dock.classList.add('is-visible');
+    dock.innerHTML = `
+      <div class="fk-compare-dock-inner">
+        <div class="fk-compare-dock-left">
+          <span class="fk-compare-dock-title">Compare (${window._compareList.length}/4)</span>
+          <div class="fk-compare-dock-chips">
+            ${window._compareList.map(p => `
+              <div class="fk-compare-chip">
+                <img src="${(p.images && p.images[0]) || p.img || ''}" alt="${p.name}">
+                <span class="fk-compare-chip-name">${p.name}</span>
+                <button class="fk-compare-chip-remove" data-id="${p._id || p.id}" title="Remove">×</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="fk-compare-dock-actions">
+          <button class="fk-compare-btn-clear" id="fk-compare-clear-btn">Remove All</button>
+          <button class="fk-compare-btn-action" id="fk-compare-action-btn" ${window._compareList.length < 2 ? 'disabled title="Select at least 2 items to compare"' : ''}>COMPARE</button>
+        </div>
+      </div>
+    `;
+
+    dock.querySelectorAll('.fk-compare-chip-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        window._compareList = window._compareList.filter(p => (p._id || p.id) !== id);
+        const cardCb = document.querySelector(`.fk-compare-checkbox[data-id="${id}"]`);
+        if (cardCb) cardCb.checked = false;
+        window._renderCompareDock();
+      });
+    });
+
+    document.getElementById('fk-compare-clear-btn')?.addEventListener('click', () => {
+      window._compareList = [];
+      document.querySelectorAll('.fk-compare-checkbox').forEach(cb => cb.checked = false);
+      window._renderCompareDock();
+    });
+
+    document.getElementById('fk-compare-action-btn')?.addEventListener('click', () => {
+      if (window._compareList.length >= 2) {
+        window._openCompareModal();
+      }
+    });
+  };
+
+  window._openCompareModal = function() {
+    let modal = document.getElementById('fk-compare-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'fk-compare-modal';
+      modal.className = 'xmodal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    const items = window._compareList || [];
+    modal.innerHTML = `
+      <div class="xmodal-window" style="max-width: 1040px; width: 95%;">
+        <div class="xmodal-header">
+          <h2 style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Compare Products (${items.length})</h2>
+          <button class="xmodal-close-btn" id="fk-close-compare-modal">&times;</button>
+        </div>
+        <div class="xmodal-body" style="padding: 20px; overflow-x: auto;">
+          <div class="fk-compare-grid" style="grid-template-columns: repeat(${items.length}, minmax(220px, 1fr));">
+            ${items.map(p => {
+              const img = (p.images && p.images[0]) || p.img || '';
+              const finalPrice = p.finalPrice || p.price || 0;
+              const specs = p.specs || [
+                `Brand: ${p.brand || 'Authentic'}`,
+                `Category: ${p.category || 'Store'}`,
+                '1 Year Brand Warranty',
+                '100% Genuine Certified Quality',
+                'Free Express Delivery'
+              ];
+              return `
+                <div class="fk-compare-col">
+                  <img src="${img}" alt="${p.name}">
+                  <div class="fk-compare-col-title">${p.name}</div>
+                  <div style="margin-bottom:8px;">
+                    <span class="fk-rating-pill" style="font-size:11px;">${p.rating || 4.3} ★</span>
+                  </div>
+                  <div class="fk-compare-col-price">${Currency.format(finalPrice)}</div>
+                  <ul class="fk-compare-col-specs">
+                    ${specs.map(s => `<li>${s}</li>`).join('')}
+                  </ul>
+                  <button class="com-btn-primary" style="margin-top:14px;padding:8px 14px;font-size:13px;" onclick="window._openProductDetail?.(window._compareList.find(x => (x._id || x.id) === '${p._id || p.id}')); document.getElementById('fk-compare-modal').classList.remove('is-active');">
+                    View Product
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('is-active');
+    document.getElementById('fk-close-compare-modal')?.addEventListener('click', () => {
+      modal.classList.remove('is-active');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('is-active');
+    });
+  };
 
   window._reRenderCatalogPrices = () => {
     if (pageContainer && pageContainer.style.display !== 'none' && window._currentDedicatedPageArgs) {
@@ -19615,7 +20157,7 @@ function initPageRouter() {
     window.openSellerManageOffersModal = openSellerManageOffersModal;
 
   // ── 3. COMMERCIAL SELLER CENTRAL & MERCHANT PORTAL WINDOW ──
-  window._openSellerPortal = (push = true, skipSessionAuthCheck = false) => {
+  window._openSellerPortal = (push = true, skipSessionAuthCheck = false, targetTab = null) => {
     // 🔒 SECURITY GATE 1: Block unauthenticated users from viewing Seller Central & Merchant Studio
     const activeUser = Auth.getUser();
     const activeToken = Auth.getToken();
@@ -19625,12 +20167,13 @@ function initPageRouter() {
       try {
         history.replaceState({ route: 'home', type: 'home' }, '', '#home');
       } catch (e) {}
+      const pendingTab = targetTab || window._pendingSellerTab || window._currentSellerTab || 'account';
       if (typeof window._openAuth === 'function') {
         window._openAuth('signin', false, () => {
           try {
             sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
           } catch (e) {}
-          window._openSellerPortal(push, true);
+          window._openSellerPortal(push, true, pendingTab);
         }, 'seller');
       }
       return;
@@ -19643,12 +20186,13 @@ function initPageRouter() {
     } catch (e) { isSessionAuthenticated = false; }
 
     if (!isSessionAuthenticated && !skipSessionAuthCheck) {
+      const pendingTab = targetTab || window._pendingSellerTab || window._currentSellerTab || 'account';
       if (typeof window._openAuth === 'function') {
         window._openAuth('signin', true, () => {
           try {
             sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
           } catch (e) {}
-          window._openSellerPortal(push, true);
+          window._openSellerPortal(push, true, pendingTab);
         }, 'seller');
       }
       return;
@@ -19717,8 +20261,10 @@ function initPageRouter() {
       currentSeller.bankIfsc
     );
 
-    // Default tab is always 'list' (Product Studio) so sensitive Merchant Profile & Bank is never opened without verification
-    const defaultTab = 'list';
+    const activeTab = targetTab || window._pendingSellerTab || window._requestedSellerTab || window._currentSellerTab || 'list';
+    window._requestedSellerTab = null;
+    window._pendingSellerTab = null;
+    window._currentSellerTab = activeTab;
 
     pageContainer.innerHTML = `
       <div class="commercial-window-wrap">
@@ -19886,16 +20432,16 @@ function initPageRouter() {
 
         <!-- Segmented Tab Navigation -->
         <div class="seller-tabs-bar">
-          <button class="seller-tab-btn is-active" id="tab-btn-list" data-tab="list">
+          <button class="seller-tab-btn ${activeTab === 'list' ? 'is-active' : ''}" id="tab-btn-list" data-tab="list">
             <span>Product Listing Studio</span>
           </button>
-          <button class="seller-tab-btn" id="tab-btn-inventory" data-tab="inventory">
+          <button class="seller-tab-btn ${activeTab === 'inventory' ? 'is-active' : ''}" id="tab-btn-inventory" data-tab="inventory">
             <span>Live Catalog &amp; Inventory (<span id="seller-inv-count">0</span>)</span>
           </button>
-          <button class="seller-tab-btn" id="tab-btn-analytics" data-tab="analytics">
+          <button class="seller-tab-btn ${activeTab === 'analytics' ? 'is-active' : ''}" id="tab-btn-analytics" data-tab="analytics">
             <span>Sales &amp; Analytics</span>
           </button>
-          <button class="seller-tab-btn" id="tab-btn-account" data-tab="account" title="Requires security verification">
+          <button class="seller-tab-btn ${activeTab === 'account' ? 'is-active' : ''}" id="tab-btn-account" data-tab="account" title="Requires security verification">
             <span style="display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               Merchant Profile &amp; Bank
@@ -19904,7 +20450,7 @@ function initPageRouter() {
         </div>
 
         <!-- TAB 1: PRODUCT LISTING STUDIO (2-COLUMN COMMERCIAL LAYOUT) -->
-        <div id="seller-tab-list" class="seller-tab-content is-active">
+        <div id="seller-tab-list" class="seller-tab-content ${activeTab === 'list' ? 'is-active' : ''}">
           ${!isEligible ? `
             <!-- ELIGIBILITY LOCKED GATE CARD -->
             <div class="seller-section-card seller-locked-card" style="text-align:center;padding:50px 24px;border:2px dashed ${currentSeller?.isActive === false ? '#ef4444' : '#f59e0b'};background:${currentSeller?.isActive === false ? '#fff5f5' : '#fffdf5'};border-radius:16px;">
@@ -20013,18 +20559,18 @@ function initPageRouter() {
 
                       <div class="form-group">
                         <label for="prod-warranty">Warranty Terms</label>
-                        <input type="text" id="prod-warranty" class="seller-input" value="1 to 2 Years Manufacturer Warranty">
+                        <input type="text" id="prod-warranty" class="seller-input" placeholder="e.g. 1 to 2 Years Manufacturer Warranty">
                       </div>
 
                       <div class="form-group">
                         <label for="prod-delivery-speed">Delivery Speed &amp; Dispatch</label>
-                        <input type="text" id="prod-delivery-speed" class="seller-input" value="Delivered in 2-4 business days with Prime Express">
+                        <input type="text" id="prod-delivery-speed" class="seller-input" placeholder="e.g. Delivered in 2-4 business days with Prime Express">
                         <small class="form-hint">Displayed on specifications card and delivery promise.</small>
                       </div>
 
                       <div class="form-group">
                         <label for="prod-condition">Item Condition</label>
-                        <input type="text" id="prod-condition" class="seller-input" value="Brand New • 100% Sealed Original Box">
+                        <input type="text" id="prod-condition" class="seller-input" placeholder="e.g. Brand New • 100% Sealed Original Box">
                         <small class="form-hint">e.g. Brand New • 100% Sealed Original Box, Refurbished, etc.</small>
                       </div>
                     </div>
@@ -20168,7 +20714,7 @@ function initPageRouter() {
                     </div>
                     <div class="form-group span-2">
                       <label for="prod-desc">Product Description & Overview *</label>
-                      <textarea id="prod-desc" class="seller-textarea" rows="4" required>Premium grade authentic product with industry-leading performance, durable build quality, and verified manufacturer certification.</textarea>
+                      <textarea id="prod-desc" class="seller-textarea" rows="4" placeholder="Premium grade authentic product with industry-leading performance, durable build quality, and verified manufacturer certification." required></textarea>
                     </div>
 
                     <!-- Custom Specifications Table Builder -->
@@ -20299,7 +20845,7 @@ function initPageRouter() {
         </div>
 
         <!-- TAB 2: SELLER INVENTORY TABLE -->
-        <div id="seller-tab-inventory" class="seller-tab-content">
+        <div id="seller-tab-inventory" class="seller-tab-content ${activeTab === 'inventory' ? 'is-active' : ''}">
           ${!isEligible ? `
             <div class="seller-section-card seller-locked-card" style="text-align:center;padding:50px 24px;border:2px dashed #f59e0b;background:#fffdf5;border-radius:16px;">
               <h2 style="font-size:24px;font-weight:900;color:#0f172a;margin-bottom:10px;">Verify Merchant Profile &amp; Bank to Manage Live Catalog &amp; Inventory</h2>
@@ -20348,7 +20894,7 @@ function initPageRouter() {
         </div>
 
         <!-- TAB 3: SALES & ANALYTICS (COMMERCIAL AMAZON/FLIPKART SELLER CONSOLE) -->
-        <div id="seller-tab-analytics" class="seller-tab-content">
+        <div id="seller-tab-analytics" class="seller-tab-content ${activeTab === 'analytics' ? 'is-active' : ''}">
           ${!isEligible ? `
             <div class="seller-section-card seller-locked-card" style="text-align:center;padding:50px 24px;border:2px dashed #f59e0b;background:#fffdf5;border-radius:16px;">
               <h2 style="font-size:24px;font-weight:900;color:#0f172a;margin-bottom:10px;">Verify Merchant Profile &amp; Bank to Access Sales, Orders &amp; Settlements</h2>
@@ -20422,17 +20968,26 @@ function initPageRouter() {
                     <input type="text" id="seller-orders-search" placeholder="Search by Order ID, Product Name, Customer Name, AWB or SKU...">
                   </div>
                   <div class="seller-filter-group">
-                    <select id="seller-orders-period" class="seller-toolbar-select">
-                      <option value="all">All Time</option>
-                      <option value="7">Last 7 Days</option>
-                      <option value="30" selected>Last 30 Days</option>
-                      <option value="this_month">This Month</option>
-                    </select>
-                    <select id="seller-orders-payfilter" class="seller-toolbar-select">
-                      <option value="all">All Payment Methods</option>
-                      <option value="Online (Prepaid)">Prepaid / UPI</option>
-                      <option value="Cash on Delivery (COD)">Cash on Delivery</option>
-                    </select>
+                    <div class="seller-select-wrapper">
+                      <select id="seller-orders-period" class="seller-toolbar-select">
+                        <option value="all">All Time</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="this_month">This Month</option>
+                      </select>
+                      <svg class="seller-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+
+                    <div class="seller-select-wrapper">
+                      <select id="seller-orders-payfilter" class="seller-toolbar-select">
+                        <option value="all">All Payment Methods</option>
+                        <option value="cards">Cards (Credit / Debit)</option>
+                        <option value="upi">UPI / Instant Pay</option>
+                        <option value="wallet">X-Mart Wallet</option>
+                        <option value="cod">Cash on Delivery (COD)</option>
+                      </select>
+                      <svg class="seller-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
                   </div>
                 </div>
 
@@ -20550,7 +21105,7 @@ function initPageRouter() {
         </div>
 
         <!-- TAB 4: SELLER REGISTRATION & PROFILE (MANDATORY ELIGIBILITY ONBOARDING) -->
-        <div id="seller-tab-account" class="seller-tab-content">
+        <div id="seller-tab-account" class="seller-tab-content ${activeTab === 'account' ? 'is-active' : ''}">
           <div class="seller-section-card">
             <div class="seller-section-header" style="justify-content:space-between;display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
               <div>
@@ -20559,7 +21114,7 @@ function initPageRouter() {
                   Your legal business entity, tax identification, and linked bank settlement details are protected here.
                 </p>
               </div>
-              <span class="seller-pill-badge verified" style="font-size:12px;background:#091a2f !important;color:#34d399 !important;border:1px solid #10b981 !important;padding:5px 14px;border-radius:20px;font-weight:800;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.18);">✓ Protected Merchant Profile</span>
+              <span class="seller-pill-badge verified" style="font-size:12px;background:#ecfdf5 !important;color:#047857 !important;border:1.5px solid #a7f3d0 !important;padding:5px 14px;border-radius:20px;font-weight:800;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(16,185,129,0.12);">✓ Protected Merchant Profile</span>
             </div>
 
             <form id="seller-register-form" class="seller-grid-form" novalidate style="margin-top:16px;">
@@ -20656,10 +21211,48 @@ function initPageRouter() {
         </div>
       </div>
     `;
+    function activateSellerTab(tabName) {
+      const containerEl = document.getElementById('page-container') || pageContainer;
+      if (!containerEl) return;
+      const liveBtns = containerEl.querySelectorAll('.seller-tab-btn');
+      const liveContents = containerEl.querySelectorAll('.seller-tab-content');
+
+      liveBtns.forEach(b => {
+        if (b.dataset.tab === tabName) {
+          b.classList.add('is-active');
+        } else {
+          b.classList.remove('is-active');
+        }
+      });
+
+      liveContents.forEach(c => {
+        if (c.id === `seller-tab-${tabName}`) {
+          c.classList.add('is-active');
+        } else {
+          c.classList.remove('is-active');
+        }
+      });
+
+      if (tabName === 'inventory') loadSellerInventory();
+      if (tabName === 'analytics') initSellerAnalytics();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     // ── Password & Security Authentication Helper for Merchant Profile & Bank ──
     function promptPasswordVerificationForMerchantProfile(onSuccess) {
+      window._pendingSellerTab = 'account';
       if (typeof window._openAuth === 'function') {
-        window._openAuth('signin', true, onSuccess, 'seller');
+        window._openAuth('signin', true, () => {
+          showToast('✓ Security Verification Successful! Merchant Profile & Bank Settings unlocked.', 'success', 3500);
+          window._currentSellerTab = 'account';
+          if (typeof window._openSellerPortal === 'function') {
+            window._openSellerPortal(false, true, 'account');
+          }
+          activateSellerTab('account');
+          if (typeof onSuccess === 'function') {
+            try { onSuccess(); } catch (e) {}
+          }
+        }, 'seller');
       }
     }
 
@@ -20698,43 +21291,21 @@ function initPageRouter() {
     }, 350);
 
     const tabBtns = pageContainer.querySelectorAll('.seller-tab-btn');
-    const tabContents = pageContainer.querySelectorAll('.seller-tab-content');
 
     tabBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         if (e) e.preventDefault();
         const tab = btn.dataset.tab;
 
-        // Force password verification every time user tries to open Merchant Profile & Bank window
+        // Force password verification every time user tries to open Merchant Profile & Bank window for safety
         if (tab === 'account') {
           promptPasswordVerificationForMerchantProfile(() => {
-            tabBtns.forEach(b => b.classList.remove('is-active'));
-            tabContents.forEach(c => c.classList.remove('is-active'));
-
-            btn.classList.add('is-active');
-            const targetContent = pageContainer.querySelector(`#seller-tab-${tab}`);
-            if (targetContent) {
-              targetContent.classList.add('is-active');
-            }
+            activateSellerTab('account');
           });
           return;
         }
 
-        tabBtns.forEach(b => b.classList.remove('is-active'));
-        tabContents.forEach(c => c.classList.remove('is-active'));
-
-        btn.classList.add('is-active');
-        const targetContent = pageContainer.querySelector(`#seller-tab-${tab}`);
-        if (targetContent) {
-          targetContent.classList.add('is-active');
-        }
-
-        if (tab === 'inventory') {
-          loadSellerInventory();
-        }
-        if (tab === 'analytics') {
-          initSellerAnalytics();
-        }
+        activateSellerTab(tab);
       });
     });
 
@@ -21337,7 +21908,7 @@ function initPageRouter() {
       const topImg = pageContainer.querySelector('#prod-img-top')?.value.trim();
       const rightImg = pageContainer.querySelector('#prod-img-right')?.value.trim();
       const backImg = pageContainer.querySelector('#prod-img-back')?.value.trim();
-      const description = pageContainer.querySelector('#prod-desc')?.value.trim();
+      const description = pageContainer.querySelector('#prod-desc')?.value.trim() || 'Premium grade authentic product with industry-leading performance, durable build quality, and verified manufacturer certification.';
 
       // Compulsory Validation: All 5 Perspective Views are strictly mandatory
       const angleInputs = [
@@ -21733,15 +22304,15 @@ function initPageRouter() {
 
               <!-- Stock Controller -->
               <td>
-                <div class="stock-adjust-wrap" style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
-                  <div style="display:flex;align-items:center;gap:4px;">
+                <div class="stock-adjust-wrap" style="display:flex;flex-direction:column;gap:5px;align-items:center;width:100%;box-sizing:border-box;">
+                  <div style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;">
                     <button type="button" class="btn-stock-adj minus" data-id="${id}" data-delta="-5">-5</button>
                     <button type="button" class="btn-stock-adj minus" data-id="${id}" data-delta="-1">-1</button>
                     <span class="stock-num-val" id="stock-val-${id}" style="min-width:28px;text-align:center;font-weight:800;color:${stock === 0 ? '#dc2626' : '#0f172a'};">${stock}</span>
                     <button type="button" class="btn-stock-adj plus" data-id="${id}" data-delta="1">+1</button>
                     <button type="button" class="btn-stock-adj plus" data-id="${id}" data-delta="10">+10</button>
                   </div>
-                  <button type="button" class="btn-stock-toggle ${stock === 0 ? 'is-out-of-stock' : ''}" data-id="${id}">
+                  <button type="button" class="btn-stock-toggle ${stock === 0 ? 'is-out-of-stock' : ''}" data-id="${id}" style="width:100%;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;">
                     ${stock === 0 ? '● Out of Stock (+ Set 25)' : 'Mark Out of Stock'}
                   </button>
                 </div>
@@ -23491,8 +24062,19 @@ function initPageRouter() {
           if (currentStatusFilter === 'cancelled' && ord.fulfillmentStatus !== 'Cancelled') return false;
 
           // Payment mode filter
-          if (currentPayFilter === 'prepaid' && ord.paymentMethod.includes('COD')) return false;
-          if (currentPayFilter === 'cod' && !ord.paymentMethod.includes('COD')) return false;
+          if (currentPayFilter === 'cards') {
+            const pm = (ord.paymentMethod || '').toLowerCase();
+            if (!pm.includes('card') && !pm.includes('credit') && !pm.includes('debit') && !pm.includes('online') && !pm.includes('prepaid')) return false;
+          } else if (currentPayFilter === 'upi') {
+            const pm = (ord.paymentMethod || '').toLowerCase();
+            if (!pm.includes('upi') && !pm.includes('gpay') && !pm.includes('phonepe') && !pm.includes('paytm')) return false;
+          } else if (currentPayFilter === 'wallet') {
+            const pm = (ord.paymentMethod || '').toLowerCase();
+            if (!pm.includes('wallet') && !pm.includes('x-mart')) return false;
+          } else if (currentPayFilter === 'cod') {
+            const pm = (ord.paymentMethod || '').toLowerCase();
+            if (!pm.includes('cod') && !pm.includes('cash')) return false;
+          }
 
           // Search query
           if (currentSearchQuery) {
@@ -24549,6 +25131,17 @@ function initPageRouter() {
       paySelect?.addEventListener('change', () => {
         currentPayFilter = paySelect.value;
         renderOrdersTable();
+      });
+
+      container.querySelectorAll('.seller-toolbar-select').forEach(sel => {
+        const wrapper = sel.closest('.seller-select-wrapper');
+        if (!wrapper) return;
+        sel.addEventListener('focus', () => wrapper.classList.add('is-open'));
+        sel.addEventListener('blur', () => wrapper.classList.remove('is-open'));
+        sel.addEventListener('change', () => {
+          wrapper.classList.remove('is-open');
+          sel.blur();
+        });
       });
 
       // 8. Wire Export Report Button
@@ -29327,6 +29920,19 @@ function initLiveSearch() {
     } catch {}
   }
 
+  // ── Universal Execute Search (Desktop Enter, Mobile 'Go'/'Search', Button Click) ──
+  function performSearch(query) {
+    const q = (typeof query === 'string' ? query : (searchInput.value || '')).trim();
+    dropdown.classList.remove('is-active');
+    activeIdx = -1;
+    searchInput.blur(); // Crucial on mobile & tablet: dismisses onscreen keyboard!
+    if (q) {
+      saveRecentSearch(q);
+      const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
+      window._openDedicatedPage?.(targetCat, '', q);
+    }
+  }
+
   // ── Helper: highlight matched text ───────────────────────
   function highlight(text, query) {
     if (!query) return text;
@@ -29444,23 +30050,46 @@ function initLiveSearch() {
     activeIdx = idx;
   }
 
-  searchInput.addEventListener('keydown', e => {
+  // ── Keyboard navigation & Universal Enter Submission (Mobile/Tablet/Desktop) ──
+  const handleEnterKey = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const rows = getRows();
+    if (dropdown.classList.contains('is-active') && activeIdx >= 0 && rows[activeIdx]) {
+      rows[activeIdx].click();
+    } else {
+      performSearch();
+    }
+  };
+
+  searchInput.addEventListener('keydown', e => {
+    const isEnter = e.key === 'Enter' || e.key === 'Search' || e.keyCode === 13 || e.which === 13;
+    if (isEnter) {
+      handleEnterKey(e);
+      return;
+    }
+
     if (!dropdown.classList.contains('is-active')) return;
-    if (e.key === 'ArrowDown') {
+    const rows = getRows();
+    if (e.key === 'ArrowDown' || e.keyCode === 40) {
       e.preventDefault();
       setActive(Math.min(activeIdx + 1, rows.length - 1));
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp' || e.keyCode === 38) {
       e.preventDefault();
       setActive(Math.max(activeIdx - 1, 0));
-    } else if (e.key === 'Enter') {
-      if (activeIdx >= 0 && rows[activeIdx]) {
-        e.preventDefault();
-        rows[activeIdx].click();
-      }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' || e.keyCode === 27) {
       dropdown.classList.remove('is-active');
       activeIdx = -1;
+    }
+  });
+
+  // Mobile virtual keyboard fallback (Android Gboard / Samsung keyboard 'Go' / 'Search')
+  searchInput.addEventListener('keyup', e => {
+    const isEnter = e.key === 'Enter' || e.key === 'Search' || e.keyCode === 13 || e.which === 13;
+    if (isEnter && document.activeElement === searchInput) {
+      handleEnterKey(e);
     }
   });
 
@@ -29489,24 +30118,30 @@ function initLiveSearch() {
           ? `&category=${encodeURIComponent(activeCategory)}`
           : '';
 
+        const lowerQ = q.toLowerCase().trim();
+        const correctedQ = SPELL_CORRECTIONS[lowerQ] || lowerQ;
+        const isSpellFix = correctedQ !== lowerQ;
+
         let apiResults = [];
         try {
-          const res = await fetch(`${API_BASE}/products?search=${encodeURIComponent(q)}&limit=8${catParam}`);
+          const searchParam = isSpellFix ? correctedQ : q;
+          const res = await fetch(`${API_BASE}/products?search=${encodeURIComponent(searchParam)}&limit=15${catParam}`);
           const data = await res.json();
           if (data.success && Array.isArray(data.data)) apiResults = data.data;
         } catch {
           apiResults = [];
         }
 
-        // Local Smart Synonym & Fuzzy Search on Store.allProducts
-        const lowerQ = q.toLowerCase().trim();
-        let searchTerms = [lowerQ];
-        for (const [key, list] of Object.entries(SMART_SYNONYMS)) {
-          if (lowerQ.includes(key) || key.includes(lowerQ)) {
-            searchTerms.push(...list);
+        // Local Smart Synonym & Relevance Search on Store.allProducts
+        let searchTerms = [lowerQ, correctedQ];
+        for (const term of [lowerQ, correctedQ]) {
+          for (const [key, list] of Object.entries(SMART_SYNONYMS)) {
+            if (term.includes(key) || key.includes(term)) {
+              searchTerms.push(...list);
+            }
           }
         }
-        searchTerms = [...new Set(searchTerms)];
+        searchTerms = [...new Set(searchTerms.filter(Boolean))];
 
         const localResults = (Store.allProducts || []).filter(p => {
           if (activeCategory && activeCategory !== 'All' && p.category !== activeCategory) return false;
@@ -29522,15 +30157,44 @@ function initLiveSearch() {
 
         // Merge API + Local without duplicates
         const seenIds = new Set();
-        const results = [];
+        const mergedCandidates = [];
         for (const item of [...apiResults, ...localResults]) {
           const id = item._id || item.id || item.name;
           if (!seenIds.has(id)) {
             seenIds.add(id);
-            results.push(item);
+            mergedCandidates.push(item);
           }
-          if (results.length >= 8) break;
         }
+
+        // Relevance Scoring
+        mergedCandidates.forEach(p => {
+          let score = 0;
+          const name = (p.name || '').toLowerCase();
+          const brand = (p.brand || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+
+          const isAccessory = name.includes('bag') || name.includes('sleeve') || name.includes('case') || name.includes('cover') || name.includes('stand') || name.includes('charger');
+
+          if (name.includes(correctedQ) || name.includes(lowerQ)) {
+            score += 100;
+            if (!isAccessory && (correctedQ === 'laptop' || correctedQ === 'mobile' || correctedQ === 'phone')) {
+              score += 60; // Huge boost for actual Laptops over Laptop Bags
+            }
+          }
+          if (cat.includes(correctedQ) || cat.includes(lowerQ)) score += 80;
+          if (brand.includes(correctedQ) || brand.includes(lowerQ)) score += 50;
+
+          if (correctedQ === 'laptop' && (name.includes('macbook') || name.includes('notebook') || name.includes('chromebook') || name.includes('thinkpad') || name.includes('zenbook') || name.includes('aspire') || name.includes('galaxy book'))) {
+            score += 90;
+          }
+
+          if (desc.includes(correctedQ)) score += 5;
+          p._relevanceScore = score;
+        });
+
+        mergedCandidates.sort((a, b) => (b._relevanceScore || 0) - (a._relevanceScore || 0));
+        const results = mergedCandidates.slice(0, 8);
 
         if (results.length === 0) {
           dropdown.innerHTML = `
@@ -29555,9 +30219,10 @@ function initLiveSearch() {
           });
         } else {
           const catLabel = activeCategory !== 'All' ? ` in <em>${activeCategory}</em>` : '';
+          const spellNotice = isSpellFix ? ` <span style="font-size:11.5px;color:#2563eb;font-weight:600;">(showing results for "<strong>${correctedQ}</strong>")</span>` : '';
           dropdown.innerHTML = `
             <div class="search-dropdown-header">
-              Results${catLabel} for "<strong>${q}</strong>"
+              Results${catLabel} for "<strong>${q}</strong>"${spellNotice}
             </div>
             ${results.map(item => {
             const isDeact = typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(item);
@@ -29565,7 +30230,7 @@ function initLiveSearch() {
               <div class="search-result-row" data-id="${item._id || item.id}" style="${isDeact ? 'opacity:0.8;' : ''}">
                 <img src="${(item.images && item.images[0]) || item.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80'}" alt="${item.name}" loading="lazy" style="${isDeact ? 'filter:grayscale(60%);' : ''}">
                 <div style="flex:1;min-width:0;">
-                  <p class="search-result-name">${highlight(item.name, q)}</p>
+                  <p class="search-result-name">${highlight(item.name, isSpellFix ? correctedQ : q)}</p>
                   <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">
                     <span class="search-result-price">${Currency.format(item.finalPrice || item.price || 0)}</span>
                     ${isDeact
@@ -29612,11 +30277,13 @@ function initLiveSearch() {
     }, 200);
   });
 
-  // ── Native search clear button handler ───────────────────
+  // ── Native search clear & virtual keyboard 'Search' event (iOS Safari & Android Chrome) ──
   searchInput.addEventListener('search', () => {
     if (!searchInput.value.trim()) {
       dropdown.classList.remove('is-active');
       activeIdx = -1;
+    } else {
+      performSearch();
     }
   });
 
@@ -29631,14 +30298,15 @@ function initLiveSearch() {
   // ── Form submit → open catalog ────────────────────────────
   searchForm.addEventListener('submit', e => {
     e.preventDefault();
-    const q = searchInput.value.trim();
-    dropdown.classList.remove('is-active');
-    activeIdx = -1;
-    if (q) {
-      saveRecentSearch(q);
-      const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
-      window._openDedicatedPage?.(targetCat, '', q);
-    }
+    e.stopPropagation();
+    performSearch();
+  });
+
+  // ── Search submit button click ────────────────────────────
+  searchForm.querySelector('.search-submit')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    performSearch();
   });
 
   // ── Wire "All" category dropdown to filter search ─────────

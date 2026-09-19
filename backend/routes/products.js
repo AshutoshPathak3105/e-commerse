@@ -37,9 +37,38 @@ router.get(
       if (req.query.maxPrice) filter.price.$lte = Number(req.query.maxPrice);
     }
 
-    // Robust Partial & Multi-Keyword Search with Smart Synonyms
+    // Robust Partial, Spell Correction & Multi-Keyword Search with Smart Relevance Scoring
+    let spellCorrected = null;
+    let rawQueryStr = '';
     if (req.query.search) {
-      const q = req.query.search.trim();
+      rawQueryStr = req.query.search.trim();
+      const lowerRaw = rawQueryStr.toLowerCase();
+
+      const spellMap = {
+        'labtop': 'laptop',
+        'laptob': 'laptop',
+        'leptop': 'laptop',
+        'laptp': 'laptop',
+        'labtops': 'laptop',
+        'moblie': 'mobile',
+        'mobiles': 'mobile',
+        'phon': 'phone',
+        'smartphon': 'smartphone',
+        'hedphone': 'headphone',
+        'headfone': 'headphone',
+        'earpod': 'earbuds',
+        'airpod': 'airpods',
+        'tshirt': 't-shirt',
+        'tshirst': 't-shirt',
+        'jean': 'jeans',
+        'watchs': 'watch',
+        'samson': 'samsung',
+        'iphne': 'iphone',
+      };
+
+      const q = spellMap[lowerRaw] || lowerRaw;
+      if (spellMap[lowerRaw]) spellCorrected = q;
+
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const searchRegex = new RegExp(escaped, 'i');
 
@@ -48,7 +77,7 @@ router.get(
         'mobile': ['phone', 'smartphone', 'oneplus', 'samsung', 'iphone', 'nord', 'galaxy', '5g', 'redmi', 'realme', 'cellular'],
         'phone': ['mobile', 'smartphone', 'oneplus', 'samsung', 'iphone', 'nord', 'galaxy', 'cellular'],
         'smartphone': ['mobile', 'phone', 'oneplus', 'samsung', 'iphone', 'nord'],
-        'laptop': ['computer', 'macbook', 'notebook', 'pc', 'asus', 'dell', 'hp', 'lenovo', 'acer', 'labtop'],
+        'laptop': ['computer', 'macbook', 'notebook', 'pc', 'asus', 'dell', 'hp', 'lenovo', 'acer', 'chromebook', 'labtop'],
         'labtop': ['laptop', 'computer', 'macbook', 'notebook', 'dell', 'hp', 'lenovo', 'asus'],
         'computer': ['laptop', 'pc', 'macbook', 'desktop', 'monitor'],
         'headphone': ['earbuds', 'audio', 'earphone', 'headset', 'airpods', 'sony', 'bose', 'sound', 'neckband'],
@@ -88,54 +117,101 @@ router.get(
         'tv': ['television', 'smart tv', 'oled', 'bravia', 'screen', 'display'],
       };
 
-      const lower = q.toLowerCase();
       const matchedSynonyms = [];
       for (const [key, terms] of Object.entries(synonymsMap)) {
-        if (lower.includes(key) || key.includes(lower)) {
+        if (q.includes(key) || key.includes(q)) {
           matchedSynonyms.push(...terms);
         }
       }
 
       const orList = [
         { name: searchRegex },
-        { description: searchRegex },
         { brand: searchRegex },
         { category: searchRegex },
         { tags: searchRegex },
       ];
 
-      // Also split multi-word queries for broader matching
-      const words = q.split(/\s+/).filter(w => w.length >= 2);
-      if (words.length > 1) {
-        words.forEach(word => {
-          const wRegex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-          orList.push({ name: wRegex }, { brand: wRegex }, { category: wRegex });
-        });
-      }
-
-      // Add synonym expansions
+      // Add synonym expansions for title & brand matching
       if (matchedSynonyms.length > 0) {
         const synRegex = new RegExp(matchedSynonyms.join('|'), 'i');
-        orList.push({ name: synRegex }, { brand: synRegex }, { description: synRegex });
+        orList.push({ name: synRegex }, { brand: synRegex });
       }
 
       filter.$or = orList;
     }
 
-    // Sort options
-    const sortMap = {
-      'price-asc':  { price: 1 },
-      'price-desc': { price: -1 },
-      'newest':     { createdAt: -1 },
-      'rating':     { rating: -1 },
-      'popular':    { sold: -1 },
-    };
-    const sort = sortMap[req.query.sort] || { createdAt: -1 };
-
-    const [products, total] = await Promise.all([
-      Product.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+    // Fetch matching products
+    let [products, total] = await Promise.all([
+      Product.find(filter).lean(),
       Product.countDocuments(filter),
     ]);
+
+    // Relevance scoring calculation function & smart accessory exclusion
+    if (req.query.search && products.length > 0) {
+      const lowerQ = (spellCorrected || req.query.search).toLowerCase().trim();
+
+      // Accessory exclusion: if searching for core device (laptop/phone/mobile) without requesting accessories, filter out accessories
+      const queryWantsAccessory = lowerQ.includes('bag') || lowerQ.includes('backpack') || lowerQ.includes('sleeve') || lowerQ.includes('case') || lowerQ.includes('cover') || lowerQ.includes('stand') || lowerQ.includes('charger') || lowerQ.includes('strap') || lowerQ.includes('cable');
+      const isLaptopQuery = lowerQ === 'laptop' || lowerQ === 'laptops' || lowerQ === 'labtop' || lowerQ === 'labtops' || lowerQ === 'macbook' || lowerQ === 'notebook';
+      const isMobileQuery = lowerQ === 'mobile' || lowerQ === 'phone' || lowerQ === 'smartphone' || lowerQ === 'mobiles' || lowerQ === 'phones';
+
+      if (!queryWantsAccessory) {
+        if (isLaptopQuery) {
+          products = products.filter(p => {
+            const name = (p.name || '').toLowerCase();
+            const cat = (p.category || '').toLowerCase();
+            const isBag = cat.includes('bag') || cat.includes('luggage') || name.includes('bag') || name.includes('backpack') || name.includes('sleeve') || name.includes('case') || name.includes('stand') || name.includes('briefcase') || name.includes('rucksack');
+            return !isBag;
+          });
+        } else if (isMobileQuery) {
+          products = products.filter(p => {
+            const name = (p.name || '').toLowerCase();
+            const cat = (p.category || '').toLowerCase();
+            return !name.includes('case') && !name.includes('cover') && !name.includes('protector') && !name.includes('tempered glass');
+          });
+        }
+      }
+
+      products.forEach(p => {
+        let score = 0;
+        const name = (p.name || '').toLowerCase();
+        const brand = (p.brand || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+
+        if (name.includes(lowerQ)) score += 100;
+        if (cat.includes(lowerQ)) score += 80;
+        if (brand.includes(lowerQ)) score += 50;
+
+        if (isLaptopQuery) {
+          if (name.includes('laptop') || name.includes('macbook') || name.includes('notebook') || name.includes('chromebook') || name.includes('thinkpad') || name.includes('zenbook') || name.includes('aspire') || name.includes('galaxy book') || name.includes('gaming') || name.includes('copilot+') || name.includes('xps') || name.includes('victus') || name.includes('omen') || name.includes('pavilion') || name.includes('ideapad') || name.includes('legion') || name.includes('loq') || name.includes('predator') || name.includes('nitro') || name.includes('surface') || name.includes('gram')) {
+            score += 200;
+          }
+        }
+
+        if (desc.includes(lowerQ)) score += 5;
+
+        p._relevanceScore = score;
+      });
+
+      products.sort((a, b) => (b._relevanceScore || 0) - (a._relevanceScore || 0));
+
+      total = products.length;
+      if (skip > 0 || limit < products.length) {
+        products = products.slice(skip, skip + limit);
+      }
+    } else {
+      // Sort options
+      const sortMap = {
+        'price-asc':  { price: 1 },
+        'price-desc': { price: -1 },
+        'newest':     { createdAt: -1 },
+        'rating':     { rating: -1 },
+        'popular':    { sold: -1 },
+      };
+      const sort = sortMap[req.query.sort] || { createdAt: -1 };
+      products = await Product.find(filter).sort(sort).skip(skip).limit(limit).lean();
+    }
 
     res.json({
       success: true,
