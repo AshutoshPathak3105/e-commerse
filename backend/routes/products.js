@@ -22,13 +22,28 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const page     = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit    = Math.min(1000, parseInt(req.query.limit) || 24);
+    const isBestsellerQuery = req.query.bestseller === 'true';
+    const defaultLimit = isBestsellerQuery ? 6 : 24;
+    const limit    = Math.min(1000, parseInt(req.query.limit) || defaultLimit);
     const skip     = (page - 1) * limit;
 
     const filter = { isActive: true };
 
-    if (req.query.category)  filter.category   = req.query.category;
+    if (req.query.category) {
+      if (req.query.category.toLowerCase().includes('bestseller')) {
+        filter.isBestseller = true;
+        filter.seller = { $exists: false };
+        filter.sellerEmail = { $exists: false };
+      } else {
+        filter.category = req.query.category;
+      }
+    }
     if (req.query.featured === 'true') filter.isFeatured = true;
+    if (isBestsellerQuery) {
+      filter.isBestseller = true;
+      filter.seller = { $exists: false };
+      filter.sellerEmail = { $exists: false };
+    }
     if (req.query.brand)     filter.brand       = new RegExp(req.query.brand, 'i');
 
     if (req.query.minPrice || req.query.maxPrice) {
@@ -209,8 +224,11 @@ router.get(
         'rating':     { rating: -1 },
         'popular':    { sold: -1 },
       };
-      const sort = sortMap[req.query.sort] || { createdAt: -1 };
+      const sort = sortMap[req.query.sort] || (isBestsellerQuery ? { rating: -1, numReviews: -1 } : { createdAt: -1 });
       products = await Product.find(filter).sort(sort).skip(skip).limit(limit).lean();
+      if (isBestsellerQuery) {
+        products = products.slice(0, 6);
+      }
     }
 
     res.json({
@@ -283,6 +301,16 @@ router.post(
       isActive: true
     };
 
+    // Strictly prevent sellers from listing products in the Bestseller category or claiming Bestseller status
+    if (productData.category && String(productData.category).toLowerCase().includes('bestseller')) {
+      res.status(400);
+      throw new Error('Listing products directly in the Bestseller category is not allowed for sellers. Bestseller status is exclusively managed by marketplace administration.');
+    }
+    productData.isBestseller = false;
+    if (Array.isArray(productData.tags)) {
+      productData.tags = productData.tags.filter(t => typeof t === 'string' && !t.toLowerCase().includes('bestseller') && !t.toLowerCase().includes('best-seller'));
+    }
+
     // Prevent deactivated seller from listing products
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       try {
@@ -320,6 +348,17 @@ router.put(
     if (updateFields.discount !== undefined) updateFields.discount = Number(updateFields.discount);
     if (updateFields.originalPrice !== undefined) updateFields.originalPrice = Number(updateFields.originalPrice);
 
+    if (updateFields.category && String(updateFields.category).toLowerCase().includes('bestseller')) {
+      res.status(400);
+      throw new Error('Products cannot be moved to the Bestseller category by sellers.');
+    }
+    if (updateFields.isBestseller !== undefined) {
+      delete updateFields.isBestseller;
+    }
+    if (Array.isArray(updateFields.tags)) {
+      updateFields.tags = updateFields.tags.filter(t => typeof t === 'string' && !t.toLowerCase().includes('bestseller') && !t.toLowerCase().includes('best-seller'));
+    }
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { $set: updateFields },
@@ -332,6 +371,35 @@ router.put(
     }
 
     res.json({ success: true, message: 'Product updated successfully', data: product });
+  })
+);
+
+// ── PUT /api/products/:id/bestseller ─── Toggle Bestseller Status ──
+router.put(
+  '/:id/bestseller',
+  asyncHandler(async (req, res) => {
+    const { isBestseller } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    const newStatus = isBestseller !== undefined ? Boolean(isBestseller) : !product.isBestseller;
+    product.isBestseller = newStatus;
+    product.tags = Array.isArray(product.tags) ? product.tags : [];
+    if (newStatus && !product.tags.includes('bestseller')) {
+      product.tags.push('bestseller');
+    } else if (!newStatus) {
+      product.tags = product.tags.filter(t => t !== 'bestseller' && t !== 'best-seller' && t !== 'bestsellers');
+    }
+
+    await product.save();
+    res.json({
+      success: true,
+      message: `Product ${newStatus ? 'marked as Bestseller' : 'removed from Bestsellers'}`,
+      data: product
+    });
   })
 );
 

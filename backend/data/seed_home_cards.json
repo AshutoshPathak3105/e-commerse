@@ -1,0 +1,1171 @@
+{
+  "heroCards": [
+    {
+      "link": "#fashion-deals",
+      "badge": "Min. 50% off",
+      "sub": "Fresh finds",
+      "brand": "SYMBOL PREMIUM",
+      "image": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=700&auto=format&fit=crop&q=80",
+      "pill": "Save Extra with No Cost EMI & Cashback",
+      "active": true
+    },
+    {
+      "link": "#phones",
+      "badge": "₹28,999 ₹21,499*",
+      "sub": "Power that lasts up to 2.5 days*",
+      "brand": "ONEPLUS NORD",
+      "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80",
+      "pill": "Unlimited 5% cashback*",
+      "active": true
+    },
+    {
+      "link": "#jewellery",
+      "badge": "Min. 70% off",
+      "sub": "Men's classic jewellery",
+      "brand": "SALTY CLARK",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80",
+      "pill": "Unlimited 5% cashback*",
+      "active": true
+    },
+    {
+      "link": "#apparel",
+      "badge": "Min. 55% off",
+      "sub": "New season styles",
+      "brand": "TRENDING NOW",
+      "image": "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600&auto=format&fit=crop&q=80",
+      "pill": "Unlimited 5% cashback*",
+      "active": true
+    }
+  ],
+  "quickBrowse": [
+    {
+      "link": "#saved",
+      "title": "For you",
+      "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#hardware",
+      "title": "Keep shopping for",
+      "image": "https://images.unsplash.com/photo-1562976540-1502c2145186?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#accessories",
+      "title": "Buy it again",
+      "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#phones",
+      "title": "Keep shopping for",
+      "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#lists",
+      "title": "Inspired by your Lists",
+      "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#gadgets",
+      "title": "Keep shopping for",
+      "image": "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=300&auto=format&fit=crop&q=80",
+      "badge": "",
+      "active": true
+    },
+    {
+      "link": "#deals",
+      "title": "Deal on saved items",
+      "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300&auto=format&fit=crop&q=80",
+      "badge": "42% off",
+      "active": true
+    }
+  ],
+  "quadCards": [
+    {
+      "title": "Deals for you",
+      "link": "#deals",
+      "footerText": "See all deals",
+      "footerLink": "#deals",
+      "row": 1,
+      "order": 0,
+      "active": true,
+      "items": [
+        {
+          "link": "#deals",
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80",
+          "title": "Smartphones",
+          "badge": "50% off",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#deals",
+          "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80",
+          "title": "Mobile Phones",
+          "badge": "40% off",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#deals",
+          "image": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80",
+          "title": "Wireless Mouse",
+          "badge": "Deal",
+          "subText": "Best selling"
+        },
+        {
+          "link": "#deals",
+          "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80",
+          "title": "Slim Keyboard",
+          "badge": "Deal",
+          "subText": "Limited deal"
+        }
+      ]
+    },
+    {
+      "title": "Related to your list",
+      "link": "#deals",
+      "footerText": "See more luggage",
+      "footerLink": "#deals",
+      "row": 1,
+      "order": 1,
+      "active": true,
+      "items": [
+        {
+          "link": "#luggage",
+          "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80",
+          "title": "Blue Suitcase",
+          "badge": "30% off",
+          "subText": ""
+        },
+        {
+          "link": "#luggage",
+          "image": "https://images.unsplash.com/photo-1581553680321-4fffae59fccd?w=300&auto=format&fit=crop&q=80",
+          "title": "Red Trolley",
+          "badge": "35% off",
+          "subText": ""
+        },
+        {
+          "link": "#luggage",
+          "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&auto=format&fit=crop&q=80",
+          "title": "Cabin Luggage",
+          "badge": "25% off",
+          "subText": ""
+        },
+        {
+          "link": "#luggage",
+          "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80",
+          "title": "Travel Bag",
+          "badge": "40% off",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "4 stars and above",
+      "link": "#deals",
+      "footerText": "See all 4+ star deals",
+      "footerLink": "#deals",
+      "row": 1,
+      "order": 2,
+      "active": true,
+      "items": [
+        {
+          "link": "#top-rated",
+          "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&auto=format&fit=crop&q=80",
+          "title": "Emergency lantern",
+          "badge": "Deal",
+          "subText": "Top rated"
+        },
+        {
+          "link": "#top-rated",
+          "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80",
+          "title": "Table lamp",
+          "badge": "Deal",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#top-rated",
+          "image": "https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80",
+          "title": "Induction cooktop",
+          "badge": "Deal",
+          "subText": ""
+        },
+        {
+          "link": "#top-rated",
+          "image": "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=300&auto=format&fit=crop&q=80",
+          "title": "Steam iron",
+          "badge": "Deal",
+          "subText": "Best seller"
+        }
+      ]
+    },
+    {
+      "title": "Frying Pans & Cookware",
+      "link": "#deals",
+      "footerText": "Explore cookware",
+      "footerLink": "#deals",
+      "row": 1,
+      "order": 3,
+      "active": true,
+      "items": [
+        {
+          "link": "#cookware",
+          "image": "https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80",
+          "title": "Non-stick Fry Pan",
+          "badge": "Min 40% off",
+          "subText": ""
+        },
+        {
+          "link": "#cookware",
+          "image": "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=300&auto=format&fit=crop&q=80",
+          "title": "Deep Kadhai",
+          "badge": "Min 35% off",
+          "subText": ""
+        },
+        {
+          "link": "#cookware",
+          "image": "https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=80",
+          "title": "Appe Pan",
+          "badge": "Deal",
+          "subText": ""
+        },
+        {
+          "link": "#cookware",
+          "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300&auto=format&fit=crop&q=80",
+          "title": "Roti Tawa",
+          "badge": "Deal",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Explore deals in these categories",
+      "link": "#deals",
+      "footerText": "See more categories",
+      "footerLink": "#deals",
+      "row": 2,
+      "order": 4,
+      "active": true,
+      "items": [
+        {
+          "link": "#mouse-pads",
+          "image": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80",
+          "title": "Mouse Pads",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#suitcases",
+          "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=300&auto=format&fit=crop&q=80",
+          "title": "Suitcases &amp; Trolley Bags",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#lanterns",
+          "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&auto=format&fit=crop&q=80",
+          "title": "Camping Lanterns",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#lamps",
+          "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80",
+          "title": "Table Lamps",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Recommended deals for you",
+      "link": "#deals",
+      "footerText": "See all recommended",
+      "footerLink": "#deals",
+      "row": 2,
+      "order": 5,
+      "active": true,
+      "items": [
+        {
+          "link": "#lighting",
+          "image": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&auto=format&fit=crop&q=80",
+          "title": "Ceiling Chandelier",
+          "badge": "65% off",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#kitchen",
+          "image": "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=300&auto=format&fit=crop&q=80",
+          "title": "Dinnerware Set",
+          "badge": "55% off",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#smartwatches",
+          "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&auto=format&fit=crop&q=80",
+          "title": "Smartwatch",
+          "badge": "45% off",
+          "subText": ""
+        },
+        {
+          "link": "#accessories",
+          "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80",
+          "title": "Mousepad",
+          "badge": "40% off",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Up to 80% off on Home improvements",
+      "link": "#deals",
+      "footerText": "Shop home improvements",
+      "footerLink": "#deals",
+      "row": 2,
+      "order": 6,
+      "active": true,
+      "items": [
+        {
+          "link": "#home-improvement",
+          "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80",
+          "title": "Electrical accessories",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#home-improvement",
+          "image": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80",
+          "title": "Ladders",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#home-improvement",
+          "image": "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&auto=format&fit=crop&q=80",
+          "title": "Security cameras",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Deals on bathroom fittings & accessories",
+      "link": "#deals",
+      "footerText": "See more bath deals",
+      "footerLink": "#deals",
+      "row": 2,
+      "order": 7,
+      "active": true,
+      "items": [
+        {
+          "link": "#bath",
+          "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&auto=format&fit=crop&q=80",
+          "title": "Commodes",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bath",
+          "image": "https://images.unsplash.com/photo-1620626011761-996317b8d101?w=300&auto=format&fit=crop&q=80",
+          "title": "Bath Shelves",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bath",
+          "image": "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=300&auto=format&fit=crop&q=80",
+          "title": "Mirror Cabinets",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bath",
+          "image": "https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80",
+          "title": "Health Faucets",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Starting ₹149 | Dry fruits & seeds",
+      "link": "#deals",
+      "footerText": "See all dry fruits",
+      "footerLink": "#deals",
+      "row": 3,
+      "order": 8,
+      "active": true,
+      "items": [
+        {
+          "link": "#grocery",
+          "image": "https://images.unsplash.com/photo-1508061252966-f72fb4d2f099?w=300&auto=format&fit=crop&q=80",
+          "title": "Almonds",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#grocery",
+          "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&auto=format&fit=crop&q=80",
+          "title": "Dates",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#grocery",
+          "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&auto=format&fit=crop&q=80",
+          "title": "Cashews",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#grocery",
+          "image": "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=300&auto=format&fit=crop&q=80",
+          "title": "Walnuts",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Bestsellers in electronics for you",
+      "link": "#deals",
+      "footerText": "See all electronic bestsellers",
+      "footerLink": "#deals",
+      "row": 3,
+      "order": 9,
+      "active": true,
+      "items": [
+        {
+          "link": "#electronics",
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80",
+          "title": "5G Smartphone",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#electronics",
+          "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80",
+          "title": "Earphones",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#electronics",
+          "image": "https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=300&auto=format&fit=crop&q=80",
+          "title": "Power Bank",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#electronics",
+          "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80",
+          "title": "Fast Charger",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Deals on keyboard, mouse & more",
+      "link": "#deals",
+      "footerText": "See all PC accessories",
+      "footerLink": "#deals",
+      "row": 3,
+      "order": 10,
+      "active": true,
+      "items": [
+        {
+          "link": "#pc-accessories",
+          "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80",
+          "title": "Keyboard",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#pc-accessories",
+          "image": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&auto=format&fit=crop&q=80",
+          "title": "Mouse",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#pc-accessories",
+          "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80",
+          "title": "Gaming Mousepad",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#pc-accessories",
+          "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80",
+          "title": "USB Hubs",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Starting ₹99 | Delicious snacks & more",
+      "link": "#deals",
+      "footerText": "See all snacks",
+      "footerLink": "#deals",
+      "row": 3,
+      "order": 11,
+      "active": true,
+      "items": [
+        {
+          "link": "#snacks",
+          "image": "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=300&auto=format&fit=crop&q=80",
+          "title": "Chocolates",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#snacks",
+          "image": "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&auto=format&fit=crop&q=80",
+          "title": "Biscuits",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#snacks",
+          "image": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=300&auto=format&fit=crop&q=80",
+          "title": "Namkeen &amp; chips",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#snacks",
+          "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&auto=format&fit=crop&q=80",
+          "title": "Cookies",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Bulk discounts on Electronics + Up to 18% GST credit",
+      "link": "#deals",
+      "footerText": "Register for business account",
+      "footerLink": "#deals",
+      "row": 4,
+      "order": 12,
+      "active": true,
+      "items": [
+        {
+          "link": "#laptops",
+          "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&auto=format&fit=crop&q=80",
+          "title": "Laptops",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#audio",
+          "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80",
+          "title": "Headphones",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#tablets",
+          "image": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=300&auto=format&fit=crop&q=80",
+          "title": "Tablets",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Deals related to your views",
+      "link": "#deals",
+      "footerText": "See all related deals",
+      "footerLink": "#deals",
+      "row": 4,
+      "order": 13,
+      "active": true,
+      "items": [
+        {
+          "link": "#view-deals",
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=300&auto=format&fit=crop&q=80",
+          "title": "Laptop Cooling Pad",
+          "badge": "Deal",
+          "subText": "Limited deal"
+        },
+        {
+          "link": "#view-deals",
+          "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80",
+          "title": "RGB Gaming Keyboard",
+          "badge": "Deal",
+          "subText": ""
+        },
+        {
+          "link": "#view-deals",
+          "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&auto=format&fit=crop&q=80",
+          "title": "RGB Mouse Pad",
+          "badge": "Deal",
+          "subText": ""
+        },
+        {
+          "link": "#view-deals",
+          "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300&auto=format&fit=crop&q=80",
+          "title": "Adjustable Laptop Stand",
+          "badge": "Deal",
+          "subText": "Limited deal"
+        }
+      ]
+    },
+    {
+      "title": "Latest styles from top rated brands | 50% - 70% off",
+      "link": "#deals",
+      "footerText": "See all fashion styles",
+      "footerLink": "#deals",
+      "row": 4,
+      "order": 14,
+      "active": true,
+      "items": [
+        {
+          "link": "#fashion",
+          "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80",
+          "title": "Tops &amp; Tees",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#fashion",
+          "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80",
+          "title": "Kurtas &amp; Sets",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#fashion",
+          "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&auto=format&fit=crop&q=80",
+          "title": "Jeans",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#fashion",
+          "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=300&auto=format&fit=crop&q=80",
+          "title": "Dresses &amp; Jumpsuits",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Free delivery always + Extra ₹100 cashback",
+      "link": "#deals",
+      "footerText": "Explore Bazaar store",
+      "footerLink": "#deals",
+      "row": 4,
+      "order": 15,
+      "active": true,
+      "items": [
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80",
+          "title": "Kurtis",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=300&auto=format&fit=crop&q=80",
+          "title": "Sarees",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80",
+          "title": "Beauty Accessories",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80",
+          "title": "Shop all Bazaar",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Everything under ₹299 | Kitchen cookware, tools & storage",
+      "link": "#deals",
+      "footerText": "See all kitchen deals",
+      "footerLink": "#deals",
+      "row": 5,
+      "order": 16,
+      "active": true,
+      "items": [
+        {
+          "link": "#kitchen-under299",
+          "image": "https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80",
+          "title": "Bakeware &amp; Tools",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#kitchen-under299",
+          "image": "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=300&auto=format&fit=crop&q=80",
+          "title": "Kitchen Storage",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#kitchen-under299",
+          "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300&auto=format&fit=crop&q=80",
+          "title": "Kitchen Tools",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#kitchen-under299",
+          "image": "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=300&auto=format&fit=crop&q=80",
+          "title": "Cookware Sets",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Free delivery always + Extra ₹100 cashback",
+      "link": "#deals",
+      "footerText": "See all deals",
+      "footerLink": "#deals",
+      "row": 5,
+      "order": 17,
+      "active": true,
+      "items": [
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's Fashion",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80",
+          "title": "Kitchen items",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's Fashion",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80",
+          "title": "Shop Bazaar",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Smartphones curated just for you",
+      "link": "#deals",
+      "footerText": "See all phones",
+      "footerLink": "#deals",
+      "row": 5,
+      "order": 18,
+      "active": true,
+      "items": [
+        {
+          "link": "#smartphones",
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300&auto=format&fit=crop&q=80",
+          "title": "Budget Phones",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#smartphones",
+          "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80",
+          "title": "Mid-range Phones",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#smartphones",
+          "image": "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=300&auto=format&fit=crop&q=80",
+          "title": "Premium Phones",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#smartphones",
+          "image": "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=300&auto=format&fit=crop&q=80",
+          "title": "Ultra Premium Phones",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Futuristic smart projectors | Min 30% off",
+      "link": "#deals",
+      "footerText": "See all smart projectors",
+      "footerLink": "#deals",
+      "row": 5,
+      "order": 19,
+      "active": true,
+      "items": [
+        {
+          "link": "#projectors",
+          "image": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=300&auto=format&fit=crop&q=80",
+          "title": "Lumina Pro 4K Projector",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#projectors",
+          "image": "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=300&auto=format&fit=crop&q=80",
+          "title": "BenQ Laser Portable",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#projectors",
+          "image": "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=300&auto=format&fit=crop&q=80",
+          "title": "Nebula 1080p Smart",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#projectors",
+          "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&auto=format&fit=crop&q=80",
+          "title": "BenQ 4K OLED",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Free delivery always + Extra ₹100 cashback",
+      "link": "#deals",
+      "footerText": "See all deals",
+      "footerLink": "#deals",
+      "row": 6,
+      "order": 20,
+      "active": true,
+      "items": [
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's Saree",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's Polo",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80",
+          "title": "Home Decor",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#bazaar",
+          "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80",
+          "title": "Shop Bazaar",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Starting ₹149 | Must-have home buys",
+      "link": "#deals",
+      "footerText": "See all home buys",
+      "footerLink": "#deals",
+      "row": 6,
+      "order": 21,
+      "active": true,
+      "items": [
+        {
+          "link": "#home-decor",
+          "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=300&auto=format&fit=crop&q=80",
+          "title": "Bedding sets",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#home-decor",
+          "image": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=300&auto=format&fit=crop&q=80",
+          "title": "Side tables",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#home-decor",
+          "image": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&auto=format&fit=crop&q=80",
+          "title": "Fairy lights",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#home-decor",
+          "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300&auto=format&fit=crop&q=80",
+          "title": "Decor figurines",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Everything under ₹299 | Budget-friendly fashion finds",
+      "link": "#deals",
+      "footerText": "See all budget fashion",
+      "footerLink": "#deals",
+      "row": 6,
+      "order": 22,
+      "active": true,
+      "items": [
+        {
+          "link": "#budget-fashion",
+          "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80",
+          "title": "Innerwear",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#budget-fashion",
+          "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's tops",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#budget-fashion",
+          "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's t-shirts",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#budget-fashion",
+          "image": "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=300&auto=format&fit=crop&q=80",
+          "title": "Socks",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Latest launches | Best deals on mobile accessories",
+      "link": "#deals",
+      "footerText": "See all mobile accessories",
+      "footerLink": "#deals",
+      "row": 6,
+      "order": 23,
+      "active": true,
+      "items": [
+        {
+          "link": "#mobile-accessories",
+          "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&auto=format&fit=crop&q=80",
+          "title": "OnePlus Buds",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#mobile-accessories",
+          "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80",
+          "title": "Philips Trimmer",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#mobile-accessories",
+          "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80",
+          "title": "Wireless Charger",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#mobile-accessories",
+          "image": "https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=300&auto=format&fit=crop&q=80",
+          "title": "Portronics Power Bank",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Customers' Most-Loved Fashion for you",
+      "link": "#deals",
+      "footerText": "See all most-loved",
+      "footerLink": "#deals",
+      "row": 7,
+      "order": 24,
+      "active": true,
+      "items": [
+        {
+          "link": "#shoes",
+          "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's Slip-on Shoes",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#women-tees",
+          "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's Cotton Tees",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#polo",
+          "image": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's Polo Shirts",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#sneakers",
+          "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's Running Sneakers",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Starting at ₹129 | Innerwear for all",
+      "link": "#deals",
+      "footerText": "See all innerwear",
+      "footerLink": "#deals",
+      "row": 7,
+      "order": 25,
+      "active": true,
+      "items": [
+        {
+          "link": "#innerwear",
+          "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80",
+          "title": "Men's Innerwear",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#innerwear",
+          "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80",
+          "title": "Bras",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#innerwear",
+          "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=300&auto=format&fit=crop&q=80",
+          "title": "Kids' Innerwear",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#innerwear",
+          "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80",
+          "title": "Women's briefs",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Min. 50% off | Tools & DIY kits | Amazon brands & more",
+      "link": "#deals",
+      "footerText": "See all tools",
+      "footerLink": "#deals",
+      "row": 7,
+      "order": 26,
+      "active": true,
+      "items": [
+        {
+          "link": "#tools",
+          "image": "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=300&auto=format&fit=crop&q=80",
+          "title": "Safes &amp; more",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#tools",
+          "image": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&auto=format&fit=crop&q=80",
+          "title": "Ladders",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#tools",
+          "image": "https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=300&auto=format&fit=crop&q=80",
+          "title": "Kitchen &amp; bath fixtures",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#tools",
+          "image": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=300&auto=format&fit=crop&q=80",
+          "title": "Power &amp; hand tools",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    },
+    {
+      "title": "Wholesale prices + Extra ₹100 cashback",
+      "link": "#deals",
+      "footerText": "See wholesale deals",
+      "footerLink": "#deals",
+      "row": 7,
+      "order": 27,
+      "active": true,
+      "items": [
+        {
+          "link": "#wholesale",
+          "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&auto=format&fit=crop&q=80",
+          "title": "Beauty items",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#wholesale",
+          "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80",
+          "title": "Apparel",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#wholesale",
+          "image": "https://images.unsplash.com/photo-1584990347449-39b4bfa4d809?w=300&auto=format&fit=crop&q=80",
+          "title": "Kitchenware",
+          "badge": "",
+          "subText": ""
+        },
+        {
+          "link": "#wholesale",
+          "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80",
+          "title": "Shop all deals",
+          "badge": "",
+          "subText": ""
+        }
+      ]
+    }
+  ]
+}

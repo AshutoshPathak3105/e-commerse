@@ -3,7 +3,19 @@
  * Uses native fetch to send responsive HTML transactional emails.
  */
 
-const getClientUrl = () => (process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/+$/, '') : 'http://localhost:8000');
+const getClientUrl = () => {
+  let url = process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/+$/, '') : 'http://localhost:8000';
+  if (url === 'http://localhost:3000' || url === 'http://127.0.0.1:3000') {
+    url = 'http://localhost:8000';
+  }
+  return url;
+};
+const getLogoUrl = () => {
+  if (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('localhost')) {
+    return `${process.env.CLIENT_URL.replace(/\/+$/, '')}/logo.png`;
+  }
+  return 'https://raw.githubusercontent.com/AshutoshPathak3105/e-commerse/main/logo.png';
+};
 
 async function sendBrevoEmail({ to, subject, htmlContent }) {
   const apiKey = process.env.BREVO_API_KEY;
@@ -54,9 +66,11 @@ async function sendWelcomeEmail({ email, name }) {
   const subject = `Welcome to X-Mart, ${name || 'Friend'}!`;
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #19324c; padding: 28px 24px; text-align: center;">
-        <h1 style="color: #ff9700; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">X-MART</h1>
-        <p style="color: #9ca3af; margin: 6px 0 0; font-size: 13px;">Everything you love, delivered instantly.</p>
+      <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
+        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        </a>
+        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Everything you love, delivered instantly.</p>
       </div>
 
       <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">
@@ -112,11 +126,23 @@ async function sendPasswordResetEmail({ email, name, otp, type = 'reset' }) {
     noteText = `This profile update code expires in 15 minutes. Do not share it.`;
     ignoreText = `If you did not request this profile update, please secure your account immediately.`;
   } else if (type === 'seller-toggle') {
-    subject = `X-Mart Seller Account Verification Code`;
+    subject = `X-Mart Seller Account Status Verification Code`;
     headingText = `Confirm Seller Account Status Change`;
-    bodyText = `Hello ${name || 'Merchant'}, enter the one-time verification code below to confirm activating or deactivating your X-Mart seller account.`;
-    noteText = `This seller status code expires in 10 minutes. Do not share it.`;
+    bodyText = `Hello ${name || 'Merchant'}, enter the one-time verification code below to confirm disabling or enabling your X-Mart seller account. When disabled, your listings will be marked as Currently Unavailable.`;
+    noteText = `This verification code expires in 10 minutes. Do not share it with anyone.`;
     ignoreText = `If you did not request this seller account change, please secure your account immediately.`;
+  } else if (type === 'seller-update') {
+    subject = `X-Mart Merchant Profile & Settlement Update Verification Code`;
+    headingText = `Confirm Merchant Profile & Settlement Update`;
+    bodyText = `Hello ${name || 'Merchant'}, you requested to update your merchant store identity, GSTIN, or bank settlement details on X-Mart. Enter the one-time verification code below to authorize and apply these changes.`;
+    noteText = `This verification code expires in 10 minutes. Do not share it with anyone.`;
+    ignoreText = `If you did not request to update your seller credentials, please change your account password and contact support immediately.`;
+  } else if (type === 'seller-delete') {
+    subject = `URGENT: X-Mart Seller Account Deletion Verification Code`;
+    headingText = `Confirm Seller Account Deletion`;
+    bodyText = `Hello ${name || 'Merchant'}, you have requested to permanently delete your X-Mart seller account. Once verified with the code below, your seller account and all associated product listings will be permanently deleted from the website.`;
+    noteText = `This deletion code expires in 10 minutes. Do not share it.`;
+    ignoreText = `If you did NOT request to delete your seller account, please change your password immediately.`;
   } else {
     subject = `X-Mart Password Reset Code`;
     headingText = `Reset Your Password`;
@@ -127,19 +153,21 @@ async function sendPasswordResetEmail({ email, name, otp, type = 'reset' }) {
 
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #19324c; padding: 28px 24px; text-align: center;">
-        <h1 style="color: #ff9700; margin: 0; font-size: 26px; font-weight: 800;">X-MART</h1>
-        <p style="color: #9ca3af; margin: 6px 0 0; font-size: 13px;">Account Security</p>
+      <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
+        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        </a>
+        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Account Security</p>
       </div>
 
       <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">
         <h2 style="margin: 0 0 12px; font-size: 20px; font-weight: 800; color: #111827;">${headingText}</h2>
         <p style="margin: 0 0 16px; font-size: 15px; color: #4b5563;">${bodyText}</p>
 
-        <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 18px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #92400e; text-transform: uppercase;">Your One-Time Code</p>
-          <div style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #1f2937; font-variant-numeric: tabular-nums;">${otp}</div>
-          <p style="margin: 8px 0 0; font-size: 12px; color: #b45309;">${noteText}</p>
+        <div style="background: transparent; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #000000; text-transform: uppercase;">Your One-Time Code</p>
+          <div style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #000000; font-variant-numeric: tabular-nums;">${otp}</div>
+          <p style="margin: 8px 0 0; font-size: 12px; color: #000000;">${noteText}</p>
         </div>
 
         <p style="font-size: 13px; color: #6b7280; margin: 16px 0 0;">${ignoreText}</p>
@@ -158,75 +186,164 @@ async function sendPasswordResetEmail({ email, name, otp, type = 'reset' }) {
  * 3. Send Purchase / Order Confirmation Invoice Email
  */
 async function sendOrderConfirmationEmail({ email, name, order }) {
-  const orderId = order.orderId || order._id || 'XM-ORD-' + Date.now();
+  const rawId = order.orderId || order._id || '';
+  const orderId = order.orderId || (rawId ? (String(rawId).startsWith('XM-') ? String(rawId) : `XM-${String(rawId).slice(-8).toUpperCase()}`) : `XM-${Date.now()}`);
   const subject = `Order Confirmed: ${orderId}`;
-  const items = order.items || [];
-  const total = order.totalPrice || order.items?.reduce((s, i) => s + (i.price * (i.qty || 1)), 0) || 0;
+  const items = order.orderItems || order.items || [];
 
-  const itemsRows = items.map(item => `
-    <tr style="border-bottom: 1px solid #f3f4f6;">
-      <td style="padding: 12px 0; font-size: 14px; color: #1f2937; font-weight: 600;">
-        ${item.name}
-        <div style="font-size: 12px; color: #6b7280; font-weight: normal;">Qty: ${item.qty || 1}</div>
-      </td>
-      <td style="padding: 12px 0; font-size: 14px; color: #111827; font-weight: 800; text-align: right;">
-        ₹${((item.price || 0) * (item.qty || 1)).toLocaleString('en-IN')}
-      </td>
-    </tr>
-  `).join('');
+  let totalOriginal = 0;
+  let totalFinal = 0;
+
+  const itemsRows = items.map((item) => {
+    const qty = Number(item.quantity || item.qty) || 1;
+    const finalPriceUnit = Number(item.price) || 0;
+    const finalPriceTotal = finalPriceUnit * qty;
+
+    // Resolve original MRP price
+    let origPriceUnit = Number(item.originalPrice) || 0;
+    if (origPriceUnit <= finalPriceUnit) {
+      if (item.discount && item.discount > 0) {
+        origPriceUnit = Math.round(finalPriceUnit / (1 - item.discount / 100));
+      } else {
+        origPriceUnit = Math.round(finalPriceUnit * 1.25);
+      }
+    }
+    const origPriceTotal = origPriceUnit * qty;
+    const discountAmt = Math.max(0, origPriceTotal - finalPriceTotal);
+    const discountPct = origPriceTotal > 0 ? Math.round((discountAmt / origPriceTotal) * 100) : 0;
+
+    totalOriginal += origPriceTotal;
+    totalFinal += finalPriceTotal;
+
+    // Resolve product image
+    let imgUrl = item.image || '';
+    if (!imgUrl || imgUrl === 'logo.png') {
+      imgUrl = getLogoUrl();
+    } else if (imgUrl.startsWith('/')) {
+      imgUrl = `${getClientUrl()}${imgUrl}`;
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid #e5e7eb;">
+        <td style="padding: 16px 0; vertical-align: middle; width: 68px;">
+          <img src="${imgUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 6px; border: 1px solid #e5e7eb; display: block; background: #ffffff;" onerror="this.src='${getLogoUrl()}';" />
+        </td>
+        <td style="padding: 16px 12px; vertical-align: middle;">
+          <div style="font-size: 14px; font-weight: 700; color: #000000; line-height: 1.4; margin-bottom: 4px;">${item.name}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Quantity: <strong style="color: #000000;">${qty}</strong></div>
+          <div style="font-size: 12.5px;">
+            <span style="color: #6b7280; text-decoration: line-through; margin-right: 6px;">₹${origPriceTotal.toLocaleString('en-IN')}</span>
+            <span style="color: #16a34a; font-weight: 700;">₹${discountAmt.toLocaleString('en-IN')} OFF (${discountPct}%)</span>
+          </div>
+        </td>
+        <td style="padding: 16px 0; vertical-align: middle; text-align: right; white-space: nowrap;">
+          <div style="font-size: 16px; font-weight: 800; color: #000000;">₹${finalPriceTotal.toLocaleString('en-IN')}</div>
+          ${qty > 1 ? `<div style="font-size: 11px; color: #6b7280;">(₹${finalPriceUnit.toLocaleString('en-IN')} each)</div>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const grandTotal = Number(order.totalPrice) || totalFinal || 0;
+  if (totalOriginal <= grandTotal) {
+    totalOriginal = Math.round(grandTotal * 1.25);
+  }
+  const totalSavings = Math.max(0, totalOriginal - grandTotal);
+  const paymentMethod = String(order.paymentMethod || 'COD').toUpperCase();
+  const isPaid = order.isPaid || (paymentMethod !== 'COD');
+  const paymentStatus = isPaid ? 'PAID & CONFIRMED' : 'PAY ON DELIVERY (COD)';
+
+  // Delivery address details
+  const addr = order.shippingAddress || {};
+  const recipientName = addr.name || name || 'Customer';
+  const street = addr.street || '';
+  const city = addr.city || '';
+  const state = addr.state || '';
+  const pincode = addr.pincode || '';
+  const phone = addr.phone || '';
+  const addressParts = [street, city, state ? `${state} - ${pincode}` : pincode].filter(Boolean);
+  const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Registered Delivery Address';
+
+  const trackingUrl = `${getClientUrl()}/#track/${encodeURIComponent(orderId)}`;
 
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #19324c; padding: 28px 24px; text-align: center;">
-        <h1 style="color: #ff9700; margin: 0; font-size: 26px; font-weight: 800;">X-MART</h1>
-        <p style="color: #9ca3af; margin: 6px 0 0; font-size: 13px;">Thank you for your order!</p>
+      <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
+        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        </a>
+        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Thank you for your order!</p>
       </div>
 
-      <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f3f4f6; padding-bottom: 16px; margin-bottom: 20px;">
+      <div style="padding: 32px 24px; color: #000000; line-height: 1.6;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 20px;">
           <div>
-            <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #111827;">Order Confirmation</h2>
-            <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Order Ref: <strong>${orderId}</strong></p>
+            <h2 style="margin: 0; font-size: 19px; font-weight: 800; color: #000000;">Order Confirmation</h2>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #4b5563;">Order ID: <strong style="color: #000000; font-family: monospace; font-size: 14px;">${orderId}</strong></p>
           </div>
           <div style="text-align: right;">
-            <span style="background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px;">PAID & CONFIRMED</span>
+            <span style="background: #dcfce7; color: #15803d; font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.3px;">${paymentStatus}</span>
           </div>
         </div>
 
-        <p style="margin: 0 0 16px; font-size: 15px; color: #4b5563;">Hi ${name || 'Shopper'}, your order has been received and is being prepared for fast dispatch.</p>
+        <p style="margin: 0 0 18px; font-size: 14.5px; color: #000000;">Hi <strong>${recipientName}</strong>, your order has been received and is being prepared for fast dispatch.</p>
 
-        <!-- Order Items Summary Table -->
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <!-- Order Items Table -->
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
           <thead>
-            <tr style="border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">
-              <th style="padding: 8px 0; text-align: left;">Item</th>
-              <th style="padding: 8px 0; text-align: right;">Amount</th>
+            <tr style="border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">
+              <th style="padding: 8px 0; text-align: left;" colspan="2">Item & Price Details</th>
+              <th style="padding: 8px 0; text-align: right;">Final Amount</th>
             </tr>
           </thead>
           <tbody>
             ${itemsRows}
           </tbody>
-          <tfoot>
-            <tr>
-              <td style="padding: 14px 0 6px; font-size: 15px; font-weight: 800; color: #111827;">Grand Total:</td>
-              <td style="padding: 14px 0 6px; font-size: 18px; font-weight: 900; color: #19324c; text-align: right;">₹${total.toLocaleString('en-IN')}</td>
-            </tr>
-          </tfoot>
         </table>
 
-        <!-- Shipping & Payment Info -->
-        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; color: #4b5563;">
-          <div style="margin-bottom: 8px;"><strong>Delivery To:</strong> ${order.shippingAddress?.street || 'Customer Address'}, ${order.shippingAddress?.city || 'India'} - ${order.shippingAddress?.pincode || 'Pincode'}</div>
-          <div><strong>Payment Mode:</strong> ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'ONLINE'}</div>
+        <!-- Amount Summary Ledger -->
+        <table style="width: 100%; border-collapse: collapse; margin: 14px 0 24px;">
+          <tbody>
+            <tr>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #4b5563;">Total MRP / Original Price:</td>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #4b5563; text-align: right;">₹${totalOriginal.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #16a34a; font-weight: 600;">Total Discount / Savings:</td>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #16a34a; font-weight: 700; text-align: right;">-₹${totalSavings.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #4b5563;">Delivery Charges:</td>
+              <td style="padding: 6px 0; font-size: 13.5px; color: #16a34a; font-weight: 700; text-align: right;">FREE</td>
+            </tr>
+            <tr style="border-top: 1.5px solid #e5e7eb;">
+              <td style="padding: 12px 0 6px; font-size: 16px; font-weight: 800; color: #000000;">Grand Total:</td>
+              <td style="padding: 12px 0 6px; font-size: 20px; font-weight: 900; color: #000000; text-align: right;">₹${grandTotal.toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Delivery & Payment Info Box -->
+        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin: 20px 0;">
+          <div style="margin-bottom: 10px; font-size: 13.5px; color: #000000; line-height: 1.5;">
+            <strong style="color: #000000;">Delivery Address:</strong><br />
+            ${recipientName}<br />
+            ${fullAddress}
+            ${phone ? `<br />Phone: ${phone}` : ''}
+          </div>
+          <div style="font-size: 13.5px; color: #000000; border-top: 1px solid #f3f4f6; padding-top: 10px;">
+            <strong style="color: #000000;">Payment Mode:</strong> ${paymentMethod} &bull; ${paymentStatus}
+          </div>
         </div>
 
-        <div style="text-align: center; margin: 28px 0 12px;">
-          <a href="${getClientUrl()}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-size: 14px;">Track Package in Store</a>
+        <!-- Tracking Button -->
+        <div style="text-align: center; margin: 28px 0 14px;">
+          <a href="${trackingUrl}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 14px 34px; border-radius: 8px; text-decoration: none; font-size: 15px; letter-spacing: 0.2px;">Track Package in Store</a>
         </div>
       </div>
 
-      <div style="background: #f3f4f6; padding: 18px 24px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart Store. Need help with this order? Contact our support team.</p>
+      <div style="background: #f9fafb; padding: 18px 24px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart SuperStore. Need help with this order? Contact our customer support team.</p>
       </div>
     </div>
   `;
@@ -325,9 +442,11 @@ async function sendReturnStatusEmail({ email, name, orderId, rmaNumber, status, 
 
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #1e3a5f; padding: 28px 24px; text-align: center;">
-        <h1 style="color: #ff9700; margin: 0; font-size: 24px; font-weight: 800;">X-MART RETURNS</h1>
-        <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Reverse Logistics &amp; Customer Care</p>
+      <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
+        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        </a>
+        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Reverse Logistics &amp; Customer Care</p>
       </div>
 
       <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">

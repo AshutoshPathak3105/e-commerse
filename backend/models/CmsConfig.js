@@ -39,18 +39,70 @@ const promotionSchema = new mongoose.Schema({
   active:        { type: Boolean, default: true },
 }, { timestamps: true });
 
+const quadItemSchema = new mongoose.Schema({
+  title:   { type: String, default: '' },
+  image:   { type: String, default: '' },
+  badge:   { type: String, default: '' },
+  subText: { type: String, default: '' },
+  link:    { type: String, default: '#deals' },
+});
+
+const quadCardSchema = new mongoose.Schema({
+  title:      { type: String, required: true },
+  link:       { type: String, default: '#deals' },
+  footerText: { type: String, default: 'See more' },
+  footerLink: { type: String, default: '#deals' },
+  row:        { type: Number, default: 1 },
+  order:      { type: Number, default: 0 },
+  active:     { type: Boolean, default: true },
+  items:      [quadItemSchema],
+}, { timestamps: true });
+
+const heroPromoCardSchema = new mongoose.Schema({
+  badge:  { type: String, default: '' },
+  sub:    { type: String, default: '' },
+  brand:  { type: String, default: '' },
+  image:  { type: String, required: true },
+  pill:   { type: String, default: 'Unlimited 5% cashback*' },
+  link:   { type: String, default: '#deals' },
+  order:  { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+}, { timestamps: true });
+
+const quickBrowseItemSchema = new mongoose.Schema({
+  title:  { type: String, default: '' },
+  image:  { type: String, required: true },
+  badge:  { type: String, default: '' },
+  link:   { type: String, default: '#deals' },
+  order:  { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+}, { timestamps: true });
+
 const cmsConfigSchema = new mongoose.Schema({
   singletonKey:       { type: String, default: 'default_storefront_cms', unique: true },
   announcementText:   { type: String, default: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion!' },
   announcementActive: { type: Boolean, default: true },
   heroBanners:        [heroBannerSchema],
   promotions:         [promotionSchema],
+  quadCards:          [quadCardSchema],
+  heroPromoCards:     [heroPromoCardSchema],
+  quickBrowseItems:   [quickBrowseItemSchema],
 }, { timestamps: true });
 
 // Helper to get or create singleton config with initial seed data
 cmsConfigSchema.statics.getOrCreate = async function () {
   let config = await this.findOne({ singletonKey: 'default_storefront_cms' });
   if (!config) {
+    let seedQuad = [];
+    let seedHero = [];
+    let seedQuick = [];
+    try {
+      const seed = require('../data/seed_home_cards.json');
+      seedQuad = seed.quadCards || [];
+      seedHero = seed.heroCards || [];
+      seedQuick = seed.quickBrowse || [];
+    } catch {}
+
     config = await this.create({
       singletonKey: 'default_storefront_cms',
       announcementText: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion!',
@@ -85,7 +137,25 @@ cmsConfigSchema.statics.getOrCreate = async function () {
         },
       ],
       promotions: [],
+      quadCards: seedQuad,
+      heroPromoCards: seedHero,
+      quickBrowseItems: seedQuick,
     });
+  } else {
+    // If quadCards was not yet seeded in existing database document, populate now
+    if (!config.quadCards || config.quadCards.length === 0) {
+      try {
+        const seed = require('../data/seed_home_cards.json');
+        if (seed.quadCards && seed.quadCards.length > 0) {
+          config.quadCards = seed.quadCards;
+          config.heroPromoCards = seed.heroCards || [];
+          config.quickBrowseItems = seed.quickBrowse || [];
+          await config.save();
+        }
+      } catch (err) {
+        console.warn('Auto-seed home cards failed:', err.message);
+      }
+    }
   }
   return config;
 };

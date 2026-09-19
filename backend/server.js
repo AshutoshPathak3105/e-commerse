@@ -12,6 +12,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const { exec, execSync } = require('child_process');
 const os = require('os');
+const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
@@ -25,9 +26,6 @@ const wishlistRoutes = require('./routes/wishlist');
 const newsletterRoutes = require('./routes/newsletter');
 const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
-
-// ── Connect to MongoDB Atlas ─────────────────────────────────
-connectDB();
 
 const app = express();
 
@@ -75,6 +73,38 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // ── HTTP logger ─────────────────────────────────────────────
 app.use(morgan('dev'));
 
+// ── Database readiness check for API routes ──────────────────
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  const state = mongoose.connection.readyState;
+  if (state === 1) return next();
+
+  // If MongoDB is still connecting, wait up to 3.5s for it to finish
+  if (state === 2) {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if (mongoose.connection.readyState === 1) {
+        clearInterval(timer);
+        return next();
+      }
+      if (Date.now() - start > 3500) {
+        clearInterval(timer);
+        return res.status(503).json({
+          success: false,
+          message: 'Database is still connecting. Please retry in a moment.',
+        });
+      }
+    }, 100);
+    return;
+  }
+
+  // 0 = disconnected, 3 = disconnecting
+  return res.status(503).json({
+    success: false,
+    message: 'Database connection is temporarily unavailable. Please retry in a moment.',
+  });
+});
+
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
@@ -117,6 +147,15 @@ app.get('/api/cms', async (req, res) => {
           .filter(b => b.active !== false)
           .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
         promotions: activePromos,
+        quadCards: (config.quadCards || [])
+          .filter(q => q.active !== false)
+          .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
+        heroPromoCards: (config.heroPromoCards || [])
+          .filter(h => h.active !== false)
+          .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
+        quickBrowseItems: (config.quickBrowseItems || [])
+          .filter(q => q.active !== false)
+          .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
       },
     });
   } catch (err) {
@@ -219,71 +258,77 @@ app.use(errorHandler);
 // ── Start server ─────────────────────────────────────────────
 const PORT = process.env.PORT || 8000;
 
-const server = app.listen(PORT, () => {
-  const url = `http://localhost:${PORT}`;
-  console.log('\n══════════════════════════════════════════════');
-  console.log('  🚀  X-Mart API Server');
-  console.log(`  📡  Running on: ${url}`);
-  console.log(`  🌍  Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('══════════════════════════════════════════════\n');
+const startServer = async () => {
+  // Connect to MongoDB Atlas first so all queries succeed immediately
+  await connectDB();
 
-  // ── Auto-open Chrome when server starts (local development only) ──────
-  if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
-    const platform = os.platform();
-    let openCmd;
-    if (platform === 'win32') {
-      openCmd = `start chrome "${url}"`;
-    } else if (platform === 'darwin') {
-      openCmd = `open -a "Google Chrome" "${url}"`;
-    } else {
-      openCmd = `xdg-open "${url}"`;
-    }
-    exec(openCmd, (err) => {
-      if (err) {
-        // Chrome not found — try default browser
-        const fallback = platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
-        exec(fallback);
+  const server = app.listen(PORT, () => {
+    const url = `http://localhost:${PORT}`;
+    console.log('\n══════════════════════════════════════════════');
+    console.log('  🚀  X-Mart API Server');
+    console.log(`  📡  Running on: ${url}`);
+    console.log(`  🌍  Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('══════════════════════════════════════════════\n');
+
+    // ── Auto-open Chrome when server starts (local development only) ──────
+    if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+      const platform = os.platform();
+      let openCmd;
+      if (platform === 'win32') {
+        openCmd = `start chrome "${url}"`;
+      } else if (platform === 'darwin') {
+        openCmd = `open -a "Google Chrome" "${url}"`;
+      } else {
+        openCmd = `xdg-open "${url}"`;
       }
-    });
-  }
-});
-
-let hasRetriedPort = false;
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    if (!hasRetriedPort && process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
-      hasRetriedPort = true;
-      console.log(`\n⚠️  Port ${PORT} is occupied by another process. Automatically freeing port ${PORT}...`);
-      try {
-        if (os.platform() === 'win32') {
-          execSync(`powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort ${PORT} -ErrorAction SilentlyContinue; if ($c) { Stop-Process -Id $c.OwningProcess -Force }"`);
-        } else {
-          execSync(`lsof -ti:${PORT} | xargs kill -9`);
+      exec(openCmd, (err) => {
+        if (err) {
+          // Chrome not found — try default browser
+          const fallback = platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
+          exec(fallback);
         }
-        console.log(`✅ Port ${PORT} released successfully. Reconnecting server...`);
-        setTimeout(() => {
-          server.listen(PORT);
-        }, 600);
-        return;
-      } catch (recoveryErr) {
-        // Fallback to error message
-      }
+      });
     }
-    console.error(`\n⚠️  Port ${PORT} is already occupied by another running instance of X-Mart.`);
-    console.error(`👉 Close the existing terminal or stop the process on port ${PORT} and try again.\n`);
-    process.exit(1);
-  } else {
-    throw err;
-  }
-});
+  });
 
-// Graceful shutdown
-process.on('unhandledRejection', (err) => {
-  console.error(`❌  Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
-});
+  let hasRetriedPort = false;
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      if (!hasRetriedPort && process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+        hasRetriedPort = true;
+        console.log(`\n⚠️  Port ${PORT} is occupied by another process. Automatically freeing port ${PORT}...`);
+        try {
+          if (os.platform() === 'win32') {
+            execSync(`powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort ${PORT} -ErrorAction SilentlyContinue; if ($c) { Stop-Process -Id $c.OwningProcess -Force }"`);
+          } else {
+            execSync(`lsof -ti:${PORT} | xargs kill -9`);
+          }
+          console.log(`✅ Port ${PORT} released successfully. Reconnecting server...`);
+          setTimeout(() => {
+            server.listen(PORT);
+          }, 600);
+          return;
+        } catch (recoveryErr) {
+          // Fallback to error message
+        }
+      }
+      console.error(`\n⚠️  Port ${PORT} is already occupied by another running instance of X-Mart.`);
+      console.error(`👉 Close the existing terminal or stop the process on port ${PORT} and try again.\n`);
+      process.exit(1);
+    } else {
+      throw err;
+    }
+  });
 
-process.on('SIGTERM', () => {
-  console.log('👋  SIGTERM received. Closing server...');
-  server.close(() => process.exit(0));
-});
+  // Graceful shutdown
+  process.on('unhandledRejection', (err) => {
+    console.error(`❌  Unhandled Rejection: ${err?.message || err}`);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('👋  SIGTERM received. Closing server...');
+    server.close(() => process.exit(0));
+  });
+};
+
+startServer();

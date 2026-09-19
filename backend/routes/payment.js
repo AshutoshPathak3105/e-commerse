@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const Razorpay = require('razorpay');
@@ -183,13 +184,30 @@ router.post(
     const taxPrice = Math.round(itemsPrice * TAX_RATE);
     const totalPrice = itemsPrice + shippingPrice + taxPrice;
 
-    const orderItems = rawItems.map((item) => ({
-      product: item.product || `prod-${Date.now()}`,
-      name: item.name,
-      image: item.image,
-      price: item.price,
-      quantity: item.quantity,
-    }));
+    // Lookup product details for accurate originalPrice & image
+    const pIds = rawItems.map(i => i.product).filter(id => mongoose.isValidObjectId(id));
+    const dbProducts = await Product.find({ _id: { $in: pIds } }).lean();
+    const pMap = new Map(dbProducts.map(p => [String(p._id), p]));
+
+    const orderItems = rawItems.map((item) => {
+      const p = pMap.get(String(item.product));
+      const origP = (p && p.originalPrice && p.originalPrice > item.price)
+        ? p.originalPrice
+        : (item.originalPrice && item.originalPrice > item.price)
+          ? item.originalPrice
+          : Math.round(item.price * 1.25);
+      const disc = (p && p.discount) ? p.discount : Math.round(((origP - item.price) / origP) * 100);
+      const img = item.image || (p && p.images && p.images[0]) || '';
+      return {
+        product:       item.product || `prod-${Date.now()}`,
+        name:          item.name,
+        image:         img,
+        price:         item.price,
+        originalPrice: origP,
+        discount:      disc,
+        quantity:      item.quantity,
+      };
+    });
 
     // Create Order with isPaid = true
     const order = await Order.create({

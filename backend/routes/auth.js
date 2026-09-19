@@ -721,18 +721,47 @@ router.post(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+otp +otpExpiry +otpType');
     if (!user) {
       res.status(404);
       throw new Error('User not found');
     }
 
-    const { bizName, storeName, email, phone, gstin, pincode, bankAcc, bankIfsc, category } = req.body;
+    const { bizName, storeName, email, phone, gstin, pincode, bankAcc, bankIfsc, category, otp } = req.body;
+    const isUpdate = !!(user.sellerProfile && (user.sellerProfile.bizName || user.sellerProfile.storeName || user.sellerProfile.isVerified));
+
+    if (isUpdate) {
+      if (!otp || String(otp).trim().length !== 6) {
+        res.status(400);
+        throw new Error('A valid 6-digit OTP sent to your registered email is required to update merchant details.');
+      }
+
+      if (!user.otp || user.otp !== String(otp).trim()) {
+        res.status(400);
+        throw new Error('Invalid OTP verification code. Please check your registered email or request a new OTP.');
+      }
+
+      if (!user.otpExpiry || user.otpExpiry < Date.now()) {
+        res.status(400);
+        throw new Error('OTP verification code has expired. Please request a new OTP.');
+      }
+
+      if (user.otpType !== 'seller-update') {
+        res.status(400);
+        throw new Error('Invalid OTP session for merchant profile update. Please request a new OTP.');
+      }
+
+      // Clear OTP session once successfully verified
+      user.otp = undefined;
+      user.otpExpiry = undefined;
+      user.otpType = undefined;
+    }
 
     const cleanedPhone = phone.replace(/[\s\-\(\)]/g, '').replace(/^(\+91|91|0)/, '');
     const cleanedGstin = gstin.toUpperCase().trim();
     const cleanedIfsc = bankIfsc.toUpperCase().trim();
     const cleanedAcc = bankAcc.trim();
+    const oldStoreName = user.sellerProfile?.storeName;
 
     user.sellerProfile = {
       bizName: bizName.trim(),
@@ -745,14 +774,31 @@ router.post(
       bankIfsc: cleanedIfsc,
       category: category || 'Electronics',
       isVerified: true,
-      verifiedAt: new Date(),
+      isActive: user.sellerProfile?.isActive !== false,
+      verifiedAt: user.sellerProfile?.verifiedAt || new Date(),
+      updatedAt: new Date(),
     };
 
     const updated = await user.save();
 
+    // If store name changed, sync product listings brand / sellerStoreName
+    if (oldStoreName && oldStoreName !== storeName.trim()) {
+      try {
+        const Product = require('../models/Product');
+        await Product.updateMany(
+          { $or: [{ seller: user._id }, { sellerEmail: user.email.toLowerCase() }] },
+          { $set: { sellerStoreName: storeName.trim(), brand: storeName.trim() } }
+        );
+      } catch (syncErr) {
+        console.warn('[Sync store name notice]:', syncErr.message);
+      }
+    }
+
     res.json({
       success: true,
-      message: `Merchant account "${user.sellerProfile.storeName}" is verified! You are now eligible to list products on X-Mart.`,
+      message: isUpdate
+        ? `Merchant Profile & Settlement details for "${user.sellerProfile.storeName}" updated successfully!`
+        : `Merchant account "${user.sellerProfile.storeName}" is verified! You are now eligible to list products on X-Mart.`,
       data: updated.sellerProfile,
     });
   })
@@ -779,7 +825,46 @@ router.delete(
   })
 );
 
-// ── POST /api/auth/seller/send-toggle-otp ─── Send OTP for seller activation/deactivation ──
+// ── POST /api/auth/seller/send-update-otp ─── Send OTP for updating merchant profile & settlement details ──
+router.post(
+  '/seller/send-update-otp',
+  protect,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select('+otp +otpExpiry +otpType');
+    if (!user) {
+      res.status(404);
+      throw new Error('User account not found.');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.otpType = 'seller-update';
+    await user.save();
+
+    console.log(`\n══════════════════════════════════════════════════════`);
+    console.log(`[X-MART MERCHANT PROFILE UPDATE OTP] Email: ${user.email}`);
+    console.log(`CODE: ${otp} (Expires in 10 min)`);
+    console.log(`══════════════════════════════════════════════════════\n`);
+
+    sendPasswordResetEmail({
+      email: user.email,
+      name: user.sellerProfile?.storeName || user.name,
+      otp,
+      type: 'seller-update',
+    }).catch(err => {
+      console.error('[Brevo Seller Update OTP Failed]:', err);
+    });
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to your registered email (${user.email}).`,
+      data: { email: user.email },
+    });
+  })
+);
+
+// ── POST /api/auth/seller/send-toggle-otp ─── Send OTP for seller activation/deactivation/deletion ──
 router.post(
   '/seller/send-toggle-otp',
   protect,
@@ -790,14 +875,17 @@ router.post(
       throw new Error('No seller profile found for this account.');
     }
 
+    const action = (req.body.action || 'toggle').toLowerCase();
+    const isDelete = action === 'delete' || action === 'remove';
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    user.otpType = 'seller-toggle';
+    user.otpType = isDelete ? 'seller-delete' : 'seller-toggle';
     await user.save();
 
     console.log(`\n══════════════════════════════════════════════════════`);
-    console.log(`[X-MART SELLER TOGGLE OTP] Email: ${user.email}`);
+    console.log(`[X-MART SELLER ${isDelete ? 'DELETION' : 'STATUS TOGGLE'} OTP] Email: ${user.email}`);
+    console.log(`ACTION: ${action.toUpperCase()}`);
     console.log(`CODE: ${otp} (Expires in 10 min)`);
     console.log(`══════════════════════════════════════════════════════\n`);
 
@@ -805,30 +893,31 @@ router.post(
       email: user.email,
       name: user.sellerProfile.storeName || user.name,
       otp,
-      type: 'seller-toggle'
+      type: isDelete ? 'seller-delete' : 'seller-toggle'
     }).catch(err => {
-      console.error('[Brevo Seller Toggle OTP Failed]:', err);
+      console.error('[Brevo Seller OTP Failed]:', err);
     });
 
     res.json({
       success: true,
-      message: `OTP sent to ${user.email}. Enter it to confirm seller account status change.`,
-      data: { email: user.email }
+      message: `Verification code sent to ${user.email}. Enter it to confirm ${isDelete ? 'account deletion' : 'account status change'}.`,
+      data: { email: user.email, action }
     });
   })
 );
 
-// ── POST /api/auth/seller/toggle-status ─── Verify OTP & activate/deactivate/remove seller ──
+// ── POST /api/auth/seller/toggle-status ─── Verify OTP & activate/deactivate/delete seller ──
 router.post(
   '/seller/toggle-status',
   protect,
   [
     body('otp').isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit OTP code is required'),
-    body('action').isIn(['activate', 'deactivate', 'remove']).withMessage('Action must be activate, deactivate, or remove'),
+    body('action').isIn(['activate', 'enable', 'deactivate', 'disable', 'remove', 'delete']).withMessage('Action must be enable, disable, or delete'),
   ],
   validate,
   asyncHandler(async (req, res) => {
     const { otp, action } = req.body;
+    const act = (action || '').toLowerCase();
     const user = await User.findById(req.user._id).select('+otp +otpExpiry +otpType');
     if (!user || !user.sellerProfile) {
       res.status(404);
@@ -845,7 +934,7 @@ router.post(
       throw new Error('Verification code has expired. Please request a new one.');
     }
 
-    if (user.otpType !== 'seller-toggle') {
+    if (user.otpType !== 'seller-toggle' && user.otpType !== 'seller-delete') {
       res.status(400);
       throw new Error('Invalid OTP session.');
     }
@@ -865,29 +954,30 @@ router.post(
       ]
     };
 
-    if (action === 'activate') {
+    if (act === 'activate' || act === 'enable') {
       user.sellerProfile.isActive = true;
-      responseMessage = 'Seller account activated successfully! Your storefront and listings are now active.';
+      responseMessage = 'Seller account enabled successfully! All your products are now active and purchasable.';
       try {
         await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: false } });
       } catch (prodErr) {
         console.warn('[Product Activate Sync Notice]:', prodErr.message);
       }
-    } else if (action === 'deactivate') {
+    } else if (act === 'deactivate' || act === 'disable') {
       user.sellerProfile.isActive = false;
-      responseMessage = 'Seller account deactivated. Your listings are paused from public view.';
+      responseMessage = 'Seller account disabled. All your products are now marked as "Currently Unavailable" across the store.';
       try {
         await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: true } });
       } catch (prodErr) {
         console.warn('[Product Deactivate Sync Notice]:', prodErr.message);
       }
-    } else if (action === 'remove') {
+    } else if (act === 'remove' || act === 'delete') {
       user.sellerProfile = undefined;
-      responseMessage = 'Seller account permanently removed. All seller privileges have been revoked.';
+      responseMessage = 'Seller account permanently deleted! All your product listings have been completely deleted from X-Mart.';
       try {
-        await Product.updateMany(sellerQuery, { $set: { isSellerDeactivated: true } });
+        const delResult = await Product.deleteMany(sellerQuery);
+        console.log(`[Seller Delete Account]: Deleted ${delResult.deletedCount || 0} products belonging to ${user.email}`);
       } catch (prodErr) {
-        console.warn('[Product Remove Sync Notice]:', prodErr.message);
+        console.warn('[Product Delete Sync Notice]:', prodErr.message);
       }
     }
 
@@ -896,6 +986,7 @@ router.post(
     res.json({
       success: true,
       message: responseMessage,
+      action: act,
       data: updated.sellerProfile || null,
     });
   })

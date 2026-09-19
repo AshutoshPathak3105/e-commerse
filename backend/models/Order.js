@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  product:  { type: mongoose.Schema.Types.Mixed, required: false },
-  name:     { type: String, required: true },
-  image:    { type: String, default: '' },
-  price:    { type: Number, required: true },
-  quantity: { type: Number, required: true, min: 1 },
+  product:       { type: mongoose.Schema.Types.Mixed, required: false },
+  name:          { type: String, required: true },
+  image:         { type: String, default: '' },
+  price:         { type: Number, required: true },
+  originalPrice: { type: Number, default: 0 },
+  discount:      { type: Number, default: 0 },
+  quantity:      { type: Number, required: true, min: 1 },
 });
 
 const shippingAddressSchema = new mongoose.Schema({

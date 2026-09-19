@@ -382,12 +382,41 @@ router.get('/products', async (req, res) => {
       ? { $or: [{ name: { $regex: search, $options: 'i' } }, { sellerEmail: { $regex: search, $options: 'i' } }] }
       : {};
     const products = await Product.find(filter)
-      .select('name price stock category images image brand sellerEmail sellerStoreName isSellerDeactivated createdAt')
+      .select('name price stock category images image brand sellerEmail sellerStoreName isSellerDeactivated isBestseller tags createdAt')
       .sort({ createdAt: -1 })
       .skip((page - 1) * Number(limit))
       .limit(Number(limit));
     const total = await Product.countDocuments(filter);
     res.json({ success: true, data: { products, total } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* ─────────────────────────────────────────────────────
+   TOGGLE BESTSELLER — PUT /api/admin/products/:id/bestseller
+───────────────────────────────────────────────────── */
+router.put('/products/:id/bestseller', async (req, res) => {
+  try {
+    const { isBestseller } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const newStatus = isBestseller !== undefined ? Boolean(isBestseller) : !product.isBestseller;
+    product.isBestseller = newStatus;
+    product.tags = Array.isArray(product.tags) ? product.tags : [];
+    if (newStatus && !product.tags.includes('bestseller')) {
+      product.tags.push('bestseller');
+    } else if (!newStatus) {
+      product.tags = product.tags.filter(t => t !== 'bestseller' && t !== 'best-seller' && t !== 'bestsellers');
+    }
+
+    await product.save();
+    res.json({
+      success: true,
+      message: `Product ${newStatus ? 'marked as Bestseller' : 'removed from Bestsellers'}`,
+      data: product
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1722,6 +1751,225 @@ router.get('/cms/stores', async (req, res) => {
     });
 
     res.json({ success: true, data: { stores } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* ─────────────────────────────────────────────────────
+   HOMEPAGE CARDS & CATEGORIES CMS — CRUD /api/admin/cms/quad-cards
+───────────────────────────────────────────────────── */
+// 1. Add Quad Card
+router.post('/cms/quad-cards', async (req, res) => {
+  try {
+    const { title, link = '#deals', footerText = 'See more', footerLink = '#deals', row = 1, order = 0, active = true, items = [] } = req.body;
+    if (!title) {
+      return res.status(400).json({ success: false, message: 'Card title is required.' });
+    }
+    const config = await CmsConfig.getOrCreate();
+    const newCard = {
+      title: title.trim(),
+      link: link.trim(),
+      footerText: footerText.trim(),
+      footerLink: footerLink.trim(),
+      row: Number(row) || 1,
+      order: Number(order) || (config.quadCards.length),
+      active: Boolean(active),
+      items: Array.isArray(items) ? items.slice(0, 4).map(it => ({
+        title: (it.title || '').trim(),
+        image: (it.image || '').trim(),
+        badge: (it.badge || '').trim(),
+        subText: (it.subText || '').trim(),
+        link: (it.link || '#deals').trim(),
+      })) : [],
+    };
+    config.quadCards.push(newCard);
+    config.markModified('quadCards');
+    await config.save();
+    const createdCard = config.quadCards[config.quadCards.length - 1];
+    res.status(201).json({ success: true, message: 'Homepage card added successfully.', data: createdCard, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 2. Update Quad Card
+router.put('/cms/quad-cards/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const cardIdStr = String(req.params.id);
+    const card = config.quadCards.find(c => String(c._id || c.id) === cardIdStr);
+    if (!card) {
+      return res.status(404).json({ success: false, message: 'Homepage card not found.' });
+    }
+    const { title, link, footerText, footerLink, row, order, active, items } = req.body;
+    if (title !== undefined) card.title = title.trim();
+    if (link !== undefined) card.link = link.trim();
+    if (footerText !== undefined) card.footerText = footerText.trim();
+    if (footerLink !== undefined) card.footerLink = footerLink.trim();
+    if (row !== undefined) card.row = Number(row) || 1;
+    if (order !== undefined) card.order = Number(order) || 0;
+    if (active !== undefined) card.active = Boolean(active);
+    if (Array.isArray(items)) {
+      card.items = items.slice(0, 4).map(it => ({
+        title: (it.title || '').trim(),
+        image: (it.image || '').trim(),
+        badge: (it.badge || '').trim(),
+        subText: (it.subText || '').trim(),
+        link: (it.link || '#deals').trim(),
+      }));
+    }
+    config.markModified('quadCards');
+    await config.save();
+    res.json({ success: true, message: 'Homepage card updated successfully.', data: card, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 3. Delete Quad Card
+router.delete('/cms/quad-cards/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const cardIdStr = String(req.params.id);
+    config.quadCards = config.quadCards.filter(c => String(c._id || c.id) !== cardIdStr);
+    config.markModified('quadCards');
+    await config.save();
+    res.json({ success: true, message: 'Homepage card removed.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 4. Hero Promo Cards CRUD
+router.post('/cms/hero-promo-cards', async (req, res) => {
+  try {
+    const { badge, sub, brand, image, pill, link, active, order } = req.body;
+    if (!image) {
+      return res.status(400).json({ success: false, message: 'Image URL is required.' });
+    }
+    const config = await CmsConfig.getOrCreate();
+    config.heroPromoCards.push({
+      badge: (badge || '').trim(),
+      sub: (sub || '').trim(),
+      brand: (brand || '').trim(),
+      image: image.trim(),
+      pill: (pill || 'Unlimited 5% cashback*').trim(),
+      link: (link || '#deals').trim(),
+      active: active !== undefined ? Boolean(active) : true,
+      order: Number(order) || config.heroPromoCards.length,
+    });
+    config.markModified('heroPromoCards');
+    await config.save();
+    const created = config.heroPromoCards[config.heroPromoCards.length - 1];
+    res.status(201).json({ success: true, message: 'Top promo card created.', data: created, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.put('/cms/hero-promo-cards/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const card = config.heroPromoCards.find(c => String(c._id || c.id) === String(req.params.id));
+    if (!card) return res.status(404).json({ success: false, message: 'Card not found.' });
+    const { badge, sub, brand, image, pill, link, active, order } = req.body;
+    if (badge !== undefined) card.badge = badge.trim();
+    if (sub !== undefined) card.sub = sub.trim();
+    if (brand !== undefined) card.brand = brand.trim();
+    if (image !== undefined) card.image = image.trim();
+    if (pill !== undefined) card.pill = pill.trim();
+    if (link !== undefined) card.link = link.trim();
+    if (active !== undefined) card.active = Boolean(active);
+    if (order !== undefined) card.order = Number(order) || 0;
+    config.markModified('heroPromoCards');
+    await config.save();
+    res.json({ success: true, message: 'Top promo card updated.', data: card, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.delete('/cms/hero-promo-cards/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    config.heroPromoCards = config.heroPromoCards.filter(c => String(c._id || c.id) !== String(req.params.id));
+    config.markModified('heroPromoCards');
+    await config.save();
+    res.json({ success: true, message: 'Top promo card deleted.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 5. Quick Browse Strip CRUD
+router.post('/cms/quick-browse', async (req, res) => {
+  try {
+    const { title, image, badge, link, active, order } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: 'Image URL is required.' });
+    const config = await CmsConfig.getOrCreate();
+    config.quickBrowseItems.push({
+      title: (title || '').trim(),
+      image: image.trim(),
+      badge: (badge || '').trim(),
+      link: (link || '#deals').trim(),
+      active: active !== undefined ? Boolean(active) : true,
+      order: Number(order) || config.quickBrowseItems.length,
+    });
+    config.markModified('quickBrowseItems');
+    await config.save();
+    const created = config.quickBrowseItems[config.quickBrowseItems.length - 1];
+    res.status(201).json({ success: true, message: 'Quick browse item added.', data: created, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.put('/cms/quick-browse/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const item = config.quickBrowseItems.find(c => String(c._id || c.id) === String(req.params.id));
+    if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
+    const { title, image, badge, link, active, order } = req.body;
+    if (title !== undefined) item.title = title.trim();
+    if (image !== undefined) item.image = image.trim();
+    if (badge !== undefined) item.badge = badge.trim();
+    if (link !== undefined) item.link = link.trim();
+    if (active !== undefined) item.active = Boolean(active);
+    if (order !== undefined) item.order = Number(order) || 0;
+    config.markModified('quickBrowseItems');
+    await config.save();
+    res.json({ success: true, message: 'Quick browse item updated.', data: item, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.delete('/cms/quick-browse/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    config.quickBrowseItems = config.quickBrowseItems.filter(c => String(c._id || c.id) !== String(req.params.id));
+    config.markModified('quickBrowseItems');
+    await config.save();
+    res.json({ success: true, message: 'Quick browse item removed.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 6. Reset all homepage cards to default factory seed data
+router.post('/cms/home-cards/reset-defaults', async (req, res) => {
+  try {
+    const seed = require('../data/seed_home_cards.json');
+    const config = await CmsConfig.getOrCreate();
+    config.quadCards = seed.quadCards || [];
+    config.heroPromoCards = seed.heroCards || [];
+    config.quickBrowseItems = seed.quickBrowse || [];
+    config.markModified('quadCards');
+    config.markModified('heroPromoCards');
+    config.markModified('quickBrowseItems');
+    await config.save();
+    res.json({ success: true, message: 'All homepage cards restored to defaults.', data: config });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

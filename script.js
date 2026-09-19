@@ -599,21 +599,24 @@ const Store = {
   },
 
   toggleWishlist(item) {
-    if (!Auth.isLoggedIn()) {
-      showToast('Please sign in to save items to your wishlist', 'warn');
-      window._openAuth?.('signin');
+    const id = String(item._id || item.id || ('wl-' + Date.now()));
+    const name = item.name || '';
+    const idx = this.wishlist.findIndex(w => {
+      const wId = String(w.id || w._id || '');
+      if (wId && (wId === id || (item._id && String(item._id) === wId) || (item.id && String(item.id) === wId))) return true;
+      if (w.name && name && w.name.trim().toLowerCase() === name.trim().toLowerCase()) return true;
       return false;
-    }
-    const id = item.id || item._id;
-    const idx = this.wishlist.findIndex(w => w.id === id);
+    });
     let added = false;
     if (idx > -1) {
       this.wishlist.splice(idx, 1);
     } else {
       this.wishlist.push({
         id,
+        _id: id,
         name: item.name,
-        price: item.price,
+        price: item.finalPrice !== undefined ? item.finalPrice : item.price,
+        originalPrice: item.originalPrice || item.price,
         img: item.img || (item.images && item.images[0]) || '',
         category: item.category || 'General'
       });
@@ -622,7 +625,27 @@ const Store = {
     this.save();
     this.syncUI();
     showToast(added ? `Added "${item.name}" to Wishlist` : `Removed from Wishlist`, added ? 'success' : 'info');
+
+    // Notify any matching buttons across the page
+    try {
+      window.dispatchEvent(new CustomEvent('xmart:wishlist-updated', {
+        detail: { id, prod: item, isWishlisted: added }
+      }));
+    } catch (e) {}
+
     return added;
+  },
+
+  isWishlisted(item) {
+    if (!item || !this.wishlist || !Array.isArray(this.wishlist)) return false;
+    const targetId = String(item._id || item.id || item);
+    const targetName = (item.name || '').trim().toLowerCase();
+    return this.wishlist.some(w => {
+      const wId = String(w.id || w._id || '');
+      if (wId && (wId === targetId || (item._id && String(item._id) === wId) || (item.id && String(item.id) === wId))) return true;
+      if (targetName && w.name && w.name.trim().toLowerCase() === targetName) return true;
+      return false;
+    });
   },
 
   save() {
@@ -631,15 +654,54 @@ const Store = {
   },
 
   syncUI() {
-    const isAuth = Auth.isLoggedIn();
-    const count = isAuth ? this.cart.reduce((s, i) => s + (i.qty || 1), 0) : 0;
-    const wishCount = isAuth ? this.wishlist.length : 0;
+    const count = this.cart.reduce((s, i) => s + (i.qty || 1), 0);
+    const wishCount = this.wishlist.length;
     document.querySelectorAll('.cart-count').forEach(e => e.textContent = count);
     document.querySelectorAll('.wishlist-count').forEach(e => e.textContent = wishCount);
     const cl = document.querySelector('.cart-action');
     if (cl) cl.setAttribute('aria-label', `Cart, ${count} items`);
   }
 };
+
+// Global Wishlist UI Synchronization Listener
+window.addEventListener('xmart:wishlist-updated', (e) => {
+  const targetId = String(e.detail?.id || '');
+  const isW = Boolean(e.detail?.isWishlisted);
+  const pName = (e.detail?.prod?.name || '').trim().toLowerCase();
+
+  document.querySelectorAll('.fk-wishlist-heart-btn').forEach(btn => {
+    const btnId = String(btn.dataset.id || '');
+    const cardTitle = (btn.closest('.fk-product-list-card')?.querySelector('.fk-prod-title')?.textContent || '').trim().toLowerCase();
+    const matches = (targetId && btnId === targetId) || (pName && cardTitle && pName === cardTitle);
+    if (matches) {
+      btn.classList.toggle('is-active', isW);
+      btn.dataset.wishlisted = isW ? 'true' : 'false';
+      btn.title = isW ? 'Remove from Wishlist' : 'Add to Wishlist';
+      btn.querySelectorAll('svg, svg path').forEach(el => {
+        el.setAttribute('fill', isW ? '#e53935' : 'none');
+        el.setAttribute('stroke', isW ? '#e53935' : '#878787');
+      });
+    }
+  });
+
+  // Also sync detail page buttons
+  const detailWish = document.getElementById('detail-add-wishlist');
+  const topWish = document.getElementById('prod-img-wishlist-btn');
+  if (detailWish) {
+    detailWish.classList.toggle('is-active', isW);
+    detailWish.querySelectorAll('svg, svg path').forEach(el => {
+      el.setAttribute('fill', isW ? '#e53935' : 'none');
+      el.setAttribute('stroke', isW ? '#e53935' : 'currentColor');
+    });
+  }
+  if (topWish) {
+    topWish.classList.toggle('is-active', isW);
+    topWish.querySelectorAll('svg, svg path').forEach(el => {
+      el.setAttribute('fill', isW ? '#e53935' : 'none');
+      el.setAttribute('stroke', isW ? '#e53935' : '#1e293b');
+    });
+  }
+});
 
 /* ── Initial Products Catalog & Synonyms ─────────────────── */
 const SMART_SYNONYMS = {
@@ -931,27 +993,11 @@ function isSellerProductDeactivated(prod) {
   // CRITICAL RULE 4: Direct product flags (set by backend/admin)
   // ─────────────────────────────────────────────────────────────────────────
   if (prod.isSellerDeactivated === true) {
-    // If active seller owns it, it is definitely not deactivated
+    // If active seller owns it and is enabled, it is not deactivated
     if (currentSeller && currentSeller.isActive !== false && _productBelongsToSeller(prod, prodId, currentSeller)) {
-      prod.isSellerDeactivated = false;
       return false;
     }
-    // Only block if this is an explicit seller product and current active seller is NOT its owner
-    if (prod.sellerEmail || (Array.isArray(prod.tags) && prod.tags.includes('seller-listing'))) {
-      if (currentSeller && currentSeller.isActive !== false) {
-        const curEmail = (currentSeller.email || '').trim().toLowerCase();
-        const curStore = (currentSeller.storeName || '').trim().toLowerCase();
-        if ((prod.sellerEmail && curEmail && prod.sellerEmail.trim().toLowerCase() === curEmail) ||
-          (curStore && (prod.brand || '').trim().toLowerCase() === curStore)) {
-          prod.isSellerDeactivated = false;
-          return false;
-        }
-      }
-      return true;
-    }
-    // Stale flag on seed/catalog product - clear it
-    prod.isSellerDeactivated = false;
-    return false;
+    return true;
   }
 
   if (prod.isActive === false && Array.isArray(prod.tags) && prod.tags.includes('seller-listing')) {
@@ -9156,7 +9202,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
   async function renderProducts(body) {
     body.innerHTML = loadingHTML();
     let search = '';
-    let currentFilter = 'all'; // all, in-stock, low-stock, out-stock
+    let currentFilter = 'all'; // all, in-stock, low-stock, out-stock, bestseller
 
     async function load() {
       try {
@@ -9170,12 +9216,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           products = products.filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= 5);
         } else if (currentFilter === 'out-stock') {
           products = products.filter(p => (p.stock || 0) <= 0);
+        } else if (currentFilter === 'bestseller') {
+          products = products.filter(p => isBestsellerProduct(p, true));
         }
 
         const total = rawTotal || rawProducts.length;
         const inStockCount = (rawProducts || []).filter(p => (p.stock || 0) > 5).length;
         const lowStockCount = (rawProducts || []).filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= 5).length;
         const outOfStockCount = (rawProducts || []).filter(p => (p.stock || 0) <= 0).length;
+        const bestsellerCount = (rawProducts || []).filter(p => isBestsellerProduct(p, true)).length;
 
         const tableRows = products.length ? products.map(p => {
           const stockNum = Number(p.stock || 0);
@@ -9187,6 +9236,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           } else {
             stockBadge = `<span class="ap-badge green">In Stock (${stockNum})</span>`;
           }
+
+          const isBest = isBestsellerProduct(p, true);
 
           return `
             <tr>
@@ -9208,6 +9259,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div style="font-weight:600; color:#0f172a;">${p.sellerStoreName || 'Official Store'}</div>
                 <div style="font-size:11px; color:#64748b;">${p.sellerEmail || '—'}</div>
               </td>
+              <td>
+                <button type="button" class="ap-btn ap-toggle-bestseller ${isBest ? 'ap-bestseller-active' : 'ap-bestseller-inactive'}" data-id="${p._id}" data-name="${(p.name || 'Product').replace(/"/g, '&quot;')}" title="Toggle placement in Bestseller window" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; padding:5px 10px; border-radius:6px; cursor:pointer; transition:all 0.15s ease; ${isBest ? 'background:#e53935 !important; color:#ffffff !important; border:1px solid #b71c1c !important;' : 'background:#f1f5f9 !important; color:#475569 !important; border:1px solid #cbd5e1 !important;'}">
+                  ${isBest ? '★ In Bestsellers' : '+ Add to Bestsellers'}
+                </button>
+              </td>
               <td>${p.isSellerDeactivated ? statusBadge('Deactivated') : statusBadge('Active')}</td>
               <td><span style="font-size:12px; color:#64748b;">${fmtDate(p.createdAt)}</span></td>
               <td>
@@ -9219,7 +9275,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           `;
         }).join('') : `
           <tr>
-            <td colspan="8" style="text-align:center; padding: 40px 16px; color:#94a3b8;">
+            <td colspan="9" style="text-align:center; padding: 40px 16px; color:#94a3b8;">
               ${emptyHTML('📦', 'No products found matching your search.')}
             </td>
           </tr>
@@ -9233,7 +9289,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   Product Catalog
                   <span class="ap-super-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">${total} Listed SKUs</span>
                 </h2>
-                <p class="ap-view-sub">Audit active SKUs, track real-time inventory buffers, check merchant pricing, and remove non-compliant items.</p>
+                <p class="ap-view-sub">Audit active SKUs, add or remove items from the Bestsellers window, track real-time inventory, and manage merchant catalog.</p>
               </div>
               <div class="ap-view-actions">
                 <button class="ap-btn ghost" id="ap-product-refresh-btn">
@@ -9293,6 +9349,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <button class="ap-tab-pill ${currentFilter === 'in-stock' ? 'active' : ''}" data-filter="in-stock">
                     In Stock <span class="ap-tab-count">${inStockCount}</span>
                   </button>
+                  <button class="ap-tab-pill ${currentFilter === 'bestseller' ? 'active' : ''}" data-filter="bestseller" style="${currentFilter === 'bestseller' ? 'background:#fee2e2; color:#b91c1c; border-color:#fca5a5;' : ''}">
+                    ★ Bestsellers <span class="ap-tab-count">${bestsellerCount}</span>
+                  </button>
                   <button class="ap-tab-pill ${currentFilter === 'low-stock' ? 'active' : ''}" data-filter="low-stock">
                     Low Stock <span class="ap-tab-count">${lowStockCount}</span>
                   </button>
@@ -9302,7 +9361,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
               </div>
               <div style="min-width: 260px;">
-                <input class="ap-search" id="ap-product-search-input" value="${search}" style="width:100%;">
+                <input class="ap-search" id="ap-product-search-input" value="${search}" style="width:100%;" placeholder="Search catalog...">
               </div>
             </div>
 
@@ -9317,6 +9376,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                       <th>Price</th>
                       <th>Inventory</th>
                       <th>Merchant</th>
+                      <th>Bestseller Window</th>
                       <th>Status</th>
                       <th>Added</th>
                       <th>Actions</th>
@@ -9347,6 +9407,38 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         body.querySelectorAll('.ap-tab-pill').forEach(btn => {
           btn.addEventListener('click', () => {
             currentFilter = btn.dataset.filter;
+            load();
+          });
+        });
+
+        // Bestseller toggle action for Admin
+        body.querySelectorAll('.ap-toggle-bestseller').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const name = btn.dataset.name;
+            const isCurrentlyBest = btn.classList.contains('ap-bestseller-active');
+            const nextStatus = !isCurrentlyBest;
+
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+              await adminFetch(`/products/${id}/bestseller`, {
+                method: 'PUT',
+                body: { isBestseller: nextStatus }
+              });
+            } catch (err) {
+              console.warn('Backend API update failed, persisting locally:', err);
+            }
+
+            let overrides = {};
+            try { overrides = JSON.parse(localStorage.getItem('xmart_product_overrides') || '{}'); } catch {}
+            overrides[id] = { ...(overrides[id] || {}), isBestseller: nextStatus };
+            localStorage.setItem('xmart_product_overrides', JSON.stringify(overrides));
+
+            showToast(`"${name}" ${nextStatus ? 'added to' : 'removed from'} Bestseller window!`, 'success', 3500);
             load();
           });
         });
@@ -12357,10 +12449,141 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const cms = res.data || {};
         const banners = cms.heroBanners || [];
         const promotions = cms.promotions || [];
+        const quadCards = cms.quadCards || [];
+        const heroPromoCards = cms.heroPromoCards || [];
+        const quickBrowseItems = cms.quickBrowseItems || [];
 
         let currentFilter = 'all';
         let storeSearchQuery = '';
         let offerSearchQuery = '';
+        let quadRowFilter = 'all';
+        let quadSearchQuery = '';
+
+        function getFilteredQuadCards() {
+          return quadCards.filter(c => {
+            if (quadRowFilter !== 'all' && String(c.row) !== String(quadRowFilter)) {
+              return false;
+            }
+            if (quadSearchQuery) {
+              const q = quadSearchQuery.toLowerCase();
+              const titleMatch = (c.title || '').toLowerCase().includes(q);
+              const itemsMatch = Array.isArray(c.items) && c.items.some(it => (it.title || '').toLowerCase().includes(q) || (it.badge || '').toLowerCase().includes(q));
+              if (!titleMatch && !itemsMatch) return false;
+            }
+            return true;
+          });
+        }
+
+        function renderQuadCardRows(cardList) {
+          if (!cardList || !cardList.length) {
+            return `<tr><td colspan="6" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No homepage cards match your filter. Click <strong>"+ Add New Homepage Card"</strong> or <strong>"Reset to Defaults"</strong>.</td></tr>`;
+          }
+          return cardList.map((c, idx) => {
+            const cardId = String(c._id || c.id || idx);
+            const items = Array.isArray(c.items) ? c.items : [];
+            const thumbsHtml = items.slice(0, 4).map(it => `
+              <div style="width:34px; height:34px; border-radius:6px; overflow:hidden; border:1px solid #cbd5e1; background:#ffffff; display:inline-flex; align-items:center; justify-content:center;" title="${esc(it.title || '')} (${esc(it.badge || '')})">
+                <img src="${esc(it.image)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+              </div>
+            `).join('');
+
+            const itemsSummary = items.map(it => `
+              <span style="display:inline-block; font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin:2px 4px 2px 0; color:#334155; font-weight:600;">
+                ${esc(it.title || 'Item')}${it.badge ? ` <strong style="color:#dc2626;">(${esc(it.badge)})</strong>` : ''}
+              </span>
+            `).join('');
+
+            return `
+              <tr data-quad-id="${cardId}">
+                <td style="width:160px;">
+                  <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:80px;">
+                    ${thumbsHtml}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${esc(c.title)}</div>
+                  <div style="margin-top:4px;">${itemsSummary || '<span style="color:#94a3b8; font-size:11px;">No sub-items</span>'}</div>
+                </td>
+                <td>
+                  <span class="ap-badge blue" style="font-weight:700;">Row ${c.row || 1}</span>
+                  <span class="ap-badge gray" style="margin-left:4px;">#${c.order ?? idx}</span>
+                </td>
+                <td>
+                  <div style="font-size:12px; color:#475569;">
+                    Link: <code style="color:#2563eb; font-size:11px;">${esc(c.link || '#deals')}</code>
+                  </div>
+                  <div style="font-size:11.5px; color:#64748b; margin-top:2px;">
+                    Footer: <em>"${esc(c.footerText || 'See more')}"</em>
+                  </div>
+                </td>
+                <td>
+                  <button type="button" class="ap-btn-tiny ap-quad-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${cardId}" data-active="${c.active !== false}" title="Click to toggle Active / Hidden" style="cursor:pointer; border:none; font-weight:800; padding:4px 10px;">
+                    ${c.active !== false ? 'Active' : 'Hidden'}
+                  </button>
+                </td>
+                <td style="white-space:nowrap; text-align:right;">
+                  <button type="button" class="ap-btn ghost ap-edit-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        function renderHeroPromoRows(list) {
+          if (!list || !list.length) return `<tr><td colspan="4" style="text-align:center; padding:16px; font-size:12px; color:#64748b;">No top promo cards.</td></tr>`;
+          return list.map((c, idx) => {
+            const id = String(c._id || c.id || idx);
+            return `
+              <tr data-hero-id="${id}">
+                <td style="width:60px;">
+                  <img src="${esc(c.image)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                </td>
+                <td>
+                  <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(c.brand || c.sub || 'Promo Banner')}</div>
+                  <div style="font-size:11px; color:#64748b;">${esc(c.badge || '')} • ${esc(c.sub || '')}</div>
+                  <div style="font-size:10.5px; color:#0284c7; margin-top:2px;">${esc(c.pill || '')}</div>
+                </td>
+                <td>
+                  <button type="button" class="ap-btn-tiny ap-hero-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${c.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
+                    ${c.active !== false ? 'Active' : 'Paused'}
+                  </button>
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Del</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        function renderQuickBrowseRows(list) {
+          if (!list || !list.length) return `<tr><td colspan="4" style="text-align:center; padding:16px; font-size:12px; color:#64748b;">No quick browse items.</td></tr>`;
+          return list.map((it, idx) => {
+            const id = String(it._id || it.id || idx);
+            return `
+              <tr data-quick-id="${id}">
+                <td style="width:60px;">
+                  <img src="${esc(it.image)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                </td>
+                <td>
+                  <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(it.title || 'Browse Item')}</div>
+                  ${it.badge ? `<span style="font-size:10.5px; color:#dc2626; font-weight:700;">${esc(it.badge)}</span>` : ''}
+                </td>
+                <td>
+                  <button type="button" class="ap-btn-tiny ap-quick-toggle-btn ${it.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${it.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
+                    ${it.active !== false ? 'Active' : 'Paused'}
+                  </button>
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Del</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
 
         function renderBannerRows(bannerList) {
           if (!bannerList.length) {
@@ -12665,6 +12888,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                   Refresh
                 </button>
+                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#2563eb; border-color:#1d4ed8; color:#ffffff !important; font-weight:800;">
+                  <span>+ Add Homepage Card</span>
+                </button>
                 <button class="ap-btn primary" id="ap-top-add-banner-btn" style="color:#000000; font-weight:800;">
                   <span style="color:#000000; font-weight:800;">+ Add Featured Banner</span>
                 </button>
@@ -12691,6 +12917,117 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <button class="ap-btn primary" id="ap-save-cms-announcement-btn" style="padding:8px 20px;">
                   Save Announcement Bar
                 </button>
+              </div>
+            </div>
+
+            <!-- Homepage 4-Quadrant Category Cards Manager -->
+            <div class="ap-table-card" style="margin-bottom:24px;" id="ap-quad-cards-section">
+              <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#000000; display:flex; align-items:center; gap:8px;">
+                    Homepage 4-Quadrant Category Cards
+                    <span class="ap-badge blue" id="ap-quad-count-badge" style="font-weight:700;">${quadCards.length} Cards</span>
+                  </h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#1e293b; font-weight:600;">Full control over all 4-item category cards on the customer homepage. Change titles, swap images, edit deal badges, and add/remove cards.</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:700;" title="Restore original factory preset cards">
+                    ↺ Reset to Defaults
+                  </button>
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#2563eb; color:#ffffff !important;">
+                    + Add New Homepage Card
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Toolbar with Search & Row Filters -->
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="ap-cms-pills" id="ap-quad-row-pills">
+                  <button type="button" class="ap-cms-pill active" data-row="all">All Rows (${quadCards.length})</button>
+                  <button type="button" class="ap-cms-pill" data-row="1">Row 1</button>
+                  <button type="button" class="ap-cms-pill" data-row="2">Row 2</button>
+                  <button type="button" class="ap-cms-pill" data-row="3">Row 3</button>
+                  <button type="button" class="ap-cms-pill" data-row="4">Row 4</button>
+                  <button type="button" class="ap-cms-pill" data-row="5">Row 5</button>
+                  <button type="button" class="ap-cms-pill" data-row="6">Row 6</button>
+                  <button type="button" class="ap-cms-pill" data-row="7">Row 7</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input type="text" id="ap-quad-search-input" placeholder="Search cards by title or item..." style="width:240px; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none;" />
+                </div>
+              </div>
+
+              <div class="ap-table-wrap">
+                <table class="ap-table">
+                  <thead>
+                    <tr>
+                      <th style="color:#000000; font-weight:800;">4 Tile Preview</th>
+                      <th style="color:#000000; font-weight:800;">Card Title &amp; Items Summary</th>
+                      <th style="color:#000000; font-weight:800;">Row &amp; Order</th>
+                      <th style="color:#000000; font-weight:800;">Destination &amp; Footer</th>
+                      <th style="color:#000000; font-weight:800;">Status</th>
+                      <th style="text-align:right; color:#000000; font-weight:800;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ap-quad-table-body">
+                    ${renderQuadCardRows(getFilteredQuadCards())}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Top Hero Promo Cards & Quick Browse Strip Grid -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
+              <!-- Top Hero Cards (4 Cards) -->
+              <div class="ap-table-card">
+                <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#000000;">Top Hero Promo Cards</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">The 4 showcase cards below the main banner slider.</p>
+                  </div>
+                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800;">+ Add</button>
+                </div>
+                <div class="ap-table-wrap">
+                  <table class="ap-table">
+                    <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>Details &amp; Badge</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ap-hero-promo-table-body">
+                      ${renderHeroPromoRows(heroPromoCards)}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Quick Browse Items (7 Items) -->
+              <div class="ap-table-card">
+                <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#000000;">Quick-Browse Strip Items</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">The mini horizontal browse items above the quad grid.</p>
+                  </div>
+                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800;">+ Add</button>
+                </div>
+                <div class="ap-table-wrap">
+                  <table class="ap-table">
+                    <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>Title &amp; Badge</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ap-quick-browse-table-body">
+                      ${renderQuickBrowseRows(quickBrowseItems)}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -12886,6 +13223,585 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             countBadge.textContent = `${filtered.length} Offer${filtered.length === 1 ? '' : 's'}${filtered.length !== promotions.length ? ` (of ${promotions.length})` : ''}`;
           }
         }
+
+        function updateQuadCardsTable() {
+          const tbody = document.getElementById('ap-quad-table-body');
+          const countBadge = document.getElementById('ap-quad-count-badge');
+          const filtered = getFilteredQuadCards();
+          if (tbody) {
+            tbody.innerHTML = renderQuadCardRows(filtered);
+            attachQuadCardRowHandlers();
+          }
+          if (countBadge) {
+            countBadge.textContent = `${filtered.length} Card${filtered.length === 1 ? '' : 's'}${filtered.length !== quadCards.length ? ` (of ${quadCards.length})` : ''}`;
+          }
+        }
+
+        // Wire Homepage Quad Card Filters & Search
+        document.querySelectorAll('#ap-quad-row-pills .ap-cms-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            document.querySelectorAll('#ap-quad-row-pills .ap-cms-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            quadRowFilter = pill.dataset.row;
+            updateQuadCardsTable();
+          });
+        });
+
+        const quadSearchInput = document.getElementById('ap-quad-search-input');
+        quadSearchInput?.addEventListener('input', () => {
+          quadSearchQuery = quadSearchInput.value.trim();
+          updateQuadCardsTable();
+        });
+
+        document.getElementById('ap-cms-reset-quad-btn')?.addEventListener('click', async () => {
+          if (!confirm('Are you sure you want to reset all homepage category cards to factory presets? Any custom changes will be restored.')) return;
+          try {
+            await adminFetch('/cms/home-cards/reset-defaults', { method: 'POST' });
+            showToast('All homepage cards restored to defaults!', 'success');
+            window._fetchStorefrontCMS?.();
+            load();
+          } catch (e) {
+            showToast(e.message, 'error');
+          }
+        });
+
+        document.getElementById('ap-top-add-quad-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showQuadCardModal(null);
+        });
+        document.getElementById('ap-cms-add-quad-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showQuadCardModal(null);
+        });
+
+        document.getElementById('ap-add-hero-promo-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showHeroPromoModal(null);
+        });
+
+        document.getElementById('ap-add-quick-browse-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showQuickBrowseModal(null);
+        });
+
+        function attachQuadCardRowHandlers() {
+          body.querySelectorAll('.ap-quad-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const curActive = btn.dataset.active === 'true';
+              btn.disabled = true;
+              try {
+                await adminFetch(`/cms/quad-cards/${id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ active: !curActive }),
+                });
+                showToast(`Card ${!curActive ? 'activated' : 'hidden'} successfully!`, 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+              }
+            });
+          });
+
+          body.querySelectorAll('.ap-edit-quad-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const card = quadCards.find(c => String(c._id || c.id) === String(id));
+              if (card) showQuadCardModal(card);
+              else showToast('Card not found.', 'error');
+            });
+          });
+
+          body.querySelectorAll('.ap-delete-quad-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const card = quadCards.find(c => String(c._id || c.id) === String(id));
+              const title = card?.title || 'this card';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Homepage Card?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to permanently remove <strong>"${esc(title)}"</strong>? It will be removed from the customer homepage immediately.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-card-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-card-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Card</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-card-cancel')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-card-confirm')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-card-confirm');
+                delBtn.disabled = true;
+                delBtn.textContent = 'Deleting...';
+                try {
+                  await adminFetch(`/cms/quad-cards/${id}`, { method: 'DELETE' });
+                  showToast('Homepage card deleted successfully!', 'success');
+                  window._fetchStorefrontCMS?.();
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  delBtn.disabled = false;
+                  delBtn.textContent = 'Delete Card';
+                }
+              });
+            });
+          });
+        }
+
+        function showQuadCardModal(existingCard) {
+          const isEdit = Boolean(existingCard);
+          const rawItems = Array.isArray(existingCard?.items) ? existingCard.items : [];
+          const items = [0, 1, 2, 3].map(i => rawItems[i] || { image: '', title: '', badge: '', subText: '', link: '#deals' });
+
+          const backdrop = document.createElement('div');
+          backdrop.className = 'ap-modal-backdrop';
+          backdrop.style.zIndex = '100050';
+          backdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:780px; width:95%; max-height:90vh; overflow-y:auto; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:14px; margin-bottom:18px;">
+                <div>
+                  <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Homepage Category Card' : 'Add New Homepage Category Card'}</h3>
+                  <p style="margin:3px 0 0; font-size:12px; color:#64748b;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
+                </div>
+                <button type="button" class="ap-btn ghost" id="ap-quad-modal-close" style="font-size:18px; line-height:1; padding:4px 8px;">✕</button>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
+                <div style="grid-column: 1 / -1;">
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:4px;">Card Title <span style="color:#ef4444;">*</span></label>
+                  <input type="text" id="quad-m-title" class="ap-input" value="${esc(existingCard?.title || '')}" placeholder="e.g. Deals for you, Starting ₹149 | Dry fruits & seeds" style="width:100%; font-weight:700; font-size:13px;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Row Number</label>
+                  <select id="quad-m-row" class="ap-input" style="width:100%;">
+                    ${[1, 2, 3, 4, 5, 6, 7, 8].map(r => `<option value="${r}" ${existingCard?.row === r ? 'selected' : ''}>Row ${r}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Display Order Index</label>
+                  <input type="number" id="quad-m-order" class="ap-input" value="${existingCard?.order ?? quadCards.length}" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Category / Target Link</label>
+                  <input type="text" id="quad-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#deals or #category/Electronics" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Footer Link Text</label>
+                  <input type="text" id="quad-m-footer-text" class="ap-input" value="${esc(existingCard?.footerText || 'See more')}" placeholder="e.g. See all deals" style="width:100%;" />
+                </div>
+              </div>
+
+              <!-- The 4 Tile Items -->
+              <h4 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:16px 0 10px; border-top:1px solid #f1f5f9; padding-top:14px;">
+                4 Quadrant Product Tiles (Left to Right, Top to Bottom)
+              </h4>
+
+              <div id="quad-items-editor-container">
+                ${items.map((it, idx) => `
+                  <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                      <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile ${idx + 1}</span>
+                      <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: ${idx === 0 ? 'Top Left' : idx === 1 ? 'Top Right' : idx === 2 ? 'Bottom Left' : 'Bottom Right'}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                      <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#ffffff; display:flex; align-items:center; justify-content:center;">
+                        <img id="item-img-preview-${idx}" src="${esc(it.image)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                      </div>
+                      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <div style="grid-column: 1 / -1;">
+                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                          <input type="text" id="quad-item-img-${idx}" class="ap-input quad-item-img-field" data-index="${idx}" value="${esc(it.image)}" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                        </div>
+                        <div>
+                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                          <input type="text" id="quad-item-title-${idx}" class="ap-input" value="${esc(it.title)}" placeholder="e.g. Smartphones" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                        </div>
+                        <div>
+                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                          <input type="text" id="quad-item-badge-${idx}" class="ap-input" value="${esc(it.badge)}" placeholder="e.g. 50% off or Deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                        </div>
+                        <div>
+                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                          <input type="text" id="quad-item-subtext-${idx}" class="ap-input" value="${esc(it.subText)}" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                        </div>
+                        <div>
+                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                          <input type="text" id="quad-item-link-${idx}" class="ap-input" value="${esc(it.link || '#deals')}" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <!-- Active status -->
+              <div style="display:flex; align-items:center; gap:8px; margin:14px 0 18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+                <input type="checkbox" id="quad-m-active" ${existingCard?.active !== false ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;" />
+                <label for="quad-m-active" style="font-size:12.5px; font-weight:700; color:#0f172a; cursor:pointer;">
+                  Visible &amp; Active on Customer Homepage
+                </label>
+              </div>
+
+              <!-- Modal Buttons -->
+              <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; background:#2563eb; font-weight:800; color:#ffffff !important;">
+                  ${isEdit ? 'Save Changes' : 'Create Homepage Card'}
+                </button>
+              </div>
+            </div>
+          `;
+
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
+
+          const closeModal = () => backdrop.remove();
+          backdrop.querySelector('#ap-quad-modal-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-quad-modal-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+          backdrop.querySelectorAll('.quad-item-img-field').forEach(input => {
+            input.addEventListener('input', () => {
+              const idx = input.dataset.index;
+              const preview = backdrop.querySelector(`#item-img-preview-${idx}`);
+              if (preview && input.value.trim()) {
+                preview.src = input.value.trim();
+              }
+            });
+          });
+
+          backdrop.querySelector('#ap-quad-modal-save')?.addEventListener('click', async () => {
+            const title = backdrop.querySelector('#quad-m-title')?.value.trim();
+            if (!title) return showToast('Please enter a card title.', 'error');
+
+            const row = Number(backdrop.querySelector('#quad-m-row')?.value) || 1;
+            const order = Number(backdrop.querySelector('#quad-m-order')?.value) || 0;
+            const link = backdrop.querySelector('#quad-m-link')?.value.trim() || '#deals';
+            const footerText = backdrop.querySelector('#quad-m-footer-text')?.value.trim() || 'See more';
+            const footerLink = link;
+            const active = backdrop.querySelector('#quad-m-active')?.checked !== false;
+
+            const itemsPayload = [0, 1, 2, 3].map(i => ({
+              image: backdrop.querySelector(`#quad-item-img-${i}`)?.value.trim() || '',
+              title: backdrop.querySelector(`#quad-item-title-${i}`)?.value.trim() || '',
+              badge: backdrop.querySelector(`#quad-item-badge-${i}`)?.value.trim() || '',
+              subText: backdrop.querySelector(`#quad-item-subtext-${i}`)?.value.trim() || '',
+              link: backdrop.querySelector(`#quad-item-link-${i}`)?.value.trim() || '#deals',
+            }));
+
+            const saveBtn = backdrop.querySelector('#ap-quad-modal-save');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+              if (isEdit) {
+                await adminFetch(`/cms/quad-cards/${existingCard._id || existingCard.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ title, row, order, link, footerText, footerLink, active, items: itemsPayload }),
+                });
+                showToast('Homepage card updated successfully!', 'success');
+              } else {
+                await adminFetch('/cms/quad-cards', {
+                  method: 'POST',
+                  body: JSON.stringify({ title, row, order, link, footerText, footerLink, active, items: itemsPayload }),
+                });
+                showToast('New homepage card created successfully!', 'success');
+              }
+              window._fetchStorefrontCMS?.();
+              closeModal();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+              saveBtn.disabled = false;
+              saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Homepage Card';
+            }
+          });
+        }
+
+        function attachHeroPromoRowHandlers() {
+          body.querySelectorAll('.ap-hero-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const curActive = btn.dataset.active === 'true';
+              btn.disabled = true;
+              try {
+                await adminFetch(`/cms/hero-promo-cards/${id}`, { method: 'PUT', body: JSON.stringify({ active: !curActive }) });
+                showToast(`Promo card ${!curActive ? 'activated' : 'paused'}!`, 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+              }
+            });
+          });
+
+          body.querySelectorAll('.ap-edit-hero-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const card = heroPromoCards.find(c => String(c._id || c.id) === String(id));
+              if (card) showHeroPromoModal(card);
+            });
+          });
+
+          body.querySelectorAll('.ap-del-hero-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              if (!confirm('Delete this top hero promo card?')) return;
+              try {
+                await adminFetch(`/cms/hero-promo-cards/${btn.dataset.id}`, { method: 'DELETE' });
+                showToast('Top promo card deleted!', 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+              }
+            });
+          });
+        }
+
+        function showHeroPromoModal(existingCard) {
+          const isEdit = Boolean(existingCard);
+          const backdrop = document.createElement('div');
+          backdrop.className = 'ap-modal-backdrop';
+          backdrop.style.zIndex = '100050';
+          backdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:520px; background:#ffffff; border-radius:14px; padding:22px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
+                <button type="button" class="ap-btn ghost" id="ap-hero-m-close" style="font-size:18px; padding:2px 8px;">✕</button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
+                  <input type="text" id="hero-m-img" class="ap-input" value="${esc(existingCard?.image || '')}" placeholder="https://images.unsplash.com/..." style="width:100%;" />
+                  <div style="margin-top:6px; width:70px; height:70px; border-radius:6px; border:1px solid #cbd5e1; overflow:hidden;">
+                    <img id="hero-m-img-preview" src="${esc(existingCard?.image || '')}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                  </div>
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Badge Offer Headline</label>
+                  <input type="text" id="hero-m-badge" class="ap-input" value="${esc(existingCard?.badge || '')}" placeholder="e.g. Min. 50% off" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Subtitle / Description</label>
+                  <input type="text" id="hero-m-sub" class="ap-input" value="${esc(existingCard?.sub || '')}" placeholder="e.g. Fresh finds" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Brand Name (Optional)</label>
+                  <input type="text" id="hero-m-brand" class="ap-input" value="${esc(existingCard?.brand || '')}" placeholder="e.g. SYMBOL PREMIUM" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Bottom Cashback Pill Text</label>
+                  <input type="text" id="hero-m-pill" class="ap-input" value="${esc(existingCard?.pill || 'Unlimited 5% cashback*')}" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Destination Link</label>
+                  <input type="text" id="hero-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#fashion-deals" style="width:100%;" />
+                </div>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; color:#ffffff !important;">Save Card</button>
+              </div>
+            </div>
+          `;
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
+          const closeModal = () => backdrop.remove();
+          backdrop.querySelector('#ap-hero-m-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-hero-m-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+          const imgInput = backdrop.querySelector('#hero-m-img');
+          imgInput?.addEventListener('input', () => {
+            const prev = backdrop.querySelector('#hero-m-img-preview');
+            if (prev && imgInput.value.trim()) prev.src = imgInput.value.trim();
+          });
+
+          backdrop.querySelector('#ap-hero-m-save')?.addEventListener('click', async () => {
+            const image = imgInput?.value.trim();
+            if (!image) return showToast('Please enter an image URL.', 'error');
+            const badge = backdrop.querySelector('#hero-m-badge')?.value.trim() || '';
+            const sub = backdrop.querySelector('#hero-m-sub')?.value.trim() || '';
+            const brand = backdrop.querySelector('#hero-m-brand')?.value.trim() || '';
+            const pill = backdrop.querySelector('#hero-m-pill')?.value.trim() || '';
+            const link = backdrop.querySelector('#hero-m-link')?.value.trim() || '#deals';
+
+            try {
+              if (isEdit) {
+                await adminFetch(`/cms/hero-promo-cards/${existingCard._id || existingCard.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ image, badge, sub, brand, pill, link }),
+                });
+                showToast('Top promo card updated!', 'success');
+              } else {
+                await adminFetch('/cms/hero-promo-cards', {
+                  method: 'POST',
+                  body: JSON.stringify({ image, badge, sub, brand, pill, link }),
+                });
+                showToast('Top promo card created!', 'success');
+              }
+              window._fetchStorefrontCMS?.();
+              closeModal();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+            }
+          });
+        }
+
+        function attachQuickBrowseRowHandlers() {
+          body.querySelectorAll('.ap-quick-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const curActive = btn.dataset.active === 'true';
+              btn.disabled = true;
+              try {
+                await adminFetch(`/cms/quick-browse/${id}`, { method: 'PUT', body: JSON.stringify({ active: !curActive }) });
+                showToast(`Quick browse item ${!curActive ? 'activated' : 'paused'}!`, 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+              }
+            });
+          });
+
+          body.querySelectorAll('.ap-edit-quick-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const item = quickBrowseItems.find(c => String(c._id || c.id) === String(id));
+              if (item) showQuickBrowseModal(item);
+            });
+          });
+
+          body.querySelectorAll('.ap-del-quick-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              if (!confirm('Delete this quick browse item?')) return;
+              try {
+                await adminFetch(`/cms/quick-browse/${btn.dataset.id}`, { method: 'DELETE' });
+                showToast('Quick browse item deleted!', 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+              }
+            });
+          });
+        }
+
+        function showQuickBrowseModal(existingItem) {
+          const isEdit = Boolean(existingItem);
+          const backdrop = document.createElement('div');
+          backdrop.className = 'ap-modal-backdrop';
+          backdrop.style.zIndex = '100050';
+          backdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:480px; background:#ffffff; border-radius:14px; padding:22px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Quick Browse Item' : 'Add Quick Browse Item'}</h3>
+                <button type="button" class="ap-btn ghost" id="ap-quick-m-close" style="font-size:18px; padding:2px 8px;">✕</button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
+                  <input type="text" id="quick-m-img" class="ap-input" value="${esc(existingItem?.image || '')}" placeholder="https://images.unsplash.com/..." style="width:100%;" />
+                  <div style="margin-top:6px; width:60px; height:60px; border-radius:6px; border:1px solid #cbd5e1; overflow:hidden;">
+                    <img id="quick-m-img-preview" src="${esc(existingItem?.image || '')}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                  </div>
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Title / Category Label</label>
+                  <input type="text" id="quick-m-title" class="ap-input" value="${esc(existingItem?.title || '')}" placeholder="e.g. For you, Keep shopping for" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Badge (Optional)</label>
+                  <input type="text" id="quick-m-badge" class="ap-input" value="${esc(existingItem?.badge || '')}" placeholder="e.g. 42% off" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Target Link</label>
+                  <input type="text" id="quick-m-link" class="ap-input" value="${esc(existingItem?.link || '#deals')}" placeholder="#saved" style="width:100%;" />
+                </div>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                <button type="button" class="ap-btn ghost" id="ap-quick-m-cancel">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-quick-m-save" style="padding:8px 20px; font-weight:800; color:#ffffff !important;">Save Item</button>
+              </div>
+            </div>
+          `;
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
+          const closeModal = () => backdrop.remove();
+          backdrop.querySelector('#ap-quick-m-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-quick-m-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+          const imgInput = backdrop.querySelector('#quick-m-img');
+          imgInput?.addEventListener('input', () => {
+            const prev = backdrop.querySelector('#quick-m-img-preview');
+            if (prev && imgInput.value.trim()) prev.src = imgInput.value.trim();
+          });
+
+          backdrop.querySelector('#ap-quick-m-save')?.addEventListener('click', async () => {
+            const image = imgInput?.value.trim();
+            if (!image) return showToast('Please enter an image URL.', 'error');
+            const title = backdrop.querySelector('#quick-m-title')?.value.trim() || '';
+            const badge = backdrop.querySelector('#quick-m-badge')?.value.trim() || '';
+            const link = backdrop.querySelector('#quick-m-link')?.value.trim() || '#deals';
+
+            try {
+              if (isEdit) {
+                await adminFetch(`/cms/quick-browse/${existingItem._id || existingItem.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ image, title, badge, link }),
+                });
+                showToast('Quick browse item updated!', 'success');
+              } else {
+                await adminFetch('/cms/quick-browse', {
+                  method: 'POST',
+                  body: JSON.stringify({ image, title, badge, link }),
+                });
+                showToast('Quick browse item added!', 'success');
+              }
+              window._fetchStorefrontCMS?.();
+              closeModal();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+            }
+          });
+        }
+
+        // Attach initial row handlers for Homepage cards
+        attachQuadCardRowHandlers();
+        attachHeroPromoRowHandlers();
+        attachQuickBrowseRowHandlers();
 
         // Wire Add Banner Buttons
         document.getElementById('ap-top-add-banner-btn')?.addEventListener('click', (e) => {
@@ -17748,7 +18664,6 @@ function buildCheckoutModal() {
     if (Array.isArray(savedAddrs) && savedAddrs.length > 0) {
       // ── Render address cards ──────────────────────────────────────
       cardsList.innerHTML = savedAddrs.map((addr, i) => {
-        const typeIcon = addr.type === 'WORK' ? '🏢' : addr.type === 'OTHER' ? '📍' : '🏠';
         const isSelected = (i === selectedAddrIndex);
         const isDefault = !!addr.isDefault;
         const badgeLabel = isDefault ? 'Default' : (addr.type || 'HOME');
@@ -17765,13 +18680,16 @@ function buildCheckoutModal() {
             <div style="flex:1;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                 <span style="font-size:13px;font-weight:800;color:#0f172a;">${addr.name || user.name || ''}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${typeIcon} ${badgeLabel}</span>
+                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${badgeLabel}</span>
               </div>
               <div style="font-size:12.5px;color:#475569;line-height:1.6;">
                 ${addr.street || addr.address || ''}<br>
                 ${addr.city || ''}, ${addr.state || ''} - <strong>${addr.pincode || ''}</strong>
               </div>
-              <div style="font-size:12px;color:#94a3b8;margin-top:3px;">📞 ${addr.phone || ''}</div>
+              <div style="font-size:12px;color:#64748b;margin-top:4px;display:flex;align-items:center;gap:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#64748b;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>${addr.phone || ''}</span>
+              </div>
             </div>
           </label>`;
       }).join('');
@@ -18639,6 +19557,26 @@ function initPageRouter() {
 
   // ── 1. COMMERCIAL CATEGORY & DEALS STORE WINDOW ────────────
   window._openDedicatedPage = async (category = '', type = '', search = '', push = true) => {
+    // ── Universal cleanup: dismiss mobile keyboard & search dropdown ──
+    const searchDropdown = document.getElementById('search-results-dropdown');
+    if (searchDropdown) {
+      searchDropdown.classList.remove('is-active');
+      searchDropdown.style.display = 'none';
+      searchDropdown.innerHTML = '';
+    }
+    const searchInput = document.getElementById('product-search');
+    if (searchInput) {
+      searchInput.readOnly = true;
+      searchInput.blur();
+      setTimeout(() => {
+        searchInput.readOnly = false;
+        searchInput.blur();
+      }, 350);
+    }
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+
     window._currentDedicatedPageArgs = { category, type, search };
     mainContent.style.display = 'none';
     pageContainer.style.display = 'block';
@@ -18861,6 +19799,56 @@ function initPageRouter() {
     filterAndRender();
   };
 
+  // Official designated Bestseller product IDs & key phrases (matching the 6 items in Bestseller window)
+  const OFFICIAL_BESTSELLER_IDS = new Set([
+    '6a946d65adbc99d858d2cba8', // OnePlus Nord CE 4 5G
+    '6a946d65adbc99d858d2cbfe', // Razer Viper V2 Pro
+    '6a946d65adbc99d858d2cd29', // Safari Sonic 55cm
+    '6a946d65adbc99d858d2ce0e', // Voltas 1.5 Ton
+    '6a946d65adbc99d858d2cd0b', // Furny Rolando
+    '6a946d65adbc99d858d2cd54'  // Under Armour Hustle 5.0
+  ]);
+
+  const OFFICIAL_BESTSELLER_KEYPHRASES = [
+    'oneplus nord ce 4',
+    'razer viper v2 pro',
+    'safari sonic 55cm',
+    'voltas 1.5 ton',
+    'furny rolando',
+    'under armour hustle 5.0'
+  ];
+
+  // Helper: Detect whether a product qualifies for the Bestseller tag
+  // ONLY products added in the Bestseller window receive this tag
+  function isBestsellerProduct(p, strict = false) {
+    if (!p) return false;
+    const id = String(p._id || p.id || '');
+
+    // 1. Check manual override by admin / seller first
+    let overrides = {};
+    try { overrides = JSON.parse(localStorage.getItem('xmart_product_overrides') || '{}'); } catch {}
+    if (id && overrides[id] && overrides[id].isBestseller !== undefined) {
+      return Boolean(overrides[id].isBestseller);
+    }
+
+    // 2. Explicit database flag
+    if (p.isBestseller === true) return true;
+    if (p.isBestseller === false) return false;
+
+    // 3. Official designated 6 Bestsellers (by ID or exact phrase match)
+    if (id && OFFICIAL_BESTSELLER_IDS.has(id)) return true;
+    const lowerName = (p.name || '').toLowerCase();
+    if (OFFICIAL_BESTSELLER_KEYPHRASES.some(phrase => lowerName.includes(phrase))) return true;
+
+    // 4. When viewing the Best Sellers dedicated window, items inside this window get the tag
+    const isBestsellerPage = window._currentDedicatedPageArgs && (window._currentDedicatedPageArgs.type === 'bestseller' || window._currentDedicatedPageArgs.type === 'bestsellers' || window._currentDedicatedPageArgs.category?.toLowerCase() === 'bestseller');
+    if (!strict && isBestsellerPage) {
+      return true;
+    }
+
+    return false;
+  }
+
   async function fetchAndRenderCommercialProducts(category = '', search = '', filters = {}) {
     const grid = document.getElementById('com-products-grid');
     const countEl = document.getElementById('product-results-count');
@@ -18872,9 +19860,11 @@ function initPageRouter() {
       const isSpellFix = lowerRawSearch && correctedSearch !== lowerRawSearch;
       const activeSearchQuery = correctedSearch || lowerRawSearch;
 
-      let url = `${API_BASE}/products?limit=50&sort=${filters.sortVal || 'popular'}`;
+      const isBestsellerWindow = window._currentDedicatedPageArgs && (window._currentDedicatedPageArgs.type === 'bestseller' || window._currentDedicatedPageArgs.type === 'bestsellers' || window._currentDedicatedPageArgs.category?.toLowerCase() === 'bestseller');
+      let url = `${API_BASE}/products?limit=${isBestsellerWindow ? '6' : '50'}&sort=${filters.sortVal || 'popular'}`;
       if (category) url += `&category=${encodeURIComponent(category)}`;
       if (activeSearchQuery) url += `&search=${encodeURIComponent(activeSearchQuery)}`;
+      if (isBestsellerWindow) url += `&bestseller=true`;
 
       let products = [];
       try {
@@ -18993,6 +19983,28 @@ function initPageRouter() {
         });
       }
 
+      // Filter products for Best Sellers window if active - strictly only 6 products
+      if (isBestsellerWindow && !search) {
+        let overrides = {};
+        try { overrides = JSON.parse(localStorage.getItem('xmart_product_overrides') || '{}'); } catch {}
+        const bestsellers = products.filter(p => {
+          const id = String(p._id || p.id);
+          if (overrides[id] && overrides[id].isBestseller !== undefined) {
+            return Boolean(overrides[id].isBestseller);
+          }
+          return isBestsellerProduct(p, true);
+        });
+
+        if (bestsellers.length > 0) {
+          products = bestsellers.slice(0, 6);
+        } else {
+          // If no products have been designated yet, show top rated subset as initial bestsellers (only 6)
+          products = [...products]
+            .sort((a, b) => ((b.rating || 0) * (b.numReviews || 50)) - ((a.rating || 0) * (a.numReviews || 50)))
+            .slice(0, 6);
+        }
+      }
+
       // Apply Price Filter
       if (filters.priceVal === 'under-1000') products = products.filter(p => (p.finalPrice || p.price) < 1000);
       else if (filters.priceVal === '1000-5000') products = products.filter(p => (p.finalPrice || p.price) >= 1000 && (p.finalPrice || p.price) <= 5000);
@@ -19011,6 +20023,11 @@ function initPageRouter() {
         products = products.filter(p => (p.discount || 0) >= minDisc);
       }
 
+      // Strictly enforce only six products in best seller windows
+      if (isBestsellerWindow && !search) {
+        products = products.slice(0, 6);
+      }
+
       // Update count
       if (countEl) countEl.textContent = products.length;
 
@@ -19019,11 +20036,12 @@ function initPageRouter() {
       if (duplicateToolbar) duplicateToolbar.style.display = 'none';
 
       // Prepare Flipkart Top Banner (Without Breadcrumb & Without Sort By row)
+      const resultsTitle = correctedSearch || lowerRawSearch || category || (isBestsellerWindow ? 'Best Sellers' : (isDealsWindow ? "Today's Deals" : 'Products'));
       let flipkartHeaderHtml = `
         <div class="fk-list-top-banner-wrap" style="width:100%;margin-bottom:12px;box-sizing:border-box;">
           <div class="search-did-you-mean-bar">
             <div>
-              Showing 1 – ${products.length} of <strong>${products.length}</strong> results for "<strong>${correctedSearch || lowerRawSearch || category || 'Products'}</strong>"
+              Showing 1 – ${products.length} of <strong>${products.length}</strong> results for "<strong>${resultsTitle}</strong>"
               ${isSpellFix ? `<span style="color:#878787;font-size:13px;margin-left:6px;">(Showing results for <strong style="color:#2874f0;">${correctedSearch}</strong>)</span>` : ''}
             </div>
             ${isSpellFix ? `
@@ -19037,7 +20055,7 @@ function initPageRouter() {
 
       if (!products || products.length === 0) {
         grid.classList.add('fk-list-mode');
-        grid.style.cssText = "";
+        grid.setAttribute('style', 'display: block !important; grid-template-columns: none !important; gap: 0 !important; width: 100% !important;');
         grid.innerHTML = `
           ${flipkartHeaderHtml}
           <div style="text-align:center;padding:70px 20px;background:#fff;border-radius:8px;border:1px solid #e0e0e0;grid-column:1/-1;">
@@ -19146,7 +20164,7 @@ function initPageRouter() {
 
       // Universal Flipkart Horizontal List View Rendering for ALL products
       grid.classList.add('fk-list-mode');
-      grid.style.cssText = "";
+      grid.setAttribute('style', 'display: block !important; grid-template-columns: none !important; gap: 0 !important; width: 100% !important;');
       window._compareList = window._compareList || [];
 
       grid.innerHTML = flipkartHeaderHtml + products.map(prod => {
@@ -19157,25 +20175,29 @@ function initPageRouter() {
         const discount = prod.discount || 20;
         const rating = prod.rating || 4.3;
         const reviews = prod.numReviews || Math.floor(80 + Math.random() * 2500);
-        const isWishlisted = Store.wishlist.some(w => w.id === prodId);
+        const isWishlisted = Store.isWishlisted(prod);
+        const isCurrentBestsellerPage = Boolean(window._currentDedicatedPageArgs && (window._currentDedicatedPageArgs.type === 'bestseller' || window._currentDedicatedPageArgs.type === 'bestsellers' || window._currentDedicatedPageArgs.category?.toLowerCase() === 'bestseller'));
+        const isBestseller = isCurrentBestsellerPage ? true : isBestsellerProduct(prod, true);
         const specs = getProductSpecsList(prod);
         const exchangeVal = Math.round((finalPrice * 0.45) / 500) * 500 || 1500;
         const b = getRatingBreakdown(rating, reviews);
         const isCompared = window._compareList.some(c => (c._id || c.id) === prodId);
+        const isUnavailable = prod.isSellerDeactivated === true || (typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(prod));
 
         return `
-          <div class="fk-product-list-card" data-id="${prodId}">
+          <div class="fk-product-list-card ${isUnavailable ? 'is-unavailable' : ''}" data-id="${prodId}">
             <!-- Column 1: Image & Wishlist -->
             <div class="fk-prod-thumb-wrap">
-              <button class="fk-wishlist-heart-btn ${isWishlisted ? 'is-active' : ''}" data-id="${prodId}" title="Wishlist">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="${isWishlisted ? '#ef4444' : 'none'}" stroke="${isWishlisted ? '#ef4444' : '#878787'}" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              ${isBestseller ? `<span class="fk-bestseller-badge">Bestseller</span>` : ''}
+              <button class="fk-wishlist-heart-btn ${isWishlisted ? 'is-active' : ''}" data-id="${prodId}" data-wishlisted="${isWishlisted ? 'true' : 'false'}" title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}" aria-label="Wishlist">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="${isWishlisted ? '#e53935' : 'none'}" stroke="${isWishlisted ? '#e53935' : '#878787'}" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isWishlisted ? '#e53935' : 'none'}" stroke="${isWishlisted ? '#e53935' : '#878787'}"/></svg>
               </button>
-              <img src="${img}" alt="${prod.name}" loading="lazy">
+              <img src="${img}" alt="${prod.name}" loading="lazy" style="${isUnavailable ? 'filter:grayscale(25%);opacity:0.85;' : ''}">
             </div>
 
             <!-- Column 2: Details & Interactive Rating Popover (Image 5 Benchmark) -->
             <div class="fk-prod-details">
-              <h3 class="fk-prod-title">${prod.name}</h3>
+              <h3 class="fk-prod-title" style="color: #000000 !important;">${prod.name}</h3>
               <div class="fk-rating-row">
                 <div class="fk-rating-pill-wrap">
                   <span class="fk-rating-pill" role="button" aria-label="Rating">${rating} ★</span>
@@ -19217,7 +20239,7 @@ function initPageRouter() {
                   </div>
                 </div>
                 <span class="fk-rating-count">${reviews.toLocaleString()} Ratings &amp; ${Math.round(reviews / 7)} Reviews</span>
-                <span class="fk-assured-tag">✓ Assured</span>
+                <span class="fk-assured-tag" style="background:#eef6ff !important;color:#0878f9 !important;border:1px solid #bfdbfe !important;">✓ Assured</span>
               </div>
               <ul class="fk-specs-list">
                 ${specs.slice(0, 5).map(s => `<li>${s}</li>`).join('')}
@@ -19226,14 +20248,21 @@ function initPageRouter() {
 
             <!-- Column 3: Pricing & Offers -->
             <div class="fk-prod-pricing-col">
-              <div class="fk-current-price">${Currency.format(finalPrice)}</div>
+              ${isUnavailable ? `
+                <div class="fk-unavailable-pill">● Currently Unavailable</div>
+              ` : ''}
+              <div class="fk-current-price" style="${isUnavailable ? 'color:#64748b;' : ''}">${Currency.format(finalPrice)}</div>
               <div class="fk-orig-price-row">
                 <span class="fk-orig-price">${Currency.format(origPrice)}</span>
                 <span class="fk-disc-badge">${discount}% off</span>
               </div>
-              <div class="fk-delivery-tag">Free delivery</div>
-              <div class="fk-offer-tag">Bank Offer 5% Cashback on Axis Bank Card</div>
-              <div class="fk-exchange-tag">Upto ₹${exchangeVal.toLocaleString()} Off on Exchange</div>
+              ${isUnavailable ? `
+                <div style="color:#dc2626;font-size:11.5px;font-weight:700;margin-top:6px;background:#fff1f2;padding:3px 6px;border-radius:4px;border:1px solid #fecdd3;">Seller Store Paused</div>
+              ` : `
+                <div class="fk-delivery-tag">Free delivery</div>
+                <div class="fk-offer-tag">Bank Offer 5% Cashback on Axis Bank Card</div>
+                <div class="fk-exchange-tag">Upto ₹${exchangeVal.toLocaleString()} Off on Exchange</div>
+              `}
             </div>
           </div>
         `;
@@ -19248,16 +20277,23 @@ function initPageRouter() {
       // Wire Wishlist heart buttons
       grid.querySelectorAll('.fk-wishlist-heart-btn').forEach(btn => {
         btn.addEventListener('click', e => {
+          e.preventDefault();
           e.stopPropagation();
-          const prod = products.find(p => (p._id || p.id) === btn.dataset.id);
+          const targetId = String(btn.dataset.id || '');
+          const card = btn.closest('.fk-product-list-card');
+          const cardTitle = (card?.querySelector('.fk-prod-title')?.textContent || '').trim();
+          const prod = products.find(p => String(p._id || p.id) === targetId || (cardTitle && p.name && p.name.trim() === cardTitle)) ||
+                       (Store.allProducts || []).find(p => String(p._id || p.id) === targetId || (cardTitle && p.name && p.name.trim() === cardTitle));
           if (prod) {
-            const res = Store.toggleWishlist(prod);
-            if (res !== false) {
-              const isW = Store.wishlist.some(w => w.id === (prod._id || prod.id));
-              btn.classList.toggle('is-active', isW);
-              btn.querySelector('svg')?.setAttribute('fill', isW ? '#ef4444' : 'none');
-              btn.querySelector('svg')?.setAttribute('stroke', isW ? '#ef4444' : '#64748b');
-            }
+            Store.toggleWishlist(prod);
+            const isW = Store.isWishlisted(prod);
+            btn.classList.toggle('is-active', isW);
+            btn.dataset.wishlisted = isW ? 'true' : 'false';
+            btn.title = isW ? 'Remove from Wishlist' : 'Add to Wishlist';
+            btn.querySelectorAll('svg, svg path').forEach(el => {
+              el.setAttribute('fill', isW ? '#e53935' : 'none');
+              el.setAttribute('stroke', isW ? '#e53935' : '#878787');
+            });
           }
         });
       });
@@ -21106,15 +22142,15 @@ function initPageRouter() {
 
         <!-- TAB 4: SELLER REGISTRATION & PROFILE (MANDATORY ELIGIBILITY ONBOARDING) -->
         <div id="seller-tab-account" class="seller-tab-content ${activeTab === 'account' ? 'is-active' : ''}">
-          <div class="seller-section-card">
-            <div class="seller-section-header" style="justify-content:space-between;display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
-              <div>
-                <h3>Merchant Profile &amp; Bank Settlement Settings</h3>
-                <p style="margin:4px 0 0;font-size:13px;color:#64748b;">
+          <div class="seller-section-card seller-merchant-profile-card">
+            <div class="seller-section-header seller-merchant-section-header">
+              <div class="seller-merchant-title-col">
+                <h3 class="seller-merchant-card-title">Merchant Profile &amp; Bank Settlement Settings</h3>
+                <p class="seller-merchant-card-desc">
                   Your legal business entity, tax identification, and linked bank settlement details are protected here.
                 </p>
               </div>
-              <span class="seller-pill-badge verified" style="font-size:12px;background:#ecfdf5 !important;color:#047857 !important;border:1.5px solid #a7f3d0 !important;padding:5px 14px;border-radius:20px;font-weight:800;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(16,185,129,0.12);">✓ Protected Merchant Profile</span>
+              <span class="seller-pill-badge verified seller-protected-merchant-pill" style="background:#ecfdf5 !important;color:#047857 !important;border:1.5px solid #a7f3d0 !important;box-shadow:0 2px 6px rgba(16,185,129,0.12) !important;">✓ Protected Merchant Profile</span>
             </div>
 
             <form id="seller-register-form" class="seller-grid-form" novalidate style="margin-top:16px;">
@@ -21208,6 +22244,50 @@ function initPageRouter() {
               </div>
             </form>
           </div>
+
+          <!-- SELLER ACCOUNT STATUS & CONTROLS (DISABLE / ENABLE & DELETE ACCOUNT WITH OTP) -->
+          ${isEligible ? `
+            <div class="seller-account-mgmt-card" id="seller-account-mgmt-card">
+              <div class="seller-mgmt-header">
+                <div class="seller-mgmt-title-group">
+                  <h4 class="seller-mgmt-h4">
+                    <svg class="seller-mgmt-shield-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span class="seller-mgmt-title-text">Storefront Status &amp; Account Controls</span>
+                  </h4>
+                </div>
+                <div class="seller-status-chip ${currentSeller?.isActive !== false ? 'is-active' : 'is-disabled'}" id="seller-live-status-chip">
+                  <span class="seller-chip-dot">●</span>
+                  <span class="seller-chip-text-full">${currentSeller?.isActive !== false ? 'Account Active &amp; Listed Online' : 'Account Disabled (Unavailable)'}</span>
+                  <span class="seller-chip-text-short">${currentSeller?.isActive !== false ? 'Active Online' : 'Disabled'}</span>
+                </div>
+              </div>
+
+              <div class="seller-mgmt-body">
+                <!-- Left Side: Disable / Enable Button -->
+                <div class="seller-mgmt-left-action">
+                  ${currentSeller?.isActive !== false ? `
+                    <button type="button" class="seller-action-btn btn-disable" id="btn-seller-toggle-disable">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+                      Disable Account
+                    </button>
+                  ` : `
+                    <button type="button" class="seller-action-btn btn-enable" id="btn-seller-toggle-enable">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Enable Account
+                    </button>
+                  `}
+                </div>
+
+                <!-- Right Side: Delete Account Button -->
+                <div class="seller-mgmt-right-action">
+                  <button type="button" class="seller-action-btn btn-delete" id="btn-seller-delete-account">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    Delete Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -21896,6 +22976,16 @@ function initPageRouter() {
       const name = pageContainer.querySelector('#prod-name')?.value.trim();
       const category = pageContainer.querySelector('#prod-cat')?.value;
       const brand = pageContainer.querySelector('#prod-brand')?.value.trim() || currentSeller?.storeName || 'X-Mart Verified';
+
+      if (category && category.toLowerCase().includes('bestseller')) {
+        showToast('Sellers are not permitted to list products in the Bestseller category. Bestseller status is exclusively curated by marketplace administration.', 'error', 4500);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Publish Product to Live Catalog</span>';
+        }
+        return;
+      }
+
       const model = pageContainer.querySelector('#prod-model')?.value.trim() || name;
       const price = parseFloat(pageContainer.querySelector('#prod-price')?.value) || 0;
       const originalPrice = parseFloat(pageContainer.querySelector('#prod-mrp')?.value) || Math.round(price * 1.25);
@@ -21987,7 +23077,8 @@ function initPageRouter() {
         description,
         images,
         angleImages,
-        tags: [category.toLowerCase(), brand.toLowerCase(), 'new-arrival', 'seller-listing'],
+        tags: [category.toLowerCase(), brand.toLowerCase(), 'new-arrival', 'seller-listing'].filter(t => !t.includes('bestseller')),
+        isBestseller: false,
         offers
       };
 
@@ -22127,6 +23218,89 @@ function initPageRouter() {
         verifiedAt: new Date().toISOString()
       };
 
+      // ── IF MERCHANT IS UPDATING EXISTING DETAILS: REQUIRE EMAIL OTP VERIFICATION ──
+      if (isEligible) {
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span>Sending Verification OTP to Registered Email...</span>';
+        }
+
+        try {
+          const token = (typeof Auth !== 'undefined' && Auth.getToken && Auth.getToken()) || Store.token || localStorage.getItem('xmart_token');
+          const otpSendResp = await fetch(`${API_BASE}/auth/seller/send-update-otp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const otpSendJson = await otpSendResp.json();
+          if (!otpSendJson.success) {
+            showToast(otpSendJson.message || 'Could not send verification OTP. Please try again.', 'error', 4500);
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = '<span style="color:#000000;font-weight:900;">Update Merchant Profile & Settlement Details</span>';
+            }
+            return;
+          }
+
+          const targetEmail = otpSendJson.data?.email || currentSeller?.email || Store.user?.email || email;
+          showToast(`✓ Verification code sent to ${targetEmail}!`, 'success', 4000);
+
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<span style="color:#000000;font-weight:900;">Update Merchant Profile & Settlement Details</span>';
+          }
+
+          openSellerSecurityOtpModal({
+            action: 'update',
+            email: targetEmail,
+            onVerified: async (otpCode) => {
+              const resp = await fetch(`${API_BASE}/auth/seller-profile`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ ...profilePayload, otp: otpCode })
+              });
+
+              const json = await resp.json();
+              if (!json.success) {
+                showToast(json.message || 'OTP verification failed. Please check the code.', 'error', 4500);
+                return { success: false };
+              }
+
+              const savedProfile = json.data || profilePayload;
+              localStorage.setItem('xmart_seller_profile', JSON.stringify(savedProfile));
+              if (Store.user) {
+                Store.user.sellerProfile = savedProfile;
+              }
+              const activeUser = Store.user || (typeof Auth !== 'undefined' && Auth.getUser && Auth.getUser()) || {};
+              if (activeUser.email) {
+                localStorage.setItem('xmart_seller_profile_' + activeUser.email, JSON.stringify(savedProfile));
+              }
+
+              showToast(`✓ Merchant Profile & Settlement details updated successfully!`, 'success', 5000);
+              window._pendingSellerTab = 'account';
+              if (typeof window._openSellerPortal === 'function') {
+                window._openSellerPortal(false, true, 'account');
+              }
+              return { success: true };
+            }
+          });
+          return;
+        } catch (otpErr) {
+          showToast(`OTP dispatch failed: ${otpErr.message}`, 'error');
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<span style="color:#000000;font-weight:900;">Update Merchant Profile & Settlement Details</span>';
+          }
+          return;
+        }
+      }
+
+      // ── FIRST TIME ONBOARDING / REGISTRATION ──
       try {
         const token = Store.token || localStorage.getItem('xmart_token');
         if (token) {
@@ -22160,6 +23334,344 @@ function initPageRouter() {
         saveBtn && (saveBtn.disabled = false);
         saveBtn && (saveBtn.innerHTML = '<span>Save & Verify Merchant Account</span>');
       }
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    // SELLER SECURITY OTP MODAL & LIFECYCLE MANAGEMENT
+    // ══════════════════════════════════════════════════════════════════
+    function openSellerSecurityOtpModal({ action, email, onVerified }) {
+      document.querySelectorAll('.seller-otp-overlay').forEach(el => el.remove());
+
+      const isDelete = action === 'delete';
+      const isEnable = action === 'enable';
+      const isDisable = action === 'disable';
+      const isUpdate = action === 'update';
+
+      let modalTitle = 'Confirm Seller Account Status';
+      let modalSub = `Enter the 6-digit verification OTP code sent to <strong>${email || 'your registered email'}</strong>.`;
+      let btnLabel = 'Confirm Action';
+      let iconClass = 'is-toggle';
+      let btnClass = '';
+
+      if (isDelete) {
+        modalTitle = 'Delete Seller Account';
+        modalSub = `Enter the 6-digit verification code sent to <strong>${email || 'your email'}</strong> to confirm account deletion.`;
+        btnLabel = 'Confirm & Delete Account';
+        iconClass = 'is-delete';
+        btnClass = 'is-delete';
+      } else if (isEnable) {
+        modalTitle = 'Enable Seller Account';
+        modalSub = `Enter the 6-digit verification code sent to <strong>${email || 'your email'}</strong>.`;
+        btnLabel = 'Confirm & Enable Account';
+        iconClass = 'is-enable';
+        btnClass = 'is-enable';
+      } else if (isDisable) {
+        modalTitle = 'Disable Seller Account';
+        modalSub = `Enter the 6-digit verification code sent to <strong>${email || 'your email'}</strong>.`;
+        btnLabel = 'Confirm & Disable Account';
+        iconClass = 'is-toggle';
+        btnClass = 'is-disable';
+      } else if (isUpdate) {
+        modalTitle = 'Confirm Merchant Profile Update';
+        modalSub = `Enter the 6-digit verification code sent to <strong>${email || 'your registered email'}</strong>.`;
+        btnLabel = 'Verify & Update Details';
+        iconClass = 'is-update';
+        btnClass = 'is-update';
+      }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'seller-otp-overlay';
+      overlay.innerHTML = `
+        <div class="seller-otp-dialog" role="dialog" aria-modal="true">
+          <div class="seller-otp-header">
+            <div class="seller-otp-icon-wrap ${iconClass}">
+              ${isDelete ? `
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              ` : isEnable ? `
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              ` : isUpdate ? `
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              ` : `
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+              `}
+            </div>
+            <h3>${modalTitle}</h3>
+            <p>${modalSub}</p>
+          </div>
+          <div class="seller-otp-body">
+            <input type="text" id="seller-otp-code-input" class="seller-otp-input-field" maxlength="6" inputmode="numeric" placeholder="••••••" autocomplete="one-time-code" autofocus>
+            <div class="seller-otp-timer-row">
+              <span id="seller-otp-timer-text">Resend code in <strong id="seller-otp-seconds">60</strong>s</span>
+              <button type="button" class="seller-otp-resend-btn" id="seller-otp-resend-btn" disabled>Resend OTP</button>
+            </div>
+            <div class="seller-otp-btn-group">
+              <button type="button" class="seller-otp-cancel-btn" id="seller-otp-cancel-btn">Cancel</button>
+              <button type="button" class="seller-otp-confirm-btn ${btnClass}" id="seller-otp-confirm-btn">${btnLabel}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const input = overlay.querySelector('#seller-otp-code-input');
+      const confirmBtn = overlay.querySelector('#seller-otp-confirm-btn');
+      const cancelBtn = overlay.querySelector('#seller-otp-cancel-btn');
+      const resendBtn = overlay.querySelector('#seller-otp-resend-btn');
+      const secondsEl = overlay.querySelector('#seller-otp-seconds');
+      const timerText = overlay.querySelector('#seller-otp-timer-text');
+
+      setTimeout(() => input?.focus(), 50);
+
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 6);
+        if (input.value.length === 6) {
+          confirmBtn.focus();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && input.value.length === 6) {
+          e.preventDefault();
+          confirmBtn.click();
+        }
+      });
+
+      let countdown = 60;
+      const interval = setInterval(() => {
+        countdown--;
+        if (secondsEl) secondsEl.textContent = countdown;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          if (timerText) timerText.textContent = "Didn't receive code?";
+          if (resendBtn) resendBtn.disabled = false;
+        }
+      }, 1000);
+
+      resendBtn.addEventListener('click', async () => {
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending...';
+        try {
+          const token = (typeof Auth !== 'undefined' && Auth.getToken && Auth.getToken()) || Store.token || localStorage.getItem('xmart_token');
+          const endpoint = isUpdate ? `${API_BASE}/auth/seller/send-update-otp` : `${API_BASE}/auth/seller/send-toggle-otp`;
+          const bodyPayload = isUpdate ? {} : { action };
+          const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyPayload)
+          });
+          const json = await resp.json();
+          if (json.success) {
+            showToast('✓ Verification OTP resent successfully! Please check your email.', 'success', 3500);
+            countdown = 60;
+            if (secondsEl) secondsEl.textContent = '60';
+            if (timerText) timerText.innerHTML = 'Resend code in <strong id="seller-otp-seconds">60</strong>s';
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Resend OTP';
+          } else {
+            showToast(json.message || 'Failed to resend code', 'error');
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend OTP';
+          }
+        } catch (err) {
+          showToast(`Network error: ${err.message}`, 'error');
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend OTP';
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        clearInterval(interval);
+        overlay.remove();
+      });
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          clearInterval(interval);
+          overlay.remove();
+        }
+      });
+
+      confirmBtn.addEventListener('click', async () => {
+        const otpVal = input.value.trim();
+        if (otpVal.length !== 6) {
+          showToast('Please enter the full 6-digit OTP code', 'warn');
+          input.focus();
+          return;
+        }
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = isUpdate ? 'Updating Details...' : 'Verifying Code...';
+
+        if (isUpdate) {
+          try {
+            if (typeof onVerified === 'function') {
+              const res = await onVerified(otpVal);
+              if (res && res.success === false) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = btnLabel;
+                input.focus();
+                return;
+              }
+            }
+            clearInterval(interval);
+            overlay.remove();
+          } catch (err) {
+            showToast(`Update error: ${err.message}`, 'error');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = btnLabel;
+          }
+          return;
+        }
+
+        try {
+          const token = (typeof Auth !== 'undefined' && Auth.getToken && Auth.getToken()) || Store.token || localStorage.getItem('xmart_token');
+          const resp = await fetch(`${API_BASE}/auth/seller/toggle-status`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              otp: otpVal,
+              action
+            })
+          });
+
+          const json = await resp.json();
+          if (!json.success) {
+            showToast(json.message || 'Verification failed. Please check OTP code.', 'error', 4500);
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = btnLabel;
+            input.focus();
+            return;
+          }
+
+          clearInterval(interval);
+          overlay.remove();
+
+          if (typeof onVerified === 'function') {
+            onVerified(json);
+          }
+        } catch (err) {
+          showToast(`Server error: ${err.message}`, 'error');
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = btnLabel;
+        }
+      });
+    }
+
+    // Helper to send OTP and trigger modal
+    async function startSellerSecurityFlow(action, btnEl) {
+      const origHtml = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = `<span>Sending OTP...</span>`;
+      }
+
+      try {
+        const token = (typeof Auth !== 'undefined' && Auth.getToken && Auth.getToken()) || Store.token || localStorage.getItem('xmart_token');
+        const resp = await fetch(`${API_BASE}/auth/seller/send-toggle-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action })
+        });
+
+        const json = await resp.json();
+        if (!json.success) {
+          showToast(json.message || 'Could not send verification OTP', 'error', 4500);
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origHtml;
+          }
+          return;
+        }
+
+        const targetEmail = json.data?.email || json.email || currentSeller?.email || (Store.user && Store.user.email) || '';
+        showToast(`✓ Verification code sent to ${targetEmail}!`, 'success', 3500);
+
+        openSellerSecurityOtpModal({
+          action,
+          email: targetEmail,
+          onVerified: (resData) => {
+            const activeUser = Store.user || (typeof Auth !== 'undefined' && Auth.getUser && Auth.getUser()) || {};
+            const userEmail = activeUser.email || '';
+
+            if (action === 'delete') {
+              localStorage.removeItem('xmart_seller_profile');
+              if (userEmail) localStorage.removeItem('xmart_seller_profile_' + userEmail);
+              localStorage.removeItem('xmart_seller_items');
+              localStorage.removeItem('xmart_seller_orders_v1');
+              sessionStorage.removeItem('xmart_seller_session_authenticated');
+
+              if (Store.user) Store.user.sellerProfile = null;
+              try {
+                if (Array.isArray(Store.allProducts)) {
+                  Store.allProducts = Store.allProducts.filter(p => !_productBelongsToSeller(p, p._id || p.id, currentSeller));
+                }
+              } catch (e) { }
+
+              showToast('✓ Your Seller Account and all associated product listings have been permanently deleted from X-Mart.', 'success', 6000);
+
+              if (typeof window._openHome === 'function') {
+                window._openHome();
+              } else {
+                window.location.hash = '#home';
+              }
+            } else if (action === 'disable') {
+              if (currentSeller) currentSeller.isActive = false;
+              localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller));
+              if (userEmail) localStorage.setItem('xmart_seller_profile_' + userEmail, JSON.stringify(currentSeller));
+              if (Store.user && Store.user.sellerProfile) Store.user.sellerProfile.isActive = false;
+
+              showToast('✓ Seller Account paused. All your products are now marked as Currently Unavailable.', 'success', 5000);
+              window._openSellerPortal(false, true, 'account');
+            } else if (action === 'enable') {
+              if (currentSeller) currentSeller.isActive = true;
+              localStorage.setItem('xmart_seller_profile', JSON.stringify(currentSeller));
+              if (userEmail) localStorage.setItem('xmart_seller_profile_' + userEmail, JSON.stringify(currentSeller));
+              if (Store.user && Store.user.sellerProfile) Store.user.sellerProfile.isActive = true;
+
+              showToast('✓ Seller Account re-enabled! All your products are now live and active.', 'success', 5000);
+              window._openSellerPortal(false, true, 'account');
+            }
+          }
+        });
+      } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = origHtml;
+        }
+      }
+    }
+
+    // Wire Disable Button
+    const btnDisable = pageContainer.querySelector('#btn-seller-toggle-disable');
+    btnDisable?.addEventListener('click', (e) => {
+      e.preventDefault();
+      startSellerSecurityFlow('disable', btnDisable);
+    });
+
+    // Wire Enable Button
+    const btnEnable = pageContainer.querySelector('#btn-seller-toggle-enable');
+    btnEnable?.addEventListener('click', (e) => {
+      e.preventDefault();
+      startSellerSecurityFlow('enable', btnEnable);
+    });
+
+    // Wire Delete Button
+    const btnDelete = pageContainer.querySelector('#btn-seller-delete-account');
+    btnDelete?.addEventListener('click', (e) => {
+      e.preventDefault();
+      startSellerSecurityFlow('delete', btnDelete);
     });
 
     // ── Helper to Persist Product Overrides Across Refreshes ──
@@ -22257,6 +23769,7 @@ function initPageRouter() {
           const isDeal = item.isDeal !== undefined
             ? Boolean(item.isDeal)
             : (Array.isArray(item.tags) ? item.tags.includes('deal') : false);
+          const isBestseller = isBestsellerProduct(item, true);
 
           // Retrieve saved offers for product
           let savedOffers = Array.isArray(item.offers) ? [...item.offers] : [];
@@ -22277,6 +23790,7 @@ function initPageRouter() {
                     <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">
                       <small style="color:#64748b;">${item.brand || 'X-Mart Verified'}</small>
                       ${isDeal ? '<span class="deal-tag-pill">Today\'s Deal</span>' : ''}
+                      ${isBestseller ? '<span class="deal-tag-pill" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;">★ Bestseller</span>' : ''}
                     </div>
                   </div>
                 </div>
@@ -22321,9 +23835,11 @@ function initPageRouter() {
               <!-- Deal / Promotion Status & Live Ticker -->
               <td>
                 <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;width:100%;">
-                  <button type="button" class="btn-toggle-deal ${isDeal ? 'is-active-deal' : ''}" data-id="${id}" title="Click to toggle Today's Deal promotion">
-                    ${isDeal ? 'Today\'s Deal' : '+ Add to Deals'}
-                  </button>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" class="btn-toggle-deal ${isDeal ? 'is-active-deal' : ''}" data-id="${id}" title="Click to toggle Today's Deal promotion">
+                      ${isDeal ? 'Today\'s Deal' : '+ Add to Deals'}
+                    </button>
+                  </div>
                   ${savedOffers.length > 0 ? `
                     <div class="seller-promo-ticker-wrap" data-prod-ticker="${id}" title="Click to view & manage offers for ${item.name}">
                       ${savedOffers.map((o, oIdx) => `
@@ -23440,7 +24956,6 @@ function initPageRouter() {
             </div>
             <div id="edit-angles-list" style="display:flex;flex-direction:column;gap:10px;">
               <!-- 1. Front View -->
-              <!-- 1. Front View -->
               <div class="edit-view-slot" style="background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
                   <span class="view-tag-badge front" style="background:#001f3f !important;color:#ffffff !important;border:1px solid #001226 !important;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;letter-spacing:0.5px;">FRONT</span>
@@ -23620,6 +25135,12 @@ function initPageRouter() {
         e.preventDefault();
         const updatedName = bodyEl.querySelector('#edit-name').value.trim();
         const updatedCat = bodyEl.querySelector('#edit-category').value;
+
+        if (updatedCat && updatedCat.toLowerCase().includes('bestseller')) {
+          showToast('Products cannot be moved to the Bestseller category by sellers. Bestseller status is exclusively curated by marketplace administration.', 'error', 4500);
+          return;
+        }
+
         const updatedBrand = bodyEl.querySelector('#edit-brand').value.trim();
         const updatedModel = bodyEl.querySelector('#edit-model')?.value.trim() || updatedName;
         const updatedWarranty = bodyEl.querySelector('#edit-warranty')?.value.trim() || '1 to 2 Years Manufacturer Warranty';
@@ -23676,6 +25197,7 @@ function initPageRouter() {
         } else {
           tags = tags.filter(t => t !== 'deal' && t !== 'lightning-deal');
         }
+        tags = tags.filter(t => !t.toLowerCase().includes('bestseller') && !t.toLowerCase().includes('best-seller'));
 
         const wasOutOfStock = (prod.stock !== undefined && prod.stock <= 0) || prod.isOutOfStock === true;
 
@@ -23696,6 +25218,7 @@ function initPageRouter() {
           discount: updatedDiscount,
           stock: updatedStock,
           isFeatured: isDealChecked,
+          isBestseller: false,
           images: updatedImages,
           angleImages: updatedAngleImages,
           tags
@@ -23719,6 +25242,7 @@ function initPageRouter() {
         prod.stock = updatedStock;
         prod.isOutOfStock = updatedStock <= 0;
         prod.isFeatured = isDealChecked;
+        prod.isBestseller = false;
         if (updatedImages.length > 0) prod.images = updatedImages;
         prod.tags = tags;
 
@@ -23755,6 +25279,7 @@ function initPageRouter() {
               discount: updatedDiscount,
               stock: updatedStock,
               isFeatured: isDealChecked,
+              isBestseller: false,
               images: updatedImages,
               angleImages: updatedAngleImages,
               tags
@@ -28883,12 +30408,12 @@ function initPageRouter() {
                     <button id="detail-add-cart" class="buybox-btn buybox-btn--cart is-out-of-stock" disabled style="width:100%;background:#e2e8f0;color:#dc2626;border:1px solid #cbd5e1;cursor:not-allowed;font-weight:800;padding:14px 18px;border-radius:10px;font-size:15px;">
                       Out of Stock
                     </button>
-                    <button id="detail-notify-me" class="buybox-btn buybox-btn--notify ${isSubscribed ? 'is-active' : ''}" type="button" title="${isSubscribed ? 'Alert active for back in stock' : 'Get email notification when back in stock'}">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="${isSubscribed ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    <button id="detail-notify-me" class="buybox-btn buybox-btn--notify ${isSubscribed ? 'is-active' : ''}" type="button" style="background:#022F43 !important;background-color:#022F43 !important;border:1px solid #022F43 !important;color:#ffffff !important;" title="${isSubscribed ? 'Alert active for back in stock' : 'Get email notification when back in stock'}">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="${isSubscribed ? '#ffffff' : 'none'}" stroke="#ffffff" stroke-width="2" style="stroke:#ffffff !important;color:#ffffff !important;">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#ffffff"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#ffffff"/>
                       </svg>
-                      <span id="detail-notify-text">${isSubscribed ? '✓ Notification Active for Back in Stock' : 'Notify Me'}</span>
+                      <span id="detail-notify-text" style="color:#ffffff !important;font-weight:800;">${isSubscribed ? '✓ Notification Active for Back in Stock' : 'Notify Me'}</span>
                     </button>
                   ` : `
                     <button id="detail-add-cart" class="buybox-btn buybox-btn--cart">
@@ -28934,7 +30459,7 @@ function initPageRouter() {
                       <img src="${relImg}" alt="${rel.name}" loading="lazy" style="${isRelDeact ? 'filter:grayscale(60%);' : ''}">
                     </div>
                     <div class="related-card-content">
-                      <span class="related-card-brand">${rel.brand || 'X-Mart'} • ${rel.category || ''}</span>
+                      <span class="related-card-brand" style="color:#000000 !important;">${rel.brand || 'X-Mart'} • ${rel.category || ''}</span>
                       <h4 class="related-card-title" title="${rel.name}">${rel.name}</h4>
                       <div class="related-card-rating">
                         <span class="related-star-badge">★ ${rel.rating || '4.7'}</span>
@@ -28949,7 +30474,7 @@ function initPageRouter() {
                         ${isRelDeact ? `
                           <button type="button" class="related-btn-cart" data-id="${rel._id || rel.id}" title="Currently Unavailable" disabled style="opacity:0.4;cursor:not-allowed;background:#e2e8f0;color:#94a3b8;">✕</button>
                         ` : `
-                          <button type="button" class="related-btn-cart" data-id="${rel._id || rel.id}" title="Add to Cart">+</button>
+                          <button type="button" class="related-btn-cart" data-id="${rel._id || rel.id}" title="Add to Cart" style="background:#FF9400 !important;background-color:#FF9400 !important;color:#000000 !important;border:1px solid #FF9400 !important;">+</button>
                         `}
                       </div>
                     </div>
@@ -28971,7 +30496,14 @@ function initPageRouter() {
               </div>
 
               <div class="reviews-items-list" id="reviews-items-list">
-                ${allReviews.map(rev => `
+                ${allReviews.map(rev => {
+                  let isLiked = false;
+                  try {
+                    const likedMap = JSON.parse(localStorage.getItem('xmart_liked_reviews') || '{}');
+                    isLiked = !!likedMap[String(rev.id)];
+                  } catch (e) {}
+                  const count = Number(rev.helpful || 0);
+                  return `
                   <div class="review-item-card">
                     <div class="review-item-top">
                       <div class="reviewer-meta">
@@ -28993,13 +30525,16 @@ function initPageRouter() {
                     <h5 class="review-item-title">${rev.title || 'Genuine Customer Review'}</h5>
                     <p class="review-item-body">${rev.comment}</p>
                     <div class="review-item-footer">
-                      <button type="button" class="review-helpful-btn" data-id="${rev.id}">
-                        Helpful (<span class="helpful-count">${rev.helpful || 0}</span>)
+                      <button type="button" class="review-helpful-btn ${isLiked ? 'is-liked' : ''}" data-id="${rev.id}" aria-label="Like review" title="${isLiked ? 'Unlike review' : 'Mark as helpful'}">
+                        <svg class="thumb-icon" width="14" height="14" viewBox="0 0 24 24" fill="${isLiked ? '#2874f0' : 'none'}" stroke="#2874f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2h3"></path>
+                        </svg>
+                        <span class="helpful-count">${count}</span>
                       </button>
                       <span class="review-report-btn">Report</span>
                     </div>
                   </div>
-                `).join('')}
+                `;}).join('')}
               </div>
             </div>
 
@@ -29403,7 +30938,7 @@ function initPageRouter() {
     const topWishBtn = pageContainer.querySelector('#prod-img-wishlist-btn');
 
     function syncWishlistUI() {
-      const isW = Store.wishlist.some(w => w.id === (prod._id || prod.id));
+      const isW = Store.isWishlisted(prod);
       if (wishBtn) {
         wishBtn.classList.toggle('is-active', isW);
         wishBtn.querySelector('svg')?.setAttribute('fill', isW ? '#ef4444' : 'none');
@@ -29421,13 +30956,13 @@ function initPageRouter() {
     }
 
     wishBtn?.addEventListener('click', () => {
-      const res = Store.toggleWishlist(prod);
-      if (res !== false) syncWishlistUI();
+      Store.toggleWishlist(prod);
+      syncWishlistUI();
     });
 
     topWishBtn?.addEventListener('click', () => {
-      const res = Store.toggleWishlist(prod);
-      if (res !== false) syncWishlistUI();
+      Store.toggleWishlist(prod);
+      syncWishlistUI();
     });
 
     // ── Notify Me When In Stock Click Listener ──
@@ -29457,11 +30992,11 @@ function initPageRouter() {
             localStorage.setItem('xmart_stock_notify_list', JSON.stringify(notifyList));
             notifyBtn.classList.remove('is-active');
             notifyBtn.innerHTML = `
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" style="stroke:#ffffff !important;color:#ffffff !important;">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#ffffff"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#ffffff"/>
               </svg>
-              <span>Notify Me</span>
+              <span id="detail-notify-text" style="color:#ffffff !important;font-weight:800;">Notify Me</span>
             `;
             showToast(`Notification alert cancelled for "${prod.name}"`, 'info');
           }
@@ -29501,10 +31036,10 @@ function initPageRouter() {
         // Update button appearance
         notifyBtn.classList.add('is-active');
         notifyBtn.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" style="stroke:#ffffff !important;color:#ffffff !important;">
+            <polyline points="20 6 9 17 4 12" stroke="#ffffff"/>
           </svg>
-          <span>✓ Notification Active for Back in Stock</span>
+          <span id="detail-notify-text" style="color:#ffffff !important;font-weight:800;">✓ Notification Active for Back in Stock</span>
         `;
 
         showToast(`✓ We'll notify your registered email (${userEmail}) as soon as "${prod.name}" is in stock!`, 'success', 4500);
@@ -29698,8 +31233,11 @@ function initPageRouter() {
           <h5 class="review-item-title">${newReview.title}</h5>
           <p class="review-item-body">${newReview.comment}</p>
           <div class="review-item-footer">
-            <button type="button" class="review-helpful-btn" data-id="${newReview.id}">
-              Helpful (<span class="helpful-count">0</span>)
+            <button type="button" class="review-helpful-btn" data-id="${newReview.id}" aria-label="Like review" title="Mark as helpful">
+              <svg class="thumb-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2874f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+              </svg>
+              <span class="helpful-count">0</span>
             </button>
             <span class="review-report-btn">Report</span>
           </div>
@@ -29719,18 +31257,64 @@ function initPageRouter() {
       showToast('Thank you! Your verified review was posted successfully!', 'success');
     });
 
-    // ── Helpful Voting Button Handler ──
+    // ── Helpful / Like Voting Button Handler (Like & Unlike Toggle) ──
     pageContainer.addEventListener('click', (e) => {
       const btn = e.target.closest('.review-helpful-btn');
-      if (btn && !btn.classList.contains('is-voted')) {
-        const countSpan = btn.querySelector('.helpful-count');
-        if (countSpan) {
-          countSpan.textContent = parseInt(countSpan.textContent || '0') + 1;
+      if (!btn) return;
+
+      const revId = String(btn.getAttribute('data-id') || '');
+      let likedReviews = {};
+      try {
+        likedReviews = JSON.parse(localStorage.getItem('xmart_liked_reviews') || '{}');
+      } catch (err) {
+        likedReviews = {};
+      }
+
+      const countSpan = btn.querySelector('.helpful-count');
+      const thumbSvg = btn.querySelector('.thumb-icon');
+      let currentVal = parseInt(countSpan ? countSpan.textContent : '0', 10);
+      if (isNaN(currentVal)) currentVal = 0;
+
+      const isCurrentlyLiked = btn.classList.contains('is-liked') || (revId && !!likedReviews[revId]);
+
+      if (isCurrentlyLiked) {
+        // ── UNLIKE ──
+        if (revId) delete likedReviews[revId];
+        currentVal = Math.max(0, currentVal - 1);
+        btn.classList.remove('is-liked');
+        btn.setAttribute('title', 'Mark as helpful');
+        btn.setAttribute('aria-pressed', 'false');
+        if (thumbSvg) {
+          thumbSvg.setAttribute('fill', 'none');
+          thumbSvg.setAttribute('stroke', '#2874f0');
         }
-        btn.classList.add('is-voted');
-        btn.style.color = '#16a34a';
-        btn.style.borderColor = '#16a34a';
-        showToast('Marked review as helpful! Thank you.', 'info');
+        showToast('Removed like from this review', 'info');
+      } else {
+        // ── LIKE ──
+        if (revId) likedReviews[revId] = true;
+        currentVal += 1;
+        btn.classList.add('is-liked');
+        btn.setAttribute('title', 'Unlike review');
+        btn.setAttribute('aria-pressed', 'true');
+        if (thumbSvg) {
+          thumbSvg.setAttribute('fill', '#2874f0');
+          thumbSvg.setAttribute('stroke', '#2874f0');
+        }
+        showToast('Marked review as helpful! 👍', 'success');
+      }
+
+      if (countSpan) {
+        countSpan.textContent = currentVal;
+      }
+
+      try {
+        localStorage.setItem('xmart_liked_reviews', JSON.stringify(likedReviews));
+      } catch (err) {}
+
+      // Keep in-memory review object in sync if present
+      if (prod && Array.isArray(prod.reviews)) {
+        const found = prod.reviews.find(r => String(r.id) === revId);
+        if (found) found.helpful = currentVal;
       }
     });
 
@@ -29816,8 +31400,9 @@ function initPageRouter() {
           }
         }
         window._openDedicatedPage(cat === 'all' ? '' : cat, type, search, false);
-      } else if (hash === '#deals' || hash === '#deal' || hash === '#bestseller') {
-        window._openDedicatedPage('', hash.replace('#', ''), '', false);
+      } else if (hash === '#deals' || hash === '#deal' || hash === '#bestseller' || hash === '#best-sellers' || hash === '#bestsellers') {
+        const targetType = hash.includes('deal') ? 'deal' : 'bestseller';
+        window._openDedicatedPage('', targetType, '', false);
       } else if (hash.startsWith('#order/') || (state && state.type === 'order-detail')) {
         const ordId = state?.orderId || hash.replace('#order/', '').trim();
         const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
@@ -29882,6 +31467,12 @@ function initLiveSearch() {
   // ── Category tracking (from "All" dropdown) ───────────────
   let activeCategory = 'All';
 
+  // ── Search State & Invalidation ───────────────────────────
+  let debounceTimer = null;
+  let searchSessionId = 0;
+  let isSearchCommitted = false;
+  let isEnterHandling = false;
+
   // ── Recent Searches Helper & State ───────────────────────
   const RECENT_SEARCHES_KEY = 'xmart_recent_searches';
 
@@ -29920,12 +31511,51 @@ function initLiveSearch() {
     } catch {}
   }
 
+  // ── Mobile / Tablet Virtual Keyboard Dismissal ────────────
+  function dismissMobileKeyboard() {
+    try {
+      // 1. Temporarily toggle readOnly: this triggers Android Gboard & iOS Safari to drop the keyboard immediately!
+      searchInput.readOnly = true;
+      searchInput.blur();
+
+      // 2. Unfocus any active element
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+
+      // 3. Move focus to window/body
+      window.focus();
+      if (document.body && typeof document.body.focus === 'function') {
+        document.body.focus();
+      }
+
+      // 4. Restore editability after keyboard dismissal animation completes
+      setTimeout(() => {
+        searchInput.readOnly = false;
+        searchInput.blur();
+      }, 350);
+    } catch {}
+  }
+
   // ── Universal Execute Search (Desktop Enter, Mobile 'Go'/'Search', Button Click) ──
   function performSearch(query) {
-    const q = (typeof query === 'string' ? query : (searchInput.value || '')).trim();
+    isSearchCommitted = true;
+    searchSessionId++; // Invalidate pending debounce timer and in-flight API requests!
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+
+    // Force close and clear dropdown immediately so it cannot show on results page
     dropdown.classList.remove('is-active');
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
     activeIdx = -1;
-    searchInput.blur(); // Crucial on mobile & tablet: dismisses onscreen keyboard!
+
+    // Immediately dismiss onscreen keyboard on mobile/tablet
+    dismissMobileKeyboard();
+
+    const q = (typeof query === 'string' ? query : (searchInput.value || '')).trim();
     if (q) {
       saveRecentSearch(q);
       const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
@@ -29942,6 +31572,7 @@ function initLiveSearch() {
 
   // ── Helper: show recent searches ──────────────────────────
   function showRecentSearches() {
+    if (isSearchCommitted || document.activeElement !== searchInput) return;
     const isMobileOrTab = window.innerWidth < 1024;
     const limit = isMobileOrTab ? 5 : 10;
     const searches = getRecentSearches().slice(0, limit);
@@ -29990,6 +31621,7 @@ function initLiveSearch() {
           searchInput.value = q;
           saveRecentSearch(q);
           dropdown.classList.remove('is-active');
+          dropdown.style.display = 'none';
           const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
           window._openDedicatedPage?.(targetCat, '', q);
         });
@@ -30010,11 +31642,15 @@ function initLiveSearch() {
         showRecentSearches();
       });
     }
-    dropdown.classList.add('is-active');
+    if (!isSearchCommitted && document.activeElement === searchInput) {
+      dropdown.style.display = '';
+      dropdown.classList.add('is-active');
+    }
   }
 
   // ── Helper: show skeleton loader ─────────────────────────
   function showSkeleton() {
+    if (isSearchCommitted || document.activeElement !== searchInput) return;
     dropdown.innerHTML = `
       <div class="search-dropdown-header">
         <span class="search-loading-dot"></span>
@@ -30032,6 +31668,7 @@ function initLiveSearch() {
         </div>
       `).join('')}
     `;
+    dropdown.style.display = '';
     dropdown.classList.add('is-active');
   }
 
@@ -30056,6 +31693,10 @@ function initLiveSearch() {
       e.preventDefault();
       e.stopPropagation();
     }
+    if (isEnterHandling) return;
+    isEnterHandling = true;
+    setTimeout(() => { isEnterHandling = false; }, 400);
+
     const rows = getRows();
     if (dropdown.classList.contains('is-active') && activeIdx >= 0 && rows[activeIdx]) {
       rows[activeIdx].click();
@@ -30081,6 +31722,7 @@ function initLiveSearch() {
       setActive(Math.max(activeIdx - 1, 0));
     } else if (e.key === 'Escape' || e.keyCode === 27) {
       dropdown.classList.remove('is-active');
+      dropdown.style.display = 'none';
       activeIdx = -1;
     }
   });
@@ -30095,15 +31737,30 @@ function initLiveSearch() {
 
   // ── Focus → show recent searches ──────────────────────────
   searchInput.addEventListener('focus', () => {
+    isSearchCommitted = false;
     activeIdx = -1;
-    if (searchInput.value.trim().length < 2) showRecentSearches();
+    dropdown.style.display = '';
+    if (searchInput.value.trim().length < 2) {
+      showRecentSearches();
+    }
+  });
+
+  // ── Blur → dismiss lingering dropdown ─────────────────────
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (document.activeElement !== searchInput) {
+        dropdown.classList.remove('is-active');
+        dropdown.style.display = 'none';
+      }
+    }, 250);
   });
 
   // ── Input → live search ───────────────────────────────────
-  let debounceTimer = null;
   searchInput.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     activeIdx = -1;
+    isSearchCommitted = false;
+    dropdown.style.display = '';
     const q = searchInput.value.trim();
     if (q.length < 2) {
       showRecentSearches();
@@ -30112,8 +31769,15 @@ function initLiveSearch() {
 
     showSkeleton();
 
+    const thisSession = ++searchSessionId;
     debounceTimer = setTimeout(async () => {
       try {
+        if (thisSession !== searchSessionId || isSearchCommitted || document.activeElement !== searchInput) {
+          dropdown.classList.remove('is-active');
+          dropdown.style.display = 'none';
+          return;
+        }
+
         const catParam = (activeCategory && activeCategory !== 'All')
           ? `&category=${encodeURIComponent(activeCategory)}`
           : '';
@@ -30130,6 +31794,12 @@ function initLiveSearch() {
           if (data.success && Array.isArray(data.data)) apiResults = data.data;
         } catch {
           apiResults = [];
+        }
+
+        if (thisSession !== searchSessionId || isSearchCommitted || document.activeElement !== searchInput) {
+          dropdown.classList.remove('is-active');
+          dropdown.style.display = 'none';
+          return;
         }
 
         // Local Smart Synonym & Relevance Search on Store.allProducts
@@ -30196,6 +31866,12 @@ function initLiveSearch() {
         mergedCandidates.sort((a, b) => (b._relevanceScore || 0) - (a._relevanceScore || 0));
         const results = mergedCandidates.slice(0, 8);
 
+        if (thisSession !== searchSessionId || isSearchCommitted || document.activeElement !== searchInput) {
+          dropdown.classList.remove('is-active');
+          dropdown.style.display = 'none';
+          return;
+        }
+
         if (results.length === 0) {
           dropdown.innerHTML = `
             <div class="search-no-results">
@@ -30214,6 +31890,7 @@ function initLiveSearch() {
           dropdown.querySelectorAll('.search-cat-chip').forEach(chip => {
             chip.addEventListener('click', () => {
               dropdown.classList.remove('is-active');
+              dropdown.style.display = 'none';
               window._openCatalog?.(chip.dataset.cat, '');
             });
           });
@@ -30255,6 +31932,7 @@ function initLiveSearch() {
               const item = results.find(r => (r._id || r.id) === row.dataset.id);
               if (item) {
                 dropdown.classList.remove('is-active');
+                dropdown.style.display = 'none';
                 searchInput.value = item.name;
                 saveRecentSearch(item.name);
                 window._openProductDetail?.(item);
@@ -30264,15 +31942,25 @@ function initLiveSearch() {
 
           dropdown.querySelector('.search-view-all')?.addEventListener('click', () => {
             dropdown.classList.remove('is-active');
+            dropdown.style.display = 'none';
             saveRecentSearch(q);
             const targetCat = (activeCategory && activeCategory !== 'All') ? activeCategory : '';
             window._openDedicatedPage?.(targetCat, '', q);
           });
         }
+
+        if (thisSession !== searchSessionId || isSearchCommitted || document.activeElement !== searchInput) {
+          dropdown.classList.remove('is-active');
+          dropdown.style.display = 'none';
+          return;
+        }
+
+        dropdown.style.display = '';
         dropdown.classList.add('is-active');
       } catch (err) {
         console.error('Search error:', err);
         dropdown.classList.remove('is-active');
+        dropdown.style.display = 'none';
       }
     }, 200);
   });
@@ -30281,6 +31969,7 @@ function initLiveSearch() {
   searchInput.addEventListener('search', () => {
     if (!searchInput.value.trim()) {
       dropdown.classList.remove('is-active');
+      dropdown.style.display = 'none';
       activeIdx = -1;
     } else {
       performSearch();
@@ -30291,6 +31980,7 @@ function initLiveSearch() {
   document.addEventListener('click', e => {
     if (!searchForm.contains(e.target)) {
       dropdown.classList.remove('is-active');
+      dropdown.style.display = 'none';
       activeIdx = -1;
     }
   });
@@ -31326,7 +33016,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (text.includes("Today's Deals") || text.includes('Deals')) {
         window._openDedicatedPage?.('', 'deal');
       } else if (text.includes('Best Sellers')) {
-        window._openDedicatedPage?.('');
+        window._openDedicatedPage?.('', 'bestseller');
       } else if (text.includes('Home')) {
         window._openDedicatedPage?.('Home & Kitchen');
       } else if (text.includes('Beauty')) {
@@ -32063,23 +33753,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setMobileCategoryScrollLock(locked) {
-    if (window.innerWidth <= 840) {
+    const isMobileOrTablet = window.innerWidth <= 1024 || window.matchMedia('(max-width: 1024px)').matches;
+    if (isMobileOrTablet) {
       if (locked) {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
         document.body.classList.add('category-dropdown-locked');
         document.documentElement.classList.add('category-dropdown-locked');
         categoryBackdrop?.classList.add('is-active');
       } else {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
         document.body.classList.remove('category-dropdown-locked');
         document.documentElement.classList.remove('category-dropdown-locked');
         categoryBackdrop?.classList.remove('is-active');
       }
     } else {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
       document.body.classList.remove('category-dropdown-locked');
       document.documentElement.classList.remove('category-dropdown-locked');
       categoryBackdrop?.classList.remove('is-active');
@@ -32094,28 +33779,43 @@ document.addEventListener('DOMContentLoaded', () => {
     closeAllOpenDropdowns();
   });
 
-  // Helper to center category menu cleanly on mobile without clipping
+  // Helper to center category menu cleanly on mobile and tablet without clipping
   function updateCategoryDropdownPosition(parentDropdown, trigger) {
     if (!parentDropdown) return;
     const menu = parentDropdown.querySelector('.category-menu');
     if (!menu) return;
 
-    if (window.innerWidth <= 840) {
-      const rect = trigger.getBoundingClientRect();
-      const topPos = Math.round(rect.bottom + 6);
-      const menuWidth = Math.min(340, window.innerWidth - 28);
+    const isMobileOrTablet = window.innerWidth <= 1024 || window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window && window.innerWidth <= 1280);
 
-      menu.style.position = 'fixed';
-      menu.style.top = `${topPos}px`;
-      menu.style.left = '50%';
-      menu.style.right = 'auto';
-      menu.style.transform = 'translateX(-50%)';
-      menu.style.width = `${menuWidth}px`;
-      menu.style.maxWidth = `${menuWidth}px`;
-      menu.style.maxHeight = `calc(100vh - ${topPos + 16}px)`;
-      menu.style.overflowY = 'auto';
-      menu.style.overscrollBehavior = 'contain';
-      menu.style.zIndex = '100000';
+    if (isMobileOrTablet) {
+      const catBar = document.querySelector('.category-bar');
+      const barRect = catBar ? catBar.getBoundingClientRect() : null;
+      const triggerRect = trigger ? trigger.getBoundingClientRect() : null;
+      
+      let topPos = 94; // Safe fallback just below header
+      if (barRect && barRect.bottom > 0) {
+        topPos = Math.round(barRect.bottom + 4);
+      } else if (triggerRect && triggerRect.bottom > 0) {
+        topPos = Math.round(triggerRect.bottom + 6);
+      }
+
+      const menuWidth = Math.min(340, window.innerWidth - 24);
+
+      menu.style.setProperty('--cat-menu-top', `${topPos}px`);
+      menu.style.setProperty('position', 'fixed', 'important');
+      menu.style.setProperty('top', `${topPos}px`, 'important');
+      menu.style.setProperty('left', '50%', 'important');
+      menu.style.setProperty('right', 'auto', 'important');
+      menu.style.setProperty('transform', 'translateX(-50%)', 'important');
+      menu.style.setProperty('width', `${menuWidth}px`, 'important');
+      menu.style.setProperty('max-width', `${menuWidth}px`, 'important');
+      menu.style.setProperty('max-height', `calc(100vh - ${topPos + 20}px)`, 'important');
+      menu.style.setProperty('overflow-y', 'auto', 'important');
+      menu.style.setProperty('overscroll-behavior', 'contain', 'important');
+      menu.style.setProperty('z-index', '100010', 'important');
+      menu.style.setProperty('display', 'flex', 'important');
+      menu.style.setProperty('visibility', 'visible', 'important');
+      menu.style.setProperty('opacity', '1', 'important');
 
       setMobileCategoryScrollLock(true);
     } else {
@@ -32126,17 +33826,21 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetCategoryDropdownPosition(parentDropdown) {
     const menu = parentDropdown?.querySelector?.('.category-menu');
     if (menu) {
-      menu.style.position = '';
-      menu.style.top = '';
-      menu.style.left = '';
-      menu.style.right = '';
-      menu.style.transform = '';
-      menu.style.width = '';
-      menu.style.maxWidth = '';
-      menu.style.maxHeight = '';
-      menu.style.overflowY = '';
-      menu.style.overscrollBehavior = '';
-      menu.style.zIndex = '';
+      menu.style.removeProperty('--cat-menu-top');
+      menu.style.removeProperty('position');
+      menu.style.removeProperty('top');
+      menu.style.removeProperty('left');
+      menu.style.removeProperty('right');
+      menu.style.removeProperty('transform');
+      menu.style.removeProperty('width');
+      menu.style.removeProperty('max-width');
+      menu.style.removeProperty('max-height');
+      menu.style.removeProperty('overflow-y');
+      menu.style.removeProperty('overscroll-behavior');
+      menu.style.removeProperty('z-index');
+      menu.style.removeProperty('display');
+      menu.style.removeProperty('visibility');
+      menu.style.removeProperty('opacity');
     }
 
     const anyCatOpen = Array.from(document.querySelectorAll('.category-dropdown')).some(d => d.classList.contains('is-open'));
@@ -32212,14 +33916,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const trigger = catDrop.querySelector('[data-dropdown-trigger]');
 
     catDrop.addEventListener('mouseenter', () => {
-      if (window.innerWidth <= 840 || window.matchMedia('(pointer: coarse)').matches) return;
+      if (window.innerWidth <= 1024 || window.matchMedia('(pointer: coarse)').matches) return;
       if (leaveTimer) clearTimeout(leaveTimer);
       catDrop.classList.add('is-open');
       if (trigger) trigger.setAttribute('aria-expanded', 'true');
     });
 
     catDrop.addEventListener('mouseleave', () => {
-      if (window.innerWidth <= 840 || window.matchMedia('(pointer: coarse)').matches) return;
+      if (window.innerWidth <= 1024 || window.matchMedia('(pointer: coarse)').matches) return;
       leaveTimer = setTimeout(() => {
         catDrop.classList.remove('is-open');
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
@@ -32230,7 +33934,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle mobile scroll/resize to adjust open category dropdown position
   const repositionOpenCategoryDropdown = () => {
-    if (window.innerWidth <= 840) {
+    const isMobileOrTablet = window.innerWidth <= 1024 || window.matchMedia('(max-width: 1024px)').matches;
+    if (isMobileOrTablet) {
       document.querySelectorAll('.category-dropdown.is-open').forEach(d => {
         const trigger = d.querySelector('[data-dropdown-trigger]');
         if (trigger) updateCategoryDropdownPosition(d, trigger);
@@ -32373,6 +34078,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       updateTopNavbarOffers();
       updateHeroSliderFromCMS();
+      updateHomepageCardsFromCMS(cmsData);
     } catch (err) {
       console.warn('[Storefront CMS]: Could not fetch CMS data:', err.message);
     }
@@ -32697,6 +34403,162 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window._refreshHeroSlider === 'function') {
       window._refreshHeroSlider(false);
     }
+  }
+
+  function updateHomepageCardsFromCMS(data) {
+    const cms = data || cmsData;
+    if (!cms) return;
+
+    function esc(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 1. Homepage 4-Quadrant Cards
+    const quadContainer = document.getElementById('home-quad-grid-container') || document.querySelector('.quad-grid-container');
+    if (quadContainer && Array.isArray(cms.quadCards) && cms.quadCards.length > 0) {
+      const activeCards = cms.quadCards
+        .filter(c => c.active !== false)
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+      let rowsHtml = '';
+      for (let i = 0; i < activeCards.length; i += 4) {
+        const rowCards = activeCards.slice(i, i + 4);
+        rowsHtml += `
+          <div class="quad-cards-row">
+            ${rowCards.map(card => {
+              const items = Array.isArray(card.items) ? card.items : [];
+              return `
+                <article class="quad-card" data-card-id="${card._id || card.id}">
+                  <div class="quad-card-header">
+                    <a href="${esc(card.link || '#deals')}" class="quad-card-title">${esc(card.title)} <span class="arrow">&rsaquo;</span></a>
+                  </div>
+                  <div class="quad-2x2-grid">
+                    ${items.map(it => `
+                      <a href="${esc(it.link || '#deals')}" class="quad-item">
+                        <div class="quad-item-img-wrap">
+                          <img class="quad-item-img" src="${esc(it.image)}" alt="${esc(it.title || '')}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300';">
+                        </div>
+                        <div class="deal-badge-wrap">
+                          ${it.badge ? `<span class="deal-red-tag">${esc(it.badge)}</span>` : ''}
+                          ${it.subText ? `<span class="deal-sub-text">${esc(it.subText)}</span>` : ''}
+                        </div>
+                      </a>
+                    `).join('')}
+                  </div>
+                  <div class="quad-card-footer">
+                    <a href="${esc(card.footerLink || card.link || '#deals')}" class="quad-card-footer-link">${esc(card.footerText || 'See more')}</a>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+      quadContainer.innerHTML = rowsHtml;
+      bindQuadCardClicks(quadContainer);
+    }
+
+    // 2. Top Hero Promo Cards (4 Showcase cards)
+    const heroRow = document.getElementById('home-hero-banners-row') || document.querySelector('.hero-banners-row');
+    if (heroRow && Array.isArray(cms.heroPromoCards) && cms.heroPromoCards.length > 0) {
+      const activeHero = cms.heroPromoCards
+        .filter(c => c.active !== false)
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+      heroRow.innerHTML = activeHero.map(card => `
+        <a href="${esc(card.link || '#deals')}" class="hero-banner-card" data-hero-id="${card._id || card.id}">
+          <div class="hero-card-header">
+            ${card.badge ? `<h3 class="hero-card-badge">${esc(card.badge)}</h3>` : ''}
+            ${card.sub ? `<p class="hero-card-sub">${esc(card.sub)}</p>` : ''}
+            ${card.brand ? `
+              <div class="hero-card-brand">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span>${esc(card.brand)}</span>
+              </div>
+            ` : ''}
+          </div>
+          <div class="hero-card-img-wrap">
+            <img class="hero-card-img" src="${esc(card.image)}" alt="${esc(card.sub || card.brand || 'Featured offer')}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300';">
+          </div>
+          ${card.pill ? `<div class="hero-card-pill">${esc(card.pill)}</div>` : ''}
+        </a>
+      `).join('');
+    }
+
+    // 3. Quick Browse Strip Items
+    const quickTrack = document.getElementById('home-quick-browse-track') || document.querySelector('.quick-browse-track');
+    if (quickTrack && Array.isArray(cms.quickBrowseItems) && cms.quickBrowseItems.length > 0) {
+      const activeQuick = cms.quickBrowseItems
+        .filter(c => c.active !== false)
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+      quickTrack.innerHTML = activeQuick.map(item => `
+        <a href="${esc(item.link || '#deals')}" class="quick-browse-item" data-quick-id="${item._id || item.id}">
+          ${item.title ? `<span class="quick-item-title">${esc(item.title)}</span>` : ''}
+          <div class="quick-item-img-wrap">
+            <img class="quick-item-img" src="${esc(item.image)}" alt="${esc(item.title || 'Browse item')}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';">
+          </div>
+          ${item.badge ? `<span class="quick-item-badge">${esc(item.badge)}</span>` : ''}
+        </a>
+      `).join('');
+    }
+  }
+  window._updateHomepageCardsFromCMS = updateHomepageCardsFromCMS;
+
+  function bindQuadCardClicks(container) {
+    if (!container) return;
+    container.querySelectorAll('.quad-item').forEach(item => {
+      const imgEl = item.querySelector('.quad-item-img');
+      const labelEl = item.querySelector('.deal-sub-text') || item.querySelector('.deal-red-tag');
+      const cardTitleEl = item.closest('.quad-card')?.querySelector('.quad-card-title');
+      const itemName = imgEl?.alt || labelEl?.textContent?.trim() || '';
+      const cardTitle = cardTitleEl?.textContent?.trim() || '';
+      item.style.cursor = 'pointer';
+
+      item.addEventListener('click', e => {
+        e.preventDefault();
+        const matched = typeof findBestCatalogProduct === 'function' ? findBestCatalogProduct(itemName, cardTitle) : null;
+        if (matched) {
+          window._openProductDetail?.(matched);
+        } else {
+          window._openDedicatedPage?.('', '', itemName || cardTitle);
+        }
+      });
+    });
+
+    container.querySelectorAll('.quad-card-title, .quad-card-footer-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const txt = link.textContent.replace(/[›>»]/g, '').trim();
+        const href = link.getAttribute('href') || '';
+        if (href.startsWith('#category/')) {
+          const cat = href.replace('#category/', '').trim();
+          window._openDedicatedPage?.(cat, '', '');
+          return;
+        }
+        const lower = txt.toLowerCase();
+        if (lower.includes('cookware') || lower.includes('frying pan') || lower.includes('kitchen')) {
+          window._openDedicatedPage?.('Home & Kitchen', '', 'cookware');
+        } else if (lower.includes('luggage') || lower.includes('trolley') || lower.includes('suitcase') || lower.includes('list')) {
+          window._openDedicatedPage?.('Bags & Luggage', '', 'trolley');
+        } else if (lower.includes('smartphones') || lower.includes('phone') || lower.includes('mobile')) {
+          window._openDedicatedPage?.('Electronics', '', 'phone');
+        } else if (lower.includes('keyboard') || lower.includes('mouse')) {
+          window._openDedicatedPage?.('Electronics', '', 'keyboard');
+        } else if (lower.includes('dry fruit') || lower.includes('almond') || lower.includes('seed')) {
+          window._openDedicatedPage?.('Grocery', '', 'dry fruits');
+        } else if (lower.includes('snack') || lower.includes('chocolate') || lower.includes('biscuit')) {
+          window._openDedicatedPage?.('Grocery', '', 'snacks');
+        } else if (lower.includes('fashion') || lower.includes('style') || lower.includes('brand') || lower.includes('tee') || lower.includes('dress') || lower.includes('jean')) {
+          window._openDedicatedPage?.('Fashion', '', 'apparel');
+        } else {
+          window._openDedicatedPage?.('', '', txt);
+        }
+      });
+    });
   }
 
   // Hook up checkout coupon apply & remove (guarded against duplicate listeners)

@@ -106,7 +106,7 @@ const userSchema = new mongoose.Schema(
     },
     otpType: {
       type: String,
-      enum: ['login', 'reset', 'profile', 'seller-toggle', 'register'],
+      enum: ['login', 'reset', 'profile', 'seller-toggle', 'seller-delete', 'register', 'seller-update'],
       select: false,
     },
     pendingProfile: {

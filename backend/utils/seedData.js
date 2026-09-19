@@ -106,7 +106,7 @@ async function seed() {
           images: [item.img],
           rating,
           numReviews,
-          tags: [...meta.tags, item.brand.toLowerCase(), 'bestseller', 'verified'],
+          tags: [...meta.tags, item.brand.toLowerCase(), 'verified'],
           isFeatured: index < 5,
           warranty: '1 to 2 Years Official Brand Warranty',
           deliveryInfo: 'Delivered in 2-4 business days with Prime Express',
