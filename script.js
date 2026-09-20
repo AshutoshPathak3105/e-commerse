@@ -18291,7 +18291,7 @@ function buildCheckoutModal() {
                     <span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">RAZORPAY</span>
                     <span id="chk-upi-offer-badge" class="chk-method-offer-badge" style="display:none;"></span>
                   </div>
-                  <p id="chk-upi-offer-desc">Instant authorization with UPI offer discount eligibility.</p>
+                  <p id="chk-upi-offer-desc">Instant authorization with zero processing fees.</p>
 
                   <!-- Dynamic UPI App Selector -->
                   <div id="chk-upi-config-box" style="margin-top:10px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:none;" onclick="event.stopPropagation();">
@@ -18826,21 +18826,143 @@ function buildCheckoutModal() {
     });
   }
 
-  // Helper to find the best active bank/UPI promotion for a payment method
-  function getPaymentMethodPromo(method, subtotal, selectedBank = '', selectedCardType = 'all', selectedUpiApp = '') {
-    const cms = window._storefrontCMS || (typeof cmsData !== 'undefined' ? cmsData : null);
-    if (!cms || !Array.isArray(cms.promotions)) return null;
+  // Helper to collect active promotions that specifically belong to the ordered products in the cart
+  function getOrderedProductsPromotions(targetType) {
+    if (!Array.isArray(Store.cart) || Store.cart.length === 0) return [];
 
     const now = new Date();
+    const productOffersList = [];
+
+    Store.cart.forEach(cartItem => {
+      const pId = String(cartItem.id || cartItem._id || '');
+      const pName = String(cartItem.name || '');
+      const pCategory = String(cartItem.category || '');
+
+      // 1. Check Store.allProducts for attached offers
+      let prod = null;
+      if (Array.isArray(Store.allProducts)) {
+        prod = Store.allProducts.find(p => String(p._id || p.id) === pId || (p.name && p.name.toLowerCase() === pName.toLowerCase()));
+      }
+
+      let offers = [];
+      if (prod && Array.isArray(prod.offers) && prod.offers.length > 0) {
+        offers = [...prod.offers];
+      } else if (Array.isArray(cartItem.offers) && cartItem.offers.length > 0) {
+        offers = [...cartItem.offers];
+      }
+
+      // 2. Check localStorage custom seller-defined offers
+      try {
+        const localCustom = JSON.parse(
+          localStorage.getItem(`xmart_custom_offers_${pId}`) ||
+          localStorage.getItem(`xmart_custom_offers_${pName}`) ||
+          (prod ? localStorage.getItem(`xmart_custom_offers_${prod._id || prod.id || prod.name}`) : null) ||
+          'null'
+        );
+        if (Array.isArray(localCustom) && localCustom.length > 0) {
+          offers = localCustom;
+        }
+      } catch (e) { }
+
+      offers
+        .filter(o => o && o.code !== 'ADMIN_DEAL' && o.tag !== 'Admin Deal')
+        .forEach(o => {
+          const isBank = (o.type === 'bank') ||
+            (o.tag && /BANK|CARD/i.test(o.tag)) ||
+            (o.partnerName && /BANK|CARD/i.test(o.partnerName)) ||
+            (o.partner && /BANK|CARD/i.test(o.partner)) ||
+            (o.category && /BANK|CARD/i.test(o.category)) ||
+            Boolean(o.bank);
+
+          const isUpi = (o.type === 'upi') ||
+            (o.tag && /UPI/i.test(o.tag)) ||
+            (o.partnerName && /UPI|GPAY|PHONEPE|PAYTM|BHIM/i.test(o.partnerName)) ||
+            (o.partner && /UPI|GPAY|PHONEPE|PAYTM|BHIM/i.test(o.partner)) ||
+            (o.category && /UPI/i.test(o.category)) ||
+            Boolean(o.upiApp || o.upiProvider);
+
+          if (targetType === 'bank' && !isBank) return;
+          if (targetType === 'upi' && !isUpi) return;
+
+          // Check expiry if specified
+          if (o.expiry || o.expiryDate || o.validUntil) {
+            const exp = new Date(o.expiry || o.expiryDate || o.validUntil);
+            if (!isNaN(exp.getTime()) && exp < now) return;
+          }
+
+          const discVal = Number(o.discountValue) || Number(o.val) ||
+            (o.amountOff ? parseFloat(String(o.amountOff).replace(/[^\d.]/g, '')) : 0);
+          if (discVal <= 0) return;
+
+          const discType = o.discountType === 'percent' ? 'percent' : 'flat';
+          const partner = o.partnerName || o.partner || o.bank || o.upiApp || (targetType === 'bank' ? 'All Cards' : 'All UPI');
+
+          productOffersList.push({
+            id: o.id || o._id || `offer-${Math.random()}`,
+            title: o.headline || o.title || o.text || `${partner} Offer`,
+            type: targetType,
+            discountType: discType,
+            discountValue: discVal,
+            minOrder: Number(o.minOrder || o.minPurchase || 0),
+            maxDiscount: Number(o.maxDiscount || 0),
+            bankPartner: targetType === 'bank' ? partner : '',
+            bankPartners: targetType === 'bank' ? [partner] : [],
+            cardType: o.cardType || (o.tag && /Credit/i.test(o.tag) ? 'credit' : (o.tag && /Debit/i.test(o.tag) ? 'debit' : 'all')),
+            bankRules: targetType === 'bank' ? [{ bank: partner, cardType: o.cardType || 'all' }] : [],
+            upiProvider: targetType === 'upi' ? partner : '',
+            upiProviders: targetType === 'upi' ? [partner] : [],
+            productId: pId,
+            productName: pName
+          });
+        });
+
+      // 3. Check CMS promotions targeting this product specifically
+      const cms = window._storefrontCMS || (typeof cmsData !== 'undefined' ? cmsData : null);
+      if (cms && Array.isArray(cms.promotions)) {
+        cms.promotions.forEach(p => {
+          if (p.active === false) return;
+          if (p.type !== targetType) return;
+          if (p.validUntil && new Date(p.validUntil) < now) return;
+          if (p.validFrom && new Date(p.validFrom) > now) return;
+
+          const targets = Array.isArray(p.applicableProducts) ? p.applicableProducts.map(t => String(t).trim().toLowerCase()).filter(Boolean) : [];
+          const targetIds = Array.isArray(p.applicableProductIds) ? p.applicableProductIds.map(String) : [];
+
+          const matchesId = pId && targetIds.includes(pId);
+          const matchesNameOrCat = targets.some(t =>
+            pName.toLowerCase().includes(t) ||
+            (pCategory && pCategory.toLowerCase().includes(t)) ||
+            (prod?.category && prod.category.toLowerCase().includes(t))
+          );
+
+          if (matchesId || matchesNameOrCat) {
+            productOffersList.push(p);
+          }
+        });
+      }
+    });
+
+    return productOffersList;
+  }
+
+  // Helper to find the best active bank/UPI promotion for a payment method on the ordered products
+  function getPaymentMethodPromo(method, subtotal, selectedBank = '', selectedCardType = 'all', selectedUpiApp = '') {
     const targetType = (method === 'Card') ? 'bank' : (method === 'UPI') ? 'upi' : null;
     if (!targetType) return null;
 
-    const candidates = cms.promotions.filter(p => {
+    // Retrieve ONLY promotions that are specifically attached to the ordered products
+    const productPromotions = getOrderedProductsPromotions(targetType);
+    if (!productPromotions || productPromotions.length === 0) {
+      // If the ordered products do not contain any banks/upi offers, show nothing
+      return null;
+    }
+
+    const now = new Date();
+    const candidates = productPromotions.filter(p => {
       if (p.active === false) return false;
-      if (p.type !== targetType) return false;
+      if (p.minOrder && subtotal < p.minOrder) return false;
       if (p.validUntil && new Date(p.validUntil) < now) return false;
       if (p.validFrom && new Date(p.validFrom) > now) return false;
-      if (p.minOrder && subtotal < p.minOrder) return false;
 
       // Bank Partner & Card Type Eligibility check
       if (targetType === 'bank') {
@@ -18849,7 +18971,7 @@ function buildCheckoutModal() {
             const matchedRule = p.bankRules.find(r => {
               const b = (r.bank || '').toLowerCase();
               const s = selectedBank.toLowerCase();
-              return b.includes(s) || s.includes(b) || b.includes('all bank') || b.includes('any card') || (b.includes('sbi') && s.includes('sbi'));
+              return b.includes(s) || s.includes(b) || b.includes('all bank') || b.includes('all card') || b.includes('any card') || (b.includes('sbi') && s.includes('sbi'));
             });
             if (!matchedRule) return false;
             if (selectedCardType && selectedCardType !== 'all') {
@@ -18861,7 +18983,6 @@ function buildCheckoutModal() {
             if (!hasCompat) return false;
           }
         } else {
-          // Standard / fallback legacy check
           if (selectedCardType && selectedCardType !== 'all') {
             const pCardType = p.cardType || 'all';
             if (pCardType !== 'all' && pCardType !== selectedCardType) return false;
@@ -18870,7 +18991,7 @@ function buildCheckoutModal() {
             const partners = Array.isArray(p.bankPartners) && p.bankPartners.length > 0
               ? p.bankPartners
               : (p.bankPartner ? p.bankPartner.split(',').map(s => s.trim()) : []);
-            const isAllBanks = partners.length === 0 || partners.some(b => b.toLowerCase().includes('all bank') || b.toLowerCase().includes('any card') || b.toLowerCase().includes('all card'));
+            const isAllBanks = partners.length === 0 || partners.some(b => b.toLowerCase().includes('all bank') || b.toLowerCase().includes('all card') || b.toLowerCase().includes('any card'));
             const isMatchingBank = partners.some(b => b.toLowerCase().includes(selectedBank.toLowerCase()) || selectedBank.toLowerCase().includes(b.toLowerCase()) || (b.toLowerCase().includes('sbi') && selectedBank.toLowerCase().includes('sbi')));
             if (!isAllBanks && !isMatchingBank) return false;
           }
@@ -18905,25 +19026,15 @@ function buildCheckoutModal() {
       }
       if (saving > subtotal) saving = subtotal;
 
-      // Prioritize specific bank/app match over generic all-banks offer
       let specificity = 0;
       if (targetType === 'bank' && selectedBank) {
-        if (Array.isArray(p.bankRules) && p.bankRules.length > 0) {
-          const matchedRule = p.bankRules.find(r => {
-            const b = (r.bank || '').toLowerCase();
-            const s = selectedBank.toLowerCase();
-            return (b.includes(s) || s.includes(b) || (b.includes('sbi') && s.includes('sbi'))) && !b.includes('all bank') && !b.includes('any card');
-          });
-          if (matchedRule) specificity += 100000;
-        } else {
-          const partners = Array.isArray(p.bankPartners) ? p.bankPartners : (p.bankPartner ? p.bankPartner.split(',') : []);
-          const isSpecific = partners.some(b => (b.toLowerCase().includes(selectedBank.toLowerCase()) || (b.toLowerCase().includes('sbi') && selectedBank.toLowerCase().includes('sbi'))) && !b.toLowerCase().includes('all bank') && !b.toLowerCase().includes('any card'));
-          if (isSpecific) specificity += 100000;
-        }
+        const partners = Array.isArray(p.bankPartners) ? p.bankPartners : (p.bankPartner ? p.bankPartner.split(',') : []);
+        const isSpecific = partners.some(b => b.toLowerCase().includes(selectedBank.toLowerCase()) && !b.toLowerCase().includes('all bank') && !b.toLowerCase().includes('all card') && !b.toLowerCase().includes('any card'));
+        if (isSpecific) specificity += 100000;
       }
       if (targetType === 'upi' && selectedUpiApp) {
         const providers = Array.isArray(p.upiProviders) ? p.upiProviders : (p.upiProvider ? p.upiProvider.split(',') : []);
-        const isSpecific = providers.some(u => u.toLowerCase().includes(selectedUpiApp.toLowerCase()));
+        const isSpecific = providers.some(u => u.toLowerCase().includes(selectedUpiApp.toLowerCase()) && !u.toLowerCase().includes('all upi') && !u.toLowerCase().includes('any upi'));
         if (isSpecific) specificity += 100000;
       }
 
@@ -18999,8 +19110,8 @@ function buildCheckoutModal() {
       if (totals.paymentDiscount > 0 && totals.payPromo) {
         payDiscountRow.style.display = 'flex';
         const partnerName = totals.selectedMethod === 'Card'
-          ? (totals.selectedBank || totals.payPromo.bankPartner || 'Any Bank Card')
-          : (totals.selectedUpiApp || totals.payPromo.upiProvider || 'Any UPI App');
+          ? (totals.selectedBank || totals.payPromo.bankPartner || 'Bank Card')
+          : (totals.selectedUpiApp || totals.payPromo.upiProvider || 'UPI App');
         payDiscountLabel.textContent = `${totals.selectedMethod === 'Card' ? 'Card' : 'UPI'} Offer (${partnerName}):`;
         payDiscountVal.textContent = `-₹${totals.paymentDiscount.toLocaleString('en-IN')}`;
       } else {
@@ -19016,9 +19127,9 @@ function buildCheckoutModal() {
     if (cardConfigBox) cardConfigBox.style.display = (totals.selectedMethod === 'Card') ? 'block' : 'none';
     if (upiConfigBox) upiConfigBox.style.display = (totals.selectedMethod === 'UPI') ? 'block' : 'none';
 
-    // Populate #chk-card-bank-select if not yet populated
+    // Populate #chk-card-bank-select
     const cardBankSelect = modal.querySelector('#chk-card-bank-select');
-    if (cardBankSelect && cardBankSelect.children.length <= 1) {
+    if (cardBankSelect) {
       const bankList = [
         { id: 'HDFC Bank', name: 'HDFC Bank (#1 Most Valued)' },
         { id: 'SBI Bank', name: 'State Bank of India (SBI Bank - #2)' },
@@ -19033,22 +19144,19 @@ function buildCheckoutModal() {
         { id: 'Other Bank Card', name: 'Other Bank / Any Card' }
       ];
 
-      // Add any additional bank partners defined in CMS promotions
-      if (window._storefrontCMS?.promotions) {
-        window._storefrontCMS.promotions
-          .filter(p => p.type === 'bank')
-          .forEach(p => {
-            const partners = Array.isArray(p.bankRules) && p.bankRules.length > 0
-              ? p.bankRules.map(r => r.bank)
-              : (Array.isArray(p.bankPartners) ? p.bankPartners : (p.bankPartner ? p.bankPartner.split(',') : []));
-            partners.forEach(bName => {
-              const trimmed = bName.trim().replace(/\s*\(.*?\)/, '');
-              if (trimmed && !bankList.some(b => b.id.toLowerCase() === trimmed.toLowerCase() || b.name.toLowerCase() === trimmed.toLowerCase())) {
-                bankList.splice(bankList.length - 1, 0, { id: trimmed, name: trimmed });
-              }
-            });
-          });
-      }
+      // Add any additional bank partners defined in active product offers
+      const activeBankOffers = getOrderedProductsPromotions('bank');
+      activeBankOffers.forEach(p => {
+        const partners = Array.isArray(p.bankRules) && p.bankRules.length > 0
+          ? p.bankRules.map(r => r.bank)
+          : (Array.isArray(p.bankPartners) ? p.bankPartners : (p.bankPartner ? p.bankPartner.split(',') : []));
+        partners.forEach(bName => {
+          const trimmed = bName.trim().replace(/\s*\(.*?\)/, '');
+          if (trimmed && !bankList.some(b => b.id.toLowerCase() === trimmed.toLowerCase() || b.name.toLowerCase() === trimmed.toLowerCase())) {
+            bankList.splice(bankList.length - 1, 0, { id: trimmed, name: trimmed });
+          }
+        });
+      });
 
       const currentVal = cardBankSelect.value;
       cardBankSelect.innerHTML = '<option value="">Best Available Bank Offer (Auto Apply)</option>';
@@ -19074,9 +19182,9 @@ function buildCheckoutModal() {
       });
     }
 
-    // Populate #chk-upi-app-select if not yet populated
+    // Populate #chk-upi-app-select
     const upiAppSelect = modal.querySelector('#chk-upi-app-select');
-    if (upiAppSelect && upiAppSelect.children.length <= 1) {
+    if (upiAppSelect) {
       const standardApps = [
         { id: 'PhonePe', name: 'PhonePe (#1 in UPI Volume)' },
         { id: 'Google Pay', name: 'Google Pay (GPay - #2)' },
@@ -19113,8 +19221,6 @@ function buildCheckoutModal() {
         const disc = totals.payPromo.discountType === 'flat' ? `₹${totals.payPromo.discountValue} Instant Discount` : `${totals.payPromo.discountValue}% Discount`;
         const bankName = totals.selectedBank || totals.payPromo.bankPartner || 'All Cards';
         cardAppliedText.textContent = `✓ Offer Applied: ${disc} on ${bankName} (Eligible for Debit & Credit Cards)`;
-      } else if (totals.selectedMethod === 'Card') {
-        cardAppliedText.textContent = 'No specific offer for selected bank. Standard checkout applies.';
       } else {
         cardAppliedText.textContent = '';
       }
@@ -19126,14 +19232,12 @@ function buildCheckoutModal() {
         const disc = totals.payPromo.discountType === 'flat' ? `₹${totals.payPromo.discountValue} Cashback / Discount` : `${totals.payPromo.discountValue}% Discount`;
         const appName = totals.selectedUpiApp || totals.payPromo.upiProvider || 'UPI';
         upiAppliedText.textContent = `✓ Offer Applied: ${disc} on ${appName}`;
-      } else if (totals.selectedMethod === 'UPI') {
-        upiAppliedText.textContent = 'Standard UPI checkout without additional app offer.';
       } else {
         upiAppliedText.textContent = '';
       }
     }
 
-    // Update Offer badges on payment cards
+    // Update Offer badges (tickers) on payment cards ONLY IF product contains offers
     const cardPromo = getPaymentMethodPromo('Card', subtotal, totals.selectedBank, totals.selectedCardType, '');
     const cardBadge = modal.querySelector('#chk-card-offer-badge');
     const cardDesc = modal.querySelector('#chk-card-offer-desc');
@@ -19147,6 +19251,7 @@ function buildCheckoutModal() {
         if (cardDesc) cardDesc.textContent = `Special bank card discount of ${discText} will be applied automatically on Debit & Credit cards!`;
       } else {
         cardBadge.style.display = 'none';
+        cardBadge.textContent = '';
         if (cardDesc) cardDesc.textContent = 'Bank-grade 256-Bit SSL encrypted transaction.';
       }
     }
@@ -19164,7 +19269,8 @@ function buildCheckoutModal() {
         if (upiDesc) upiDesc.textContent = `Special UPI discount of ${discText} will be applied automatically!`;
       } else {
         upiBadge.style.display = 'none';
-        if (upiDesc) upiDesc.textContent = 'Instant authorization with 5% Prime cashback eligibility.';
+        upiBadge.textContent = '';
+        if (upiDesc) upiDesc.textContent = 'Instant authorization with zero processing fees.';
       }
     }
 
