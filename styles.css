@@ -24395,13 +24395,13 @@ button[type="submit"] *,
   transform: scale(1.04) !important;
 }
 
-/* Bestseller Badge (Top-Left of Product Image, Red BG, White Font) */
+/* Bestseller Badge (Top-Left of Product Image) — pill style matching Out of Stock tag */
 .fk-bestseller-badge {
   position: absolute !important;
   top: 6px !important;
   left: 6px !important;
-  background-color: #e53935 !important;
-  color: #ffffff !important;
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
   font-size: 10px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
@@ -24409,7 +24409,8 @@ button[type="submit"] *,
   padding: 3px 8px !important;
   border-radius: 3px !important;
   line-height: 1.2 !important;
-  box-shadow: 0 2px 5px rgba(229, 57, 53, 0.45) !important;
+  border: 1.5px solid #ef4444 !important;
+  box-shadow: none !important;
   z-index: 4 !important;
   pointer-events: none !important;
   user-select: none !important;
