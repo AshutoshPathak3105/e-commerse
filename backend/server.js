@@ -267,13 +267,28 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
+// ── Security Guard: Block public access to backend, secrets, and git files ──
+app.use((req, res, next) => {
+  const normalized = req.path.toLowerCase();
+  if (
+    normalized.startsWith('/backend') ||
+    normalized.startsWith('/scratch') ||
+    normalized.startsWith('/.git') ||
+    normalized.includes('.env') ||
+    normalized.includes('package')
+  ) {
+    return res.status(404).json({ success: false, message: 'Not found' });
+  }
+  next();
+});
+
 // ── Serve Frontend Static Files with Cache-Busting for Dev ──
 const frontendPath = path.join(__dirname, '..');
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   next();
 });
-app.use(express.static(frontendPath));
+app.use(express.static(frontendPath, { dotfiles: 'ignore' }));
 
 // ── Root info / Frontend entry ───────────────────────────────
 app.get('/api', (req, res) => {
