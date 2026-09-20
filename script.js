@@ -30610,17 +30610,17 @@ function initPageRouter() {
                   <div class="review-form-row">
                     <div class="review-form-group">
                       <label for="review-user-name">Your Name <span class="required-star">*</span></label>
-                      <input type="text" id="review-user-name" required value="">
+                      <input type="text" id="review-user-name" placeholder="Enter your full name" required value="">
                     </div>
                     <div class="review-form-group">
                       <label for="review-headline">Review Headline <span class="required-star">*</span></label>
-                      <input type="text" id="review-headline" required>
+                      <input type="text" id="review-headline" placeholder="What's most important to know?" required>
                     </div>
                   </div>
 
                   <div class="review-form-group">
                     <label for="review-comment">Detailed Feedback <span class="required-star">*</span></label>
-                    <textarea id="review-comment" rows="3" required></textarea>
+                    <textarea id="review-comment" rows="3" placeholder="What did you like or dislike? How did you use this product? Write your honest feedback here..." style="resize: none;" required></textarea>
                   </div>
 
                   <button type="submit" id="submit-review-btn" class="submit-review-btn">

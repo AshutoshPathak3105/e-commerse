@@ -7492,7 +7492,13 @@ body:has(.cart-drawer.is-open) {
 }
 
 .review-form-group textarea {
-  resize: vertical;
+  resize: none !important;
+}
+
+.review-form-group input::placeholder,
+.review-form-group textarea::placeholder {
+  color: #94a3b8;
+  font-size: 12.5px;
 }
 
 /* Star Rating Picker */
