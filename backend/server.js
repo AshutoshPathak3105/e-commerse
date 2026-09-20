@@ -29,24 +29,77 @@ const adminRoutes = require('./routes/admin');
 
 const app = express();
 
-// ── Security middleware ──────────────────────────────────────
-// NOTE: CSP is disabled so script.js can make API calls to localhost:8000
+// ── Security Hardening ───────────────────────────────────────
+// Hide tech stack from attackers
+app.disable('x-powered-by');
+
+// Security Headers (Clickjacking, MIME-sniffing, XSS, HSTS)
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false, // Allow script.js to fetch /api/* freely
+    contentSecurityPolicy: false, // Allows storefront API calls
+    frameguard: { action: 'deny' },
+    noSniff: true,
+    xssFilter: true,
+    hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true } : false,
   })
 );
 
-// ── CORS ─────────────────────────────────────────────────────
+// ── Strict CORS Whitelist ────────────────────────────────────
+const trustedOrigins = [
+  'http://localhost:8000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:3000',
+  'https://e-commerse-4xlp.onrender.com',
+  'https://beautiful-druid-f9f6aa.netlify.app',
+  'https://phenomenal-zuccutto-36b29b.netlify.app',
+];
+
+if (process.env.CLIENT_URL) {
+  const cleanClient = process.env.CLIENT_URL.replace(/\/+$/, '');
+  if (!trustedOrigins.includes(cleanClient)) trustedOrigins.push(cleanClient);
+}
+
 app.use(
   cors({
-    origin: true, // Echo origin or allow all for seamless dev across ports
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, same-origin static assets)
+      if (!origin) return callback(null, true);
+
+      // In development, allow local development; in production, enforce strict whitelist
+      if (process.env.NODE_ENV !== 'production' || trustedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`[Security Alert] Blocked unauthorized CORS request from origin: ${origin}`);
+      return callback(new Error('Access blocked by CORS policy: Unauthorized domain.'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+// ── NoSQL Injection Sanitizer Middleware ────────────────────
+// Recursively strips any keys containing MongoDB operators ($ or .)
+const sanitizeInput = (payload) => {
+  if (!payload || typeof payload !== 'object') return payload;
+  if (Array.isArray(payload)) return payload.map(sanitizeInput);
+  const clean = {};
+  for (const key of Object.keys(payload)) {
+    if (key.startsWith('$') || key.includes('.')) continue;
+    clean[key] = sanitizeInput(payload[key]);
+  }
+  return clean;
+};
+
+app.use((req, res, next) => {
+  if (req.body) req.body = sanitizeInput(req.body);
+  if (req.query) req.query = sanitizeInput(req.query);
+  if (req.params) req.params = sanitizeInput(req.params);
+  next();
+});
 
 // ── Global rate limiter ──────────────────────────────────────
 const globalLimiter = rateLimit({
