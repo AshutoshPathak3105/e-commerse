@@ -20055,7 +20055,7 @@ function initPageRouter() {
 
       if (!products || products.length === 0) {
         grid.classList.add('fk-list-mode');
-        grid.setAttribute('style', 'display: block !important; grid-template-columns: none !important; gap: 0 !important; width: 100% !important;');
+        grid.removeAttribute('style');
         grid.innerHTML = `
           ${flipkartHeaderHtml}
           <div style="text-align:center;padding:70px 20px;background:#fff;border-radius:8px;border:1px solid #e0e0e0;grid-column:1/-1;">
@@ -20164,7 +20164,7 @@ function initPageRouter() {
 
       // Universal Flipkart Horizontal List View Rendering for ALL products
       grid.classList.add('fk-list-mode');
-      grid.setAttribute('style', 'display: block !important; grid-template-columns: none !important; gap: 0 !important; width: 100% !important;');
+      grid.removeAttribute('style');
       window._compareList = window._compareList || [];
 
       grid.innerHTML = flipkartHeaderHtml + products.map(prod => {

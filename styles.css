@@ -10094,14 +10094,16 @@ body:has(.cart-drawer.is-open) {
   gap: 18px;
 }
 
-/* Flipkart list-mode override: switches grid to stacked block layout */
-#com-products-grid.fk-list-mode,
-.com-products-grid.fk-list-mode {
-  display: block !important;
-  grid-template-columns: none !important;
-  gap: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
+/* Flipkart list-mode override: switches grid to stacked block layout on desktop */
+@media (min-width: 901px) {
+  #com-products-grid.fk-list-mode,
+  .com-products-grid.fk-list-mode {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
 }
 
 /* -- Commercial Product Card -- */
@@ -24115,15 +24117,17 @@ button[type="submit"] *,
    FLIPKART HORIZONTAL PRODUCT LIST VIEW (AUTHENTIC DESIGN)
    ================================================================ */
 
-/* Override grid container to vertical list stack */
-#com-products-grid.fk-list-mode,
-.com-products-grid.fk-list-mode {
-  display: flex !important;
-  flex-direction: column !important;
-  grid-template-columns: none !important;
-  gap: 12px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+/* Override grid container to vertical list stack on desktop only */
+@media (min-width: 901px) {
+  #com-products-grid.fk-list-mode,
+  .com-products-grid.fk-list-mode {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    gap: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* Breadcrumb & Did You Mean Result Bar */
@@ -24749,7 +24753,11 @@ button[type="submit"] *,
 @media (max-width: 480px) {
   #com-products-grid.fk-list-mode,
   .com-products-grid.fk-list-mode {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .fk-product-list-card {
     padding: 8px !important;
