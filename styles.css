@@ -17286,6 +17286,19 @@ div:has(> #page-wallet-bal-display) {
   font-size: 13px;
 }
 
+.btn-card-select:hover,
+.addr-select-btn:hover {
+  background: #e68500 !important;
+  color: #000000 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 148, 0, 0.35) !important;
+}
+
+.btn-card-select:active,
+.addr-select-btn:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .addr-toolbar-wrap {
     padding: 12px 14px !important;

@@ -3658,7 +3658,7 @@ function buildAddressesModal() {
         <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Phone: <strong>${addr.phone}</strong></div>
 
         <div style="display:flex;gap:8px;">
-          <button type="button" class="addr-select-btn" data-pin="${addr.pincode}" style="flex:1;background:#19324c;color:#fff;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Deliver to this Address</button>
+          <button type="button" class="addr-select-btn" data-pin="${addr.pincode}" style="flex:1;background:#FF9400;color:#000000;border:none;padding:8px 12px;border-radius:6px;font-size:12.5px;font-weight:800;cursor:pointer;transition:all 140ms ease;">Deliver to this Address</button>
           ${!addr.isDefault ? `<button type="button" class="addr-set-default-btn" data-id="${addr.id}" style="background:#f1f5f9;color:#334155;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Set Default</button>` : ''}
         </div>
       </div>
@@ -28791,7 +28791,7 @@ function initPageRouter() {
           </div>
 
           <div style="display:flex;gap:10px;border-top:1px solid #f1f5f9;padding-top:14px;">
-            <button type="button" class="btn-card-select" data-pin="${addr.pincode}" style="flex:1;background:#19324c;color:#ffffff;border:none;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background 140ms ease;">Deliver to this PIN</button>
+            <button type="button" class="btn-card-select" data-pin="${addr.pincode}" style="flex:1;background:#FF9400;color:#000000;border:none;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:800;cursor:pointer;transition:all 140ms ease;box-shadow:0 2px 8px rgba(255,148,0,0.25);">Deliver to this PIN</button>
             ${!addr.isDefault ? `<button type="button" class="btn-card-default" data-id="${addr.id}" style="background:#f1f5f9;color:#334155;border:none;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Set Default</button>` : ''}
           </div>
         </div>
