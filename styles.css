@@ -24317,6 +24317,42 @@ button[type="submit"] *,
   white-space: nowrap !important;
 }
 
+/* Out of Stock Badge (Bottom-Right of Product Image) */
+.fk-out-of-stock-badge {
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  background: rgba(17, 17, 17, 0.82) !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+  padding: 4px 9px !important;
+  border-radius: 4px !important;
+  line-height: 1.2 !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+}
+
+.fk-out-of-stock-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f87171;
+  flex-shrink: 0;
+}
+
 /* Wishlist Heart Button */
 .fk-wishlist-heart-btn {
   position: absolute !important;

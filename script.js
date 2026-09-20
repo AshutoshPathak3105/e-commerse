@@ -20182,17 +20182,18 @@ function initPageRouter() {
         const exchangeVal = Math.round((finalPrice * 0.45) / 500) * 500 || 1500;
         const b = getRatingBreakdown(rating, reviews);
         const isCompared = window._compareList.some(c => (c._id || c.id) === prodId);
-        const isUnavailable = prod.isSellerDeactivated === true || (typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(prod));
+        const isOutOfStock = !isUnavailable && (prod.stock !== undefined ? Number(prod.stock) <= 0 : false);
 
         return `
-          <div class="fk-product-list-card ${isUnavailable ? 'is-unavailable' : ''}" data-id="${prodId}">
+          <div class="fk-product-list-card ${isUnavailable ? 'is-unavailable' : ''}${isOutOfStock ? ' is-out-of-stock' : ''}" data-id="${prodId}">
             <!-- Column 1: Image & Wishlist -->
             <div class="fk-prod-thumb-wrap">
               ${isBestseller ? `<span class="fk-bestseller-badge">Bestseller</span>` : ''}
               <button class="fk-wishlist-heart-btn ${isWishlisted ? 'is-active' : ''}" data-id="${prodId}" data-wishlisted="${isWishlisted ? 'true' : 'false'}" title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}" aria-label="Wishlist">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="${isWishlisted ? '#e53935' : 'none'}" stroke="${isWishlisted ? '#e53935' : '#878787'}" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isWishlisted ? '#e53935' : 'none'}" stroke="${isWishlisted ? '#e53935' : '#878787'}"/></svg>
               </button>
-              <img src="${img}" alt="${prod.name}" loading="lazy" style="${isUnavailable ? 'filter:grayscale(25%);opacity:0.85;' : ''}">
+              <img src="${img}" alt="${prod.name}" loading="lazy" style="${isUnavailable || isOutOfStock ? 'filter:grayscale(40%);opacity:0.75;' : ''}">
+              ${isOutOfStock ? `<span class="fk-out-of-stock-badge">Out of Stock</span>` : ''}
             </div>
 
             <!-- Column 2: Details & Interactive Rating Popover (Image 5 Benchmark) -->
