@@ -20182,6 +20182,7 @@ function initPageRouter() {
         const exchangeVal = Math.round((finalPrice * 0.45) / 500) * 500 || 1500;
         const b = getRatingBreakdown(rating, reviews);
         const isCompared = window._compareList.some(c => (c._id || c.id) === prodId);
+        const isUnavailable = prod.isSellerDeactivated === true || (typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(prod));
         const isOutOfStock = !isUnavailable && (prod.stock !== undefined ? Number(prod.stock) <= 0 : false);
 
         return `
