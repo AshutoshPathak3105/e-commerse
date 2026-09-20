@@ -18398,6 +18398,33 @@ function buildCheckoutModal() {
     `
   });
 
+  // Ensure top-right close button is present and actively closes the modal
+  let chkCloseBtn = modal.querySelector('.xmodal-close-btn');
+  if (!chkCloseBtn) {
+    const chkHeader = modal.querySelector('.xmodal-header');
+    if (chkHeader) {
+      chkCloseBtn = document.createElement('button');
+      chkCloseBtn.className = 'xmodal-close-btn';
+      chkCloseBtn.setAttribute('aria-label', 'Close modal');
+      chkCloseBtn.setAttribute('title', 'Close');
+      chkCloseBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+      chkHeader.appendChild(chkCloseBtn);
+    }
+  }
+  if (chkCloseBtn) {
+    chkCloseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof modal._close === 'function') {
+        modal._close();
+      } else {
+        modal.classList.remove('is-active', 'open', 'show');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
   let currentCheckoutStep = 1;
   let savedDeliveryAddress = null;
 

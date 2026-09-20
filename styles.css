@@ -14699,19 +14699,37 @@ body:has(.cart-drawer.is-open) {
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .step-tab .step-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  max-width: 26px !important;
+  max-height: 26px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
   background: #e2e8f0;
   color: #565959;
   font-weight: 900;
-  display: grid;
-  place-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   font-size: 12px;
-  flex-shrink: 0;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  background-clip: padding-box !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  box-sizing: border-box !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .step-tab .step-text {
@@ -14721,9 +14739,23 @@ body:has(.cart-drawer.is-open) {
   white-space: nowrap;
 }
 
+.step-tab.is-active {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .step-tab.is-active .step-num {
   background: #ff9700 !important;
-  color: #000 !important;
+  color: #000000 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background-clip: padding-box !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .step-tab.is-active .step-text {
@@ -14734,6 +14766,12 @@ body:has(.cart-drawer.is-open) {
 .step-tab.is-completed .step-num {
   background: #16a34a !important;
   color: #ffffff !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background-clip: padding-box !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .step-tab.is-completed .step-text {
@@ -14964,6 +15002,69 @@ body:has(.cart-drawer.is-open) {
   width: 100% !important;
   box-sizing: border-box !important;
   margin: 0 auto !important;
+  position: relative !important;
+}
+
+#checkout-interactive-modal .xmodal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  padding: 18px 24px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+#checkout-interactive-modal .xmodal-header h3 {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.3 !important;
+  flex: 1 !important;
+}
+
+#checkout-interactive-modal .xmodal-close-btn,
+#checkout-interactive-modal [class*="close-btn"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.18s ease !important;
+  transform: none !important;
+}
+
+#checkout-interactive-modal .xmodal-close-btn:hover,
+#checkout-interactive-modal [class*="close-btn"]:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+}
+
+#checkout-interactive-modal .xmodal-close-btn svg,
+#checkout-interactive-modal [class*="close-btn"] svg {
+  stroke: currentColor !important;
+  width: 18px !important;
+  height: 18px !important;
+  stroke-width: 2.5 !important;
+  display: block !important;
 }
 
 .chk-pane-grid {
