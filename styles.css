@@ -17271,6 +17271,19 @@ div:has(> #page-wallet-bal-display) {
   font-size: 13px;
   outline: none;
   box-sizing: border-box;
+  background: #ffffff;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.addr-search-wrap #addr-search-input:focus {
+  border-color: #ff9700;
+  box-shadow: 0 0 0 3px rgba(255, 151, 0, 0.15);
+}
+
+.addr-search-wrap #addr-search-input::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 @media (max-width: 768px) {

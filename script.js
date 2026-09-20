@@ -28691,7 +28691,7 @@ function initPageRouter() {
             <button class="page-chip addr-filter-btn" data-filter="WORK">Work / Office</button>
           </div>
           <div class="addr-search-wrap">
-            <input type="text" id="addr-search-input" />
+            <input type="text" id="addr-search-input" placeholder="Search by name, PIN, city, street..." autocomplete="off" />
           </div>
         </div>
 
