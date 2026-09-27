@@ -10,9 +10,31 @@ const getClientUrl = () => {
   }
   return url;
 };
+
+// FRONTEND_URL should be set to the Netlify (frontend) URL in production.
+// Falls back to CLIENT_URL or the live production Netlify storefront.
+const getFrontendUrl = () => {
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.replace(/\/+$/, '');
+  }
+  if (process.env.CLIENT_URL) {
+    const cUrl = process.env.CLIENT_URL.replace(/\/+$/, '');
+    if (!cUrl.includes('onrender.com') && !cUrl.includes('localhost') && !cUrl.includes('127.0.0.1')) {
+      return cUrl;
+    }
+  }
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    return 'https://beautiful-druid-f9f6aa.netlify.app';
+  }
+  return getClientUrl();
+};
+
 const getLogoUrl = () => {
-  if (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('localhost')) {
-    return `${process.env.CLIENT_URL.replace(/\/+$/, '')}/logo.png`;
+  const base = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.replace(/\/+$/, '')
+    : (process.env.CLIENT_URL || '');
+  if (base && !base.includes('localhost')) {
+    return `${base}/logo.png`;
   }
   return 'https://raw.githubusercontent.com/AshutoshPathak3105/e-commerse/main/logo.png';
 };
@@ -67,7 +89,7 @@ async function sendWelcomeEmail({ email, name }) {
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
-        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
+        <a href="${getFrontendUrl()}" style="text-decoration: none; display: inline-block;">
           <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
         </a>
         <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Everything you love, delivered instantly.</p>
@@ -87,7 +109,7 @@ async function sendWelcomeEmail({ email, name }) {
         </div>
 
         <div style="text-align: center; margin: 28px 0 12px;">
-          <a href="${getClientUrl()}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">Start Shopping Now</a>
+          <a href="${getFrontendUrl()}" style="display: inline-block; background: #ff9700; color: #000000; font-weight: 800; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">Start Shopping Now</a>
         </div>
       </div>
 
@@ -154,8 +176,8 @@ async function sendPasswordResetEmail({ email, name, otp, type = 'reset' }) {
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
-        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
-          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        <a href="${getFrontendUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 0;" />
         </a>
         <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Account Security</p>
       </div>
@@ -220,25 +242,26 @@ async function sendOrderConfirmationEmail({ email, name, order }) {
     if (!imgUrl || imgUrl === 'logo.png') {
       imgUrl = getLogoUrl();
     } else if (imgUrl.startsWith('/')) {
-      imgUrl = `${getClientUrl()}${imgUrl}`;
+      imgUrl = `${getFrontendUrl()}${imgUrl}`;
     }
 
+    // 2-column layout: fixed image cell + details cell (name, qty, price, savings).
+    // Avoids 3-column tables that break on mobile email clients.
     return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 16px 0; vertical-align: middle; width: 68px;">
-          <img src="${imgUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 6px; border: 1px solid #e5e7eb; display: block; background: #ffffff;" onerror="this.src='${getLogoUrl()}';" />
+        <td style="padding: 12px 0; vertical-align: top; width: 68px; min-width: 68px;">
+          <img src="${imgUrl}" alt="${item.name}" width="60" height="60"
+            style="width: 60px; height: 60px; object-fit: contain; border-radius: 6px; border: 1px solid #e5e7eb; display: block; background: #ffffff;"
+            onerror="this.src='${getLogoUrl()}';" />
         </td>
-        <td style="padding: 16px 12px; vertical-align: middle;">
-          <div style="font-size: 14px; font-weight: 700; color: #000000; line-height: 1.4; margin-bottom: 4px;">${item.name}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Quantity: <strong style="color: #000000;">${qty}</strong></div>
-          <div style="font-size: 12.5px;">
-            <span style="color: #6b7280; text-decoration: line-through; margin-right: 6px;">₹${origPriceTotal.toLocaleString('en-IN')}</span>
+        <td style="padding: 12px 10px 12px 12px; vertical-align: top;">
+          <div style="font-size: 13px; font-weight: 700; color: #111827; line-height: 1.4; margin-bottom: 5px;">${item.name}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">Qty: <strong style="color: #111827;">${qty}</strong></div>
+          <div style="font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 3px;">₹${finalPriceTotal.toLocaleString('en-IN')}${qty > 1 ? `<span style="font-size:11px;font-weight:500;color:#6b7280;"> (₹${finalPriceUnit.toLocaleString('en-IN')} each)</span>` : ''}</div>
+          <div style="font-size: 11.5px;">
+            <span style="color: #9ca3af; text-decoration: line-through; margin-right: 5px;">₹${origPriceTotal.toLocaleString('en-IN')}</span>
             <span style="color: #16a34a; font-weight: 700;">₹${discountAmt.toLocaleString('en-IN')} OFF (${discountPct}%)</span>
           </div>
-        </td>
-        <td style="padding: 16px 0; vertical-align: middle; text-align: right; white-space: nowrap;">
-          <div style="font-size: 16px; font-weight: 800; color: #000000;">₹${finalPriceTotal.toLocaleString('en-IN')}</div>
-          ${qty > 1 ? `<div style="font-size: 11px; color: #6b7280;">(₹${finalPriceUnit.toLocaleString('en-IN')} each)</div>` : ''}
         </td>
       </tr>
     `;
@@ -264,13 +287,15 @@ async function sendOrderConfirmationEmail({ email, name, order }) {
   const addressParts = [street, city, state ? `${state} - ${pincode}` : pincode].filter(Boolean);
   const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Registered Delivery Address';
 
-  const trackingUrl = `${getClientUrl()}/#track/${encodeURIComponent(orderId)}`;
+  // Use FRONTEND_URL for the tracking link so it always points to the Netlify frontend,
+  // not the backend API server.
+  const trackingUrl = `${getFrontendUrl()}/#track/${encodeURIComponent(orderId)}`;
 
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
-        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
-          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+        <a href="${getFrontendUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 0;" />
         </a>
         <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Thank you for your order!</p>
       </div>
@@ -291,9 +316,8 @@ async function sendOrderConfirmationEmail({ email, name, order }) {
         <!-- Order Items Table -->
         <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
           <thead>
-            <tr style="border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">
+            <tr style="border-bottom: 2px solid #e5e7eb; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">
               <th style="padding: 8px 0; text-align: left;" colspan="2">Item & Price Details</th>
-              <th style="padding: 8px 0; text-align: right;">Final Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -431,39 +455,87 @@ async function sendSellerPayoutEmail({ email, name, storeName, amount, bankAcc, 
 /**
  * 5. Send RMA Status / Reverse Logistics Update Email to Customer
  */
-async function sendReturnStatusEmail({ email, name, orderId, rmaNumber, status, reverseAwb, notes }) {
-  const subject = `Update on Return Request ${rmaNumber} (Order ${orderId})`;
+async function sendReturnStatusEmail({ email, name, orderId, rmaNumber, status, reverseAwb, reverseCourier, notes, qcGrade, pickupAddress }) {
   const statusLabels = {
-    'Approved': 'RMA Approved — Pickup Scheduled',
-    'Item_Picked_Up': 'Item Received at Fulfillment Center',
-    'Rejected': 'Return Request Reviewed',
+    'Approved': 'Return Request Approved — Doorstep Pickup Scheduled',
+    'In_Transit': 'Item Picked Up by Courier — In Transit to Warehouse',
+    'Item_Picked_Up': 'Item Received & Quality Inspection in Progress',
+    'QC_Passed': 'Quality Check Passed — Refund Settlement Pre-Approved',
+    'Rejected': 'Return Request Reviewed & Declined',
+    'Replacement_Shipped': 'Replacement Unit Dispatched',
   };
-  const title = statusLabels[status] || 'Return Request Status Update';
+  const title = statusLabels[status] || `Return Request Update: ${status}`;
+  const subject = `[X-Mart] ${title} (Order ${orderId})`;
+
+  const courierName = reverseCourier || 'Blue Dart Express';
 
   const htmlContent = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #022F43; padding: 22px 20px 18px; text-align: center;">
-        <a href="${getClientUrl()}" style="text-decoration: none; display: inline-block;">
-          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 48px; max-height: 48px; width: auto; max-width: 180px; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px;" />
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <div style="background: #022F43; padding: 24px 20px; text-align: center;">
+        <a href="${getFrontendUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 44px; max-height: 44px; width: auto; max-width: 170px; object-fit: contain; display: block; margin: 0 auto;" />
         </a>
-        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 13px;">Reverse Logistics &amp; Customer Care</p>
+        <p style="color: #94a3b8; margin: 8px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">Reverse Logistics &amp; RMA Department</p>
       </div>
 
-      <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">
-        <h2 style="margin: 0 0 8px; font-size: 20px; font-weight: 800; color: #0f172a;">${title}</h2>
-        <p style="margin: 0 0 16px; font-size: 14px; color: #475569;">Hello ${name || 'Customer'}, here is the latest update regarding your return request.</p>
+      <div style="padding: 32px 24px; color: #1e293b; line-height: 1.6;">
+        <h2 style="margin: 0 0 10px; font-size: 20px; font-weight: 800; color: #0f172a;">${title}</h2>
+        <p style="margin: 0 0 18px; font-size: 14.5px; color: #475569;">Hello <strong>${name || 'Valued Customer'}</strong>, here is the official status update regarding your return request for Order <strong>${orderId}</strong>.</p>
 
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13.5px;">
-          <div style="margin-bottom: 8px;"><strong>RMA Number:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: 700;">${rmaNumber}</span></div>
-          <div style="margin-bottom: 8px;"><strong>Associated Order:</strong> ${orderId}</div>
-          <div style="margin-bottom: 8px;"><strong>Current RMA Status:</strong> <span style="font-weight: 700; color: #059669;">${status}</span></div>
-          ${reverseAwb ? `<div style="margin-bottom: 8px;"><strong>Reverse Pickup Tracking (AWB):</strong> <span style="font-family: monospace; font-weight: 700; color: #0f172a;">${reverseAwb}</span> (Blue Dart Express)</div>` : ''}
-          ${notes ? `<div><strong>Notes:</strong> ${notes}</div>` : ''}
+        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13.5px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">RMA Reference:</td>
+                <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: 800; color: #004ac6;">${rmaNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Associated Order ID:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 700; color: #0f172a; font-family: monospace;">${orderId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Current Pipeline Stage:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 800; color: #059669;">${status}</td>
+              </tr>
+              ${reverseAwb ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Reverse Courier:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 700; color: #0284c7;">${courierName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Reverse Tracking (AWB):</td>
+                <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: 800; color: #0f172a;">${reverseAwb}</td>
+              </tr>` : ''}
+              ${qcGrade ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Warehouse QC Result:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 800; color: #059669;">${qcGrade}</td>
+              </tr>` : ''}
+            </tbody>
+          </table>
+
+          ${notes ? `
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1; font-size: 13px; color: #334155;">
+              <strong style="color: #0f172a;">Logistics / Inspection Remarks:</strong><br>
+              <span style="font-style: italic; color: #475569;">"${notes}"</span>
+            </div>
+          ` : ''}
         </div>
+
+        ${pickupAddress?.street ? `
+          <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 12.5px; color: #334155;">
+            <strong style="color: #0f172a; display: block; margin-bottom: 2px;">📍 Doorstep Handover Location:</strong>
+            ${pickupAddress.street}, ${pickupAddress.city || ''} ${pickupAddress.state ? '• ' + pickupAddress.state : ''} - <strong>${pickupAddress.pincode || ''}</strong>
+          </div>
+        ` : ''}
+
+        <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+          Please keep the product in its original packaging with all included accessories ready for the courier handover.
+        </p>
       </div>
 
-      <div style="background: #f3f4f6; padding: 18px 24px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart SuperStore Support. Need help? Reply directly to this email.</p>
+      <div style="background: #f8fafc; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart SuperStore Support • All Rights Reserved.</p>
       </div>
     </div>
   `;
@@ -474,56 +546,79 @@ async function sendReturnStatusEmail({ email, name, orderId, rmaNumber, status, 
 /**
  * 6. Send Refund Confirmation & Credit Note Advice to Customer
  */
-async function sendRefundConfirmationEmail({ email, name, orderId, rmaNumber, amount, refundMethod, refundUtr }) {
+async function sendRefundConfirmationEmail({ email, name, orderId, rmaNumber, amount, refundMethod, refundUtr, bankDetails, deductions = 0 }) {
   const subject = `Refund Processed: ₹${Number(amount).toLocaleString('en-IN')} for Order ${orderId}`;
-  const destination = refundMethod === 'wallet' ? 'X-Mart Wallet' : 'Original Payment Source / Bank Account';
+  const isWallet = refundMethod === 'wallet';
+  const destination = isWallet ? 'X-Mart Digital Wallet (Instant Credit)' : 'Direct Bank Account / UPI Transfer';
 
   const htmlContent = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
       <div style="background: #064e3b; padding: 28px 24px; text-align: center;">
-        <h1 style="color: #34d399; margin: 0; font-size: 24px; font-weight: 800;">X-MART REFUNDS</h1>
-        <p style="color: #a7f3d0; margin: 6px 0 0; font-size: 13px;">Official Refund &amp; Credit Note</p>
+        <a href="${getFrontendUrl()}" style="text-decoration: none; display: inline-block;">
+          <img src="${getLogoUrl()}" alt="X-Mart" style="height: 42px; max-height: 42px; width: auto; max-width: 170px; object-fit: contain; display: block; margin: 0 auto;" />
+        </a>
+        <h1 style="color: #34d399; margin: 10px 0 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">X-MART REFUND ADVICE</h1>
+        <p style="color: #a7f3d0; margin: 4px 0 0; font-size: 12.5px;">Official Settlement Confirmation &amp; Credit Note</p>
       </div>
 
-      <div style="padding: 32px 24px; color: #1f2937; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <div style="display: inline-block; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 50%; width: 52px; height: 52px; line-height: 52px; font-size: 24px; color: #059669; margin-bottom: 8px;">✓</div>
+      <div style="padding: 32px 24px; color: #1e293b; line-height: 1.6;">
+        <div style="text-align: center; margin-bottom: 22px;">
+          <div style="display: inline-block; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 50%; width: 50px; height: 50px; line-height: 50px; font-size: 24px; color: #059669; margin-bottom: 8px;">✓</div>
           <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #064e3b;">Refund Successfully Issued</h2>
-          <p style="margin: 4px 0 0; font-size: 14px; color: #475569;">Your settlement has been approved and authorized by our clearing team.</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #475569;">Hello <strong>${name || 'Valued Customer'}</strong>, your return settlement has been approved and disbursed.</p>
         </div>
 
-        <div style="background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
-          <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #15803d;">Settled Refund Amount</div>
-          <div style="font-size: 34px; font-weight: 900; color: #065f46; margin: 4px 0;">₹${Number(amount).toLocaleString('en-IN')}</div>
-          <div style="font-size: 12px; color: #166534;">Credited to ${destination}</div>
+        <div style="background: #f0fdf4; border: 2px dashed #86efac; border-radius: 10px; padding: 22px; margin: 20px 0; text-align: center;">
+          <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #15803d; letter-spacing: 0.5px;">Settled Refund Amount</div>
+          <div style="font-size: 36px; font-weight: 900; color: #065f46; margin: 4px 0;">₹${Number(amount).toLocaleString('en-IN')}</div>
+          <div style="font-size: 13px; color: #166534; font-weight: 600;">Credited to <strong>${destination}</strong></div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 18px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 20px 0;">
           <tbody>
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px 0; color: #6b7280;">Order ID:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f172a;">${orderId}</td>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 0; color: #64748b;">Order ID:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;">${orderId}</td>
             </tr>
             ${rmaNumber ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px 0; color: #6b7280;">RMA Reference:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;">${rmaNumber}</td>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 0; color: #64748b;">RMA Number:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 800; font-family: monospace; color: #004ac6;">${rmaNumber}</td>
             </tr>` : ''}
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px 0; color: #6b7280;">Credit Destination:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #0f172a;">${destination}</td>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 0; color: #64748b;">Credit Destination:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f172a;">${destination}</td>
             </tr>
             ${refundUtr ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px 0; color: #6b7280;">Refund UTR / Ref:</td>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 0; color: #64748b;">Bank Reference UTR:</td>
               <td style="padding: 8px 0; text-align: right; font-weight: 800; font-family: monospace; color: #0284c7;">${refundUtr}</td>
             </tr>` : ''}
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 0; color: #64748b;">Settlement Date:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #0f172a;">${new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+            </tr>
           </tbody>
         </table>
+
+        ${(!isWallet && bankDetails?.bankName) ? `
+          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 12.5px; color: #1e3a8a;">
+            <strong style="display: block; margin-bottom: 4px; color: #1e40af;">Disbursement Bank Details:</strong>
+            <div>Bank: <strong>${bankDetails.bankName}</strong></div>
+            <div>Beneficiary: <strong>${bankDetails.accountHolder || name}</strong></div>
+            ${bankDetails.accountNumber ? `<div>Account No: <strong>${bankDetails.accountNumber}</strong></div>` : ''}
+            ${bankDetails.ifscCode ? `<div>IFSC Code: <strong>${bankDetails.ifscCode}</strong></div>` : ''}
+            ${bankDetails.upiId ? `<div>UPI ID: <strong>${bankDetails.upiId}</strong></div>` : ''}
+          </div>
+        ` : ''}
+
+        <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+          ${isWallet ? 'Your X-Mart Wallet balance has been updated and is ready for use on your next order.' : 'Depending on your bank, credit reflections typically appear within 2-4 business hours (or instantly via IMPS/UPI).'}
+        </p>
       </div>
 
-      <div style="background: #f3f4f6; padding: 18px 24px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart SuperStore Financial Operations.</p>
+      <div style="background: #f8fafc; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0;">© ${new Date().getFullYear()} X-Mart SuperStore Financial Operations • Need assistance? Reply to this email.</p>
       </div>
     </div>
   `;

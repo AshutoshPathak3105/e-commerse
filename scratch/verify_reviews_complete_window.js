@@ -1,0 +1,344 @@
+const fs = require('fs');
+const { execSync } = require('child_process');
+const path = require('path');
+
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const htmlPath = path.resolve(__dirname, 'test_complete_window_live.html');
+const outPng = path.resolve(__dirname, 'test_complete_window_live.png');
+
+// HTML that loads styles.css and the exact script logic
+const sampleProduct = {
+  id: '6700abcd1234567890ef0001',
+  productId: '6700abcd1234567890ef0001',
+  name: 'Apple Watch Ultra 2 [GPS + Cellular 49mm]',
+  category: 'Wearables',
+  brand: 'Apple',
+  image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160',
+  price: 89900,
+  rating: 4.8,
+  reviewsCount: 3,
+  reviews: [
+    {
+      id: 'rev-101',
+      author: 'Vikram Malhotra',
+      email: 'vikram.m@example.com',
+      rating: 5,
+      date: '2026-09-24T12:00:00Z',
+      status: 'Approved',
+      headline: 'Incredible Build Quality and Battery Life',
+      comment: 'The titanium finish is top-notch. Battery lasts easily 3 days on moderate usage. Very satisfied with the cellular connectivity on Airtel.',
+      verified: true,
+      helpful: 12,
+      sentiment: 'Positive (98%)',
+      adminReply: 'Thank you Vikram! We are glad you love the Apple Watch Ultra 2 experience.'
+    },
+    {
+      id: 'rev-102',
+      author: 'Priya Sharma',
+      email: 'priya.s@example.com',
+      rating: 5,
+      date: '2026-09-22T09:30:00Z',
+      status: 'Approved',
+      headline: 'Worth every rupee!',
+      comment: 'Super fast delivery and pristine authentic product. Screen brightness outdoors is phenomenal.',
+      verified: true,
+      helpful: 5,
+      sentiment: 'Positive (95%)'
+    },
+    {
+      id: 'rev-103',
+      author: 'Rohan Gupta',
+      email: 'rohan.g@example.com',
+      rating: 4,
+      date: '2026-09-18T14:15:00Z',
+      status: 'Pending',
+      headline: 'Great smartwatch, bulky strap',
+      comment: 'Performance is unrivaled. The strap is a bit thick for smaller wrists but the health tracking is unmatched.',
+      verified: true,
+      helpful: 2,
+      sentiment: 'Positive (85%)'
+    }
+  ]
+};
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <link rel='stylesheet' href='../styles.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' rel='stylesheet'>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; }
+  </style>
+</head>
+<body>
+  <div id="test-container" style="padding: 20px;">
+    <button id="open-btn" style="padding:10px 20px; font-size:14px; font-weight:700;">Click to Open Reviews</button>
+  </div>
+
+  <script>
+    const sampleProd = ${JSON.stringify(sampleProduct)};
+    let cachedReviews = sampleProd.reviews;
+
+    // Helper functions from script.js
+    function fmtDate(d) {
+      if (!d) return '';
+      return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function getStarsHTML(r, sz = '13px') {
+      const full = Math.floor(r);
+      const half = r % 1 >= 0.5 ? 1 : 0;
+      const empty = 5 - full - half;
+      return '<span style="color:#f59e0b; font-size:' + sz + '; font-weight:bold;">' + '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty) + '</span>';
+    }
+
+    // Exact openProductReviewsModal function from script.js
+    function openProductReviewsModal(prod) {
+      if (!prod) return;
+      const existing = document.getElementById('ap-product-reviews-window');
+      if (existing) existing.remove();
+
+      let modalFilter = 'all'; // 'all', 'Approved', 'Pending', 'Flagged'
+      let revs = Array.isArray(prod.reviews) ? [...prod.reviews] : [];
+
+      // Fallback: If product has no attached reviews array or it's empty, filter cachedReviews
+      if (revs.length === 0 && Array.isArray(cachedReviews)) {
+        const pid = String(prod._id || prod.id || prod.productId || '');
+        const pName = String(prod.name || '').trim().toLowerCase();
+        revs = cachedReviews.filter(r => {
+          const rPid = String(r.productId || r.product_id || (r.product && (r.product._id || r.product.id)) || '');
+          const rName = String(r.productName || (r.product && r.product.name) || '').trim().toLowerCase();
+          return (pid && rPid && rPid === pid) || (pName && rName && rName === pName);
+        });
+      }
+
+      // Calculate star distributions
+      const dist = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      revs.forEach(r => {
+        const star = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
+        dist[star] = (dist[star] || 0) + 1;
+      });
+
+      const modal = document.createElement('div');
+      modal.id = 'ap-product-reviews-window';
+      modal.className = 'ap-complete-window';
+      modal.style.cssText = 'position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; width:100vw !important; height:100vh !important; background:#f8fafc; z-index:1000050 !important; display:flex !important; flex-direction:column !important; box-sizing:border-box; overflow:hidden; inset:0 !important;';
+
+      const closeModal = () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        modal.remove();
+      };
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') closeModal();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
+      function renderModalContent() {
+        let filteredRevs = [...revs];
+        if (modalFilter !== 'all') {
+          filteredRevs = filteredRevs.filter(r => (r.status || 'Approved').toLowerCase() === modalFilter.toLowerCase());
+        }
+
+        const approvedCount = revs.filter(r => r.status === 'Approved').length;
+        const pendingCount = revs.filter(r => r.status === 'Pending').length;
+        const flaggedCount = revs.filter(r => r.status === 'Flagged').length;
+        const prodImg = prod.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160';
+        const ratingNum = Number(prod.rating || 5.0);
+
+        const revItemsHTML = filteredRevs.length ? filteredRevs.map(r => {
+          const authorInitials = (r.author || 'CU').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+          const rRating = Math.max(1, Math.min(5, Number(r.rating) || 5));
+          const dateStr = fmtDate(r.date);
+
+          return \`
+            <div class="ap-modal-rev-card" data-rev-id="\${r.id}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(15,23,42,0.03); transition:all 0.15s ease;">
+              <!-- Author Row -->
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:36px; height:36px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    \${authorInitials}
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:5px;">
+                      \${r.author || 'Verified Customer'}
+                      \${r.verified !== false ? \`<span style="background:#ecfdf5; color:#047857; font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="Verified X-Mart Buyer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>\` : ''}
+                    </div>
+                    <div style="font-size:11px; color:#64748b;">\${r.email || 'customer@example.com'} • \${dateStr}</div>
+                  </div>
+                </div>
+
+                <!-- Rating and Status Badge -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="text-align:right;">
+                    <div style="color:#f59e0b; font-size:14px; font-weight:800;">
+                      \${'★'.repeat(rRating)}\${'☆'.repeat(5 - rRating)}
+                      <span style="font-size:12px; color:#475569; background:#fef3c7; padding:1px 5px; border-radius:4px; font-weight:800; margin-left:4px;">\${rRating}.0</span>
+                    </div>
+                  </div>
+                  <span class="ap-badge \${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="font-weight:700; font-size:11px; padding:3px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">
+                    \${r.status === 'Approved' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approved' : r.status === 'Pending' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>Pending' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flagged'}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Feedback Content -->
+              <div style="margin-top:12px;">
+                \${r.headline ? \`<div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:4px;">\${r.headline}</div>\` : ''}
+                <div style="font-size:12.5px; color:#334155; line-height:1.55; background:#f8fafc; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px;">
+                  "\${r.comment}"
+                </div>
+              </div>
+
+              <!-- Tags / Sentiment Row -->
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span style="font-size:10.5px; padding:2px 7px; border-radius:4px; font-weight:600; \${r.status === 'Flagged' ? 'background:#fee2e2; color:#b91c1c;' : rRating >= 4 ? 'background:#ecfdf5; color:#047857;' : 'background:#eff6ff; color:#1d4ed8;'}">
+                    \${r.sentiment || (rRating >= 4 ? 'Positive (95%)' : 'Neutral (60%)')}
+                  </span>
+                  \${r.helpful ? \`<span style="font-size:10.5px; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-flex; align-items:center; gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>\${r.helpful} Helpful Votes</span>\` : ''}
+                </div>
+
+                <!-- Inline Moderation Controls -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button class="ap-modal-toggle-reply-btn" data-id="\${r.id}" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    \${r.adminReply ? 'Edit Reply' : 'Reply'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Official Merchant Reply Box (if present) -->
+              \${r.adminReply ? \`
+                <div style="margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">
+                  <div style="font-size:11px; font-weight:800; color:#15803d; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px; display:flex; align-items:center; gap:5px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                    Official Merchant Reply:
+                  </div>
+                  <div style="font-size:12px; color:#166534; line-height:1.45;">
+                    \${r.adminReply}
+                  </div>
+                </div>
+              \` : ''}
+            </div>
+          \`;
+        }).join('') : '';
+
+        modal.innerHTML = \`
+          <div class="ap-window-content-wrapper" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f8fafc; border:none !important; outline:none; border-radius:0 !important; box-shadow:none !important;">
+            <!-- Window Header (022F43 background, white text) -->
+            <div class="ap-window-header" style="background:#022F43 !important; color:#ffffff; padding:16px 28px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+              <!-- Top Left: Title & Subtitle ONLY, NO BACK BUTTON -->
+              <div style="display:flex; align-items:center;">
+                <div>
+                  <h3 class="ap-window-title" style="color:#ffffff; font-size:18px; font-weight:800; margin:0; line-height:1.3; letter-spacing:-0.01em;">
+                    Customer Ratings &amp; Reviews
+                  </h3>
+                  <div style="font-size:12.5px; opacity:0.9; margin-top:2px; font-weight:500;">
+                    \${prod.name} <span style="opacity:0.6; margin:0 4px;">•</span> \${prod.category || 'General'}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top Right: Close Window Button -->
+              <button class="ap-modal-close-x" style="background:rgba(255,255,255,0.08); border:none; color:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.2)';" onmouseout="this.style.background='rgba(255,255,255,0.08)';" title="Close Window">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <!-- Scrollable Content Body (Full Window) -->
+            <div class="ap-window-scroll-body" style="padding:24px 32px; overflow-y:auto; flex:1; background:#f8fafc;">
+              <div style="max-width:1200px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:16px;">
+                <!-- Product Overview Banner -->
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+                  <div style="display:flex; align-items:center; gap:16px;">
+                    <img src="\${prodImg}" alt="\${prod.name}" style="width:72px; height:72px; border-radius:10px; object-fit:cover; border:1px solid #cbd5e1; background:#ffffff; flex-shrink:0;">
+                    <div>
+                      <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 5px; line-height:1.35;">\${prod.name}</h4>
+                      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:11.5px; background:#e2e8f0; color:#334155; padding:2px 8px; border-radius:4px; font-weight:600;">\${prod.category || 'General'}</span>
+                        \${prod.brand ? \`<span style="font-size:11.5px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">\${prod.brand}</span>\` : ''}
+                        <span style="font-size:14px; font-weight:800; color:#0f172a;">₹\${Number(prod.price || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Rating Score & Distribution Grid -->
+                <div style="display:grid; grid-template-columns:220px 1fr 220px; gap:20px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; align-items:center; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+                  <div style="text-align:center; border-right:1px solid #e2e8f0; padding-right:16px;">
+                    <div style="font-size:46px; font-weight:900; color:#0f172a; line-height:1; font-feature-settings:'tnum';">\${ratingNum.toFixed(1)}</div>
+                    <div style="margin-top:6px;">\${getStarsHTML(ratingNum, '18px')}</div>
+                    <div style="font-size:12px; font-weight:700; color:#64748b; margin-top:5px;">Based on \${revs.length} verified reviews</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    \${[5, 4, 3, 2, 1].map(star => {
+                      const count = dist[star] || 0;
+                      const pct = revs.length > 0 ? Math.round((count / revs.length) * 100) : 0;
+                      return \`
+                        <div style="display:flex; align-items:center; gap:10px; font-size:12px;">
+                          <span style="width:28px; font-weight:700; color:#475569;">\${star} ★</span>
+                          <div style="flex:1; height:8px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                            <div style="width:\${pct}%; height:100%; background:\${star >= 4 ? '#16a34a' : star === 3 ? '#eab308' : '#ef4444'}; border-radius:99px;"></div>
+                          </div>
+                          <span style="width:36px; text-align:right; font-weight:700; color:#64748b; font-feature-settings:'tnum';">\${count}</span>
+                        </div>
+                      \`;
+                    }).join('')}
+                  </div>
+                  <div style="border-left:1px solid #e2e8f0; padding-left:16px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Moderation Status</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:#ecfdf5; color:#047857; padding:5px 10px; border-radius:6px; font-weight:700;">
+                      <span>Approved</span> <span>\${approvedCount}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:#fffbeb; color:#b45309; padding:5px 10px; border-radius:6px; font-weight:700;">
+                      <span>Pending</span> <span>\${pendingCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reviews Feed List -->
+                <div class="ap-modal-reviews-list">
+                  \${revItemsHTML}
+                </div>
+              </div>
+            </div>
+
+            <!-- Window Footer (Full-width bar with Close button) -->
+            <div class="ap-window-footer" style="padding:14px 32px; min-height:56px; background:#ffffff; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; position:relative; z-index:10; box-shadow:0 -1px 4px rgba(0,0,0,0.03);">
+              <span style="font-size:12.5px; color:#64748b; font-weight:600;">
+                Product ID: \${prod._id || prod.id || prod.productId || ''}
+              </span>
+              <button type="button" class="ap-modal-footer-close-btn" style="min-width:104px; height:38px; padding:7px 24px; border-radius:6px; border:none; background:#FF9400 !important; color:#000000 !important; font-size:12.5px; font-weight:800; cursor:pointer; box-shadow:0 2px 5px rgba(255,148,0,0.3); white-space:nowrap !important; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                Close
+              </button>
+            </div>
+          </div>
+        \`;
+
+        modal.querySelector('.ap-modal-close-x')?.addEventListener('click', closeModal);
+        modal.querySelector('.ap-modal-footer-close-btn')?.addEventListener('click', closeModal);
+      }
+
+      renderModalContent();
+      document.body.appendChild(modal);
+    }
+
+    // Immediately trigger openProductReviewsModal on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      openProductReviewsModal(sampleProd);
+    });
+  </script>
+</body>
+</html>`;
+
+fs.writeFileSync(htmlPath, html, 'utf8');
+
+const fileUrl = 'file:///' + htmlPath.replace(/\\\\/g, '/');
+const cmd = `"${chromePath}" --headless --disable-gpu --window-size=1280,820 --screenshot="${outPng}" "${fileUrl}"`;
+try {
+  execSync(cmd, { stdio: 'inherit' });
+  console.log('Successfully captured screenshot:', outPng);
+} catch (e) {
+  console.error('Error capturing screenshot:', e.message);
+}

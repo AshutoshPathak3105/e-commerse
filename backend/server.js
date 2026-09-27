@@ -124,8 +124,8 @@ const authLimiter = rateLimit({
 app.use('/api', globalLimiter);
 
 // ── Body parsers ─────────────────────────────────────────────
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ── HTTP logger ─────────────────────────────────────────────
 app.use(morgan('dev'));
@@ -186,8 +186,16 @@ app.use('/api/admin', adminRoutes);
 const CmsConfig = require('./models/CmsConfig');
 app.get('/api/cms', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const config = await CmsConfig.getOrCreate();
     const now = new Date();
+    const activeAnnouncements = (config.announcements || []).filter(a => {
+      if (!a.active) return false;
+      if (a.validUntil && new Date(a.validUntil) < now) return false;
+      if (a.validFrom && new Date(a.validFrom) > now) return false;
+      return true;
+    }).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
     const activePromos = (config.promotions || []).filter(p => {
       if (!p.active) return false;
       if (p.validUntil && new Date(p.validUntil) < now) return false;
@@ -195,13 +203,34 @@ app.get('/api/cms', async (req, res) => {
       return true;
     });
 
+    const cleanImg = (img) => {
+      if (!img) return '';
+      let s = String(img).trim().replace(/^["']+|["']+$/g, '');
+      if (/^https?:\/\/data:/i.test(s)) s = s.replace(/^https?:\/\//i, '');
+      else if (/^https?:?\/?\/?data:/i.test(s)) s = s.replace(/^https?:?\/?\/?/i, '');
+      else if (/^htt+data:/i.test(s)) s = s.replace(/^htt+/i, '');
+      else if (/^ht+ps?:?\/?\/?data:/i.test(s)) s = s.replace(/^ht+ps?:?\/?\/?/i, '');
+      return s;
+    };
+
+    const primaryAnnouncementText = (activeAnnouncements.length > 0 && activeAnnouncements[0].text) 
+      ? activeAnnouncements[0].text 
+      : (config.announcementActive ? config.announcementText : '');
+
     res.json({
       success: true,
       data: {
-        announcementText: config.announcementActive ? config.announcementText : '',
+        announcementText: primaryAnnouncementText,
         announcementActive: config.announcementActive,
+        announcements: config.announcements || [],
+        activeAnnouncements: activeAnnouncements,
         heroBanners: (config.heroBanners || [])
           .filter(b => b.active !== false)
+          .map(b => {
+            const raw = b.toObject ? b.toObject() : { ...b };
+            raw.image = cleanImg(raw.image);
+            return raw;
+          })
           .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)),
         promotions: activePromos,
         quadCards: (config.quadCards || [])
@@ -225,42 +254,18 @@ const PlatformSetting = require('./models/PlatformSetting');
 app.get('/api/settings', async (req, res) => {
   try {
     const s = await PlatformSetting.getOrCreate();
+    const data = s.toObject ? s.toObject() : { ...s };
+    data.businessAddress = data.businessAddress || 'Tower B, DLF Cyber City, Phase II, Gurugram, Haryana - 122002';
+    data.corporateAddress = data.businessAddress;
+    data.maxOrderQtyPerItem = data.maxOrderQtyPerItem !== undefined ? data.maxOrderQtyPerItem : 10;
+    data.maxOrderQty = data.maxOrderQtyPerItem;
+    data.inactivityTimeoutMinutes = data.inactivityTimeoutMinutes !== undefined ? data.inactivityTimeoutMinutes : 30;
+    data.inactivityTimeoutMins = data.inactivityTimeoutMinutes;
+    data.fraudDetectionMode = data.fraudDetectionMode || 'standard';
+    data.fraudVelocityShield = data.fraudDetectionMode;
     res.json({
       success: true,
-      data: {
-        platformFeePct: s.platformFeePct,
-        freeShippingThreshold: s.freeShippingThreshold,
-        standardShippingFee: s.standardShippingFee,
-        codFee: s.codFee,
-        codMaxLimit: s.codMaxLimit,
-        codEnabled: s.codEnabled,
-        businessName: s.businessName,
-        gstin: s.gstin,
-        panNumber: s.panNumber,
-        standardTaxRate: s.standardTaxRate,
-        taxInclusive: s.taxInclusive,
-        autoInvoicing: s.autoInvoicing,
-        returnWindowDays: s.returnWindowDays,
-        replacementWindowDays: s.replacementWindowDays,
-        unpaidOrderTimeoutHours: s.unpaidOrderTimeoutHours,
-        expressCutoffTime: s.expressCutoffTime,
-        deliveryLeadTime: s.deliveryLeadTime,
-        timezone: s.timezone,
-        supportEmail: s.supportEmail,
-        supportPhone: s.supportPhone,
-        whatsappSupport: s.whatsappSupport,
-        grievanceEmail: s.grievanceEmail,
-        supportHours: s.supportHours,
-        corporateAddress: s.corporateAddress,
-        lowStockThreshold: s.lowStockThreshold,
-        allowBackorders: s.allowBackorders,
-        minOrderQty: s.minOrderQty,
-        maxOrderQty: s.maxOrderQty,
-        maintenanceMode: s.maintenanceMode,
-        maintenanceNotice: s.maintenanceNotice,
-        inactivityTimeoutMins: s.inactivityTimeoutMins,
-        fraudVelocityShield: s.fraudVelocityShield,
-      }
+      data
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -313,6 +318,14 @@ app.get('/api', (req, res) => {
   });
 });
 
+// ── Tracking & Order Direct Link Redirect to Frontend ────────
+app.get(['/track/:orderId', '/order/:orderId', '/tracking/:orderId'], (req, res) => {
+  const frontend = process.env.FRONTEND_URL || (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('onrender.com') ? process.env.CLIENT_URL : 'https://beautiful-druid-f9f6aa.netlify.app');
+  const cleanFrontend = frontend.replace(/\/+$/, '');
+  const prefix = req.path.startsWith('/track') || req.path.startsWith('/tracking') ? '#track/' : '#order/';
+  res.redirect(`${cleanFrontend}/${prefix}${encodeURIComponent(req.params.orderId)}`);
+});
+
 // ── 404 handler for API routes or fallback to index.html ─────
 app.use((req, res) => {
   if (req.path.startsWith('/api')) {
@@ -363,29 +376,11 @@ const startServer = async () => {
     }
   });
 
-  let hasRetriedPort = false;
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      if (!hasRetriedPort && process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
-        hasRetriedPort = true;
-        console.log(`\n⚠️  Port ${PORT} is occupied by another process. Automatically freeing port ${PORT}...`);
-        try {
-          if (os.platform() === 'win32') {
-            execSync(`powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort ${PORT} -ErrorAction SilentlyContinue; if ($c) { Stop-Process -Id $c.OwningProcess -Force }"`);
-          } else {
-            execSync(`lsof -ti:${PORT} | xargs kill -9`);
-          }
-          console.log(`✅ Port ${PORT} released successfully. Reconnecting server...`);
-          setTimeout(() => {
-            server.listen(PORT);
-          }, 600);
-          return;
-        } catch (recoveryErr) {
-          // Fallback to error message
-        }
-      }
-      console.error(`\n⚠️  Port ${PORT} is already occupied by another running instance of X-Mart.`);
-      console.error(`👉 Close the existing terminal or stop the process on port ${PORT} and try again.\n`);
+      console.error(`\n❌  Port ${PORT} is already in use.`);
+      console.error(`👉  Stop the existing process on port ${PORT} and restart the server.\n`);
+      console.error(`    Run:  npx kill-port ${PORT}   or close the other terminal.\n`);
       process.exit(1);
     } else {
       throw err;

@@ -8,6 +8,7 @@ const Product = require('../models/Product');
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
 const { sendOrderConfirmationEmail } = require('../utils/emailService');
+const { validatePaymentOffer } = require('../utils/offerValidator');
 
 const router = express.Router();
 
@@ -73,7 +74,53 @@ router.post(
     const itemsPrice    = rawItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const shippingPrice = SHIPPING_PRICE(itemsPrice);
     const taxPrice      = Math.round(itemsPrice * TAX_RATE);
-    const totalPrice    = itemsPrice + shippingPrice + taxPrice;
+    const rawTotalPrice = itemsPrice + shippingPrice + taxPrice;
+
+    // Server-side Payment Offer & Discount Validation
+    const rawOffer = req.body.paymentOffer || (req.body.offerDiscount ? {
+      partner: req.body.offerPartner || req.body.bank || req.body.upiApp || '',
+      method: req.body.paymentMethod,
+      discountValue: req.body.offerDiscount,
+      discountType: req.body.offerDiscountType || 'flat',
+      appliedDiscount: req.body.offerDiscount,
+      cardBank: req.body.bank,
+      cardType: req.body.cardType,
+      upiId: req.body.upiId,
+      upiApp: req.body.upiApp
+    } : null);
+
+    let paymentOfferRecord = null;
+    let offerSavings = 0;
+
+    if (rawOffer) {
+      const offerResult = validatePaymentOffer({
+        paymentMethod: req.body.paymentMethod,
+        paymentOffer: rawOffer,
+        bank: req.body.bank || rawOffer.cardBank,
+        cardType: req.body.cardType || rawOffer.cardType,
+        upiId: req.body.upiId || rawOffer.upiId,
+        upiApp: req.body.upiApp || rawOffer.upiApp,
+        subtotal: itemsPrice
+      });
+
+      offerSavings = offerResult.discount;
+      paymentOfferRecord = {
+        partner: rawOffer.partner || '',
+        method: req.body.paymentMethod,
+        discountType: rawOffer.discountType || 'flat',
+        discountValue: Number(rawOffer.discountValue) || offerSavings,
+        appliedDiscount: offerSavings,
+        verified: offerResult.verified,
+        validationMessage: offerResult.message,
+        cardBank: req.body.bank || rawOffer.cardBank || '',
+        cardType: req.body.cardType || rawOffer.cardType || '',
+        upiId: req.body.upiId || rawOffer.upiId || '',
+        upiApp: req.body.upiApp || rawOffer.upiApp || ''
+      };
+    }
+
+    const couponSavings = Math.max(0, Number(req.body.couponDiscount) || 0);
+    const totalPrice = Math.max(0, rawTotalPrice - couponSavings - offerSavings);
 
     // Lookup product details for accurate originalPrice & image
     const pIds = rawItems.map(i => i.product).filter(id => mongoose.isValidObjectId(id));
@@ -102,16 +149,19 @@ router.post(
     });
 
     const order = await Order.create({
-      user:            req.user._id,
+      user:               req.user._id,
       orderItems,
-      shippingAddress: req.body.shippingAddress,
-      paymentMethod:   req.body.paymentMethod,
+      shippingAddress:    req.body.shippingAddress,
+      paymentMethod:      req.body.paymentMethod,
       itemsPrice,
       shippingPrice,
       taxPrice,
       totalPrice,
-      notes:           req.body.notes,
-      estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // +5 days
+      originalTotalPrice: rawTotalPrice,
+      savingsAmount:      couponSavings + offerSavings,
+      paymentOffer:       paymentOfferRecord,
+      notes:              req.body.notes,
+      estimatedDelivery:  new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // +5 days
     });
 
     // Decrement stock & increment sold for each product if real product
@@ -598,7 +648,18 @@ router.post(
   '/:id/return',
   protect,
   asyncHandler(async (req, res) => {
-    const { reason, comments, pickupAddress, refundMethod } = req.body;
+    const {
+      reason,
+      comments,
+      pickupAddress,
+      refundMethod,
+      requestType = 'return',
+      photos,
+      images,
+      bankDetails,
+      refundAmount,
+      items,
+    } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) {
       res.status(404);
@@ -615,12 +676,22 @@ router.post(
 
     const rmaNumber = `RMA-XM-${Math.floor(10000000 + Math.random() * 90000000)}`;
 
+    const capturedPhotos = Array.isArray(photos) && photos.length
+      ? photos
+      : (Array.isArray(images) && images.length ? images : []);
+
     order.returnRequest = {
       rmaNumber,
+      requestType: requestType || 'return',
       reason: reason || 'Item defective or not working',
       comments: comments || '',
+      photos: capturedPhotos,
       pickupAddress: pickupAddress || order.shippingAddress,
       refundMethod: refundMethod || 'wallet',
+      bankDetails: bankDetails || null,
+      items: Array.isArray(items) && items.length ? items : order.orderItems,
+      refundAmount: Number(refundAmount) || order.totalPrice,
+      reverseCourier: 'Blue Dart Express',
       status: 'Requested',
       requestedAt: new Date(),
     };

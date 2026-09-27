@@ -1,0 +1,34 @@
+const fs = require('fs');
+const { execSync } = require('child_process');
+const path = require('path');
+
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const htmlPath = path.resolve(__dirname, 'test_searchbar.html');
+const outPng = path.resolve(__dirname, 'searchbar_2_4px_border.png');
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <link rel='stylesheet' href='../styles.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' rel='stylesheet'>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; font-family: 'Plus Jakarta Sans', sans-serif; background: #022F43; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 700px; margin: 0 auto;">
+    <div class="ap-topnav-search" style="position:relative;">
+      <svg class="ap-topnav-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="ap-topnav-search-input" placeholder="Search orders, products, customers..." autocomplete="off" style="border: 2.4px solid #FF9400 !important;" />
+    </div>
+  </div>
+</body>
+</html>`;
+
+fs.writeFileSync(htmlPath, html, 'utf8');
+
+const cmd = `"${chromePath}" --headless=new --disable-gpu --window-size=800,200 --screenshot="${outPng}" "file://${htmlPath}"`;
+execSync(cmd);
+console.log('Screenshot captured:', fs.existsSync(outPng), outPng);

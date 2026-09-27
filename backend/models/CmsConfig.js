@@ -78,10 +78,21 @@ const quickBrowseItemSchema = new mongoose.Schema({
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 
+const announcementSchema = new mongoose.Schema({
+  text:       { type: String, required: true },
+  tag:        { type: String, default: '' },
+  link:       { type: String, default: '#deals' },
+  active:     { type: Boolean, default: true },
+  validFrom:  { type: Date, default: null },
+  validUntil: { type: Date, default: null },
+  order:      { type: Number, default: 0 },
+}, { timestamps: true });
+
 const cmsConfigSchema = new mongoose.Schema({
   singletonKey:       { type: String, default: 'default_storefront_cms', unique: true },
   announcementText:   { type: String, default: 'Mega Festive Super Sale: Up to 60% OFF Across All Electronics & Fashion!' },
   announcementActive: { type: Boolean, default: true },
+  announcements:      [announcementSchema],
   heroBanners:        [heroBannerSchema],
   promotions:         [promotionSchema],
   quadCards:          [quadCardSchema],
@@ -154,6 +165,25 @@ cmsConfigSchema.statics.getOrCreate = async function () {
         }
       } catch (err) {
         console.warn('Auto-seed home cards failed:', err.message);
+      }
+    }
+    if (!config.announcements || config.announcements.length === 0) {
+      const initialText = config.announcementText || 'Mega Festive Super Sale: Up to 10% OFF Across All Electronics & Fashion_XYZ';
+      config.announcements = [
+        {
+          text: initialText,
+          tag: 'Store Offer',
+          link: '#deals',
+          active: true,
+          validFrom: new Date(),
+          validUntil: null,
+          order: 0,
+        }
+      ];
+      try {
+        await config.save();
+      } catch (err) {
+        console.warn('Auto-seed announcements failed:', err.message);
       }
     }
   }

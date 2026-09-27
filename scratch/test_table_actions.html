@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <link rel='stylesheet' href='../styles.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' rel='stylesheet'>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 20px; font-family: 'Plus Jakarta Sans', sans-serif; background: #ffffff; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 900px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+      <thead style="background:#FF9400;">
+        <tr style="background:#FF9400;">
+          <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; width:35%;">DURATION / EXPIRY</th>
+          <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; width:35%;">STATUS</th>
+          <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; width:30%;">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center; padding:12px 5px; vertical-align:middle;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:10px; padding:2px 6px; white-space:nowrap;">● Active (5d left)</span>
+              <div style="font-size:10.5px; color:#475569; font-weight:600; line-height:1.2; text-align:center; margin-top:2px;">
+                Expires: <span style="color:#000000; font-weight:700;">30 Sept 2026</span>
+                <div style="font-size:9.5px; color:#64748b;">02:52 am</div>
+              </div>
+            </div>
+          </td>
+          <td style="text-align:center; padding:12px 4px; vertical-align:middle;">
+            <button type="button" class="ap-btn-tiny ap-badge green" style="cursor:pointer; border:none; font-weight:800; font-size:11px; padding:4px 8px;">
+              ● Active
+            </button>
+          </td>
+          <td style="text-align:center; padding:12px 4px; vertical-align:middle;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+              <button type="button" class="ap-btn danger ap-delete-promo-btn" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Delete</button>
+              <button type="button" class="ap-btn ghost ap-edit-promo-btn" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Edit</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

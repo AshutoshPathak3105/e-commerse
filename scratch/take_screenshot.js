@@ -1,0 +1,153 @@
+const fs = require('fs');
+const { execSync } = require('child_process');
+const path = require('path');
+
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const htmlPath = path.resolve(__dirname, 'test_promo_modal.html');
+const outPng = path.resolve(__dirname, 'promo_modal_fixed.png');
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <link rel='stylesheet' href='../styles.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' rel='stylesheet'>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; }
+  </style>
+</head>
+<body>
+  <div id='root'></div>
+  <script>
+    const currentType = 'bank';
+    const currentScope = 'store';
+    const selectedStoreName = 'Apex Tech Store';
+    const isEdit = false;
+
+    const container = document.getElementById('root');
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ap-promo-full-window';
+    backdrop.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f1f5f9; z-index:100060; display:flex; flex-direction:column; overflow:hidden;';
+
+    backdrop.innerHTML = \`
+            <!-- Top App Bar / Complete Window Header -->
+            <div style="background:#022F43 !important; color:#ffffff; padding:16px 36px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 3px 12px rgba(0,0,0,0.18); flex-shrink:0; z-index:10;">
+              <div>
+                <h2 style="color:#ffffff !important; font-size:18px; font-weight:800; margin:0; line-height:1.2;">
+                  Create New Promotional Offer / Voucher
+                </h2>
+                <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1; line-height:1.2;">Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.</p>
+              </div>
+            </div>
+
+            <!-- Full Window Scrollable Content Canvas -->
+            <div id="canvas" style="flex:1; overflow-y:auto; padding:28px 24px 80px; display:flex; justify-content:center; align-items:flex-start; background:#f1f5f9;">
+              <div id="ap-promo-modal-card" style="width:100%; max-width:1150px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:32px 40px; box-shadow:0 4px 20px rgba(0,0,0,0.06); box-sizing:border-box; height:fit-content; min-height:min-content;">
+                <div style="background:#fff7ed; border:1.5px solid #fed7aa; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+                  <div style="font-size:12px; color:#000000; font-weight:700; line-height:1.4;">
+                    Auto-Replace Active: Creating a new offer will automatically replace and delete any previous offers of the same category (Voucher, Bank Card, or UPI).
+                  </div>
+                </div>
+
+                <!-- Offer Type Selector -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+                  <div class="ap-form-group">
+                    <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer / Promotion Category</label>
+                    <select class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+                      <option selected>Bank Card Instant Discount</option>
+                    </select>
+                  </div>
+                  <div class="ap-form-group">
+                    <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Target Scope</label>
+                    <select class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+                      <option selected>Specific Merchant Store</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Conditional Bank Partner Field -->
+                <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:22px; display:block;">
+                  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
+                    <label class="ap-cms-label" style="color:#000000; font-weight:800;">Eligible Bank Partner(s) — Top 10 Most Valued Banks of India</label>
+                    <span style="font-size:11px; color:#475569; font-weight:600;">Select banks from dropdown window below</span>
+                  </div>
+
+                  <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px; margin-top:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                      <div>
+                        <div style="font-weight:800; color:#0f172a; font-size:12.5px;">Selected Bank Card Eligibility:</div>
+                        <div style="font-size:11px; color:#475569; font-weight:600;">Set Debit, Credit, or Both for each bank</div>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:11px; color:#475569; font-weight:700;">Set all to:</span>
+                        <div style="display:flex; gap:4px;">
+                          <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Both</button>
+                          <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Debit Only</button>
+                          <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Credit Only</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="font-size:12px; color:#64748b; font-style:italic; padding:6px 4px;">No banks selected. Click the dropdown window above to choose banks.</div>
+                  </div>
+                </div>
+
+                <!-- DEDICATED STORE SEARCH & SELECTOR -->
+                <div id="promo-store-picker-wrap" class="ap-form-group" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-top:20px; margin-bottom:20px; display:block;">
+                  <div style="margin-bottom:10px;">
+                    <label class="ap-cms-label" style="display:block; margin:0 0 2px 0; color:#000000; font-weight:800; font-size:12.5px;">SEARCH & SELECT MERCHANT STORE</label>
+                    <div style="font-size:11px; color:#475569; font-weight:600;">Restrict this promotion exclusively to products from a specific merchant store</div>
+                  </div>
+                  <div style="position:relative;">
+                    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:8px;">
+                      <input type="text" value="Search merchant store by name, store ID, or seller (e.g. Apex Tech Store)..." style="width:100%; border:none; outline:none; color:#64748b; font-size:13px;" />
+                    </div>
+                  </div>
+                  <div style="display:flex; margin-top:10px; border-radius:8px; background:#ecfdf5; border:1.5px solid #a7f3d0; padding:9px 14px; justify-content:space-between; align-items:center;">
+                    <span style="font-size:12.5px; color:#065f46;">Targeted Store: <strong style="color:#064e3b; font-weight:800;">Apex Tech Store</strong></span>
+                    <button type="button" style="background:#065f46; color:#ffffff; border:none; border-radius:4px; padding:4px 12px; font-weight:700; font-size:11px;">Change</button>
+                  </div>
+                </div>
+
+                <!-- OFFER CONFIGURATION & DISCOUNT RULES -->
+                <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:16px;">
+                  <div style="margin-bottom:12px;">
+                    <h4 style="margin:0; font-size:13px; font-weight:800; color:#000000;">Offer Details & Discount Configuration</h4>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">Define the promo code, headline, discount calculation method, and order constraints.</p>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px; margin-bottom:12px;">
+                    <div class="ap-form-group">
+                      <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">OFFER CODE / PROMO KEY</label>
+                      <input type="text" value="XMART10" style="width:100%; font-weight:800; color:#2563eb; padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+                    </div>
+                    <div class="ap-form-group">
+                      <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">OFFER HEADLINE / DISPLAY TITLE</label>
+                      <input type="text" value="10% Storewide Mega Discount" style="width:100%; color:#000000; font-weight:600; padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:28px; padding-top:20px; border-top:1px solid #e2e8f0;">
+                  <button type="button" style="padding:10px 24px; font-size:13px; font-weight:700;">Cancel</button>
+                  <button type="button" style="padding:10px 32px; font-size:13px; background:#ea580c; border:none; color:#ffffff !important; font-weight:800; border-radius:8px;">Save Offer</button>
+                </div>
+              </div>
+            </div>
+    \`;
+    container.appendChild(backdrop);
+    // Scroll down to check middle view
+    setTimeout(() => {
+      const c = document.getElementById('canvas');
+      c.scrollTop = 140;
+    }, 100);
+  </script>
+</body>
+</html>`;
+
+fs.writeFileSync(htmlPath, html, 'utf8');
+
+const cmd = `"${chromePath}" --headless=new --disable-gpu --window-size=1280,850 --screenshot="${outPng}" "file://${htmlPath}"`;
+console.log('Running Chrome screenshot...');
+execSync(cmd);
+console.log('Screenshot captured:', fs.existsSync(outPng), outPng);

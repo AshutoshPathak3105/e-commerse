@@ -17,6 +17,8 @@ services:
         generateValue: true
       - key: CLIENT_URL
         sync: false
+      - key: FRONTEND_URL
+        value: https://beautiful-druid-f9f6aa.netlify.app
       - key: BREVO_API_KEY
         sync: false
       - key: SENDER_EMAIL

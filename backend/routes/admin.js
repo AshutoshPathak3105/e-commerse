@@ -12,6 +12,7 @@ const Product   = require('../models/Product');
 const Payout    = require('../models/Payout');
 const CmsConfig = require('../models/CmsConfig');
 const PlatformSetting = require('../models/PlatformSetting');
+const SupportTicket = require('../models/SupportTicket');
 const { sendSellerPayoutEmail, sendReturnStatusEmail, sendRefundConfirmationEmail } = require('../utils/emailService');
 
 // Apply adminAuth to ALL routes in this file
@@ -23,103 +24,402 @@ router.use(adminAuth);
 ───────────────────────────────────────────────────── */
 router.get('/dashboard', async (req, res) => {
   try {
+    const {
+      timeframe = 'day',
+      range = 'all',
+      startDate,
+      endDate,
+      tz = '+05:30',
+    } = req.query;
+
+    const now = new Date();
+    let start = null;
+    let end = null;
+    let prevStart = null;
+    let prevEnd = null;
+    let filterLabel = 'All Time History';
+    let prevPeriodLabel = '';
+
+    // Calculate start, end, prevStart, prevEnd based on range
+    switch (range) {
+      case 'today': {
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+        filterLabel = `Today (${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})`;
+        prevPeriodLabel = 'vs Yesterday';
+        break;
+      }
+      case 'yesterday': {
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+        prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 23, 59, 59, 999);
+        filterLabel = `Yesterday (${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})`;
+        prevPeriodLabel = 'vs Day Before';
+        break;
+      }
+      case '7d': {
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        end = new Date(now);
+        prevStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        prevEnd = new Date(start.getTime() - 1);
+        filterLabel = 'Last 7 Days';
+        prevPeriodLabel = 'vs Prior 7 Days';
+        break;
+      }
+      case '30d': {
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        end = new Date(now);
+        prevStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        prevEnd = new Date(start.getTime() - 1);
+        filterLabel = 'Last 30 Days';
+        prevPeriodLabel = 'vs Prior 30 Days';
+        break;
+      }
+      case 'this_month': {
+        start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        end = new Date(now);
+        prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        filterLabel = `This Month (${start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })})`;
+        prevPeriodLabel = 'vs Last Month';
+        break;
+      }
+      case 'last_month': {
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        prevStart = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
+        filterLabel = `Last Month (${start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })})`;
+        prevPeriodLabel = 'vs 2 Months Ago';
+        break;
+      }
+      case '6m': {
+        start = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+        end = new Date(now);
+        prevStart = new Date(now.getFullYear(), now.getMonth() - 11, 1, 0, 0, 0, 0);
+        prevEnd = new Date(start.getTime() - 1);
+        filterLabel = 'Last 6 Months';
+        prevPeriodLabel = 'vs Prior 6 Months';
+        break;
+      }
+      case 'this_year': {
+        start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+        end = new Date(now);
+        prevStart = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        filterLabel = `This Year (${now.getFullYear()})`;
+        prevPeriodLabel = `vs ${now.getFullYear() - 1}`;
+        break;
+      }
+      case 'last_year': {
+        start = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
+        end = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        prevStart = new Date(now.getFullYear() - 2, 0, 1, 0, 0, 0, 0);
+        prevEnd = new Date(now.getFullYear() - 2, 11, 31, 23, 59, 59, 999);
+        filterLabel = `Last Year (${now.getFullYear() - 1})`;
+        prevPeriodLabel = `vs ${now.getFullYear() - 2}`;
+        break;
+      }
+      case 'custom': {
+        if (startDate) {
+          start = new Date(startDate.includes('T') ? startDate : `${startDate}T00:00:00.000`);
+          end = endDate ? new Date(endDate.includes('T') ? endDate : `${endDate}T23:59:59.999`) : new Date(startDate.includes('T') ? startDate : `${startDate}T23:59:59.999`);
+          const diffMs = end.getTime() - start.getTime();
+          prevEnd = new Date(start.getTime() - 1);
+          prevStart = new Date(prevEnd.getTime() - diffMs);
+          filterLabel = `${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}${endDate && endDate !== startDate ? ` - ${end.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}`;
+          prevPeriodLabel = 'vs Prior Window';
+        }
+        break;
+      }
+      default: {
+        filterLabel = 'All Time History';
+        prevPeriodLabel = '';
+        break;
+      }
+    }
+
+    // Determine aggregation date format & friendly formatting
+    let dateFormat = '%Y-%m-%d';
+    if (timeframe === 'year') {
+      dateFormat = '%Y';
+    } else if (timeframe === 'month') {
+      dateFormat = '%Y-%m';
+    }
+
+    // Build order match filter
+    const orderMatch = {};
+    if (start && end) {
+      orderMatch.createdAt = { $gte: start, $lte: end };
+    }
+
+    // Prior period match for growth calculations
+    const prevOrderMatch = {};
+    if (prevStart && prevEnd) {
+      prevOrderMatch.createdAt = { $gte: prevStart, $lte: prevEnd };
+    }
+
     const [
       totalUsers,
       totalSellers,
+      totalProducts,
+      inventoryStatsAgg,
+      categoryStatsAgg,
       orderStatsAgg,
+      prevOrderStatsAgg,
+      paymentMethodsAgg,
+      revenueTimeline,
       recentOrders,
-      deliveredOrders,
-      rawSellers,
+      allOrderItems,
+      allTimeOrderStatsAgg,
     ] = await Promise.all([
       User.countDocuments({ role: { $ne: 'admin' } }),
-      User.countDocuments({ 'sellerProfile': { $ne: null } }),
+      User.countDocuments({ sellerProfile: { $ne: null } }),
+      Product.countDocuments({}),
+      Product.aggregate([
+        {
+          $group: {
+            _id: null,
+            inStock: { $sum: { $cond: [{ $gt: ['$stock', 5] }, 1, 0] } },
+            lowStock: { $sum: { $cond: [{ $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', 5] }] }, 1, 0] } },
+            outOfStock: { $sum: { $cond: [{ $eq: ['$stock', 0] }, 1, 0] } },
+          },
+        },
+      ]),
+      Product.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 8 },
+      ]),
+      // Filtered order stats
       Order.aggregate([
+        { $match: orderMatch },
         {
           $group: {
             _id: null,
             totalOrders: { $sum: 1 },
             totalRevenue: {
               $sum: {
-                $cond: [
-                  { $in: ['$status', ['Delivered', 'Shipped', 'Confirmed']] },
-                  '$totalPrice',
-                  0
-                ]
-              }
+                $cond: [{ $ne: ['$status', 'Cancelled'] }, '$totalPrice', 0],
+              },
             },
             pendingOrders: {
-              $sum: {
-                $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0]
-              }
+              $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] },
             },
-            pendingReturns: {
-              $sum: {
-                $cond: [{ $in: ['$status', ['Returned', 'Cancelled']] }, 1, 0]
-              }
+            confirmedOrders: {
+              $sum: { $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0] },
             },
-          }
-        }
-      ]),
-      Order.find({})
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .populate('user', 'name email'),
-      // Last 7 days revenue for sparkline
-      Order.aggregate([
-        {
-          $match: {
-            status: { $in: ['Delivered', 'Shipped', 'Confirmed'] },
-            createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+            processingOrders: {
+              $sum: { $cond: [{ $in: ['$status', ['Processing', 'Shipped']] }, 1, 0] },
+            },
+            deliveredOrders: {
+              $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] },
+            },
+            cancelledOrReturned: {
+              $sum: { $cond: [{ $in: ['$status', ['Cancelled', 'Returned']] }, 1, 0] },
+            },
           },
         },
+      ]),
+      // Prior period order stats for comparison
+      (prevStart && prevEnd)
+        ? Order.aggregate([
+            { $match: prevOrderMatch },
+            {
+              $group: {
+                _id: null,
+                totalOrders: { $sum: 1 },
+                totalRevenue: {
+                  $sum: {
+                    $cond: [{ $ne: ['$status', 'Cancelled'] }, '$totalPrice', 0],
+                  },
+                },
+              },
+            },
+          ])
+        : Promise.resolve([]),
+      // Payment methods within filter
+      Order.aggregate([
+        { $match: orderMatch },
         {
           $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            _id: { $ifNull: ['$paymentInfo.method', { $ifNull: ['$paymentMethod', 'Online'] }] },
+            count: { $sum: 1 },
             revenue: { $sum: '$totalPrice' },
-            orders:  { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+      // Timeline aggregation grouped by day/month/year with timezone
+      Order.aggregate([
+        { $match: { ...orderMatch, status: { $nin: ['Cancelled'] } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: dateFormat, date: '$createdAt', timezone: tz } },
+            revenue: { $sum: '$totalPrice' },
+            orders: { $sum: 1 },
+            delivered: { $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] } },
           },
         },
         { $sort: { _id: 1 } },
       ]),
-      User.find({ sellerProfile: { $ne: null } }).select('name email sellerProfile'),
+      // Recent orders matching filter
+      Order.find(orderMatch)
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('user', 'name email'),
+      // Top products within filter
+      Order.find({ ...orderMatch, status: { $nin: ['Cancelled'] } })
+        .select('orderItems')
+        .lean(),
+      // All-time order stats (so lifetime numbers remain accessible)
+      Order.aggregate([
+        {
+          $group: {
+            _id: null,
+            lifetimeOrders: { $sum: 1 },
+            lifetimeRevenue: {
+              $sum: {
+                $cond: [{ $ne: ['$status', 'Cancelled'] }, '$totalPrice', 0],
+              },
+            },
+          },
+        },
+      ]),
     ]);
 
-    const stats = orderStatsAgg[0] || { totalOrders: 0, totalRevenue: 0, pendingOrders: 0, pendingReturns: 0 };
-    const totalOrders = stats.totalOrders || 0;
-    const totalRevenue = stats.totalRevenue || 0;
-    const pendingOrders = stats.pendingOrders || 0;
-    const pendingReturns = stats.pendingReturns || 0;
+    const stats = orderStatsAgg[0] || {
+      totalOrders: 0,
+      totalRevenue: 0,
+      pendingOrders: 0,
+      confirmedOrders: 0,
+      processingOrders: 0,
+      deliveredOrders: 0,
+      cancelledOrReturned: 0,
+    };
 
-    // Fetch real top sellers
-    const topSellers = rawSellers.map(s => ({
-      name: s.sellerProfile?.storeName || s.name,
-      email: s.email,
-      orders: 0,
-      gmv: 0,
-      status: s.sellerProfile?.isActive !== false ? 'Active' : 'Suspended',
+    const prevStats = prevOrderStatsAgg[0] || { totalOrders: 0, totalRevenue: 0 };
+    const allTimeStats = allTimeOrderStatsAgg[0] || { lifetimeOrders: 0, lifetimeRevenue: 0 };
+
+    const invStats = inventoryStatsAgg[0] || {
+      inStock: totalProducts,
+      lowStock: 0,
+      outOfStock: 0,
+    };
+
+    const aov = stats.totalOrders > 0 ? Math.round(stats.totalRevenue / stats.totalOrders) : 0;
+
+    // Growth rates
+    const revenueGrowth = prevStats.totalRevenue > 0
+      ? Number((((stats.totalRevenue - prevStats.totalRevenue) / prevStats.totalRevenue) * 100).toFixed(1))
+      : (stats.totalRevenue > 0 ? 100 : 0);
+
+    const ordersGrowth = prevStats.totalOrders > 0
+      ? Number((((stats.totalOrders - prevStats.totalOrders) / prevStats.totalOrders) * 100).toFixed(1))
+      : (stats.totalOrders > 0 ? 100 : 0);
+
+    // Top selling products calculated dynamically from order items in this timeframe
+    const topProductMap = {};
+    for (const ord of allOrderItems) {
+      if (!ord.orderItems) continue;
+      for (const item of ord.orderItems) {
+        const key = item.name || 'Product';
+        if (!topProductMap[key]) {
+          topProductMap[key] = {
+            name: key,
+            count: 0,
+            revenue: 0,
+            image: item.image || '',
+          };
+        }
+        topProductMap[key].count += (item.qty || 1);
+        topProductMap[key].revenue += (item.price || 0) * (item.qty || 1);
+      }
+    }
+    const topProducts = Object.values(topProductMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Human-friendly label formatter for timeline entries
+    const formatPeriodLabel = (key, tf) => {
+      if (!key) return 'Period';
+      if (tf === 'year') return `Year ${key}`;
+      if (tf === 'month') {
+        const [y, m] = key.split('-');
+        const date = new Date(parseInt(y), parseInt(m) - 1, 1);
+        return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+      }
+      // day: YYYY-MM-DD
+      const date = new Date(`${key}T00:00:00`);
+      return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const breakdown = revenueTimeline.map(item => ({
+      periodKey: item._id,
+      label: formatPeriodLabel(item._id, timeframe),
+      revenue: item.revenue || 0,
+      orders: item.orders || 0,
+      delivered: item.delivered || 0,
+      aov: item.orders > 0 ? Math.round(item.revenue / item.orders) : 0,
     }));
 
     res.json({
       success: true,
       data: {
+        activeFilter: {
+          timeframe,
+          range,
+          label: filterLabel,
+          prevPeriodLabel,
+          startDate: start ? start.toISOString() : null,
+          endDate: end ? end.toISOString() : null,
+        },
         kpis: {
           totalUsers,
           totalSellers,
-          totalOrders,
-          totalRevenue,
-          pendingReturns,
-          pendingOrders,
+          totalOrders: stats.totalOrders,
+          totalRevenue: stats.totalRevenue,
+          aov,
+          totalProducts,
+          pendingOrders: stats.pendingOrders,
+          confirmedOrders: stats.confirmedOrders,
+          processingOrders: stats.processingOrders,
+          deliveredOrders: stats.deliveredOrders,
+          cancelledOrReturned: stats.cancelledOrReturned,
+          inStock: invStats.inStock,
+          lowStock: invStats.lowStock,
+          outOfStock: invStats.outOfStock,
+          revenueGrowth,
+          ordersGrowth,
+          lifetimeOrders: allTimeStats.lifetimeOrders,
+          lifetimeRevenue: allTimeStats.lifetimeRevenue,
         },
-        sparkline: deliveredOrders,
-        topSellers,
+        sparkline: revenueTimeline,
+        breakdown,
+        paymentMethods: paymentMethodsAgg.map(p => ({
+          method: p._id || 'Other',
+          count: p.count,
+          revenue: p.revenue,
+          percentage: stats.totalOrders > 0 ? Math.round((p.count / stats.totalOrders) * 100) : 0,
+        })),
+        categoryDistribution: categoryStatsAgg.map(c => ({
+          category: c._id || 'Other',
+          count: c.count,
+          percentage: totalProducts > 0 ? Math.round((c.count / totalProducts) * 100) : 0,
+        })),
+        topProducts,
         recentOrders: recentOrders.map(o => ({
-          _id:    o._id,
+          _id: o._id,
           orderId: `XM-${o._id.toString().slice(-8).toUpperCase()}`,
-          user:   o.user ? { name: o.user.name, email: o.user.email } : { name: 'Unknown', email: '' },
-          total:  o.totalPrice,
-          status: o.status,
-          date:   o.createdAt,
-          items:  o.orderItems?.length || 0,
+          user: o.user ? { name: o.user.name, email: o.user.email } : { name: 'Customer', email: '' },
+          total: o.totalPrice,
+          status: o.status || 'Pending',
+          paymentMethod: o.paymentInfo?.method || o.paymentMethod || 'Online',
+          date: o.createdAt,
+          items: o.orderItems?.length || 1,
         })),
       },
     });
@@ -718,14 +1018,11 @@ router.get('/offers', async (req, res) => {
 
 /* ─────────────────────────────────────────────────────
    CREATE / UPDATE OFFER — POST /api/admin/offers
-   Body: { productId, discountPct, label, validUntil, offers }
+   Body: { productId, scope, storeName, discountPct, label, validUntil, offers }
 ───────────────────────────────────────────────────── */
 router.post('/offers', async (req, res) => {
   try {
-    const { productId, discountPct, label = 'Admin Offer', validUntil, offers } = req.body;
-    if (!productId) {
-      return res.status(400).json({ success: false, message: 'productId is required.' });
-    }
+    const { productId, scope = 'product', storeName, discountPct, label = 'Admin Offer', validUntil, offers } = req.body;
 
     const updateSet = {};
     if (discountPct !== undefined && discountPct !== null && String(discountPct).trim() !== '') {
@@ -735,11 +1032,47 @@ router.post('/offers', async (req, res) => {
         updateSet['offer.label'] = label;
         updateSet['offer.validUntil'] = validUntil ? new Date(validUntil) : null;
         updateSet['offer.createdAt'] = new Date();
+        updateSet['offer.scope'] = (scope === 'storewide' || storeName === 'storewide') ? 'storewide' : (scope === 'store' ? 'store' : 'product');
+        if (storeName && storeName !== 'storewide' && storeName !== 'all') {
+          updateSet['offer.storeName'] = storeName;
+        }
       }
     }
 
     if (Array.isArray(offers)) {
       updateSet['offers'] = offers;
+    }
+
+    // Storewide Marketing (Entire Marketplace)
+    if (scope === 'storewide' || storeName === 'storewide' || productId === 'storewide' || productId === 'all') {
+      const result = await Product.updateMany({}, { $set: updateSet });
+      return res.json({
+        success: true,
+        data: { modifiedCount: result.modifiedCount },
+        message: `Storewide promotional campaign launched for all ${result.modifiedCount} product(s) across the entire marketplace.`
+      });
+    }
+
+    // Store-wise Marketing (Specific Merchant Store)
+    if (scope === 'store' || (storeName && storeName !== 'storewide' && storeName !== 'all')) {
+      const targetStore = storeName || productId;
+      const filter = {
+        $or: [
+          { sellerStoreName: { $regex: new RegExp(`^${targetStore}$`, 'i') } },
+          { sellerEmail: { $regex: new RegExp(`^${targetStore}$`, 'i') } }
+        ]
+      };
+      const result = await Product.updateMany(filter, { $set: updateSet });
+      return res.json({
+        success: true,
+        data: { modifiedCount: result.modifiedCount },
+        message: `Store-wise promotional campaign launched for ${result.modifiedCount} product(s) in "${targetStore}".`
+      });
+    }
+
+    // Product-wise Marketing (Single Product SKU)
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'Target product or store is required.' });
     }
 
     const product = await Product.findByIdAndUpdate(
@@ -759,7 +1092,29 @@ router.post('/offers', async (req, res) => {
 ───────────────────────────────────────────────────── */
 router.delete('/offers/:productId', async (req, res) => {
   try {
-    const { offerIndex } = req.query;
+    const { offerIndex, scope, storeName } = req.query;
+
+    // Revoke Storewide campaign
+    if (req.params.productId === 'storewide' || scope === 'storewide') {
+      const result = await Product.updateMany({}, { $unset: { offer: '' }, $set: { offers: [] } });
+      return res.json({ success: true, message: `Storewide campaign revoked from ${result.modifiedCount} products.` });
+    }
+
+    // Revoke Store-wise campaign
+    if (scope === 'store' || (storeName && storeName !== 'storewide')) {
+      const targetStore = storeName || req.params.productId;
+      const filter = {
+        $or: [
+          { sellerStoreName: { $regex: new RegExp(`^${targetStore}$`, 'i') } },
+          { sellerEmail: { $regex: new RegExp(`^${targetStore}$`, 'i') } },
+          { 'offer.storeName': { $regex: new RegExp(`^${targetStore}$`, 'i') } }
+        ]
+      };
+      const result = await Product.updateMany(filter, { $unset: { offer: '' }, $set: { offers: [] } });
+      return res.json({ success: true, message: `Store campaign revoked from ${result.modifiedCount} products in "${targetStore}".` });
+    }
+
+    // Single Product offer
     let product;
     if (offerIndex !== undefined && offerIndex !== null && offerIndex !== '') {
       const idx = parseInt(offerIndex, 10);
@@ -823,18 +1178,28 @@ router.get('/customer-service', async (req, res) => {
         orderId:        `XM-${o._id.toString().slice(-8).toUpperCase()}`,
         user:           o.user ? { name: o.user.name, email: o.user.email, phone: o.user.phone } : { name: 'Customer', email: '', phone: '' },
         total:          o.totalPrice,
+        itemsPrice:     o.itemsPrice,
+        taxPrice:       o.taxPrice,
+        shippingPrice:  o.shippingPrice,
+        paymentMethod:  o.paymentMethod,
+        shippingAddress:o.shippingAddress,
         status:         o.status,
         date:           rr.requestedAt || o.updatedAt || o.createdAt,
         items:          o.orderItems,
         refundApproved: isRefunded,
         returnRequest: {
           rmaNumber,
+          requestType:   rr.requestType || 'return',
           reason:        rr.reason || 'Item defective / return requested',
           comments:      rr.comments || '',
+          photos:        Array.isArray(rr.photos) && rr.photos.length ? rr.photos : [],
           pickupAddress: rr.pickupAddress || o.shippingAddress,
           refundMethod:  rr.refundMethod || 'wallet',
+          bankDetails:   rr.bankDetails || null,
+          items:         Array.isArray(rr.items) && rr.items.length ? rr.items : o.orderItems,
           status:        rr.status || (isRefunded ? 'Refunded' : 'Requested'),
           reverseAwb:    rr.reverseAwb || (isApproved ? `AWB-REV-${o._id.toString().slice(-6).toUpperCase()}` : null),
+          reverseCourier:rr.reverseCourier || 'Blue Dart Express',
           refundAmount:  rr.refundAmount || o.totalPrice,
           refundUtr:     rr.refundUtr || null,
           refundedAt:    rr.refundedAt || o.refundAt || null,
@@ -900,74 +1265,141 @@ router.post('/orders/:id/return-action', async (req, res) => {
 
     const orderIdStr = `XM-${order._id.toString().slice(-8).toUpperCase()}`;
     const rmaNum = order.returnRequest.rmaNumber || `RMA-${orderIdStr}`;
+    if (!order.returnRequest.timeline) order.returnRequest.timeline = [];
+
+    // Helper to log timeline entries
+    const logTimeline = (stage, act, title, description, utr = null, amount = null) => {
+      order.returnRequest.timeline.push({
+        stage,
+        action: act,
+        title,
+        description,
+        timestamp: new Date(),
+        actor: 'Admin Operations',
+        utr,
+        amount,
+        emailSent: true,
+      });
+    };
 
     if (action === 'approve_rma') {
       // 1. Approve return & generate reverse logistics AWB
-      const reverseAwb = `AWB-REV-BLD-${Math.floor(100000 + Math.random() * 900000)}`;
+      const reverseCourier = req.body.reverseCourier || order.returnRequest.reverseCourier || 'Blue Dart Express';
+      const reverseAwb = req.body.reverseAwb || `AWB-REV-BLD-${Math.floor(100000 + Math.random() * 900000)}`;
       order.returnRequest.status = 'Approved';
       order.returnRequest.reverseAwb = reverseAwb;
-      order.returnRequest.adminNotes = notes || 'Doorstep reverse pickup scheduled with Blue Dart Express';
+      order.returnRequest.reverseCourier = reverseCourier;
+      order.returnRequest.adminNotes = notes || `Doorstep reverse pickup scheduled with ${reverseCourier}.`;
       order.status = 'Return Requested';
+
+      logTimeline('RMA Approval', 'approve_rma', 'RMA Approved & Reverse Pickup Scheduled', order.returnRequest.adminNotes);
       await order.save();
 
       // Dispatch customer email
       if (order.user?.email) {
         sendReturnStatusEmail({
-          email:      order.user.email,
-          name:       order.user.name,
-          orderId:    orderIdStr,
-          rmaNumber:  rmaNum,
-          status:     'Approved',
+          email:          order.user.email,
+          name:           order.user.name,
+          orderId:        orderIdStr,
+          rmaNumber:      rmaNum,
+          status:         'Approved',
           reverseAwb,
-          notes:      order.returnRequest.adminNotes,
+          reverseCourier,
+          notes:          order.returnRequest.adminNotes,
+          pickupAddress:  order.returnRequest.pickupAddress || order.shippingAddress,
         }).catch(err => console.warn('[RMA Email Error]:', err.message));
       }
 
       return res.json({
         success: true,
-        message: `RMA approved. Reverse AWB generated: ${reverseAwb}. Customer notified.`,
+        message: `RMA approved. Reverse AWB generated: ${reverseAwb}. Customer notified via email.`,
         data: { order },
       });
     }
 
-    if (action === 'mark_received') {
-      // 2. Mark returned item inspected & received at warehouse
+    if (action === 'mark_picked_up') {
+      // 2. Doorstep Handover / In-Transit update
       order.returnRequest.status = 'Item_Picked_Up';
-      order.returnRequest.adminNotes = notes || 'Returned item inspected & verified at fulfillment center.';
+      order.returnRequest.adminNotes = notes || 'Package handed over to reverse logistics courier. In transit to warehouse.';
+      logTimeline('Logistics Handover', 'mark_picked_up', 'Package Picked Up by Courier', order.returnRequest.adminNotes);
       await order.save();
 
       if (order.user?.email) {
         sendReturnStatusEmail({
-          email:      order.user.email,
-          name:       order.user.name,
-          orderId:    orderIdStr,
-          rmaNumber:  rmaNum,
-          status:     'Item_Picked_Up',
-          notes:      order.returnRequest.adminNotes,
+          email:          order.user.email,
+          name:           order.user.name,
+          orderId:        orderIdStr,
+          rmaNumber:      rmaNum,
+          status:         'In_Transit',
+          reverseAwb:     order.returnRequest.reverseAwb,
+          reverseCourier: order.returnRequest.reverseCourier,
+          notes:          order.returnRequest.adminNotes,
         }).catch(err => console.warn('[RMA Email Error]:', err.message));
       }
 
       return res.json({
         success: true,
-        message: 'Item marked as received and verified at fulfillment center.',
+        message: 'Order updated: Handed over to courier and in-transit to fulfillment center.',
         data: { order },
       });
     }
 
-    if (action === 'authorize_refund') {
-      // 3. Process credit refund settlement to wallet or original source
-      const finalRefundAmt = Number(refundAmount) || order.totalPrice;
-      const refundUtr = `REF${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(100000 + Math.random() * 900000)}`;
-      const refundDest = order.returnRequest.refundMethod || 'wallet';
+    if (action === 'qc_inspection' || action === 'mark_received') {
+      // 3. Quality Check Assessment & Inspection Record
+      const qcGrade = req.body.qcGrade || 'Grade A: Pristine / 100% Eligible';
+      const deductionAmount = Number(req.body.deductionAmount) || 0;
+      order.returnRequest.status = 'Item_Picked_Up';
+      order.returnRequest.qcGrade = qcGrade;
+      order.returnRequest.deductionAmount = deductionAmount;
+      order.returnRequest.adminNotes = notes || `Warehouse Quality Check: ${qcGrade}. Physical verification passed.`;
+      
+      logTimeline('Warehouse Inspection', 'qc_inspection', `QC Verified: ${qcGrade}`, order.returnRequest.adminNotes);
+      await order.save();
+
+      if (order.user?.email) {
+        sendReturnStatusEmail({
+          email:          order.user.email,
+          name:           order.user.name,
+          orderId:        orderIdStr,
+          rmaNumber:      rmaNum,
+          status:         'QC_Passed',
+          qcGrade,
+          notes:          order.returnRequest.adminNotes,
+        }).catch(err => console.warn('[RMA Email Error]:', err.message));
+      }
+
+      return res.json({
+        success: true,
+        message: `Quality check recorded: ${qcGrade}. Settlement pre-approved. Customer notified.`,
+        data: { order },
+      });
+    }
+
+    if (action === 'authorize_refund' || action === 'adjust_refund') {
+      // 4. Process credit refund settlement to wallet or original source
+      const finalRefundAmt = Number(refundAmount) || Number(req.body.amount) || order.returnRequest.refundAmount || order.totalPrice;
+      const refundUtr = req.body.refundUtr || `REF${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(100000 + Math.random() * 900000)}`;
+      const refundDest = req.body.refundMethod || order.returnRequest.refundMethod || 'wallet';
+      const transferMode = req.body.transferMode || 'IMPS';
 
       order.status = 'Returned';
       order.refundApproved = true;
       order.refundAt = new Date();
       order.returnRequest.status = 'Refunded';
       order.returnRequest.refundAmount = finalRefundAmt;
+      order.returnRequest.refundMethod = refundDest;
       order.returnRequest.refundUtr = refundUtr;
       order.returnRequest.refundedAt = new Date();
       if (notes) order.returnRequest.adminNotes = notes;
+
+      logTimeline(
+        'Refund Settlement',
+        'authorize_refund',
+        `Refund of ₹${finalRefundAmt.toLocaleString('en-IN')} Disbursed via ${refundDest.toUpperCase()} (${transferMode})`,
+        notes || `Settlement authorized with UTR: ${refundUtr}`,
+        refundUtr,
+        finalRefundAmt
+      );
 
       await order.save();
 
@@ -978,7 +1410,7 @@ router.post('/orders/:id/return-action', async (req, res) => {
         });
       }
 
-      // Send official refund credit note email
+      // Send official refund credit note email with bank details
       if (order.user?.email) {
         sendRefundConfirmationEmail({
           email:        order.user.email,
@@ -988,25 +1420,127 @@ router.post('/orders/:id/return-action', async (req, res) => {
           amount:       finalRefundAmt,
           refundMethod: refundDest,
           refundUtr,
+          bankDetails:  order.returnRequest.bankDetails,
+          deductions:   order.returnRequest.deductionAmount || 0,
         }).catch(err => console.warn('[Refund Email Error]:', err.message));
       }
 
       return res.json({
         success: true,
-        message: `Refund of ₹${finalRefundAmt.toLocaleString('en-IN')} authorized & issued successfully via ${refundDest}. Ref UTR: ${refundUtr}.`,
+        message: `Refund of ₹${finalRefundAmt.toLocaleString('en-IN')} successfully authorized & issued via ${refundDest.toUpperCase()}. UTR: ${refundUtr}. Customer email sent.`,
         data: {
           order,
           refundUtr,
           refundAmount: finalRefundAmt,
+          refundMethod: refundDest,
         },
       });
     }
 
+    if (action === 'resend_email') {
+      // 5. Explicitly resend email notification to customer
+      if (!order.user?.email) {
+        return res.status(400).json({ success: false, message: 'No customer email found for this order.' });
+      }
+
+      if (order.refundApproved || order.returnRequest.status === 'Refunded') {
+        await sendRefundConfirmationEmail({
+          email:        order.user.email,
+          name:         order.user.name,
+          orderId:      orderIdStr,
+          rmaNumber:    rmaNum,
+          amount:       order.returnRequest.refundAmount || order.totalPrice,
+          refundMethod: order.returnRequest.refundMethod || 'wallet',
+          refundUtr:    order.returnRequest.refundUtr || 'REF20260909787594',
+          bankDetails:  order.returnRequest.bankDetails,
+        });
+      } else {
+        await sendReturnStatusEmail({
+          email:          order.user.email,
+          name:           order.user.name,
+          orderId:        orderIdStr,
+          rmaNumber:      rmaNum,
+          status:         order.returnRequest.status || 'Approved',
+          reverseAwb:     order.returnRequest.reverseAwb,
+          reverseCourier: order.returnRequest.reverseCourier,
+          notes:          order.returnRequest.adminNotes,
+          pickupAddress:  order.returnRequest.pickupAddress || order.shippingAddress,
+        });
+      }
+
+      logTimeline('Customer Notification', 'resend_email', `Notification Resent to ${order.user.email}`, 'Manual resend triggered by admin.');
+      await order.save();
+
+      return res.json({
+        success: true,
+        message: `Email notification successfully resent to ${order.user.email}.`,
+        data: { order },
+      });
+    }
+
+    if (action === 'approve_replacement') {
+      const reverseAwb = req.body.reverseAwb || `AWB-REV-BLD-${Math.floor(100000 + Math.random() * 900000)}`;
+      order.returnRequest.status = 'Approved';
+      order.returnRequest.reverseAwb = reverseAwb;
+      order.returnRequest.requestType = 'replacement';
+      order.returnRequest.adminNotes = notes || 'Replacement request approved. Doorstep reverse pickup scheduled & replacement staged.';
+      order.status = 'Return Requested';
+      logTimeline('Replacement Workflow', 'approve_replacement', 'Replacement Approved & Reverse Pickup Scheduled', order.returnRequest.adminNotes);
+      await order.save();
+
+      if (order.user?.email) {
+        sendReturnStatusEmail({
+          email:      order.user.email,
+          name:       order.user.name,
+          orderId:    orderIdStr,
+          rmaNumber:  rmaNum,
+          status:     'Approved (Replacement)',
+          reverseAwb,
+          notes:      order.returnRequest.adminNotes,
+        }).catch(err => console.warn('[RMA Email Error]:', err.message));
+      }
+
+      return res.json({
+        success: true,
+        message: `Replacement approved. Reverse AWB generated: ${reverseAwb}. Customer notified via email.`,
+        data: { order },
+      });
+    }
+
+    if (action === 'ship_replacement') {
+      const replacementAwb = req.body.replacementAwb || `AWB-FWD-BLD-${Math.floor(100000 + Math.random() * 900000)}`;
+      order.returnRequest.status = 'Approved';
+      order.returnRequest.adminNotes = notes || `Replacement unit dispatched via Blue Dart Express (AWB: ${replacementAwb})`;
+      order.trackingNumber = replacementAwb;
+      order.status = 'Shipped';
+      logTimeline('Replacement Workflow', 'ship_replacement', `Replacement Dispatched (AWB: ${replacementAwb})`, order.returnRequest.adminNotes);
+      await order.save();
+
+      if (order.user?.email) {
+        sendReturnStatusEmail({
+          email:      order.user.email,
+          name:       order.user.name,
+          orderId:    orderIdStr,
+          rmaNumber:  rmaNum,
+          status:     'Replacement_Shipped',
+          reverseAwb: replacementAwb,
+          notes:      order.returnRequest.adminNotes,
+        }).catch(err => console.warn('[RMA Email Error]:', err.message));
+      }
+
+      return res.json({
+        success: true,
+        message: `Replacement unit dispatched. Tracking AWB: ${replacementAwb}. Customer notified via email.`,
+        data: { order },
+      });
+    }
+
     if (action === 'reject_rma') {
-      // 4. Reject return request
+      // Reject return request
       order.returnRequest.status = 'Rejected';
       order.returnRequest.adminNotes = notes || 'Return request rejected: outside allowable policy window.';
       order.status = 'Delivered';
+      logTimeline('RMA Decision', 'reject_rma', 'Return Request Rejected', order.returnRequest.adminNotes);
       await order.save();
 
       if (order.user?.email) {
@@ -1022,7 +1556,7 @@ router.post('/orders/:id/return-action', async (req, res) => {
 
       return res.json({
         success: true,
-        message: 'Return request rejected. Order restored to Delivered status.',
+        message: 'Return request rejected. Order restored to Delivered status. Customer notified via email.',
         data: { order },
       });
     }
@@ -1469,14 +2003,136 @@ router.put('/cms', async (req, res) => {
   }
 });
 
+// ── TOP NAVIGATION ANNOUNCEMENTS ──
+// Add new top navigation announcement
+router.post('/cms/announcements', async (req, res) => {
+  try {
+    const { text, tag, link, active, validFrom, validUntil, order } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Announcement text is required.' });
+    }
+    const config = await CmsConfig.getOrCreate();
+    if (!Array.isArray(config.announcements)) {
+      config.announcements = [];
+    }
+
+    const newOrder = order !== undefined && order !== null && order !== '' ? Number(order) : config.announcements.length;
+    config.announcements.push({
+      text: text.trim(),
+      tag: (tag || '').trim(),
+      link: (link || '#deals').trim(),
+      active: active !== undefined ? Boolean(active) : true,
+      validFrom: validFrom ? new Date(validFrom) : null,
+      validUntil: validUntil ? new Date(validUntil) : null,
+      order: isNaN(newOrder) ? config.announcements.length : newOrder,
+    });
+    const firstActive = config.announcements.find(a => a.active);
+    if (firstActive) config.announcementText = firstActive.text;
+
+    config.markModified('announcements');
+    await config.save();
+    res.json({ success: true, message: 'Announcement added successfully.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Update an existing announcement
+router.put('/cms/announcements/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const annIdStr = String(req.params.id);
+    let ann = config.announcements.id ? config.announcements.id(req.params.id) : null;
+    if (!ann) {
+      ann = config.announcements.find(a => String(a._id || a.id) === annIdStr);
+    }
+    if (!ann) return res.status(404).json({ success: false, message: 'Announcement not found.' });
+
+    const { text, tag, link, active, validFrom, validUntil, order } = req.body;
+    if (text !== undefined) ann.text = text.trim();
+    if (tag !== undefined) ann.tag = (tag || '').trim();
+    if (link !== undefined) ann.link = (link || '').trim();
+    if (active !== undefined) ann.active = Boolean(active);
+    if (validFrom !== undefined) ann.validFrom = validFrom ? new Date(validFrom) : null;
+    if (validUntil !== undefined) ann.validUntil = validUntil ? new Date(validUntil) : null;
+    if (order !== undefined && order !== null && order !== '') {
+      const parsedOrder = Number(order);
+      ann.order = isNaN(parsedOrder) ? 0 : parsedOrder;
+    }
+
+    const firstActive = config.announcements.find(a => a.active);
+    if (firstActive) config.announcementText = firstActive.text;
+
+    config.markModified('announcements');
+    await config.save();
+    res.json({ success: true, message: 'Announcement updated successfully.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Toggle announcement active status
+router.put('/cms/announcements/:id/toggle', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const annIdStr = String(req.params.id);
+    let ann = config.announcements.id ? config.announcements.id(req.params.id) : null;
+    if (!ann) {
+      ann = config.announcements.find(a => String(a._id || a.id) === annIdStr);
+    }
+    if (!ann) return res.status(404).json({ success: false, message: 'Announcement not found.' });
+
+    ann.active = !ann.active;
+    config.markModified('announcements');
+    await config.save();
+    res.json({ success: true, message: `Announcement ${ann.active ? 'activated' : 'paused'}.`, data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Remove an announcement
+router.delete('/cms/announcements/:id', async (req, res) => {
+  try {
+    const config = await CmsConfig.getOrCreate();
+    const annIdStr = String(req.params.id);
+    config.announcements = config.announcements.filter(a => String(a._id || a.id) !== annIdStr);
+
+    const firstActive = config.announcements.find(a => a.active);
+    if (firstActive) config.announcementText = firstActive.text;
+
+    config.markModified('announcements');
+    await config.save();
+    res.json({ success: true, message: 'Announcement deleted successfully.', data: config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ── BANNERS ──
+function cleanImageUrl(val) {
+  if (!val) return '';
+  let str = String(val).trim().replace(/^["']+|["']+$/g, '');
+  if (/^https?:\/\/data:/i.test(str)) {
+    str = str.replace(/^https?:\/\//i, '');
+  } else if (/^https?:?\/?\/?data:/i.test(str)) {
+    str = str.replace(/^https?:?\/?\/?/i, '');
+  } else if (/^htt+data:/i.test(str)) {
+    str = str.replace(/^htt+/i, '');
+  } else if (/^ht+ps?:?\/?\/?data:/i.test(str)) {
+    str = str.replace(/^ht+ps?:?\/?\/?/i, '');
+  }
+  return str;
+}
+
 // Add new featured banner (appends to hero carousel)
 router.post('/cms/banners', async (req, res) => {
   try {
-    const { title, subtitle, tag, image, link, active, order } = req.body;
+    let { title, subtitle, tag, image, link, active, order } = req.body;
     if (!title || !image) {
       return res.status(400).json({ success: false, message: 'Headline and Image URL are required for featured banners.' });
     }
+    image = cleanImageUrl(image);
     const config = await CmsConfig.getOrCreate();
     if (!Array.isArray(config.heroBanners)) {
       config.heroBanners = [];
@@ -1516,7 +2172,7 @@ router.put('/cms/banners/:id', async (req, res) => {
     if (title !== undefined) banner.title = title.trim();
     if (subtitle !== undefined) banner.subtitle = subtitle.trim();
     if (tag !== undefined) banner.tag = tag.trim();
-    if (image !== undefined) banner.image = image.trim();
+    if (image !== undefined) banner.image = cleanImageUrl(image);
     if (link !== undefined) banner.link = link.trim();
     if (active !== undefined) banner.active = Boolean(active);
     if (order !== undefined && order !== null && order !== '') {
@@ -1871,7 +2527,7 @@ router.post('/cms/hero-promo-cards', async (req, res) => {
 router.put('/cms/hero-promo-cards/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    const card = config.heroPromoCards.find(c => String(c._id || c.id) === String(req.params.id));
+    const card = config.heroPromoCards.find((c, idx) => String(c._id || c.id || idx) === String(req.params.id));
     if (!card) return res.status(404).json({ success: false, message: 'Card not found.' });
     const { badge, sub, brand, image, pill, link, active, order } = req.body;
     if (badge !== undefined) card.badge = badge.trim();
@@ -1893,7 +2549,7 @@ router.put('/cms/hero-promo-cards/:id', async (req, res) => {
 router.delete('/cms/hero-promo-cards/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    config.heroPromoCards = config.heroPromoCards.filter(c => String(c._id || c.id) !== String(req.params.id));
+    config.heroPromoCards = config.heroPromoCards.filter((c, idx) => String(c._id || c.id || idx) !== String(req.params.id));
     config.markModified('heroPromoCards');
     await config.save();
     res.json({ success: true, message: 'Top promo card deleted.', data: config });
@@ -1928,7 +2584,7 @@ router.post('/cms/quick-browse', async (req, res) => {
 router.put('/cms/quick-browse/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    const item = config.quickBrowseItems.find(c => String(c._id || c.id) === String(req.params.id));
+    const item = config.quickBrowseItems.find((c, idx) => String(c._id || c.id || idx) === String(req.params.id));
     if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
     const { title, image, badge, link, active, order } = req.body;
     if (title !== undefined) item.title = title.trim();
@@ -1948,7 +2604,7 @@ router.put('/cms/quick-browse/:id', async (req, res) => {
 router.delete('/cms/quick-browse/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    config.quickBrowseItems = config.quickBrowseItems.filter(c => String(c._id || c.id) !== String(req.params.id));
+    config.quickBrowseItems = config.quickBrowseItems.filter((c, idx) => String(c._id || c.id || idx) !== String(req.params.id));
     config.markModified('quickBrowseItems');
     await config.save();
     res.json({ success: true, message: 'Quick browse item removed.', data: config });
@@ -2131,18 +2787,6 @@ router.put('/settings', async (req, res) => {
    GET, PUT, DELETE, POST /api/admin/reviews
 ───────────────────────────────────────────────────── */
 async function getRealReviews() {
-  // Purge any residual demo reviews that were seeded during testing
-  const demoNames = [
-    'Aarav Singhania', 'Meera Krishnan', 'Vikram Malhotra', 'Sunita Deshmukh',
-    'Rohan Nair', 'Kabir Das', 'Ananya Roy', 'Harish Gupta', 'Crypto King 99', 'AngryShopper007'
-  ];
-  try {
-    await Product.updateMany(
-      { 'reviews.name': { $in: demoNames } },
-      { $pull: { reviews: { name: { $in: demoNames } } } }
-    );
-  } catch (e) {}
-
   const productsWithReviews = await Product.find({ 'reviews.0': { $exists: true } })
     .select('name reviews images category price')
     .populate('reviews.user', 'name email');
@@ -2150,8 +2794,6 @@ async function getRealReviews() {
   let reviews = [];
   productsWithReviews.forEach(p => {
     (p.reviews || []).forEach(r => {
-      // Exclude any demo names if still present
-      if (demoNames.includes(r.name)) return;
       reviews.push({
         id: r._id.toString(),
         productId: p._id.toString(),
@@ -2182,6 +2824,55 @@ async function getRealReviews() {
 router.get('/reviews', async (req, res) => {
   try {
     const reviews = await getRealReviews();
+    const products = await Product.find({})
+      .select('name slug category brand images price originalPrice discount rating numReviews reviews stock')
+      .lean();
+
+    const formattedProducts = products.map(p => {
+      const pReviews = (p.reviews || []).map(r => ({
+        id: r._id ? r._id.toString() : '',
+        productId: p._id.toString(),
+        product: p.name,
+        category: p.category || 'General',
+        image: (p.images && p.images[0]) || '',
+        price: p.price || 0,
+        author: r.name || 'Customer',
+        rating: r.rating || 5,
+        headline: r.title || 'Customer Review',
+        comment: r.comment || '',
+        date: r.createdAt || new Date().toISOString(),
+        status: r.status || 'Approved',
+        verified: r.verified !== false,
+        helpful: r.helpful || 0,
+        adminReply: r.adminReply || '',
+        flagReason: r.flagReason || '',
+        sentiment: r.sentiment || (r.rating >= 4 ? 'Positive' : r.rating === 3 ? 'Neutral' : 'Critical'),
+      }));
+
+      const totalRev = pReviews.length;
+      const avgRat = totalRev > 0 
+        ? Number((pReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / totalRev).toFixed(1))
+        : (Number(p.rating) || 5.0);
+
+      return {
+        id: p._id.toString(),
+        productId: p._id.toString(),
+        name: p.name,
+        category: p.category || 'General',
+        brand: p.brand || '',
+        image: (p.images && p.images[0]) || '',
+        price: p.price || 0,
+        originalPrice: p.originalPrice || 0,
+        rating: avgRat,
+        numReviews: totalRev,
+        reviewsCount: totalRev,
+        reviews: pReviews,
+        approved: pReviews.filter(r => r.status === 'Approved').length,
+        pending: pReviews.filter(r => r.status === 'Pending').length,
+        flagged: pReviews.filter(r => r.status === 'Flagged').length,
+      };
+    });
+
     const totalReviews = reviews.length;
     const avgRating = totalReviews > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / totalReviews).toFixed(1) : '5.0';
     const pendingModeration = reviews.filter(r => r.status === 'Pending').length;
@@ -2192,13 +2883,62 @@ router.get('/reviews', async (req, res) => {
       success: true,
       data: {
         reviews,
+        products: formattedProducts,
         stats: {
           totalReviews,
           avgRating: Number(avgRating),
           pendingModeration,
           flagged,
           approved,
+          totalProducts: formattedProducts.length,
         },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET all reviews for a specific product
+router.get('/products/:id/reviews', async (req, res) => {
+  try {
+    const prod = await Product.findById(req.params.id)
+      .select('name category images price rating numReviews reviews');
+    if (!prod) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const pReviews = (prod.reviews || []).map(r => ({
+      id: r._id ? r._id.toString() : '',
+      productId: prod._id.toString(),
+      product: prod.name,
+      category: prod.category || 'General',
+      image: (prod.images && prod.images[0]) || '',
+      price: prod.price || 0,
+      author: r.name || 'Customer',
+      rating: r.rating || 5,
+      headline: r.title || 'Customer Review',
+      comment: r.comment || '',
+      date: r.createdAt || new Date().toISOString(),
+      status: r.status || 'Approved',
+      verified: r.verified !== false,
+      helpful: r.helpful || 0,
+      adminReply: r.adminReply || '',
+      flagReason: r.flagReason || '',
+      sentiment: r.sentiment || (r.rating >= 4 ? 'Positive' : r.rating === 3 ? 'Neutral' : 'Critical'),
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        product: {
+          id: prod._id.toString(),
+          name: prod.name,
+          category: prod.category || 'General',
+          image: (prod.images && prod.images[0]) || '',
+          price: prod.price || 0,
+          rating: prod.rating || 5.0,
+          numReviews: pReviews.length,
+        },
+        reviews: pReviews,
       },
     });
   } catch (err) {
@@ -2308,127 +3048,17 @@ router.post('/reviews', async (req, res) => {
 /* ─────────────────────────────────────────────────────
    SUPPORT & DISPUTES — Professional CRM & Dispute Suite
 ───────────────────────────────────────────────────── */
-let _manuallyLoggedTickets = [
-  {
-    id: 'TKT-8821',
-    customer: 'Rajesh Verma',
-    email: 'rajesh.verma@gmail.com',
-    phone: '+91 98201 44520',
-    tier: 'Platinum VIP',
-    orderId: 'ORD-IN88219',
-    orderAmount: 92990,
-    orderItem: 'Apple MacBook Air M2 (16GB, 512GB SSD)',
-    subject: 'Laptop display glass arrived with hairline fracture',
-    category: 'Damaged / Transit Loss',
-    priority: 'Urgent',
-    status: 'Open',
-    date: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: 'Rajesh Verma',
-        time: '18:30',
-        text: 'The courier package outer seal was intact, but when unboxing on camera, the inner retina display has a vertical hairline crack near the hinge. Please arrange an immediate replacement or technician inspection.'
-      }
-    ],
-    slaRemaining: '3h 40m remaining',
-    assignedAgent: 'Escalations Desk',
-    notes: 'Customer provided unboxing video link. High value item (₹92,990). Reverse courier pickup required.'
-  },
-  {
-    id: 'TKT-8819',
-    customer: 'Priya Sundaram',
-    email: 'priya.sundaram@outlook.com',
-    phone: '+91 94451 22890',
-    tier: 'Gold Tier Buyer',
-    orderId: 'ORD-IN88102',
-    orderAmount: 14999,
-    orderItem: 'Sony WH-1000XM4 Noise Cancelling Headphones',
-    subject: 'Amount debited via HDFC UPI but order confirmation failed',
-    category: 'Payment / Billing',
-    priority: 'High',
-    status: 'In Progress',
-    date: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: 'Priya Sundaram',
-        time: '15:15',
-        text: 'UPI UTR #429011849920 debited ₹14,999 from my HDFC bank account, but checkout threw gateway timeout. No order ID in my account.'
-      },
-      {
-        sender: 'admin',
-        senderName: 'Finance Gateway Desk (Official)',
-        time: '16:00',
-        text: 'We are cross-referencing UTR #429011849920 with Razorpay webhook settlement logs. If captured, order ORD-IN88102 will be auto-generated within 2 hours.'
-      }
-    ],
-    slaRemaining: '10h remaining',
-    assignedAgent: 'Finance Gateway Desk',
-    notes: 'Razorpay webhook reconciliation in progress. Banking reference verified.'
-  },
-  {
-    id: 'TKT-8815',
-    customer: 'Vikram Malhotra',
-    email: 'vikram.m@yahoo.co.in',
-    phone: '+91 97110 33451',
-    tier: 'Regular Buyer',
-    orderId: 'ORD-IN87994',
-    orderAmount: 5499,
-    orderItem: 'Nike Air Max SC Running Shoes',
-    subject: 'Delivered size UK 9 instead of ordered size UK 10',
-    category: 'Size / Fit Exchange',
-    priority: 'Medium',
-    status: 'In Progress',
-    date: new Date(Date.now() - 8 * 3600 * 1000).toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: 'Vikram Malhotra',
-        time: '12:10',
-        text: 'I placed an order for UK size 10, but the box label says UK 9. The shoes are unwashed and in original mint condition with all tags attached.'
-      },
-      {
-        sender: 'admin',
-        senderName: 'Returns Desk (Official)',
-        time: '13:45',
-        text: 'Exchange approved under ticket TKT-8815. Delhivery reverse pickup scheduled for tomorrow between 10 AM - 1 PM.'
-      }
-    ],
-    slaRemaining: '16h remaining',
-    assignedAgent: 'Returns & Exchange Desk',
-    notes: 'Reverse pickup AWB generated: DEL-EX-992104. Replacement UK 10 reserved in warehouse.'
-  },
-  {
-    id: 'TKT-8808',
-    customer: 'Ananya Roy',
-    email: 'ananya.roy@gmail.com',
-    phone: '+91 98300 11982',
-    tier: 'Regular Buyer',
-    orderId: 'ORD-IN87820',
-    orderAmount: 3250,
-    orderItem: 'Prestige Deluxe Alpha Induction Base Cookware Set',
-    subject: 'Consignment delivery delayed by 4 days beyond promised SLA',
-    category: 'Delivery Delay',
-    priority: 'Medium',
-    status: 'Open',
-    date: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: 'Ananya Roy',
-        time: '09:30',
-        text: 'Tracking shows the parcel has been sitting at the Kolkata central logistics hub for 4 consecutive days without movement. Expected delivery was 2 days ago.'
-      }
-    ],
-    slaRemaining: '20h remaining',
-    assignedAgent: 'Logistics Desk',
-    notes: 'BlueDart Kolkata hub escalation raised with docket #BD774901.'
-  }
-];
-
-async function getAuthenticSupportTickets() {
+async function syncAuthenticDisputes(force = false) {
   try {
+    // 1. Purge any hardcoded fake/mock tickets if present
+    await SupportTicket.deleteMany({
+      $or: [
+        { ticketId: { $in: ['TKT-8821', 'TKT-8819', 'TKT-8815', 'TKT-8808'] } },
+        { customer: { $in: ['Rajesh Verma', 'Priya Sundaram', 'Vikram Malhotra', 'Ananya Roy'] } }
+      ]
+    });
+
+    // 2. Fetch all real orders with disputes, returns, or cancellations
     const disputeOrders = await Order.find({
       $or: [
         { 'returnRequest': { $ne: null } },
@@ -2437,8 +3067,16 @@ async function getAuthenticSupportTickets() {
       ]
     }).populate('user', 'name email phone').sort({ updatedAt: -1 }).limit(100);
 
-    const orderTickets = (disputeOrders || []).map((o, idx) => {
+    for (const o of disputeOrders) {
       const ordId = o.orderId || `ORD-${o._id.toString().slice(-6).toUpperCase()}`;
+      const cleanOrdId = ordId.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const ticketId = `TKT-${cleanOrdId}`;
+
+      const existing = await SupportTicket.findOne({ $or: [{ ticketId }, { orderId: ordId }] });
+      if (existing) {
+        continue; // Keep existing ticket so admin responses, status transitions, and notes persist
+      }
+
       const rr = o.returnRequest || {};
       const itemNames = (o.orderItems || []).map(i => i.name).join(', ') || 'Order Item';
       const isCancelled = o.status === 'Cancelled';
@@ -2449,6 +3087,7 @@ async function getAuthenticSupportTickets() {
       else if (isRefunded) category = 'Refund Settlement';
       else if (rr.reason && rr.reason.toLowerCase().includes('size')) category = 'Size / Fit Exchange';
       else if (rr.reason && rr.reason.toLowerCase().includes('wrong')) category = 'Wrong Item Delivered';
+      else if (rr.reason && rr.reason.toLowerCase().includes('delay')) category = 'Delivery Delay';
       else if (rr.reason) category = rr.reason;
 
       let priority = 'Medium';
@@ -2460,168 +3099,232 @@ async function getAuthenticSupportTickets() {
       else if (rr.status === 'Approved' || rr.status === 'Item_Picked_Up') status = 'In Progress';
       else if (o.status === 'Cancelled') status = 'Resolved';
 
-      return {
-        id: `TKT-${8500 + idx}`,
+      const initialText = rr.reason || rr.comments || (isCancelled ? 'Pre-dispatch order cancellation requested by customer.' : 'Return / Refund dispute initiated for order.');
+
+      await SupportTicket.create({
+        ticketId,
         customer: o.user?.name || o.shippingAddress?.name || 'Customer',
         email: o.user?.email || 'customer@shopper.com',
         phone: o.user?.phone || o.shippingAddress?.phone || '',
-        tier: (o.totalPrice >= 50000) ? 'Platinum VIP' : (o.totalPrice >= 15000 ? 'Gold Tier Buyer' : 'Regular Buyer'),
+        tier: (o.totalPrice >= 50000) ? 'Platinum VIP' : (o.totalPrice >= 15000) ? 'Gold Tier Buyer' : 'Regular Buyer',
         orderId: ordId,
         orderAmount: o.totalPrice || 0,
         orderItem: itemNames,
-        subject: rr.reason || (isCancelled ? 'Pre-dispatch order cancellation requested' : 'Customer return & refund request'),
+        subject: rr.reason || (isCancelled ? 'Order Cancellation Request' : 'Customer return & refund dispute'),
         category,
         priority,
         status,
-        date: (o.updatedAt || o.createdAt || new Date()).toISOString(),
+        slaRemaining: isRefunded ? 'Resolved' : priority === 'Urgent' ? 'Within 4h SLA' : 'Within 24h SLA',
+        assignedAgent: isRefunded ? 'Automated Gateway' : 'Support Desk',
+        notes: `Order ID: ${ordId}. Payment: ${o.paymentMethod || 'Prepaid'}. Return tracking: ${rr.reverseAwb || 'Pending Dispatch'}.`,
+        source: 'order',
         messages: [
           {
             sender: 'customer',
-            senderName: o.user?.name || 'Customer',
+            senderName: o.user?.name || o.shippingAddress?.name || 'Customer',
             time: new Date(o.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            text: rr.reason || (isCancelled ? 'Customer requested cancellation for this consignment.' : 'Return / Refund dispute initiated for order.')
+            text: initialText,
           }
-        ],
-        slaRemaining: isRefunded ? 'Resolved' : 'Within 24h SLA',
-        assignedAgent: isRefunded ? 'Automated Gateway' : 'Support Desk',
-        notes: `Order ID ${ordId}. Payment: ${o.paymentMethod || 'Prepaid'}. Return tracking: ${rr.reverseAwb || 'Pending Dispatch'}.`
-      };
-    });
-
-    return [..._manuallyLoggedTickets, ...orderTickets];
+        ]
+      });
+    }
   } catch (err) {
-    return [..._manuallyLoggedTickets];
+    console.error('Error syncing authentic disputes:', err);
   }
 }
 
+function formatTicket(t) {
+  return {
+    id: t.ticketId || t._id.toString(),
+    customer: t.customer,
+    email: t.email,
+    phone: t.phone,
+    tier: t.tier,
+    orderId: t.orderId,
+    orderAmount: t.orderAmount,
+    orderItem: t.orderItem,
+    subject: t.subject,
+    category: t.category,
+    priority: t.priority,
+    status: t.status,
+    date: (t.createdAt || new Date()).toISOString(),
+    messages: t.messages || [],
+    slaRemaining: t.slaRemaining,
+    assignedAgent: t.assignedAgent,
+    notes: t.notes,
+  };
+}
+
+async function getAuthenticSupportTickets() {
+  await syncAuthenticDisputes();
+  const docs = await SupportTicket.find().sort({ createdAt: -1 });
+  return docs.map(formatTicket);
+}
+
 router.get('/support', async (req, res) => {
-  const { status, priority, search } = req.query;
-  const allTickets = await getAuthenticSupportTickets();
-  let list = [...allTickets];
+  try {
+    const { status, priority, search } = req.query;
+    const allTickets = await getAuthenticSupportTickets();
+    let list = [...allTickets];
 
-  if (status && status !== 'all') {
-    list = list.filter(t => t.status.toLowerCase().replace(' ', '-') === status.toLowerCase());
-  }
-  if (priority && priority !== 'all') {
-    list = list.filter(t => t.priority.toLowerCase() === priority.toLowerCase());
-  }
-  if (search && search.trim()) {
-    const q = search.toLowerCase().trim();
-    list = list.filter(t =>
-      t.id.toLowerCase().includes(q) ||
-      (t.customer || '').toLowerCase().includes(q) ||
-      (t.email || '').toLowerCase().includes(q) ||
-      (t.orderId || '').toLowerCase().includes(q) ||
-      (t.subject || '').toLowerCase().includes(q) ||
-      (t.category || '').toLowerCase().includes(q)
-    );
-  }
+    if (status && status !== 'all') {
+      list = list.filter(t => (t.status || '').toLowerCase().replace(' ', '-') === status.toLowerCase());
+    }
+    if (priority && priority !== 'all') {
+      list = list.filter(t => (t.priority || '').toLowerCase() === priority.toLowerCase());
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(t =>
+        (t.id || '').toLowerCase().includes(q) ||
+        (t.customer || '').toLowerCase().includes(q) ||
+        (t.email || '').toLowerCase().includes(q) ||
+        (t.orderId || '').toLowerCase().includes(q) ||
+        (t.subject || '').toLowerCase().includes(q) ||
+        (t.category || '').toLowerCase().includes(q)
+      );
+    }
 
-  res.json({
-    success: true,
-    data: {
-      tickets: list,
-      stats: {
-        total: allTickets.length,
-        open: allTickets.filter(t => t.status === 'Open').length,
-        inProgress: allTickets.filter(t => t.status === 'In Progress').length,
-        resolved: allTickets.filter(t => t.status === 'Resolved').length,
-        urgent: allTickets.filter(t => t.priority === 'Urgent' && t.status !== 'Resolved').length,
+    res.json({
+      success: true,
+      data: {
+        tickets: list,
+        stats: {
+          total: allTickets.length,
+          open: allTickets.filter(t => t.status === 'Open').length,
+          inProgress: allTickets.filter(t => t.status === 'In Progress').length,
+          resolved: allTickets.filter(t => t.status === 'Resolved').length,
+          urgent: allTickets.filter(t => t.priority === 'Urgent' && t.status !== 'Resolved').length,
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: `Failed to retrieve support disputes: ${err.message}` });
+  }
 });
 
 router.get('/support/:id', async (req, res) => {
-  const allTickets = await getAuthenticSupportTickets();
-  const tkt = allTickets.find(t => t.id === req.params.id);
-  if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
-  res.json({ success: true, data: tkt });
+  try {
+    const tkt = await SupportTicket.findOne({
+      $or: [{ ticketId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }]
+    });
+    if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
+    res.json({ success: true, data: formatTicket(tkt) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 router.put('/support/:id', async (req, res) => {
-  const { status, priority, assignedAgent, notes } = req.body;
-  const allTickets = await getAuthenticSupportTickets();
-  const tkt = allTickets.find(t => t.id === req.params.id);
-  if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
+  try {
+    const { status, priority, assignedAgent, notes } = req.body;
+    const tkt = await SupportTicket.findOne({
+      $or: [{ ticketId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }]
+    });
+    if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
 
-  if (status) tkt.status = status;
-  if (priority) tkt.priority = priority;
-  if (assignedAgent) tkt.assignedAgent = assignedAgent;
-  if (notes) tkt.notes = notes;
+    if (status) {
+      tkt.status = status;
+      if (status === 'Resolved') tkt.slaRemaining = 'Resolved';
+    }
+    if (priority) tkt.priority = priority;
+    if (assignedAgent) tkt.assignedAgent = assignedAgent;
+    if (notes !== undefined) tkt.notes = notes;
 
-  res.json({ success: true, message: `Ticket ${tkt.id} updated successfully.`, data: tkt });
+    await tkt.save();
+    res.json({ success: true, message: `Ticket ${tkt.ticketId} updated successfully.`, data: formatTicket(tkt) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 router.post('/support/:id/reply', async (req, res) => {
-  const { replyText, newStatus } = req.body;
-  const allTickets = await getAuthenticSupportTickets();
-  const tkt = allTickets.find(t => t.id === req.params.id);
-  if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
-  if (!replyText || !replyText.trim()) return res.status(400).json({ success: false, message: 'Reply text is required.' });
+  try {
+    const { replyText, newStatus } = req.body;
+    const tkt = await SupportTicket.findOne({
+      $or: [{ ticketId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }]
+    });
+    if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
+    if (!replyText || !replyText.trim()) return res.status(400).json({ success: false, message: 'Reply text is required.' });
 
-  const adminUser = req.user || { name: 'Support Administrator' };
-  const newMsg = {
-    sender: 'admin',
-    senderName: `${adminUser.name || 'Support Desk'} (Official)`,
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    text: replyText.trim(),
-  };
+    const adminUser = req.user || { name: 'Support Administrator' };
+    const newMsg = {
+      sender: 'admin',
+      senderName: `${adminUser.name || 'Support Desk'} (Official)`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: replyText.trim(),
+    };
 
-  tkt.messages = tkt.messages || [];
-  tkt.messages.push(newMsg);
-  if (newStatus) {
-    tkt.status = newStatus;
-  } else if (tkt.status === 'Open') {
-    tkt.status = 'In Progress';
+    tkt.messages = tkt.messages || [];
+    tkt.messages.push(newMsg);
+    if (newStatus) {
+      tkt.status = newStatus;
+      if (newStatus === 'Resolved') tkt.slaRemaining = 'Resolved';
+    } else if (tkt.status === 'Open') {
+      tkt.status = 'In Progress';
+    }
+
+    await tkt.save();
+    res.json({ success: true, message: 'Official response sent and logged.', data: formatTicket(tkt) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  res.json({ success: true, message: 'Official response sent and logged.', data: tkt });
 });
 
 router.post('/support', async (req, res) => {
-  const { customer, email, phone, orderId, orderAmount, orderItem, subject, category, priority, initialMessage } = req.body;
-  if (!customer || !subject) {
-    return res.status(400).json({ success: false, message: 'Customer name and subject are required.' });
+  try {
+    const { customer, email, phone, orderId, orderAmount, orderItem, subject, category, priority, initialMessage } = req.body;
+    if (!customer || !subject) {
+      return res.status(400).json({ success: false, message: 'Customer name and subject are required.' });
+    }
+
+    const count = await SupportTicket.countDocuments();
+    const nextNum = 8600 + count + 1;
+    const ticketId = `TKT-${nextNum}`;
+
+    const newTkt = await SupportTicket.create({
+      ticketId,
+      customer: customer.trim(),
+      email: email ? email.trim() : 'customer@shopper.com',
+      phone: phone ? phone.trim() : '',
+      tier: 'Regular Buyer',
+      orderId: orderId ? orderId.trim() : 'ORD-MANUAL',
+      orderAmount: Number(orderAmount) || 0,
+      orderItem: orderItem ? orderItem.trim() : 'Marketplace Item',
+      subject: subject.trim(),
+      category: category || 'Customer Claim',
+      priority: priority || 'Medium',
+      status: 'Open',
+      slaRemaining: priority === 'Urgent' ? 'Within 4h SLA' : 'Within 24h SLA',
+      assignedAgent: 'Support Desk (Queue)',
+      notes: 'Manually logged via Administrator CRM interface.',
+      source: 'manual',
+      messages: [
+        {
+          sender: 'customer',
+          senderName: customer.trim(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: initialMessage ? initialMessage.trim() : subject.trim(),
+        }
+      ]
+    });
+
+    res.status(201).json({ success: true, message: `Dispute ticket ${newTkt.ticketId} logged.`, data: formatTicket(newTkt) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const allTickets = await getAuthenticSupportTickets();
-  const nextNum = 8400 + allTickets.length + 1;
-  const newTkt = {
-    id: `TKT-${nextNum}`,
-    customer: customer.trim(),
-    email: email ? email.trim() : 'customer@example.com',
-    phone: phone ? phone.trim() : '+91 98000 00000',
-    tier: 'Regular Buyer',
-    orderId: orderId ? orderId.trim() : 'ORD-MANUAL',
-    orderAmount: Number(orderAmount) || 0,
-    orderItem: orderItem ? orderItem.trim() : 'Marketplace Item',
-    subject: subject.trim(),
-    category: category || 'Customer Inquiry',
-    priority: priority || 'Medium',
-    status: 'Open',
-    date: new Date().toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: customer.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: initialMessage ? initialMessage.trim() : subject.trim(),
-      }
-    ],
-    slaRemaining: '24h remaining',
-    assignedAgent: 'Unassigned (Queue)',
-    notes: 'Manually logged via Administrator CRM interface.'
-  };
-
-  _manuallyLoggedTickets.unshift(newTkt);
-  res.status(201).json({ success: true, message: `Dispute ticket ${newTkt.id} logged.`, data: newTkt });
 });
 
 router.post('/support/seed', async (req, res) => {
-  const tickets = await getAuthenticSupportTickets();
-  res.json({ success: true, message: 'Support queue synchronized with genuine order records.', data: { count: tickets.length } });
+  try {
+    await syncAuthenticDisputes(true);
+    const tickets = await SupportTicket.find().sort({ createdAt: -1 });
+    res.json({ success: true, message: 'Support queue synchronized with genuine customer orders.', data: { count: tickets.length } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
+
 
 /* ─────────────────────────────────────────────────────
    ADMIN PROFILE & SECURITY — GET & PUT /api/admin/profile

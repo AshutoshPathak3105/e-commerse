@@ -8,6 +8,7 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const { protect } = require('../middleware/authMiddleware');
 const { sendOrderConfirmationEmail } = require('../utils/emailService');
+const { validatePaymentOffer, BANK_ISSUER_MAP } = require('../utils/offerValidator');
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ router.post(
   '/create-order',
   protect,
   asyncHandler(async (req, res) => {
-    const { amount } = req.body;
+    const { amount, notes } = req.body;
 
     if (!amount || amount <= 0) {
       res.status(400);
@@ -73,6 +74,9 @@ router.post(
           receipt,
           payment_capture: 1,
         };
+        if (notes && typeof notes === 'object') {
+          options.notes = notes;
+        }
 
         const razorpayOrder = await rzp.orders.create(options);
         return res.status(200).json({
@@ -151,6 +155,32 @@ router.post(
       }
     }
 
+    let rzpPayment = null;
+    let actualCardIssuer = '';
+    let actualCardType = '';
+    let actualBank = req.body.bank || '';
+
+    const rzp = getRazorpayInstance();
+    if (rzp) {
+      try {
+        rzpPayment = await rzp.payments.fetch(razorpay_payment_id);
+        if (rzpPayment) {
+          if (rzpPayment.card) {
+            actualCardIssuer = (rzpPayment.card.issuer || '').toUpperCase();
+            actualCardType = (rzpPayment.card.type || '').toLowerCase();
+            if (actualCardIssuer && BANK_ISSUER_MAP[actualCardIssuer]) {
+              actualBank = BANK_ISSUER_MAP[actualCardIssuer];
+            }
+          }
+          if (rzpPayment.bank) {
+            actualBank = rzpPayment.bank;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[Razorpay Payment Fetch Warning]:', fetchErr.message);
+      }
+    }
+
     // Prepare Items & Prices
     let rawItems = [];
     if (items && Array.isArray(items) && items.length > 0) {
@@ -182,7 +212,74 @@ router.post(
     const itemsPrice = rawItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const shippingPrice = SHIPPING_PRICE(itemsPrice);
     const taxPrice = Math.round(itemsPrice * TAX_RATE);
-    const totalPrice = itemsPrice + shippingPrice + taxPrice;
+    const rawTotalPrice = itemsPrice + shippingPrice + taxPrice;
+
+    // Server-side Payment Offer & Discount Validation
+    const rawOffer = req.body.paymentOffer || (req.body.offerDiscount ? {
+      partner: req.body.offerPartner || req.body.bank || req.body.upiApp || '',
+      method: req.body.paymentMethod,
+      discountValue: req.body.offerDiscount,
+      discountType: req.body.offerDiscountType || 'flat',
+      appliedDiscount: req.body.offerDiscount,
+      cardBank: req.body.bank,
+      cardType: req.body.cardType,
+      upiId: req.body.upiId,
+      upiApp: req.body.upiApp
+    } : null);
+
+    let paymentOfferRecord = null;
+    let offerSavings = 0;
+
+    if (rawOffer) {
+      const offerResult = validatePaymentOffer({
+        paymentMethod: req.body.paymentMethod,
+        paymentOffer: rawOffer,
+        bank: actualBank || rawOffer.cardBank,
+        cardType: req.body.cardType || rawOffer.cardType || actualCardType,
+        cardIssuer: actualCardIssuer,
+        upiId: req.body.upiId || rawOffer.upiId,
+        upiApp: req.body.upiApp || rawOffer.upiApp,
+        subtotal: itemsPrice
+      });
+
+      // If user claimed/requested an offer discount, but validation failed (e.g. PNB card used for Indian Bank discount):
+      if (!offerResult.verified && (Number(rawOffer.appliedDiscount) > 0 || Number(rawOffer.discountValue) > 0)) {
+        if (rzp && rzpPayment && rzpPayment.status === 'captured') {
+          try {
+            await rzp.payments.refund(razorpay_payment_id, {
+              amount: rzpPayment.amount,
+              notes: {
+                reason: `Offer mismatch: ${offerResult.message}`
+              }
+            });
+            console.warn(`[Auto Refund Triggered] Payment ${razorpay_payment_id} refunded due to offer mismatch: ${offerResult.message}`);
+          } catch (refundErr) {
+            console.error('[Auto Refund Error]:', refundErr.message);
+          }
+        }
+        res.status(400);
+        throw new Error(offerResult.message || 'Payment rejected: The card or payment provider used does not qualify for the selected bank offer. Transaction refunded.');
+      }
+
+      offerSavings = offerResult.discount;
+      paymentOfferRecord = {
+        partner: rawOffer.partner || '',
+        method: req.body.paymentMethod,
+        discountType: rawOffer.discountType || 'flat',
+        discountValue: Number(rawOffer.discountValue) || offerSavings,
+        appliedDiscount: offerSavings,
+        verified: offerResult.verified,
+        validationMessage: offerResult.message,
+        cardBank: actualBank || rawOffer.cardBank || '',
+        cardType: req.body.cardType || rawOffer.cardType || actualCardType || '',
+        cardIssuer: actualCardIssuer,
+        upiId: req.body.upiId || rawOffer.upiId || '',
+        upiApp: req.body.upiApp || rawOffer.upiApp || ''
+      };
+    }
+
+    const couponSavings = Math.max(0, Number(req.body.couponDiscount) || 0);
+    const totalPrice = Math.max(0, rawTotalPrice - couponSavings - offerSavings);
 
     // Lookup product details for accurate originalPrice & image
     const pIds = rawItems.map(i => i.product).filter(id => mongoose.isValidObjectId(id));
@@ -220,11 +317,18 @@ router.post(
         status: 'captured',
         updateTime: new Date().toISOString(),
         email: req.user.email,
+        bank: req.body.bank || (paymentOfferRecord && paymentOfferRecord.cardBank) || '',
+        cardType: req.body.cardType || (paymentOfferRecord && paymentOfferRecord.cardType) || '',
+        upiId: req.body.upiId || (paymentOfferRecord && paymentOfferRecord.upiId) || '',
+        upiApp: req.body.upiApp || (paymentOfferRecord && paymentOfferRecord.upiApp) || '',
       },
       itemsPrice,
       shippingPrice,
       taxPrice,
       totalPrice,
+      originalTotalPrice: rawTotalPrice,
+      savingsAmount: couponSavings + offerSavings,
+      paymentOffer: paymentOfferRecord,
       status: 'Confirmed',
       isPaid: true,
       paidAt: new Date(),
@@ -271,4 +375,113 @@ router.post(
   })
 );
 
+// ── POST /api/payment/verify-offer ───────────────────────────
+// Lightweight check: given a completed razorpay_payment_id and the
+// applied offer details, verify if the actual card/UPI matches the offer.
+// Does NOT create an order — purely used by the frontend to decide whether
+// to strip the offer discount from the UI before proceeding.
+router.post(
+  '/verify-offer',
+  protect,
+  asyncHandler(async (req, res) => {
+    const { razorpay_payment_id, paymentOffer, paymentMethod, isSandbox } = req.body;
+
+    if (!razorpay_payment_id) {
+      return res.status(400).json({ success: false, matched: false, message: 'Payment ID is required.' });
+    }
+
+    // If no offer was applied there is nothing to cross-check
+    if (!paymentOffer || (!paymentOffer.partner && !paymentOffer.discountValue)) {
+      return res.status(200).json({ success: true, matched: true, message: 'No offer applied — nothing to verify.' });
+    }
+
+    let actualCardIssuer = '';
+    let actualBank = '';         // NEVER default to the request body bank — that is the offer bank, not the real bank
+    let actualCardType = '';
+    let actualUpiId = '';
+    let gotRealData = false;     // Did Razorpay return verifiable real payment data?
+
+    const rzp = getRazorpayInstance();
+    if (rzp) {
+      try {
+        const rzpPayment = await rzp.payments.fetch(razorpay_payment_id);
+        if (rzpPayment) {
+          if (rzpPayment.card) {
+            actualCardIssuer = (rzpPayment.card.issuer || '').toUpperCase();
+            actualCardType   = (rzpPayment.card.type   || '').toLowerCase();
+            // Map Razorpay issuer code → friendly bank name (e.g. PUNB → "Punjab National Bank")
+            if (actualCardIssuer && BANK_ISSUER_MAP[actualCardIssuer]) {
+              actualBank = BANK_ISSUER_MAP[actualCardIssuer];
+            } else if (rzpPayment.card.name) {
+              actualBank = rzpPayment.card.name; // card network name fallback
+            }
+            gotRealData = true;
+          }
+          if (rzpPayment.bank) {
+            actualBank  = rzpPayment.bank;
+            gotRealData = true;
+          }
+          if (rzpPayment.method === 'upi') {
+            actualUpiId = rzpPayment.vpa || rzpPayment.upi?.vpa || '';
+            gotRealData = Boolean(actualUpiId);
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[verify-offer fetch warning]:', fetchErr.message);
+        // Razorpay API failed — cannot confirm the actual card, deny the offer
+        return res.status(200).json({
+          success: true,
+          matched: false,
+          offerPartner: paymentOffer.partner || '',
+          actualBank: '',
+          actualIssuer: '',
+          discount: 0,
+          message: 'Could not verify actual card/bank from Razorpay — offer not confirmed.'
+        });
+      }
+    }
+
+    // If we got no real data from Razorpay (sandbox card with no issuer, etc.)
+    // we conservatively deny the offer to prevent false matches
+    if (!gotRealData && paymentMethod === 'Card') {
+      console.warn('[verify-offer] No real card data from Razorpay. Denying offer to prevent false match.', {
+        payment_id: razorpay_payment_id,
+        partner: paymentOffer.partner,
+        isSandbox
+      });
+      return res.status(200).json({
+        success: true,
+        matched: false,
+        offerPartner: paymentOffer.partner || '',
+        actualBank: 'Unknown',
+        actualIssuer: '',
+        discount: 0,
+        message: 'Actual card bank could not be verified — offer not applied.'
+      });
+    }
+
+    const offerResult = validatePaymentOffer({
+      paymentMethod: paymentMethod || paymentOffer.method || 'Card',
+      paymentOffer,
+      bank: actualBank,            // ONLY from Razorpay — no fallback to request body
+      cardType: actualCardType,    // ONLY from Razorpay
+      cardIssuer: actualCardIssuer,
+      upiId: actualUpiId,          // ONLY from Razorpay
+      upiApp: '',                  // Let validator derive from upiId
+      subtotal: Number(paymentOffer.subtotal) || 1000
+    });
+
+    return res.status(200).json({
+      success: true,
+      matched: offerResult.verified,
+      offerPartner: paymentOffer.partner || '',
+      actualBank: actualBank || '',
+      actualIssuer: actualCardIssuer || '',
+      discount: offerResult.discount,
+      message: offerResult.message
+    });
+  })
+);
+
 module.exports = router;
+

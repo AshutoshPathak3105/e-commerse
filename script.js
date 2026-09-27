@@ -33,6 +33,23 @@ function esc(str) {
 }
 window.esc = esc;
 
+/* ── Banner Image URL Sanitizer & Normalizer ── */
+function sanitizeBannerImageUrl(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim().replace(/^["']+|["']+$/g, '');
+  if (/^https?:\/\/data:/i.test(str)) {
+    str = str.replace(/^https?:\/\//i, '');
+  } else if (/^https?:?\/?\/?data:/i.test(str)) {
+    str = str.replace(/^https?:?\/?\/?/i, '');
+  } else if (/^htt+data:/i.test(str)) {
+    str = str.replace(/^htt+/i, '');
+  } else if (/^ht+ps?:?\/?\/?data:/i.test(str)) {
+    str = str.replace(/^ht+ps?:?\/?\/?/i, '');
+  }
+  return str;
+}
+window.sanitizeBannerImageUrl = sanitizeBannerImageUrl;
+
 /* ── Currency Converter (Base: INR ₹) ──────────────────────── */
 const Currency = {
   current: localStorage.getItem('xmart_currency') || 'INR',
@@ -514,6 +531,66 @@ const Store = {
   cart: JSON.parse(localStorage.getItem('xmart_cart') || '[]'),
   wishlist: JSON.parse(localStorage.getItem('xmart_wishlist') || '[]'),
   allProducts: [],
+  platformSettings: (() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('xmart_platform_settings') || 'null');
+      if (cached && typeof cached === 'object') return cached;
+    } catch (e) {}
+    return {
+      platformFeePct: 8.5,
+      freeShippingThreshold: 499,
+      standardShippingFee: 49,
+      codFee: 40,
+      codMaxLimit: 25000,
+      codEnabled: true,
+      businessName: 'X-Mart Superstore India Pvt. Ltd.',
+      gstin: '27AAECX1234F1Z8',
+      panNumber: 'AAECX1234F',
+      standardTaxRate: 18,
+      taxInclusive: true,
+      autoInvoicing: true,
+      returnWindowDays: 7,
+      replacementWindowDays: 7,
+      unpaidOrderTimeoutHours: 24,
+      deliveryLeadTime: '2 to 4 Business Days',
+      expressCutoffTime: '14:00',
+      timezone: 'Asia/Kolkata',
+      supportEmail: 'care@xmart.in',
+      supportPhone: '1800-120-9988',
+      whatsappSupport: '+91 98765 43210',
+      grievanceEmail: 'grievance@xmart.in',
+      supportHours: '24/7 Live Concierge & Assistance',
+      businessAddress: 'Tower B, DLF Cyber City, Phase II, Gurugram, Haryana - 122002',
+      lowStockThreshold: 5,
+      allowBackorders: false,
+      minOrderQty: 1,
+      maxOrderQtyPerItem: 10,
+      maintenanceMode: false,
+      maintenanceNotice: 'We are currently performing scheduled platform enhancements. We will be back shortly!',
+      inactivityTimeoutMinutes: 30,
+      fraudDetectionMode: 'standard',
+    };
+  })(),
+
+  getShippingFee(subtotal = this.cartTotal()) {
+    const thresh = (this.platformSettings && this.platformSettings.freeShippingThreshold !== undefined)
+      ? Number(this.platformSettings.freeShippingThreshold)
+      : 499;
+    const fee = (this.platformSettings && this.platformSettings.standardShippingFee !== undefined)
+      ? Number(this.platformSettings.standardShippingFee)
+      : 49;
+    return subtotal >= thresh ? 0 : fee;
+  },
+
+  getTaxRate() {
+    return (this.platformSettings && this.platformSettings.standardTaxRate !== undefined)
+      ? Number(this.platformSettings.standardTaxRate)
+      : 18;
+  },
+
+  getTaxAmount(subtotal = this.cartTotal()) {
+    return Math.round(subtotal * (this.getTaxRate() / 100));
+  },
 
   cartCount() {
     if (!Auth.isLoggedIn()) return 0;
@@ -533,6 +610,11 @@ const Store = {
       showToast('Please sign in to add items to your cart', 'warn');
       window._openAuth?.('signin');
       return false;
+    }
+
+    // Platform Maintenance Guard
+    if (this.platformSettings && this.platformSettings.maintenanceMode) {
+      showToast(`Platform Maintenance: ${this.platformSettings.maintenanceNotice || 'Checkouts are temporarily paused.'}`, 'warn', 5000);
     }
 
     // Deactivated Seller Guard: Prevent adding any deactivated seller product to cart
@@ -560,11 +642,22 @@ const Store = {
       return false;
     }
 
-    const targetQty = typeof qty === 'number' && qty > 0 ? qty : 1;
+    const minAllowed = (this.platformSettings && this.platformSettings.minOrderQty) ? Math.max(1, Number(this.platformSettings.minOrderQty)) : 1;
+    const maxAllowed = (this.platformSettings && this.platformSettings.maxOrderQtyPerItem) ? Math.max(1, Number(this.platformSettings.maxOrderQtyPerItem)) : 10;
+    const targetQty = typeof qty === 'number' && qty > 0 ? Math.max(minAllowed, qty) : minAllowed;
     const existing = this.cart.find(c => c.id === item.id || (item._id && c.id === item._id));
+
     if (existing) {
+      if ((existing.qty || 1) + targetQty > maxAllowed) {
+        showToast(`Cannot add more: maximum allowed purchase limit is ${maxAllowed} units per item.`, 'warn');
+        return false;
+      }
       existing.qty = (existing.qty || 1) + targetQty;
     } else {
+      if (targetQty > maxAllowed) {
+        showToast(`Maximum allowed purchase limit is ${maxAllowed} units per item.`, 'warn');
+        return false;
+      }
       this.cart.push({
         id: item.id || item._id || ('prod-' + Date.now()),
         name: item.name,
@@ -662,6 +755,196 @@ const Store = {
     if (cl) cl.setAttribute('aria-label', `Cart, ${count} items`);
   }
 };
+
+/* ── Live Platform & Commerce Settings Storefront Synchronizer ── */
+function applyStorefrontPlatformSettings(settings) {
+  if (!settings) settings = Store.platformSettings;
+  if (!settings) return;
+
+  // 1. Storefront Maintenance Banner & Overlay Guard
+  const isMaint = !!settings.maintenanceMode;
+  let maintBanner = document.getElementById('storefront-maintenance-banner');
+  if (isMaint) {
+    if (!maintBanner) {
+      maintBanner = document.createElement('div');
+      maintBanner.id = 'storefront-maintenance-banner';
+      document.body.prepend(maintBanner);
+    }
+    maintBanner.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px;background:linear-gradient(90deg, #b91c1c 0%, #dc2626 100%);color:#ffffff;font-size:13px;font-weight:700;position:sticky;top:0;z-index:99999;box-shadow:0 2px 10px rgba(0,0,0,0.18);text-align:center;line-height:1.4;';
+    maintBanner.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span><strong>Storefront Notice:</strong> ${settings.maintenanceNotice || 'We are currently performing scheduled platform enhancements. Checkouts are temporarily paused.'}</span>
+    `;
+  } else {
+    if (maintBanner) maintBanner.remove();
+  }
+
+  // 2. Footer Hotline, Operating Hours, Copyright, Corporate Address
+  const phone = settings.supportPhone || '1800-120-9988';
+  const cleanPhone = phone.replace(/[^\d+]/g, '');
+  document.querySelectorAll('.hotline-number').forEach(el => {
+    el.textContent = phone;
+    el.setAttribute('href', `tel:${cleanPhone}`);
+  });
+
+  const hours = settings.supportHours || '24/7 Live Concierge & Assistance';
+  document.querySelectorAll('.hotline-availability').forEach(el => {
+    el.innerHTML = `<span class="status-indicator"></span> ${hours}`;
+  });
+
+  const bizName = settings.businessName || 'X-Mart Superstore India Pvt. Ltd.';
+  document.querySelectorAll('.copyright-text').forEach(el => {
+    el.innerHTML = `&copy; ${new Date().getFullYear()} ${bizName}. All rights reserved. Built for ultra-fast, modern commerce.`;
+  });
+
+  // 3. Footer Content Map & Modals (Dynamic Reflection)
+  const freeThresh = settings.freeShippingThreshold !== undefined ? settings.freeShippingThreshold : 499;
+  const stdFee = settings.standardShippingFee !== undefined ? settings.standardShippingFee : 49;
+  const leadTime = settings.deliveryLeadTime || '2 to 4 Business Days';
+  const cutoff = settings.expressCutoffTime || '14:00';
+  const retDays = settings.returnWindowDays !== undefined ? settings.returnWindowDays : 7;
+  const repDays = settings.replacementWindowDays !== undefined ? settings.replacementWindowDays : 7;
+
+  window._footerContentMap = window._footerContentMap || {};
+  window._footerContentMap['#shipping-rates'] = {
+    title: 'Shipping Rates & Delivery Times',
+    body: `<p>• <strong>Orders ₹${Number(freeThresh).toLocaleString('en-IN')} & above:</strong> FREE Express Delivery<br>• <strong>Orders under ₹${Number(freeThresh).toLocaleString('en-IN')}:</strong> Flat ₹${stdFee} delivery charge<br>• <strong>Standard Delivery Lead Time:</strong> ${leadTime}<br>• <strong>Same-Day Dispatch Cutoff:</strong> Orders placed before ${cutoff}</p>`
+  };
+
+  window._footerContentMap['#returns'] = {
+    title: 'Returns & Replacement Policy',
+    body: `<p>Initiate a return within <strong>${retDays} days</strong> (${repDays} days replacement guarantee) from your <a href="#orders" style="color:#0878f9;font-weight:700;">Orders Dashboard</a>. A courier executive will pick up the item from your doorstep for instant replacement or refund.</p>`
+  };
+
+  window._footerContentMap['#refund-policy'] = {
+    title: 'Instant Refund Policy',
+    body: `<p>Refunds are initiated immediately upon pickup verification:</p><ul style="padding-left:20px;margin-top:8px;line-height:1.6;"><li><strong>UPI / Wallets:</strong> 2 to 4 Hours</li><li><strong>Credit / Debit Cards:</strong> 2 to 4 Business Days</li><li><strong>Cash on Delivery (COD):</strong> Instant NEFT / UPI Transfer (${settings.codEnabled ? 'COD Available' : 'Prepaid Only'})</li></ul>`
+  };
+
+  window._footerContentMap['#contact'] = {
+    title: 'Customer Care & Corporate Identity',
+    body: `<div style="font-size:13.5px;line-height:1.7;color:#334155;">
+      <p><strong>Legal Entity:</strong> ${bizName}<br>
+      <strong>GSTIN:</strong> ${settings.gstin || '27AAECX1234F1Z8'} &bull; <strong>PAN:</strong> ${settings.panNumber || 'AAECX1234F'}<br>
+      <strong>Customer Care Helpline:</strong> <a href="tel:${cleanPhone}" style="color:#0878f9;font-weight:700;">${phone}</a><br>
+      <strong>WhatsApp Support:</strong> <a href="https://wa.me/${(settings.whatsappSupport || '').replace(/[^\d]/g, '')}" target="_blank" style="color:#0878f9;font-weight:700;">${settings.whatsappSupport || '+91 98765 43210'}</a><br>
+      <strong>Official Support Email:</strong> <a href="mailto:${settings.supportEmail || 'care@xmart.in'}" style="color:#0878f9;font-weight:700;">${settings.supportEmail || 'care@xmart.in'}</a><br>
+      <strong>Grievance Redressal:</strong> <a href="mailto:${settings.grievanceEmail || 'grievance@xmart.in'}" style="color:#0878f9;font-weight:700;">${settings.grievanceEmail || 'grievance@xmart.in'}</a><br>
+      <strong>Operating Hours:</strong> ${hours}<br>
+      <strong>Registered Corporate Office:</strong> ${settings.businessAddress || 'Tower B, DLF Cyber City, Phase II, Gurugram, Haryana - 122002'}</p>
+    </div>`
+  };
+
+  // 3b. Trust Ribbon in Storefront Footer
+  document.querySelectorAll('.trust-item').forEach(item => {
+    const strong = item.querySelector('strong');
+    const span = item.querySelector('span');
+    const strongText = strong?.textContent?.trim() || '';
+    if (strongText.includes('Free Express Shipping')) {
+      if (span) span.textContent = `On all orders over ₹${Number(freeThresh).toLocaleString('en-IN')}`;
+    } else if (strongText.includes('Returns') || strongText.includes('Day')) {
+      if (strong) strong.textContent = `${retDays}-Day Free Returns`;
+      if (span) span.textContent = `${repDays} days replacement guarantee`;
+    } else if (strongText.includes('Support')) {
+      if (span) span.textContent = hours;
+    }
+  });
+
+  window._trustData = window._trustData || {};
+  window._trustData['Free Express Shipping'] = {
+    title: 'Free Express Shipping Across India',
+    body: `<p>Enjoy guaranteed <strong>Free Delivery on all orders above ₹${Number(freeThresh).toLocaleString('en-IN')}</strong>. Orders are dispatched within 24 hours from our nearest fulfillment center with end-to-end SMS & WhatsApp live tracking across 19,000+ PIN codes.</p><ul style="padding-left:20px;margin-top:10px;line-height:1.6;font-size:13.5px;color:#334155;"><li>Standard Delivery: ${leadTime}</li><li>Prime Express Delivery: Next day delivery available in metro cities</li><li>Zero hidden shipping fees at checkout</li></ul>`
+  };
+  window._trustData[`${retDays}-Day Free Returns`] = {
+    title: `${retDays}-Day Hassle-Free Money Back Guarantee`,
+    body: `<p>Shop with 100% confidence. If you are not completely satisfied with your purchase, return it within <strong>${retDays} days of delivery</strong> (${repDays} days replacement guarantee) for a replacement or full refund.</p><ul style="padding-left:20px;margin-top:10px;line-height:1.6;font-size:13.5px;color:#334155;"><li>Free doorstep pickup from your address</li><li>No questions asked instant return processing</li><li>Refunds credited back in 2 to 4 hours via UPI / original mode</li></ul>`
+  };
+  window._trustData['30-Day Free Returns'] = window._trustData[`${retDays}-Day Free Returns`];
+
+  // 4. Update Open Product Detail Page if currently viewed
+  if (window._currentViewingProduct) {
+    const trustGrid = document.querySelector('.prod-trust-grid');
+    if (trustGrid) {
+      const items = trustGrid.querySelectorAll('.prod-trust-item');
+      if (items[0]) {
+        const small = items[0].querySelector('small');
+        if (small) small.textContent = leadTime;
+      }
+      if (items[2]) {
+        const str = items[2].querySelector('strong');
+        const small = items[2].querySelector('small');
+        if (str) str.textContent = `${retDays} Days Return`;
+        if (small) small.textContent = `${repDays} Days Replacement`;
+      }
+    }
+    const delivPromise = document.getElementById('detail-delivery-promise');
+    if (delivPromise && !delivPromise.textContent.includes('unavailable')) {
+      const savedPin = localStorage.getItem('xmart_pincode') || '400001';
+      delivPromise.innerHTML = `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${savedPin}</span> — <strong>Free Delivery</strong> Guaranteed in ${leadTime}`;
+    }
+  }
+
+  // 5. Update Cart Panel Drawer if open
+  const cartPanel = document.getElementById('cart-panel');
+  if (cartPanel && cartPanel.classList.contains('is-open')) {
+    renderCartPanel();
+  }
+
+  // 6. Update Checkout Modal if open
+  const chkModal = document.getElementById('checkout-wizard-modal');
+  if (chkModal && chkModal.classList.contains('is-open') && typeof window._reRenderCheckoutPrices === 'function') {
+    window._reRenderCheckoutPrices();
+  }
+}
+
+async function fetchStorefrontPlatformSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/settings`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        Store.platformSettings = { ...Store.platformSettings, ...json.data };
+        localStorage.setItem('xmart_platform_settings', JSON.stringify(Store.platformSettings));
+        applyStorefrontPlatformSettings(Store.platformSettings);
+        return Store.platformSettings;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not fetch settings, using cached settings:', err);
+  }
+  applyStorefrontPlatformSettings(Store.platformSettings);
+  return Store.platformSettings;
+}
+
+function updateLocalPlatformSettings(newSettings) {
+  if (!newSettings || typeof newSettings !== 'object') return;
+  Store.platformSettings = { ...Store.platformSettings, ...newSettings };
+  localStorage.setItem('xmart_platform_settings', JSON.stringify(Store.platformSettings));
+  applyStorefrontPlatformSettings(Store.platformSettings);
+  try {
+    window.dispatchEvent(new CustomEvent('xmart:settings-updated', { detail: Store.platformSettings }));
+  } catch (e) {}
+}
+
+window.addEventListener('xmart:settings-updated', (e) => {
+  if (e.detail) {
+    Store.platformSettings = { ...Store.platformSettings, ...e.detail };
+    applyStorefrontPlatformSettings(Store.platformSettings);
+  }
+});
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'xmart_platform_settings' && e.newValue) {
+    try {
+      const parsed = JSON.parse(e.newValue);
+      Store.platformSettings = { ...Store.platformSettings, ...parsed };
+      applyStorefrontPlatformSettings(Store.platformSettings);
+    } catch (err) {}
+  }
+});
+
+// Initialize platform settings for customer storefront
+fetchStorefrontPlatformSettings();
 
 // Global Wishlist UI Synchronization Listener
 window.addEventListener('xmart:wishlist-updated', (e) => {
@@ -836,7 +1119,9 @@ function createModal(id, options = {}) {
 
   windowEl.innerHTML = `
     <div class="xmodal-header">
-      <h3>${options.title || 'Window'}</h3>
+      <div class="xmodal-title-wrapper" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+        ${options.titleHtml || `<h3>${options.title || 'Window'}</h3>`}
+      </div>
       <button class="xmodal-close-btn" aria-label="Close modal">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
@@ -1601,10 +1886,8 @@ function buildAuthModal() {
             <input type="text" id="admin-login-otp-input" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" style="letter-spacing:6px;font-size:22px;font-weight:800;text-align:center;" required placeholder="••••••">
           </div>
           <button type="button" class="auth-submit-btn" id="admin-login-otp-verify-btn">Verify &amp; Enter Admin Console</button>
-          <div style="text-align:center;margin-top:14px;display:flex;justify-content:center;align-items:center;gap:14px;">
+          <div style="text-align:center;margin-top:14px;display:flex;justify-content:center;align-items:center;">
             <a href="#" id="admin-login-otp-resend" style="font-size:13px;font-weight:700;color:#0f172a;text-decoration:none;">Resend Code</a>
-            <span style="color:#cbd5e1;">•</span>
-            <a href="#" id="admin-login-otp-back" style="font-size:13px;font-weight:600;color:#64748b;text-decoration:none;">Change Email / Password</a>
           </div>
         </div>
 
@@ -3513,6 +3796,9 @@ function getSavedAddresses() {
     list.forEach((a, idx) => { a.isDefault = (idx === 0); });
   }
 
+  // Ensure default address is always placed at the top (index 0)
+  list.sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+
   return list;
 }
 
@@ -3522,6 +3808,8 @@ function saveAddresses(addrs) {
     if (defaultCount !== 1) {
       addrs.forEach((a, idx) => { a.isDefault = (idx === 0); });
     }
+    // Always place default address at the top
+    addrs.sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
   }
   localStorage.setItem('xmart_saved_addresses', JSON.stringify(addrs));
 }
@@ -3964,7 +4252,7 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
     if (promo) {
       const discStr = promo.discountType === 'flat' ? `₹${promo.discountValue} Flat Discount` : `${promo.discountValue}% Discount`;
       upiOfferNotice = `
-        <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:11.5px; font-weight:800; color:#15803d;">UPI Offer Applied: ${discStr}</span>
           <span style="font-size:11px; font-weight:700; color:#166534; background:#dcfce7; padding:2px 6px; border-radius:4px;">${promo.upiProvider || 'All UPI Apps'}</span>
         </div>
@@ -3984,13 +4272,16 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
   portalEl.innerHTML = `
     <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column; max-height: 96vh; font-family: inherit;">
       
-      <!-- Top Header (Clean, professional typography, no emoji icons) -->
-      <div style="background: #ff9700; color: #000000; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #000000;">X-Mart UPI Gateway</h3>
-          <span style="font-size: 11.5px; font-weight: 600; color: #1e293b;">Unified Payments Interface • Real-Time Verification</span>
+      <!-- Top Header (022F43 brand background with website logo) -->
+      <div style="background: #022F43; color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="logo.png" alt="X-Mart" style="height: 34px; width: auto; border-radius: 8px; object-fit: contain; background: #ffffff; padding: 3px;" onerror="this.src='https://beautiful-druid-f9f6aa.netlify.app/logo.png';" />
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff;">UPI Payment Gateway</h3>
+            <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8;">Unified Payments Interface • Real-Time Verification</span>
+          </div>
         </div>
-        <button id="inapp-close-btn" style="background: transparent; border: none; font-size: 24px; font-weight: 700; cursor: pointer; color: #000000; line-height: 1; padding: 2px 6px;">&times;</button>
+        <button id="inapp-close-btn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; color: #ffffff; line-height: 1; padding: 4px 10px;">&times;</button>
       </div>
 
       <!-- Price Banner -->
@@ -4128,11 +4419,12 @@ function openInAppPaymentPortalModal({ amount, user, address, onSuccess, onCance
 
       // Enable the Pay Button
       payBtn.disabled = false;
-      payBtn.style.background = '#16a34a';
-      payBtn.style.color = '#ffffff';
+      payBtn.style.background = '#FF9400';
+      payBtn.style.color = '#000000';
+      payBtn.style.fontWeight = '800';
       payBtn.style.cursor = 'pointer';
-      payBtn.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
-      payBtn.textContent = `Pay ${formattedAmount} via UPI`;
+      payBtn.style.boxShadow = '0 4px 14px rgba(255, 148, 0, 0.35)';
+      payBtn.textContent = `Continue • Pay ${formattedAmount} via UPI`;
 
     }, 500);
   };
@@ -4216,12 +4508,15 @@ function openInAppNetBankingModal({ amount, user, onSuccess, onCancel }) {
     <div style="background:#ffffff;border-radius:16px;width:100%;max-width:600px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);overflow:hidden;display:flex;flex-direction:column;max-height:96vh;font-family:inherit;">
 
       <!-- Header -->
-      <div style="background:#ff9700;color:#000;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <h3 style="margin:0;font-size:16px;font-weight:800;color:#000;">Net Banking Payment</h3>
-          <span style="font-size:11.5px;font-weight:600;color:#1e293b;">Secure Bank Portal Redirect</span>
+      <div style="background:#022F43;color:#ffffff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <img src="logo.png" alt="X-Mart" style="height:34px;width:auto;border-radius:8px;object-fit:contain;background:#ffffff;padding:3px;" onerror="this.src='https://beautiful-druid-f9f6aa.netlify.app/logo.png';" />
+          <div>
+            <h3 style="margin:0;font-size:16px;font-weight:800;color:#ffffff;">Net Banking Payment</h3>
+            <span style="font-size:11.5px;font-weight:600;color:#94a3b8;">Secure Bank Portal Redirect</span>
+          </div>
         </div>
-        <button id="nb-close-btn" style="background:transparent;border:none;font-size:24px;font-weight:700;cursor:pointer;color:#000;line-height:1;padding:2px 6px;">&times;</button>
+        <button id="nb-close-btn" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:20px;font-weight:700;cursor:pointer;color:#ffffff;line-height:1;padding:4px 10px;">&times;</button>
       </div>
 
       <!-- Amount Banner -->
@@ -4240,8 +4535,8 @@ function openInAppNetBankingModal({ amount, user, onSuccess, onCancel }) {
           ${bankOptions}
         </div>
 
-        <button id="nb-pay-btn" style="width:100%;background:#0f172a;color:#fff;font-weight:800;border:none;padding:14px 20px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(15,23,42,0.25);transition:background 0.2s;">
-          Proceed to Bank &amp; Pay ${formattedAmount}
+        <button id="nb-pay-btn" style="width:100%;background:#FF9400;color:#000000;font-weight:800;border:none;padding:14px 20px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,148,0,0.35);transition:all 0.2s;">
+          Continue to Bank &amp; Pay ${formattedAmount}
         </button>
       </div>
 
@@ -4331,12 +4626,15 @@ function openInAppCardModal({ amount, user, address, onSuccess, onCancel, select
   portalEl.innerHTML = `
     <div style="background:#ffffff; border-radius:16px; width:100%; max-width:540px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); overflow:hidden; display:flex; flex-direction:column; max-height:96vh; font-family:inherit;">
       <!-- Header -->
-      <div style="background:#ff9700; color:#000; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#000;">Credit / Debit Card Payment</h3>
-          <span style="font-size:11.5px; font-weight:600; color:#1e293b;">Visa • MasterCard • RuPay • Amex • 256-Bit SSL</span>
+      <div style="background:#022F43; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="logo.png" alt="X-Mart" style="height:34px; width:auto; border-radius:8px; object-fit:contain; background:#ffffff; padding:3px;" onerror="this.src='https://beautiful-druid-f9f6aa.netlify.app/logo.png';" />
+          <div>
+            <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff;">Credit / Debit Card Payment</h3>
+            <span style="font-size:11.5px; font-weight:600; color:#94a3b8;">Visa • MasterCard • RuPay • Amex • 256-Bit SSL</span>
+          </div>
         </div>
-        <button id="card-close-btn" style="background:transparent; border:none; font-size:24px; font-weight:700; cursor:pointer; color:#000; line-height:1; padding:2px 6px;">&times;</button>
+        <button id="card-close-btn" style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:8px; font-size:20px; font-weight:700; cursor:pointer; color:#ffffff; line-height:1; padding:4px 10px;">&times;</button>
       </div>
 
       <!-- Amount Banner -->
@@ -4350,6 +4648,10 @@ function openInAppCardModal({ amount, user, address, onSuccess, onCancel, select
 
       <!-- Card Form -->
       <div style="padding:20px; overflow-y:auto; flex:1;">
+        <div style="background:#022F43; color:#ffffff; padding:10px 14px; border-radius:0; font-size:12px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="color:#ffffff;">Secure Connection • End-to-End 256-Bit SSL Encrypted Payment</span>
+        </div>
         ${cardOfferNotice}
 
         <!-- Bank selection -->
@@ -4373,14 +4675,17 @@ function openInAppCardModal({ amount, user, address, onSuccess, onCancel, select
 
         <!-- Card Type selection -->
         <div style="margin-bottom:14px;">
-          <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Card Type</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <label style="font-size:12px; font-weight:800; color:#0f172a; margin:0;">Card Type</label>
+            <span id="card-type-display-badge" style="font-size:11px; font-weight:800; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:6px;">${activeCardType === 'credit' ? 'Credit Card' : 'Debit Card'}</span>
+          </div>
           <div style="display:flex; gap:10px;">
-            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:8px 12px; border:1.5px solid ${activeCardType !== 'credit' ? '#ff9700' : '#cbd5e1'}; background:${activeCardType !== 'credit' ? '#fff8ee' : '#fff'}; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:700;">
-              <input type="radio" name="card_modal_type" value="debit" ${activeCardType !== 'credit' ? 'checked' : ''} style="accent-color:#ff9700;">
+            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:8px 12px; border:1.5px solid ${activeCardType !== 'credit' ? '#FF9400' : '#cbd5e1'}; background:${activeCardType !== 'credit' ? '#fff8ee' : '#fff'}; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:700;">
+              <input type="radio" name="card_modal_type" value="debit" ${activeCardType !== 'credit' ? 'checked' : ''} style="accent-color:#FF9400;">
               Debit Card
             </label>
-            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:8px 12px; border:1.5px solid ${activeCardType === 'credit' ? '#ff9700' : '#cbd5e1'}; background:${activeCardType === 'credit' ? '#fff8ee' : '#fff'}; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:700;">
-              <input type="radio" name="card_modal_type" value="credit" ${activeCardType === 'credit' ? 'checked' : ''} style="accent-color:#ff9700;">
+            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:8px 12px; border:1.5px solid ${activeCardType === 'credit' ? '#FF9400' : '#cbd5e1'}; background:${activeCardType === 'credit' ? '#fff8ee' : '#fff'}; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:700;">
+              <input type="radio" name="card_modal_type" value="credit" ${activeCardType === 'credit' ? 'checked' : ''} style="accent-color:#FF9400;">
               Credit Card
             </label>
           </div>
@@ -4411,8 +4716,8 @@ function openInAppCardModal({ amount, user, address, onSuccess, onCancel, select
         </div>
 
         <!-- Pay Button -->
-        <button type="button" id="card-pay-btn" style="width:100%; background:#0f172a; color:#ffffff; font-weight:800; border:none; padding:13px 20px; border-radius:10px; font-size:14.5px; cursor:pointer; box-shadow:0 4px 14px rgba(15,23,42,0.25); transition:background 0.2s;">
-          Pay ${formattedAmount} via Card
+        <button type="button" id="card-pay-btn" style="width:100%; background:#FF9400; color:#000000; font-weight:800; border:none; padding:13px 20px; border-radius:10px; font-size:14.5px; cursor:pointer; box-shadow:0 4px 14px rgba(255,148,0,0.35); transition:all 0.2s;">
+          Continue &bull; Pay ${formattedAmount} via Card
         </button>
       </div>
 
@@ -4454,23 +4759,32 @@ function openInAppCardModal({ amount, user, address, onSuccess, onCancel, select
   });
 }
 
-/* ── Unified Razorpay Checkout Integration (Official SDK + Seamless Fallback) ── */
-async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSuccess, onCancel, selectedBank, cardType, selectedUpiApp }) {
-  // UPI → dedicated UPI modal with QR + verification
-  if (paymentMethod === 'UPI') {
-    openInAppPaymentPortalModal({ amount, paymentMethod: 'UPI', user, address, onSuccess, onCancel, selectedUpiApp });
-    return;
-  }
+/* ── Razorpay Helper: Ensure SDK is loaded ── */
+function ensureRazorpaySDK() {
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      existing.addEventListener('error', () => resolve(false));
+      setTimeout(() => resolve(Boolean(window.Razorpay)), 1500);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
 
-  // Net Banking → dedicated in-app bank selection portal
-  // (Razorpay test mode does not support Net Banking — it shows "Choose other payment option")
-  if (paymentMethod === 'NetBanking') {
-    openInAppNetBankingModal({ amount, user, onSuccess, onCancel });
-    return;
-  }
-
-  // 1. Attempt official Razorpay Checkout SDK for Cards
+/* ── Unified Razorpay Checkout Integration (Official Razorpay Gateway) ── */
+async function openRazorpayCheckout({ amount, originalAmount, offerDiscount = 0, offerPartner = '', paymentMethod, user, address, onSuccess, onCancel, selectedBank, cardType, selectedUpiApp }) {
+  // 1. Attempt official Razorpay Checkout SDK for all online payment methods (Cards, UPI, NetBanking)
   try {
+    await ensureRazorpaySDK();
+
     const configRes = await apiFetch('/payment/config');
     const keyId = configRes?.keyId;
 
@@ -4483,12 +4797,17 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
 
       if (orderRes?.success && orderRes?.order) {
         const rzpOrder = orderRes.order;
+        const rzpLogoUrl = window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost')
+          ? `${window.location.origin}/logo.png`
+          : 'https://beautiful-druid-f9f6aa.netlify.app/logo.png';
+
         const options = {
           key: keyId,
           amount: rzpOrder.amount,
           currency: rzpOrder.currency || 'INR',
-          name: 'X-Mart Superstore',
+          name: 'X-Mart',
           description: `Order Checkout (${paymentMethod})`,
+          image: rzpLogoUrl,
           order_id: rzpOrder.id,
           prefill: {
             name: user?.name || '',
@@ -4496,7 +4815,8 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
             contact: user?.phone || ''
           },
           theme: {
-            color: '#ff9700'
+            color: '#022F43',
+            backdrop_color: '#022F43'
           },
           handler: function (response) {
             onSuccess?.({
@@ -4516,8 +4836,13 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
           }
         };
 
-        if (paymentMethod === 'Card') {
+        // Prefill method based on user selection in checkout step 3
+        if (paymentMethod === 'UPI') {
+          options.prefill.method = 'upi';
+        } else if (paymentMethod === 'Card') {
           options.prefill.method = 'card';
+        } else if (paymentMethod === 'NetBanking') {
+          options.prefill.method = 'netbanking';
         }
 
         const rzp = new window.Razorpay(options);
@@ -4526,18 +4851,20 @@ async function openRazorpayCheckout({ amount, paymentMethod, user, address, onSu
           onCancel?.();
         });
         rzp.open();
-        return; // Successfully opened official Razorpay popup!
+        return; // Successfully opened official Razorpay gateway!
       }
     }
   } catch (err) {
     console.warn('Official Razorpay SDK unavailable, falling back to in-app portal:', err.message);
   }
 
-  // 2. Fallback: Open built-in interactive payment modal
+  // 2. Emergency fallback only if Razorpay is unavailable or config fails
   if (paymentMethod === 'Card') {
-    openInAppCardModal({ amount, user, address, onSuccess, onCancel, selectedBank, cardType });
+    openInAppCardModal({ amount, originalAmount, offerDiscount, offerPartner, user, address, onSuccess, onCancel, selectedBank, cardType });
+  } else if (paymentMethod === 'NetBanking') {
+    openInAppNetBankingModal({ amount, user, onSuccess, onCancel });
   } else {
-    openInAppPaymentPortalModal({ amount, paymentMethod, user, address, onSuccess, onCancel, selectedUpiApp });
+    openInAppPaymentPortalModal({ amount, originalAmount, offerDiscount, offerPartner, user, address, onSuccess, onCancel, selectedUpiApp });
   }
 }
 
@@ -4816,6 +5143,36 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const updated = { ...cur, ...bodyData };
         setAdminLocalData('settings', updated);
         return { success: true, message: 'Settings saved successfully', data: updated };
+      }
+      if (cleanEp.includes('/cms/banners')) {
+        const cur = getAdminLocalData('cms', { heroBanners: [] });
+        if (!Array.isArray(cur.heroBanners)) cur.heroBanners = [];
+        if (method === 'POST') {
+          const newBanner = {
+            id: 'b_' + Date.now(),
+            _id: 'b_' + Date.now(),
+            title: bodyData.title || '',
+            subtitle: bodyData.subtitle || '',
+            tag: bodyData.tag || 'Featured',
+            image: (typeof sanitizeBannerImageUrl === 'function' ? sanitizeBannerImageUrl(bodyData.image) : (bodyData.image || '')),
+            link: bodyData.link || '#deals',
+            order: Number(bodyData.order) || cur.heroBanners.length,
+            active: bodyData.active !== undefined ? Boolean(bodyData.active) : true,
+          };
+          cur.heroBanners.push(newBanner);
+          setAdminLocalData('cms', cur);
+          return { success: true, message: 'Featured banner added successfully', data: cur };
+        } else if (method === 'PUT') {
+          const bannerId = cleanEp.split('/cms/banners/')[1];
+          cur.heroBanners = cur.heroBanners.map(b => (String(b.id || b._id) === String(bannerId)) ? { ...b, ...bodyData } : b);
+          setAdminLocalData('cms', cur);
+          return { success: true, message: 'Featured banner updated successfully', data: cur };
+        } else if (method === 'DELETE') {
+          const bannerId = cleanEp.split('/cms/banners/')[1];
+          cur.heroBanners = cur.heroBanners.filter(b => String(b.id || b._id) !== String(bannerId));
+          setAdminLocalData('cms', cur);
+          return { success: true, message: 'Featured banner removed successfully', data: cur };
+        }
       }
       if (cleanEp.includes('/cms')) {
         const cur = getAdminLocalData('cms', {});
@@ -5288,7 +5645,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       if (cleanEp === '/support/seed' && (opts.method || 'GET').toUpperCase() === 'POST') {
         localStorage.removeItem('xmart_crm_support_tickets');
         list = getLocalTickets();
-        return { success: true, message: 'Dispute queue refreshed with rich demo data', data: { count: list.length } };
+        return { success: true, message: 'Dispute queue synchronized with genuine customer orders', data: { count: list.length } };
       }
 
       // Handle Reply: POST /support/:id/reply
@@ -5611,15 +5968,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
 
-            <!-- MOBILE BRAND BADGE (CENTERED & CLICKABLE TO OPEN DASHBOARD) -->
-            <div class="ap-mobile-brand" id="ap-mobile-brand-link" role="button" tabindex="0" title="Go to Admin Dashboard" aria-label="Go to Admin Dashboard" onclick="if(window.switchAdminTab)window.switchAdminTab('dashboard')">
-              <img src="logo.png" alt="X-Mart" class="ap-brand-logo-img" />
+            <!-- BRAND LOGO IN NAVBAR (CLICKABLE TO OPEN DASHBOARD) -->
+            <div class="ap-topnav-brand ap-mobile-brand ap-topnav-logo" id="ap-topnav-brand-link" role="button" tabindex="0" title="Go to Admin Dashboard" aria-label="Go to Admin Dashboard" onclick="if(window.switchAdminTab)window.switchAdminTab('dashboard')" style="cursor:pointer;">
+              <img src="logo.png" alt="X-Mart" class="ap-brand-logo-img ap-topnav-logo-img" />
             </div>
 
             <!-- GLOBAL SPOTLIGHT SEARCHBAR -->
             <div class="ap-topnav-search" style="position:relative;">
               <svg class="ap-topnav-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="ap-topnav-search-input" placeholder="Search orders, SKUs, users, disputes... (Ctrl+K)" autocomplete="off" />
+              <input type="text" id="ap-topnav-search-input" placeholder="Search orders, products, customers..." autocomplete="off" style="border: 2.4px solid #FF9400 !important;" />
               <div id="ap-global-search-dropdown" class="ap-global-search-dropdown" style="display:none;"></div>
             </div>
 
@@ -5673,14 +6030,34 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     `;
   }
 
-  /* ══════════════════════════════════════════════════════
+    /* ══════════════════════════════════════════════════════
      TAB: DASHBOARD — Stitch Marketplace Command Centre
      ══════════════════════════════════════════════════════ */
+  let _dashFilter = { timeframe: 'day', range: 'all', startDate: '', endDate: '' };
+  let _dashShowBreakdown = false;
+
   async function renderDashboard(container) {
     container.innerHTML = `<div class="ap-dash-inner">${loadingHTML()}</div>`;
     try {
-      const res = await adminFetch('/dashboard');
-      const { kpis, sparkline, recentOrders = [], topSellers = [] } = res.data;
+      const q = new URLSearchParams();
+      if (_dashFilter.timeframe) q.set('timeframe', _dashFilter.timeframe);
+      if (_dashFilter.range) q.set('range', _dashFilter.range);
+      if (_dashFilter.range === 'custom') {
+        if (_dashFilter.startDate) q.set('startDate', _dashFilter.startDate);
+        if (_dashFilter.endDate) q.set('endDate', _dashFilter.endDate);
+      }
+
+      const res = await adminFetch(`/dashboard?${q.toString()}`);
+      const {
+        activeFilter = {},
+        kpis = {},
+        sparkline = [],
+        breakdown = [],
+        paymentMethods = [],
+        categoryDistribution = [],
+        topProducts = [],
+        recentOrders = []
+      } = res.data || {};
 
       const user = Auth.getUser();
       const greeting = (() => {
@@ -5688,94 +6065,117 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
       })();
       const todayStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const updatedStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-      /* ── Authentic Computed Metrics ──────────────────────── */
+      /* ── Authentic Database Metrics ───────────────────────── */
       const totalRevenue = kpis.totalRevenue || 0;
-      const revLakh = totalRevenue >= 100000 ? `₹${(totalRevenue / 100000).toFixed(2)}L` : fmtPrice(totalRevenue);
-      const pendingOrders = kpis.pendingOrders || 0;
+      const revFormatted = totalRevenue >= 100000 ? `₹${(totalRevenue / 100000).toFixed(2)} Lakhs` : fmtPrice(totalRevenue);
       const totalOrders = kpis.totalOrders || 0;
+      const aov = kpis.aov || (totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0);
       const totalUsers = kpis.totalUsers || 0;
-      const totalSellers = kpis.totalSellers || 0;
-      const pendingReturns = kpis.pendingReturns || 0;
+      const totalProducts = kpis.totalProducts || 0;
+      const inStock = kpis.inStock || totalProducts;
+      const lowStock = kpis.lowStock || 0;
+      const outOfStock = kpis.outOfStock || 0;
 
-      const aov = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
-      const realisticConvRate = totalUsers > 0 ? ((totalOrders / totalUsers) * 100).toFixed(1) + '%' : '0.0%';
+      const pendingOrders = kpis.pendingOrders || 0;
+      const confirmedOrders = kpis.confirmedOrders || 0;
+      const processingOrders = kpis.processingOrders || 0;
+      const deliveredOrders = kpis.deliveredOrders || 0;
+      const cancelledOrReturned = kpis.cancelledOrReturned || 0;
 
-      const deliveredCount = (recentOrders || []).filter(o => o.status === 'Delivered').length;
-      const shippedCount = (recentOrders || []).filter(o => o.status === 'Shipped').length;
-      const processingCount = (recentOrders || []).filter(o => ['Processing', 'Confirmed', 'Pending'].includes(o.status)).length;
+      const revenueGrowth = kpis.revenueGrowth;
+      const ordersGrowth = kpis.ordersGrowth;
+      const prevPeriodLabel = activeFilter.prevPeriodLabel || '';
 
       /* ── Authentic Revenue Sparkline SVG ─────────────────── */
-      const chartDays = (sparkline && sparkline.length) ? sparkline : (() => {
-        const days = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(Date.now() - i * 86400000);
-          days.push({
-            label: d.toLocaleDateString('en-IN', { weekday: 'short' }),
-            revenue: 0
-          });
-        }
-        return days;
-      })();
-      const maxRev = Math.max(...chartDays.map(d => d.revenue || 0), 10000);
-      const W = 620, H = 140, pad = { l: 45, r: 20, t: 15, b: 24 };
+      const chartPoints = (sparkline && sparkline.length > 0) ? sparkline : [
+        { _id: new Date().toISOString().slice(0, 10), revenue: totalRevenue, orders: totalOrders }
+      ];
+
+      const maxRev = Math.max(...chartPoints.map(d => d.revenue || 0), 10000);
+      const W = 620, H = 170, pad = { l: 72, r: 24, t: 20, b: 34 };
       const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
 
-      const pts = chartDays.map((d, i) => {
-        const x = pad.l + (i / Math.max(chartDays.length - 1, 1)) * iW;
+      const pts = chartPoints.map((d, i) => {
+        const x = chartPoints.length === 1 ? pad.l + iW / 2 : pad.l + (i / Math.max(chartPoints.length - 1, 1)) * iW;
         const y = pad.t + iH - ((d.revenue || 0) / maxRev) * iH;
-        return { x, y, d };
+        let dateStr = d._id || `Point ${i + 1}`;
+        if (_dashFilter.timeframe === 'year') {
+          dateStr = `Year ${d._id}`;
+        } else if (_dashFilter.timeframe === 'month') {
+          if (d._id && d._id.includes('-')) {
+            const [y, m] = d._id.split('-');
+            const dt = new Date(parseInt(y), parseInt(m) - 1, 1);
+            dateStr = dt.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+          }
+        } else {
+          if (d._id && d._id.includes('-')) {
+            const dt = new Date(`${d._id}T00:00:00`);
+            dateStr = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+          }
+        }
+        return { x, y, d, dateStr };
       });
 
       const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-      const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${(pad.t + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pad.t + iH).toFixed(1)} Z`;
+      const areaPath = pts.length === 1
+        ? `M${pad.l},${(pad.t + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} L${W - pad.r},${(pad.t + iH).toFixed(1)} Z`
+        : `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${(pad.t + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pad.t + iH).toFixed(1)} Z`;
 
       const yLines = [0, 0.5, 1].map(pct => {
         const y = pad.t + iH - pct * iH;
-        const label = pct === 0 ? '₹0' : pct === 0.5 ? `₹${(maxRev / 2000).toFixed(0)}K` : `₹${(maxRev / 1000).toFixed(0)}K`;
+        const val = Math.round(maxRev * pct);
+        const label = val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}K` : `₹${val}`;
         return `
           <line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W - pad.r}" y2="${y.toFixed(1)}" stroke="#f1f5f9" stroke-width="1.2" stroke-dasharray="3 3"/>
-          <text x="${pad.l - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="9.5" fill="#94a3b8" font-weight="600">${label}</text>
+          <text x="${pad.l - 10}" y="${(y + 4.5).toFixed(1)}" text-anchor="end" font-size="14" fill="#334155" font-weight="700" style="stroke:none !important; fill:#334155; font-size:14px; font-weight:700; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${label}</text>
         `;
       }).join('');
 
-      const xLabels = chartDays.map((d, i) => {
-        const x = pad.l + (i / Math.max(chartDays.length - 1, 1)) * iW;
-        const label = d.label || d._id?.slice(5) || `D-${i}`;
-        return `<text x="${x.toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="10" fill="#64748b" font-weight="600">${label}</text>`;
+      const step = Math.max(1, Math.floor(pts.length / 5));
+      const xLabels = pts.filter((_, idx) => idx % step === 0 || idx === pts.length - 1).map(p => {
+        return `<text x="${p.x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="13.5" fill="#334155" font-weight="700" style="stroke:none !important; fill:#334155; font-size:13.5px; font-weight:700; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${p.dateStr}</text>`;
       }).join('');
 
       const dots = pts.map(p => `
-        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#2563eb" stroke="#ffffff" stroke-width="2">
-          <title>${p.d.label || ''}: ${fmtPrice(p.d.revenue || 0)}</title>
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="2.5" style="cursor:pointer;">
+          <title>${p.dateStr}: ${fmtPrice(p.d.revenue || 0)} (${p.d.orders || 0} order${(p.d.orders || 0) === 1 ? '' : 's'})</title>
         </circle>
       `).join('');
 
       const chartSVG = `
         <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block; overflow:visible;">
           <defs>
-            <linearGradient id="heroRevGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#2563eb" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+            <linearGradient id="authenticRevGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>
             </linearGradient>
           </defs>
           ${yLines}
-          <path d="${areaPath}" fill="url(#heroRevGradient)"/>
+          <path d="${areaPath}" fill="url(#authenticRevGrad)"/>
           <path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
           ${dots}
           ${xLabels}
         </svg>
       `;
 
+      /* ── Pipeline Percentages ─────────────────────────────── */
+      const totSafe = Math.max(totalOrders, 1);
+      const pendingPct = Math.round((pendingOrders / totSafe) * 100);
+      const confirmedPct = Math.round((confirmedOrders / totSafe) * 100);
+      const processingPct = Math.round((processingOrders / totSafe) * 100);
+      const deliveredPct = Math.round((deliveredOrders / totSafe) * 100);
+      const cancelledPct = Math.round((cancelledOrReturned / totSafe) * 100);
+
       /* ── Authentic Recent Orders Rows ────────────────────── */
       const ordersHTML = `
         <div class="ap-table-wrap">
-          <table class="ap-table">
+          <table class="ap-table ${!recentOrders.length ? 'ap-table-empty' : ''}">
             <thead>
               <tr>
                 <th>Order Ref</th>
                 <th>Customer</th>
+                <th>Payment</th>
                 <th>Package Items</th>
                 <th>Net Total</th>
                 <th>Fulfillment</th>
@@ -5785,13 +6185,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <tbody>
               ${recentOrders.length ? recentOrders.map(o => {
                 const name = o.user?.name || 'Customer';
-                const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
-                const ordId = o.orderId || `ORD-${(o._id||'').slice(-6).toUpperCase()}`;
+                const initials = name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
+                const ordId = o.orderId || `XM-${(o._id||'').slice(-8).toUpperCase()}`;
+                const statusBadgeClass = o.status === 'Delivered' ? 'green' : o.status === 'Confirmed' ? 'blue' : (o.status === 'Cancelled' || o.status === 'Returned') ? 'red' : 'orange';
                 return `
                   <tr>
                     <td>
                       <span style="font-family:monospace; font-weight:800; color:#2563eb; font-size:12.5px;">${ordId}</span>
-                      <div style="font-size:11px; color:#64748b; margin-top:2px;">${fmtDate(o.date || o.createdAt)}</div>
+                      <div style="font-size:11px; color:#64748b; margin-top:2px;">${fmtDate(o.date)}</div>
                     </td>
                     <td>
                       <div style="display:flex; align-items:center; gap:8px;">
@@ -5803,18 +6204,25 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                       </div>
                     </td>
                     <td>
-                      <span class="ap-badge" style="background:#f1f5f9; color:#334155; font-size:11px;">${o.items || (o.orderItems && o.orderItems.length) || 1} Item${((o.items || (o.orderItems && o.orderItems.length) || 1) > 1) ? 's' : ''}</span>
+                      <span style="font-size:11.5px; font-weight:700; color:#475569; background:#f1f5f9; padding:2px 7px; border-radius:6px; display:inline-block;">
+                        ${esc(o.paymentMethod || 'Online')}
+                      </span>
                     </td>
                     <td>
-                      <div style="font-weight:800; color:#0f172a; font-size:13px;">${fmtPrice(o.total || o.totalPrice || 0)}</div>
+                      <span class="ap-badge" style="background:#f8fafc; color:#334155; font-size:11px; border:1px solid #e2e8f0;">
+                        ${o.items || 1} Item${(o.items > 1) ? 's' : ''}
+                      </span>
                     </td>
                     <td>
-                      <span class="ap-badge ${o.status === 'Delivered' ? 'green' : o.status === 'Shipped' ? 'blue' : 'orange'}">
+                      <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${fmtPrice(o.total || 0)}</div>
+                    </td>
+                    <td>
+                      <span class="ap-badge ${statusBadgeClass}">
                         ${o.status || 'Pending'}
                       </span>
                     </td>
                     <td style="text-align:right;">
-                      <button class="ap-btn ghost ap-dash-inspect-order" data-id="${ordId}" style="padding:3px 8px; font-size:11px; font-weight:700;">
+                      <button class="ap-btn ghost ap-dash-inspect-order" data-id="${ordId}" style="padding:4px 9px; font-size:11px; font-weight:700;">
                         Inspect &rarr;
                       </button>
                     </td>
@@ -5822,8 +6230,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 `;
               }).join('') : `
                 <tr>
-                  <td colspan="6" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
-                    No recent customer orders yet. All new orders will automatically appear here.
+                  <td colspan="7" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
+                    No customer orders in this time window.
                   </td>
                 </tr>
               `}
@@ -5832,7 +6240,102 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         </div>
       `;
 
-      /* ── Modern Dashboard Assembly ────────────────────────── */
+      /* ── Timeframe Pills Builder ─────────────────────────── */
+      const tf = _dashFilter.timeframe || 'day';
+      const rng = _dashFilter.range || 'all';
+
+      let pillsHTML = '';
+      if (tf === 'day') {
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Time</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'today' ? 'active' : ''}" data-rng="today">Today</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'yesterday' ? 'active' : ''}" data-rng="yesterday" title="Track previous day's metrics">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Yesterday (Previous Day)
+          </button>
+          <button type="button" class="ap-timeframe-pill ${rng === '7d' ? 'active' : ''}" data-rng="7d">Last 7 Days</button>
+          <button type="button" class="ap-timeframe-pill ${rng === '30d' ? 'active' : ''}" data-rng="30d">Last 30 Days</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'custom' ? 'active' : ''}" data-rng="custom" id="ap-pill-custom">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Custom Date / Range
+          </button>
+        `;
+      } else if (tf === 'month') {
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Months</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_month' ? 'active' : ''}" data-rng="this_month">This Month</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_month' ? 'active' : ''}" data-rng="last_month" title="Track previous month's metrics">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Last Month (Previous Month)
+          </button>
+          <button type="button" class="ap-timeframe-pill ${rng === '6m' ? 'active' : ''}" data-rng="6m">Last 6 Months</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year</button>
+        `;
+      } else {
+        // year
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Years</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year (${new Date().getFullYear()})</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_year' ? 'active' : ''}" data-rng="last_year" title="Track previous year's metrics">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Last Year (${new Date().getFullYear() - 1})
+          </button>
+        `;
+      }
+
+      /* ── Growth Badges ───────────────────────────────────── */
+      const growthHTML = (growthVal) => {
+        if (growthVal === undefined || growthVal === null || !prevPeriodLabel) return '';
+        const isPos = growthVal > 0;
+        const isNeg = growthVal < 0;
+        const cls = isPos ? 'positive' : isNeg ? 'negative' : 'neutral';
+        const sign = isPos ? '+' : '';
+        const arrow = isPos ? '▲ ' : isNeg ? '▼ ' : '';
+        return `
+          <div style="margin-top:6px;">
+            <span class="ap-growth-badge ${cls}" title="${prevPeriodLabel}">
+              ${arrow}${sign}${growthVal}% ${prevPeriodLabel}
+            </span>
+          </div>
+        `;
+      };
+
+      /* ── Detailed Breakdown Table Rows ───────────────────── */
+      const breakdownRows = (breakdown && breakdown.length > 0) ? breakdown.map(item => `
+        <tr>
+          <td>
+            <div style="font-weight:700; color:#0f172a;">${esc(item.label)}</div>
+            <div style="font-size:10.5px; color:#64748b; font-family:monospace;">${esc(item.periodKey)}</div>
+          </td>
+          <td>
+            <span class="ap-badge" style="background:#eff6ff; color:#2563eb; font-weight:800; font-size:11px;">
+              ${item.orders} order${item.orders === 1 ? '' : 's'}
+            </span>
+          </td>
+          <td>
+            <span style="font-weight:800; color:#0f172a; font-size:13px;">${fmtPrice(item.revenue)}</span>
+          </td>
+          <td>
+            <span style="color:#059669; font-weight:700;">${fmtPrice(item.aov)}</span>
+          </td>
+          <td>
+            <span style="color:#1e293b;">${item.delivered} delivered</span>
+          </td>
+          <td style="text-align:right;">
+            <button type="button" class="ap-btn ghost ap-inspect-period-btn" data-key="${item.periodKey}" data-tf="${tf}" style="padding:3px 8px; font-size:11px; font-weight:700;">
+              Filter to Period &rarr;
+            </button>
+          </td>
+        </tr>
+      `).join('') : `
+        <tr>
+          <td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">
+            No telemetry data recorded for this timeframe.
+          </td>
+        </tr>
+      `;
+
+      /* ── Layout Assembly ─────────────────────────────────── */
       container.innerHTML = `
         <div class="ap-dash-inner">
           <!-- 1. Header Command Banner -->
@@ -5843,48 +6346,176 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <span class="ap-super-badge">Super Admin</span>
               </h2>
               <p class="ap-modern-sub">
-                Marketplace command and intelligence center. Real-time GMV velocity, order processing pipelines, and 3PL dispatch health.
+                Enterprise Command Intelligence &amp; Live Operations. Real-time metrics powered 100% by active database telemetry.
               </p>
             </div>
             <div class="ap-modern-quick-actions">
-              <div class="ap-dash-meta-item">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <div class="ap-dash-meta-item" title="Live Server Timestamp">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span>${todayStr}</span>
               </div>
               <button class="ap-btn ghost" id="ap-dash-quick-prod" style="font-size:12px; font-weight:700;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Product
               </button>
-              <button class="ap-btn primary" id="ap-dash-quick-ship" style="font-size:12px; font-weight:700;">
+              <button class="ap-btn ghost" id="ap-dash-quick-orders" style="font-size:12px; font-weight:700;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                3PL Dispatches
+                Manage Orders
+              </button>
+              <button class="ap-btn primary" id="ap-dash-quick-refresh" style="font-size:12px; font-weight:700;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refresh Data
               </button>
             </div>
           </div>
 
-          <!-- 2. Asymmetric Hero Grid (Revenue Chart + Operations Radar) -->
+          <!-- 2. Interactive Timeframe & Historical Analytics Controller -->
+          <div class="ap-timeframe-bar">
+            <div class="ap-timeframe-top">
+              <!-- Mode Tabs -->
+              <div class="ap-timeframe-modes">
+                <button type="button" class="ap-timeframe-mode-btn ${tf === 'day' ? 'active' : ''}" data-tf="day">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Day-wise
+                </button>
+                <button type="button" class="ap-timeframe-mode-btn ${tf === 'month' ? 'active' : ''}" data-tf="month">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                  Month-wise
+                </button>
+                <button type="button" class="ap-timeframe-mode-btn ${tf === 'year' ? 'active' : ''}" data-tf="year">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  Year-wise
+                </button>
+              </div>
+
+              <!-- Filter Pills -->
+              <div class="ap-timeframe-pills">
+                ${pillsHTML}
+              </div>
+            </div>
+
+            <!-- Custom Date Range Box (If custom selected) -->
+            <div class="ap-custom-date-box ${rng === 'custom' ? 'is-open' : ''}" id="ap-custom-date-container">
+              <span style="font-size:12px; font-weight:700; color:#475569;">Pick Date / Range:</span>
+              <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:4px;">
+                From:
+                <input type="date" class="ap-custom-date-input" id="ap-custom-date-start" value="${_dashFilter.startDate || ''}" />
+              </label>
+              <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:4px;">
+                To:
+                <input type="date" class="ap-custom-date-input" id="ap-custom-date-end" value="${_dashFilter.endDate || ''}" />
+              </label>
+              <button type="button" class="ap-btn primary" id="ap-custom-date-apply" style="padding:4px 10px; font-size:11.5px; font-weight:700;">
+                Apply Filter
+              </button>
+            </div>
+
+            <!-- Active Filter Banner -->
+            <div class="ap-timeframe-banner">
+              <div class="ap-timeframe-banner-left">
+                <span class="ap-timeframe-banner-badge">${tf.toUpperCase()}WISE</span>
+                <span>Active Period: <strong>${esc(activeFilter.label || 'All Time History')}</strong></span>
+                <span style="color:#94a3b8;">•</span>
+                <span>${totalOrders} order${totalOrders === 1 ? '' : 's'} recorded</span>
+                <span style="color:#94a3b8;">•</span>
+                <span>Net Sales: <strong style="color:#2563eb;">${revFormatted}</strong></span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${rng !== 'all' || tf !== 'day' ? `
+                  <button type="button" class="ap-btn ghost" id="ap-timeframe-reset-btn" style="padding:3px 9px; font-size:11px; font-weight:700;">
+                    Reset to All Time ✕
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Primary 4-Metric Grid (Authentic Live Metrics) -->
+          <div class="ap-modern-metrics">
+            <!-- Tile 1: Total Revenue -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Gross Revenue (GMV)</span>
+                <div class="ap-metric-tile-icon" style="background:#eff6ff; color:#2563eb;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val">${revFormatted}</div>
+              <div class="ap-metric-tile-foot">
+                <span>Avg Order Value (AOV)</span>
+                <span style="color:#059669; font-weight:800;">${fmtPrice(aov)}</span>
+              </div>
+              ${growthHTML(revenueGrowth)}
+            </div>
+
+            <!-- Tile 2: Total Orders -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Customer Orders</span>
+                <div class="ap-metric-tile-icon" style="background:#f0fdf4; color:#16a34a;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val">${totalOrders.toLocaleString('en-IN')}</div>
+              <div class="ap-metric-tile-foot">
+                <span>${pendingOrders} Awaiting Verify</span>
+                <span style="color:#2563eb; font-weight:800;">${confirmedOrders} Confirmed</span>
+              </div>
+              ${growthHTML(ordersGrowth)}
+            </div>
+
+            <!-- Tile 3: Catalog & Inventory -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Cataloged Products</span>
+                <div class="ap-metric-tile-icon" style="background:#f5f3ff; color:#7c3aed;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val">${totalProducts.toLocaleString('en-IN')}</div>
+              <div class="ap-metric-tile-foot">
+                <span>${inStock} In-Stock Units</span>
+                <span style="color:#059669; font-weight:800;">100% Active</span>
+              </div>
+            </div>
+
+            <!-- Tile 4: Registered Customer Accounts -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Registered Customers</span>
+                <div class="ap-metric-tile-icon" style="background:#fffbeb; color:#d97706;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val">${totalUsers.toLocaleString('en-IN')}</div>
+              <div class="ap-metric-tile-foot">
+                <span>Verified buyer accounts</span>
+                <span style="color:#d97706; font-weight:800;">Active Profiles</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Hero Section: Authentic Revenue Timeline & Order Operations Pipeline -->
           <div class="ap-hero-grid">
-            <!-- Left: Revenue & Growth Engine -->
+            <!-- Left: Real Daily / Monthly / Yearly Revenue Stream -->
             <div class="ap-hero-revenue-card">
               <div class="ap-hero-rev-header">
                 <div class="ap-hero-rev-title-group">
                   <div class="ap-hero-rev-eyebrow">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    <span>Verified Marketplace GMV</span>
+                    <span>Authentic Sales Velocity (${tf === 'year' ? 'Year-wise' : tf === 'month' ? 'Month-wise' : 'Day-wise'} MongoDB Orders)</span>
                   </div>
                   <div class="ap-hero-rev-val-row">
-                    <span class="ap-hero-rev-val">${revLakh}</span>
-                    <span class="ap-hero-delta-pill">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
-                      +18.4% vs last period
+                    <span class="ap-hero-rev-val">${revFormatted}</span>
+                    <span class="ap-badge blue" style="font-size:11px; padding:3px 8px;">
+                      ${sparkline.length || 1} Active ${tf === 'year' ? 'Years' : tf === 'month' ? 'Months' : 'Days'} Recorded
                     </span>
                   </div>
                 </div>
-                <div class="ap-period-pills">
-                  <button class="ap-period-pill active">Hourly</button>
-                  <button class="ap-period-pill">Daily</button>
-                  <button class="ap-period-pill">Weekly</button>
-                  <button class="ap-period-pill">Monthly</button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" class="ap-btn ghost ${_dashShowBreakdown ? 'active ap-btn-clicked' : ''}" id="ap-toggle-breakdown-btn" style="font-size:11px; font-weight:700; padding:4px 8px;">
+                    ${_dashShowBreakdown ? 'Hide Ledger ▲' : 'Show Detailed Ledger ▼'}
+                  </button>
                 </div>
               </div>
 
@@ -5893,260 +6524,228 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 ${chartSVG}
               </div>
 
-              <!-- Mini Summary Strip -->
+              <!-- Mini Summary Strip (Authentic Numbers) -->
               <div class="ap-hero-summary-strip">
                 <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Avg Order Value (AOV)</span>
+                  <span class="ap-hero-summary-lbl">Average Order Value (AOV)</span>
                   <span class="ap-hero-summary-val">${fmtPrice(aov)}</span>
-                  <span class="ap-hero-summary-sub">Across ${totalOrders} purchases</span>
+                  <span class="ap-hero-summary-sub">Across ${totalOrders} purchases in window</span>
                 </div>
                 <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Platform Gross Margin</span>
-                  <span class="ap-hero-summary-val" style="color:#059669;">18.5%</span>
-                  <span class="ap-hero-summary-sub">Commission &amp; gateway fee</span>
+                  <span class="ap-hero-summary-lbl">Order Success Rate</span>
+                  <span class="ap-hero-summary-val" style="color:#059669;">
+                    ${totalOrders > 0 ? Math.round(((totalOrders - cancelledOrReturned) / totalOrders) * 100) : 100}%
+                  </span>
+                  <span class="ap-hero-summary-sub">${totalOrders - cancelledOrReturned} active non-cancelled</span>
                 </div>
                 <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Settlement State</span>
-                  <span class="ap-hero-summary-val" style="color:#2563eb;">100% Reconciled</span>
-                  <span class="ap-hero-summary-sub">Zero ledger discrepancies</span>
+                  <span class="ap-hero-summary-lbl">Catalog Health</span>
+                  <span class="ap-hero-summary-val" style="color:#2563eb;">${totalProducts} SKUs</span>
+                  <span class="ap-hero-summary-sub">${lowStock} low stock • ${outOfStock} out of stock</span>
                 </div>
               </div>
+
+              <!-- Collapsible Detailed Breakdown Ledger Table -->
+              ${_dashShowBreakdown ? `
+                <div class="ap-breakdown-card">
+                  <div class="ap-breakdown-header">
+                    <span>${tf === 'year' ? 'Year-by-Year' : tf === 'month' ? 'Month-by-Month' : 'Day-by-Day'} Historical Breakdown</span>
+                    <span style="font-size:11px; color:#64748b; font-weight:600;">${breakdown.length} intervals recorded</span>
+                  </div>
+                  <table class="ap-breakdown-table">
+                    <thead>
+                      <tr>
+                        <th>Interval</th>
+                        <th>Orders</th>
+                        <th>Gross GMV</th>
+                        <th>AOV</th>
+                        <th>Delivered</th>
+                        <th style="text-align:right;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${breakdownRows}
+                    </tbody>
+                  </table>
+                </div>
+              ` : ''}
             </div>
 
-            <!-- Right: Real-Time Operational Radar & Fast Actions -->
+            <!-- Right: Real Operations & Fulfillment Pipeline -->
             <div class="ap-hero-ops-card">
               <div class="ap-ops-header">
                 <h3 class="ap-ops-title">
                   <span style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>
-                  Operational Radar
+                  Order Fulfillment Pipeline
                 </h3>
-                <span class="ap-badge green" style="font-size:10.5px;">Live Pulse</span>
+                <span class="ap-badge green" style="font-size:10.5px;">Live DB Status</span>
+              </div>
+
+              <!-- Visual Multi-segment Progress Bar -->
+              <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:800; color:#334155; margin-bottom:8px;">
+                  <span>Status Distribution</span>
+                  <span style="color:#0f172a;">${totalOrders} Orders in Window</span>
+                </div>
+                <div style="display:flex; gap:3px; height:8px; border-radius:99px; overflow:hidden; background:#e2e8f0;">
+                  <div style="width:${Math.max(pendingPct, 4)}%; background:#f59e0b;" title="Pending: ${pendingOrders} (${pendingPct}%)"></div>
+                  <div style="width:${Math.max(confirmedPct, 4)}%; background:#2563eb;" title="Confirmed: ${confirmedOrders} (${confirmedPct}%)"></div>
+                  <div style="width:${Math.max(processingPct, 2)}%; background:#8b5cf6;" title="In-Transit: ${processingOrders} (${processingPct}%)"></div>
+                  <div style="width:${Math.max(deliveredPct, 2)}%; background:#10b981;" title="Delivered: ${deliveredOrders} (${deliveredPct}%)"></div>
+                  <div style="width:${Math.max(cancelledPct, 2)}%; background:#94a3b8;" title="Cancelled/Returned: ${cancelledOrReturned} (${cancelledPct}%)"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:#64748b; margin-top:6px; flex-wrap:wrap; gap:4px;">
+                  <span style="color:#d97706; font-weight:700;">● Pending: ${pendingOrders}</span>
+                  <span style="color:#2563eb; font-weight:700;">● Confirmed: ${confirmedOrders}</span>
+                  <span style="color:#8b5cf6; font-weight:700;">● Transit: ${processingOrders}</span>
+                  <span style="color:#059669; font-weight:700;">● Delivered: ${deliveredOrders}</span>
+                </div>
               </div>
 
               <div class="ap-ops-list">
                 <!-- Action 1: Pending Orders -->
-                <div class="ap-ops-item" id="ap-dash-act-orders">
+                <div class="ap-ops-item" id="ap-dash-act-pending">
                   <div class="ap-ops-item-left">
                     <div class="ap-ops-icon-wrap" style="background:#fef3c7; color:#d97706;">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </div>
                     <div>
                       <div class="ap-ops-item-title">${pendingOrders} Orders Awaiting Verification</div>
-                      <div class="ap-ops-item-sub">Ready for warehouse packaging</div>
+                      <div class="ap-ops-item-sub">Ready for confirmation &amp; packing</div>
                     </div>
                   </div>
                   <button type="button" class="ap-ops-btn">Process &rarr;</button>
                 </div>
 
-                <!-- Action 2: Customer Escalations -->
-                <div class="ap-ops-item" id="ap-dash-act-disputes">
-                  <div class="ap-ops-item-left">
-                    <div class="ap-ops-icon-wrap" style="background:#fee2e2; color:#dc2626;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    </div>
-                    <div>
-                      <div class="ap-ops-item-title">${pendingReturns} Dispute Escalations</div>
-                      <div class="ap-ops-item-sub">SLA resolution required</div>
-                    </div>
-                  </div>
-                  <button type="button" class="ap-ops-btn">Resolve &rarr;</button>
-                </div>
-
-                <!-- Action 3: 3PL SLA Health -->
-                <div class="ap-ops-item" id="ap-dash-act-logistics">
+                <!-- Action 2: Confirmed Orders -->
+                <div class="ap-ops-item" id="ap-dash-act-confirmed">
                   <div class="ap-ops-item-left">
                     <div class="ap-ops-icon-wrap" style="background:#eff6ff; color:#2563eb;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </div>
                     <div>
-                      <div class="ap-ops-item-title">98.5% 3PL On-Time SLA</div>
-                      <div class="ap-ops-item-sub">Delhivery &amp; BlueDart active</div>
+                      <div class="ap-ops-item-title">${confirmedOrders} Orders Confirmed</div>
+                      <div class="ap-ops-item-sub">In queue for dispatch &amp; delivery</div>
                     </div>
                   </div>
-                  <button type="button" class="ap-ops-btn">Track &rarr;</button>
+                  <button type="button" class="ap-ops-btn">View &rarr;</button>
                 </div>
 
-                <!-- Action 4: Inventory Health -->
-                <div class="ap-ops-item" id="ap-dash-act-inventory">
+                <!-- Action 3: Cancelled / Returns -->
+                <div class="ap-ops-item" id="ap-dash-act-returns">
+                  <div class="ap-ops-item-left">
+                    <div class="ap-ops-icon-wrap" style="background:#fee2e2; color:#dc2626;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                    <div>
+                      <div class="ap-ops-item-title">${cancelledOrReturned} Cancelled / Returned</div>
+                      <div class="ap-ops-item-sub">Processed customer return requests</div>
+                    </div>
+                  </div>
+                  <button type="button" class="ap-ops-btn">Inspect &rarr;</button>
+                </div>
+
+                <!-- Action 4: Products Catalog -->
+                <div class="ap-dash-act-products ap-ops-item" id="ap-dash-act-products">
                   <div class="ap-ops-item-left">
                     <div class="ap-ops-icon-wrap" style="background:#f5f3ff; color:#7c3aed;">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     </div>
                     <div>
-                      <div class="ap-ops-item-title">Warehouse Inventory Status</div>
-                      <div class="ap-ops-item-sub">2 SKUs at safety threshold</div>
+                      <div class="ap-ops-item-title">${totalProducts} Products in Catalog</div>
+                      <div class="ap-ops-item-sub">All SKUs currently in stock</div>
                     </div>
                   </div>
-                  <button type="button" class="ap-ops-btn">Restock &rarr;</button>
-                </div>
-              </div>
-
-              <!-- Stepped Order Pipeline Visual -->
-              <div style="background:#f8fafc; border-radius:10px; padding:12px 14px; border:1px solid #f1f5f9;">
-                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#64748b; margin-bottom:6px;">
-                  <span>Fulfillment Pipeline</span>
-                  <span style="color:#0f172a;">${totalOrders} Total</span>
-                </div>
-                <div style="display:flex; gap:3px; height:7px; border-radius:99px; overflow:hidden;">
-                  <div style="width:20%; background:#f59e0b;" title="Pending: 20%"></div>
-                  <div style="width:40%; background:#6366f1;" title="In-Transit: 40%"></div>
-                  <div style="width:40%; background:#10b981;" title="Delivered: 40%"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:5px;">
-                  <span>Pending: ${processingCount}</span>
-                  <span>In-Transit: ${shippedCount}</span>
-                  <span>Delivered: ${deliveredCount}</span>
+                  <button type="button" class="ap-ops-btn">Catalog &rarr;</button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 3. Modern 4-Metric Grid -->
-          <div class="ap-modern-metrics">
-            <!-- Tile 1: Total Orders -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Orders Processed</span>
-                <div class="ap-metric-tile-icon" style="background:#eff6ff; color:#2563eb;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalOrders.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Completed orders</span>
-                <span style="color:#16a34a; font-weight:700;">100% Verified</span>
-              </div>
-            </div>
-
-            <!-- Tile 2: Active Customers -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Customer Base</span>
-                <div class="ap-metric-tile-icon" style="background:#f5f3ff; color:#7c3aed;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalUsers.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Verified buyer accounts</span>
-                <span style="color:#2563eb; font-weight:700;">+12 today</span>
-              </div>
-            </div>
-
-            <!-- Tile 3: Active Sellers -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Merchant Network</span>
-                <div class="ap-metric-tile-icon" style="background:#ecfdf5; color:#059669;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalSellers.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Verified store merchants</span>
-                <span style="color:#059669; font-weight:700;">3 States Covered</span>
-              </div>
-            </div>
-
-            <!-- Tile 4: Storefront Conversion -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Storefront Conversion</span>
-                <div class="ap-metric-tile-icon" style="background:#fffbeb; color:#d97706;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${realisticConvRate}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Industry benchmark 3.1%</span>
-                <span style="color:#d97706; font-weight:700;">Healthy</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 4. Modern Split 2-Column Section (Orders Flow & Category Distribution) -->
+          <!-- 5. Split 2-Column Section: Orders Flow & Real Store Insights -->
           <div class="ap-workspace-split">
             <!-- Left: Orders Flow Ledger -->
-            <div class="ap-card">
+            <div class="ap-card ap-orders-stream-card">
               <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
                 <div>
-                  <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#0f172a;">Live Fulfillment &amp; Order Stream</h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#64748b;">Chronological buyer checkouts, payment verification &amp; consignment status.</p>
+                  <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#0f172a;">Live Customer Order Stream</h3>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#64748b;">
+                    ${esc(activeFilter.label ? `Showing orders matching ${activeFilter.label}` : 'Real chronological checkouts from MongoDB database.')}
+                  </p>
                 </div>
                 <button class="ap-btn ghost" id="ap-dash-view-all-orders" style="font-size:11.5px; font-weight:700;">
-                  View Full Ledger &rarr;
+                  View All Orders &rarr;
                 </button>
               </div>
               ${ordersHTML}
             </div>
 
-            <!-- Right: Category Share & Carrier Performance -->
+            <!-- Right: Authentic Insights (Top Products, Payment Methods, Categories) -->
             <div style="display:flex; flex-direction:column; gap:16px;">
-              <!-- Category Share -->
+              <!-- Top Performing Products by Revenue -->
               <div class="ap-card" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Marketplace Category Share</h4>
-                  <span class="ap-badge blue" style="font-size:10.5px;">GMV Share</span>
+                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Top Selling Products in Window</h4>
+                  <span class="ap-badge blue" style="font-size:10.5px;">Real Order Data</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:12px;">
-                  <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                      <span>Mobiles &amp; Computing</span>
-                      <span>₹1,92,100 (42%)</span>
+                  ${topProducts.length ? topProducts.map((p, idx) => `
+                    <div style="display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #f8fafc;">
+                      <span style="font-size:12px; font-weight:800; color:#94a3b8; width:16px;">#${idx + 1}</span>
+                      <img src="${p.image || 'logo-square.png'}" alt="${esc(p.name)}" style="width:36px; height:36px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; background:#f8fafc;" onerror="this.src='logo-square.png'" />
+                      <div style="flex:1; min-width:0;">
+                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
+                        <div style="font-size:11px; color:#64748b;">${p.count} unit${p.count > 1 ? 's' : ''} sold</div>
+                      </div>
+                      <div style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap;">
+                        ${fmtPrice(p.revenue)}
+                      </div>
                     </div>
-                    <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                      <div style="width:42%; height:100%; background:#2563eb; border-radius:99px;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                      <span>Fashion &amp; Apparel</span>
-                      <span>₹1,28,000 (28%)</span>
-                    </div>
-                    <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                      <div style="width:28%; height:100%; background:#7c3aed; border-radius:99px;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                      <span>Home &amp; Kitchen Appliances</span>
-                      <span>₹82,300 (18%)</span>
-                    </div>
-                    <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                      <div style="width:18%; height:100%; background:#059669; border-radius:99px;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                      <span>Audio &amp; Accessories</span>
-                      <span>₹54,800 (12%)</span>
-                    </div>
-                    <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                      <div style="width:12%; height:100%; background:#d97706; border-radius:99px;"></div>
-                    </div>
-                  </div>
+                  `).join('') : `
+                    <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No sales data recorded in this window.</div>
+                  `}
                 </div>
               </div>
 
-              <!-- Carrier Performance -->
+              <!-- Real Payment Method Breakdown -->
               <div class="ap-card" style="padding:18px 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">3PL Logistics SLA Adherence</h4>
-                  <span class="ap-badge green" style="font-size:10.5px;">Optimal Network</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Payment Channels Mix</h4>
+                  <span class="ap-badge green" style="font-size:10.5px;">${totalOrders} Purchases</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  ${paymentMethods.length ? paymentMethods.map(pm => {
+                    const barColor = pm.method.toLowerCase().includes('cod') ? '#f59e0b' : pm.method.toLowerCase().includes('card') ? '#2563eb' : pm.method.toLowerCase().includes('upi') ? '#10b981' : '#7c3aed';
+                    return `
+                      <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
+                          <span>${esc(pm.method)}</span>
+                          <span>${pm.count} orders (${pm.percentage}%)</span>
+                        </div>
+                        <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                          <div style="width:${Math.max(pm.percentage, 3)}%; height:100%; background:${barColor}; border-radius:99px;"></div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('') : `
+                    <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No payment records found.</div>
+                  `}
+                </div>
+              </div>
+
+              <!-- Real Catalog Category Breakdown -->
+              <div class="ap-card" style="padding:18px 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Catalog Category Share</h4>
+                  <span class="ap-badge" style="font-size:10.5px; background:#f1f5f9; color:#475569;">${totalProducts} SKUs</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fafc; border-radius:8px;">
-                    <div style="font-size:12px; font-weight:700; color:#0f172a;">Delhivery Surface &amp; Express</div>
-                    <div style="font-size:12px; font-weight:800; color:#059669;">98.2% SLA</div>
-                  </div>
-                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fafc; border-radius:8px;">
-                    <div style="font-size:12px; font-weight:700; color:#0f172a;">BlueDart Air Apex</div>
-                    <div style="font-size:12px; font-weight:800; color:#059669;">98.1% SLA</div>
-                  </div>
-                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fafc; border-radius:8px;">
-                    <div style="font-size:12px; font-weight:700; color:#0f172a;">Shadowfax Hyperlocal</div>
-                    <div style="font-size:12px; font-weight:800; color:#2563eb;">91.4% SLA</div>
-                  </div>
+                  ${categoryDistribution.slice(0, 5).map(cat => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fafc; border-radius:8px; border:1px solid #f1f5f9;">
+                      <div style="font-size:12px; font-weight:700; color:#0f172a;">${esc(cat.category)}</div>
+                      <div style="font-size:11.5px; font-weight:800; color:#2563eb;">${cat.count} products (${cat.percentage}%)</div>
+                    </div>
+                  `).join('')}
                 </div>
               </div>
             </div>
@@ -6154,14 +6753,116 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         </div>
       `;
 
-      /* ── Interactive Fast Action Handlers ─────────────────── */
+      /* ── Interactive Action Handlers ─────────────────────── */
+      container.querySelectorAll('.ap-modern-quick-actions .ap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.ap-modern-quick-actions .ap-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
       container.querySelector('#ap-dash-quick-prod')?.addEventListener('click', () => switchTab('products'));
-      container.querySelector('#ap-dash-quick-ship')?.addEventListener('click', () => switchTab('shipping'));
-      container.querySelector('#ap-dash-act-orders')?.addEventListener('click', () => switchTab('orders'));
-      container.querySelector('#ap-dash-act-disputes')?.addEventListener('click', () => switchTab('support'));
-      container.querySelector('#ap-dash-act-logistics')?.addEventListener('click', () => switchTab('shipping'));
-      container.querySelector('#ap-dash-act-inventory')?.addEventListener('click', () => switchTab('inventory'));
+      container.querySelector('#ap-dash-quick-orders')?.addEventListener('click', () => switchTab('orders'));
+      container.querySelector('#ap-dash-quick-refresh')?.addEventListener('click', () => renderDashboard(container));
       container.querySelector('#ap-dash-view-all-orders')?.addEventListener('click', () => switchTab('orders'));
+
+      // Timeframe Mode Switching (Day-wise / Month-wise / Year-wise)
+      container.querySelectorAll('.ap-timeframe-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.ap-timeframe-mode-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const newTf = btn.dataset.tf;
+          if (newTf !== _dashFilter.timeframe) {
+            _dashFilter.timeframe = newTf;
+            _dashFilter.range = 'all';
+            _dashFilter.startDate = '';
+            _dashFilter.endDate = '';
+            renderDashboard(container);
+          }
+        });
+      });
+
+      // Quick Period Pills
+      container.querySelectorAll('.ap-timeframe-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.ap-timeframe-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const rng = btn.dataset.rng;
+          if (rng === 'custom') {
+            const box = container.querySelector('#ap-custom-date-container');
+            if (box) {
+              const isOpen = box.classList.toggle('is-open');
+              btn.classList.toggle('active', isOpen);
+            }
+          } else {
+            _dashFilter.range = rng;
+            _dashFilter.startDate = '';
+            _dashFilter.endDate = '';
+            renderDashboard(container);
+          }
+        });
+      });
+
+      container.querySelectorAll('.ap-ops-btn, .ap-inspect-period-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.classList.add('active');
+        });
+      });
+
+      // Custom Date Range Apply
+      container.querySelector('#ap-custom-date-apply')?.addEventListener('click', () => {
+        const startVal = container.querySelector('#ap-custom-date-start')?.value;
+        const endVal = container.querySelector('#ap-custom-date-end')?.value;
+        if (!startVal) {
+          showNotification('Please select a start date', 'warning');
+          return;
+        }
+        _dashFilter.range = 'custom';
+        _dashFilter.startDate = startVal;
+        _dashFilter.endDate = endVal || startVal;
+        renderDashboard(container);
+      });
+
+      // Reset Filter Button
+      container.querySelector('#ap-timeframe-reset-btn')?.addEventListener('click', () => {
+        _dashFilter = { timeframe: 'day', range: 'all', startDate: '', endDate: '' };
+        renderDashboard(container);
+      });
+
+      // Toggle Detailed Breakdown Table
+      container.querySelector('#ap-toggle-breakdown-btn')?.addEventListener('click', () => {
+        _dashShowBreakdown = !_dashShowBreakdown;
+        renderDashboard(container);
+      });
+
+      // Inspect period button from breakdown table
+      container.querySelectorAll('.ap-inspect-period-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const periodKey = btn.dataset.key;
+          const periodTf = btn.dataset.tf;
+          if (periodTf === 'day') {
+            _dashFilter.range = 'custom';
+            _dashFilter.startDate = periodKey;
+            _dashFilter.endDate = periodKey;
+          } else if (periodTf === 'month') {
+            const [y, m] = periodKey.split('-');
+            const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+            _dashFilter.range = 'custom';
+            _dashFilter.startDate = `${periodKey}-01`;
+            _dashFilter.endDate = `${periodKey}-${String(lastDay).padStart(2, '0')}`;
+          } else {
+            _dashFilter.range = 'custom';
+            _dashFilter.startDate = `${periodKey}-01-01`;
+            _dashFilter.endDate = `${periodKey}-12-31`;
+          }
+          renderDashboard(container);
+        });
+      });
+
+      container.querySelector('#ap-dash-act-pending')?.addEventListener('click', () => switchTab('orders'));
+      container.querySelector('#ap-dash-act-confirmed')?.addEventListener('click', () => switchTab('orders'));
+      container.querySelector('#ap-dash-act-returns')?.addEventListener('click', () => switchTab('orders'));
+      container.querySelector('#ap-dash-act-products')?.addEventListener('click', () => switchTab('products'));
 
       container.querySelectorAll('.ap-dash-inspect-order').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -6175,15 +6876,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               input.dispatchEvent(new Event('input', { bubbles: true }));
             }
           }, 300);
-        });
-      });
-
-      // Period pills interactive state
-      container.querySelectorAll('.ap-period-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-          container.querySelectorAll('.ap-period-pill').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          showToast(`Displaying GMV aggregation for ${btn.textContent.trim()}`, 'info');
         });
       });
 
@@ -6246,7 +6938,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const topRegions = Object.entries(regionMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
       body.innerHTML = `
-        <div class="ap-view-inner">
+        <div class="ap-view-inner" style="overflow-y:auto; max-height:100%; box-sizing:border-box;">
           <!-- Header Bar -->
           <div class="ap-view-header">
             <div class="ap-view-title-group">
@@ -6366,23 +7058,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <!-- Directory Table Card with Two Distinct Tags -->
           <div class="ap-table-card" id="ap-crm-directory-card" style="margin-bottom:24px;">
             <!-- Directory Tag Switcher Bar -->
-            <div class="ap-crm-main-tags-bar" style="padding:14px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div class="ap-crm-main-tags-bar" style="padding:14px 18px; background:#022f43 !important; color:#ffffff !important; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
               <div style="display:flex; align-items:center; gap:12px;">
-                <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.06em; display:flex; align-items:center; gap:6px;">
-                  <svg viewBox="0 0 24 24" style="width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:#ffffff !important; letter-spacing:0.06em; display:flex; align-items:center; gap:6px;">
+                  <svg viewBox="0 0 24 24" style="width:15px; height:15px; stroke:#ffffff !important; fill:none; stroke-width:2.2;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                   Directory Tags:
                 </div>
-                <div class="ap-toolbar-tabs" style="background:#e2e8f0; padding:3px; border-radius:8px; display:inline-flex; gap:4px;">
-                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'users' ? 'active' : ''}" data-dir-tag="users" style="cursor:pointer;" title="View Regular User Profiles">
-                    Users <span class="ap-tab-count">${regularUsers.length}</span>
+                <div class="ap-toolbar-tabs" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); padding:3px; border-radius:8px; display:inline-flex; gap:4px;">
+                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'users' ? 'active' : ''}" data-dir-tag="users" style="cursor:pointer; color:#ffffff;" title="View Regular User Profiles">
+                    Users <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#ffffff;">${regularUsers.length}</span>
                   </button>
-                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'admins' ? 'active' : ''}" data-dir-tag="admins" style="cursor:pointer;" title="View Administrator Accounts">
-                    Admins <span class="ap-tab-count">${adminUsers.length}</span>
+                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'admins' ? 'active' : ''}" data-dir-tag="admins" style="cursor:pointer; color:#ffffff;" title="View Administrator Accounts">
+                    Admins <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#ffffff;">${adminUsers.length}</span>
                   </button>
                 </div>
               </div>
-              <div style="font-size:12px; color:#64748b; font-weight:500;">
-                Viewing: <strong style="color:#0f172a;" id="ap-crm-viewing-count">0</strong> active ${activeTag === 'admins' ? 'admin accounts' : 'user profiles'}
+              <div style="font-size:12px; color:#ffffff !important; font-weight:500;">
+                Viewing: <strong style="color:#ffffff !important;" id="ap-crm-viewing-count">0</strong> active ${activeTag === 'admins' ? 'admin accounts' : 'user profiles'}
               </div>
             </div>
 
@@ -6580,26 +7272,26 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       container.innerHTML = `
         <!-- User Segmentation Sub-Tabs Bar -->
-        <div style="padding:10px 18px 8px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div class="ap-toolbar-tabs" style="background:#ffffff; border:1px solid #e2e8f0;">
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'all' ? 'active' : ''}" data-user-seg="all">
-              All Customers <span class="ap-tab-count">${regularUsers.length}</span>
+        <div class="ap-crm-sub-tabs-bar ap-crm-segment-sub-bar" style="padding:10px 18px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border-bottom:1.5px solid #e08300; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15);">
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'all' ? 'active' : ''}" data-user-seg="all" style="color:#000000; font-weight:700;">
+              All Customers <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${regularUsers.length}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'vip' ? 'active' : ''}" data-user-seg="vip">
-              ★ VIP &amp; High Spend <span class="ap-tab-count">${vipCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'vip' ? 'active' : ''}" data-user-seg="vip" style="color:#000000; font-weight:700;">
+              ★ VIP &amp; High Spend <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${vipCount}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'repeat' ? 'active' : ''}" data-user-seg="repeat">
-              Repeat Buyers <span class="ap-tab-count">${repeatBuyers}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'repeat' ? 'active' : ''}" data-user-seg="repeat" style="color:#000000; font-weight:700;">
+              Repeat Buyers <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${repeatBuyers}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'atrisk' ? 'active' : ''}" data-user-seg="atrisk">
-              New / Inactive <span class="ap-tab-count">${atRiskCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'atrisk' ? 'active' : ''}" data-user-seg="atrisk" style="color:#000000; font-weight:700;">
+              New / Inactive <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${atRiskCount}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'cart' ? 'active' : ''}" data-user-seg="cart">
-              Cart Active <span class="ap-tab-count">${cartCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'cart' ? 'active' : ''}" data-user-seg="cart" style="color:#000000; font-weight:700;">
+              Cart Active <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${cartCount}</span>
             </button>
           </div>
-          <div style="font-size:11.5px; color:#64748b;">
-            Customer Segment: <strong style="color:#2563eb; text-transform:uppercase;">${userSegment}</strong>
+          <div style="font-size:11.5px; color:#000000 !important; font-weight:700;">
+            Customer Segment: <strong style="color:#000000 !important; font-weight:800; text-transform:uppercase;">${userSegment}</strong>
           </div>
         </div>
 
@@ -6794,14 +7486,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </span>
               </td>
               <td style="text-align:center;">
-                <div style="display:inline-flex; align-items:center; gap:4px;">
-                  <button class="ap-btn ghost ap-open-360" data-id="${u._id}" title="Customer 360 View" style="padding:4px 8px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <div style="display:inline-flex; align-items:center; gap:5px;">
+                  <button class="ap-btn ap-open-360 ap-crm-act-btn" data-id="${u._id}" title="Customer 360 View" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; stroke-width:2.2; fill:none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="ap-btn ghost ap-receipt-btn" data-id="${u._id}" title="Order Ledger" style="padding:4px 8px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <button class="ap-btn ap-receipt-btn ap-crm-act-btn" data-id="${u._id}" title="Order Ledger" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; stroke-width:2.2; fill:none;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                   </button>
-                  <button class="ap-btn ${isActive ? 'warn' : 'success'} ap-ban-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Account' : 'Unban Account'}" style="padding:4px 8px;">
+                  <button class="ap-btn ap-ban-btn ap-crm-act-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Account' : 'Unban Account'}" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 10px; border-radius:6px; font-weight:800; cursor:pointer;">
                     ${isActive ? 'Ban' : 'Unban'}
                   </button>
                 </div>
@@ -6896,20 +7588,20 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       container.innerHTML = `
         <!-- Admin Sub-Tabs Bar -->
-        <div style="padding:10px 18px 8px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div class="ap-toolbar-tabs" style="background:#ffffff; border:1px solid #e2e8f0;">
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'all' ? 'active' : ''}" data-admin-seg="all">
-              All Admins <span class="ap-tab-count" style="background:#ddd6fe; color:#6d28d9;">${adminUsers.length}</span>
+        <div class="ap-crm-sub-tabs-bar ap-crm-segment-sub-bar" style="padding:10px 18px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border-bottom:1.5px solid #e08300; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15);">
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'all' ? 'active' : ''}" data-admin-seg="all" style="${adminSegment === 'all' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
+              All Admins <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${adminUsers.length}</span>
             </button>
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'active' ? 'active' : ''}" data-admin-seg="active">
-              Active Authorities <span class="ap-tab-count" style="background:#dcfce7; color:#15803d;">${activeAdminCount}</span>
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'active' ? 'active' : ''}" data-admin-seg="active" style="${adminSegment === 'active' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
+              Active Authorities <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${activeAdminCount}</span>
             </button>
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'restricted' ? 'active' : ''}" data-admin-seg="restricted">
-              Restricted <span class="ap-tab-count" style="background:#fee2e2; color:#b91c1c;">${restrictedAdminCount}</span>
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'restricted' ? 'active' : ''}" data-admin-seg="restricted" style="${adminSegment === 'restricted' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
+              Restricted <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${restrictedAdminCount}</span>
             </button>
           </div>
-          <div style="font-size:11.5px; color:#64748b;">
-            Authority Governance: <strong style="color:#7c3aed; text-transform:uppercase;">${adminSegment}</strong>
+          <div style="font-size:11.5px; color:#000000 !important; font-weight:800;">
+            Authority Governance: <strong style="color:#000000 !important; text-transform:uppercase; font-weight:900;">${adminSegment}</strong>
           </div>
         </div>
 
@@ -7072,13 +7764,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </td>
               <td style="text-align:center;">
                 <div style="display:inline-flex; align-items:center; gap:4px;">
-                  <button class="ap-btn ghost ap-open-360" data-id="${u._id}" title="Admin Profile &amp; Audit" style="padding:4px 8px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <button class="ap-btn ap-open-360" data-id="${u._id}" title="Admin Profile &amp; Audit" style="padding:4px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; fill:none; stroke-width:2.2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="ap-btn ghost ap-receipt-btn" data-id="${u._id}" title="Activity History" style="padding:4px 8px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <button class="ap-btn ap-receipt-btn" data-id="${u._id}" title="Activity History" style="padding:4px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; fill:none; stroke-width:2.2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                   </button>
-                  <button class="ap-btn ${isActive ? 'warn' : 'success'} ap-ban-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Admin Account' : 'Unban Admin Account'}" style="padding:4px 8px;">
+                  <button class="ap-btn ap-ban-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Admin Account' : 'Unban Admin Account'}" style="padding:4px 10px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; font-size:11px; cursor:pointer;">
                     ${isActive ? 'Restrict' : 'Activate'}
                   </button>
                 </div>
@@ -7254,11 +7946,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div class="ap-avatar-circle" style="width:48px; height:48px; font-size:18px; background:#eff6ff; color:#2563eb; border:2px solid #2563eb;">${(cust.name || 'U').charAt(0).toUpperCase()}</div>
                 <div>
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">${cust.name}</h3>
-                    <span class="ap-crm-tier-pill ${cust.role === 'admin' ? 'purple' : 'gold'}">${cust.role === 'admin' ? 'Admin Authority' : (cust.tier || 'Member')}</span>
+                    <h3 style="margin:0; font-size:17px; font-weight:800; color:#ffffff !important;">${cust.name}</h3>
+                    <span class="ap-crm-tier-pill ap-crm-modal-dark-tag" style="background:#081926 !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; font-weight:700; padding:2px 10px; border-radius:9999px; font-size:11px;">${cust.role === 'admin' ? 'Admin Authority' : (cust.tier || 'New User')}</span>
                   </div>
-                  <div style="font-size:11px; color:#64748b; font-family:monospace; margin-top:2px;">
-                    <span>#${cust.role === 'admin' ? 'ADMIN' : 'CUST'}-${(cust._id || '').slice(-6).toUpperCase()}</span> · <span style="color:#059669;">Verified Account</span>
+                  <div style="font-size:11px; color:rgba(255,255,255,0.7) !important; font-family:monospace; margin-top:2px;">
+                    <span style="color:rgba(255,255,255,0.85) !important;">#${cust.role === 'admin' ? 'ADMIN' : 'CUST'}-${(cust._id || '').slice(-6).toUpperCase()}</span> · <span style="color:#34d399 !important;">Verified Account</span>
                   </div>
                 </div>
               </div>
@@ -7324,12 +8016,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Footer Action Bar -->
-            <div class="ap-crm-drawer-footer">
-              <button class="ap-btn danger" id="ap-crm-drawer-block-btn">
+            <div class="ap-crm-drawer-footer" style="padding:16px 24px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; position:sticky; bottom:0; z-index:10;">
+              <button class="ap-btn" id="ap-crm-drawer-block-btn" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; padding:9px 18px; font-size:13px; cursor:pointer; box-shadow:0 1px 3px rgba(255,148,0,0.25);">
                 Block / Restrict ${cust.role === 'admin' ? 'Admin' : 'Shopper'}
               </button>
               <div style="display:flex; gap:8px;">
-                <button class="ap-btn primary" id="ap-crm-drawer-save-btn">
+                <button class="ap-btn" id="ap-crm-drawer-save-btn" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; padding:9px 20px; font-size:13px; cursor:pointer; box-shadow:0 1px 3px rgba(255,148,0,0.25);">
                   Close Profile
                 </button>
               </div>
@@ -7851,11 +8543,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const modal = document.createElement('div');
             modal.className = 'ap-modal-backdrop';
             modal.innerHTML = `
-              <div class="ap-modal-dialog" style="max-width:620px;">
+              <div class="ap-modal-dialog" style="max-width:880px; width:95%;">
                 <div class="ap-modal-header">
                   <div>
                     <h3 class="ap-modal-title">Order #${o.orderId}</h3>
-                    <div style="font-size:11px; color:#64748b;">Placed on ${fmtDate(o.date)}</div>
+                    <div style="font-size:11.5px; color:#cbd5e1 !important; margin-top:2px;">Placed on ${fmtDate(o.date)}</div>
                   </div>
                   <button class="ap-modal-close-btn">&times;</button>
                 </div>
@@ -7902,7 +8594,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
                   <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
                     <span style="font-weight:600; color:#475569;">Grand Total</span>
-                    <span style="font-size:18px; font-weight:800; color:#059669;">${fmtPrice(o.total)}</span>
+                    <span style="font-size:18px; font-weight:800; color:#0f172a;">${fmtPrice(o.total)}</span>
                   </div>
 
                   <div style="margin-top:16px; text-align:right;">
@@ -7948,30 +8640,31 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           let statusBadgeHTML = '';
           if (currentTab === 'returns') {
             if (rmaStatus === 'Approved') {
-              statusBadgeHTML = '<span class="ap-badge blue" style="font-weight:700;font-size:11px;">● RMA Approved (AWB Set)</span>';
+              statusBadgeHTML = '<span class="ap-badge blue" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> RMA Approved</span>';
             } else if (rmaStatus === 'Item_Picked_Up') {
-              statusBadgeHTML = '<span class="ap-badge purple" style="font-weight:700;font-size:11px;">● Item Received at FC</span>';
+              statusBadgeHTML = '<span class="ap-badge purple" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Item Received</span>';
             } else if (rmaStatus === 'Refunded' || o.refundApproved) {
-              statusBadgeHTML = '<span class="ap-badge green" style="font-weight:700;font-size:11px;">✔ Refund Settled</span>';
+              statusBadgeHTML = '<span class="ap-badge green" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Refund Settled</span>';
             } else if (rmaStatus === 'Rejected') {
-              statusBadgeHTML = '<span class="ap-badge red" style="font-weight:700;font-size:11px;">✖ RMA Rejected</span>';
+              statusBadgeHTML = '<span class="ap-badge red" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> RMA Rejected</span>';
             } else {
-              statusBadgeHTML = '<span class="ap-badge amber" style="font-weight:700;font-size:11px;">● Return Requested</span>';
+              statusBadgeHTML = '<span class="ap-badge amber" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Return Requested</span>';
             }
           } else {
             statusBadgeHTML = o.refundApproved
-              ? '<span class="ap-badge green" style="font-weight:700;font-size:11px;">✔ Refund Cleared</span>'
+              ? '<span class="ap-badge green" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Refund Cleared</span>'
               : '<span class="ap-badge gray" style="font-weight:700;font-size:11px;">Pre-Dispatch Cancel</span>';
           }
 
           return `
-            <tr data-order-id="${o._id}">
+            <tr data-order-id="${o._id}" class="ap-tr-clickable" onclick="(function(e){if(e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('a'))return; document.querySelector('.ap-open-rma-dossier-btn[data-id=\\'${o._id}\\']')?.click();})(event)">
               <td>
                 <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-family:monospace; font-weight:700; color:#004ac6; font-size:13px;">${o.orderId}</span>
+                  <a href="javascript:void(0)" class="ap-open-rma-dossier-btn" data-id="${o._id}" style="font-family:monospace; font-weight:800; color:#004ac6; font-size:13px; text-decoration:none;" title="Click to view complete return & refund dossier">${o.orderId}</a>
                   ${rr.rmaNumber ? `<span style="font-size:10px; font-weight:800; background:#f1f5f9; padding:2px 5px; border-radius:4px; color:#475569;">${rr.rmaNumber}</span>` : ''}
                 </div>
                 <div style="font-size:11px; color:#64748b; margin-top:2px;">${fmtDate(o.date)}</div>
+                ${rr.requestType === 'replacement' ? '<span class="ap-badge purple" style="font-size:9.5px; font-weight:800; padding:1px 5px; margin-top:2px; display:inline-block;">Replacement</span>' : '<span class="ap-badge blue" style="font-size:9.5px; font-weight:800; padding:1px 5px; margin-top:2px; display:inline-block;">Return &amp; Refund</span>'}
                 ${rr.reverseAwb ? `<div style="font-size:10.5px; color:#0284c7; font-family:monospace; font-weight:700; margin-top:2px;">AWB: ${rr.reverseAwb}</div>` : ''}
               </td>
               <td>
@@ -7983,54 +8676,67 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div style="font-weight:700; color:#0f172a; font-size:12.5px;">${(o.items || []).length} Item(s)</div>
                 <div style="font-size:11px; color:#64748b; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${itemsSummary}">${itemsSummary || 'Standard Product'}</div>
                 ${rr.reason ? `<div style="font-size:11px; font-weight:600; color:#b45309; margin-top:2px; background:#fffbeb; padding:2px 6px; border-radius:4px; display:inline-block;">Reason: ${rr.reason}</div>` : ''}
+                ${(rr.photos && rr.photos.length) ? `
+                  <div class="ap-open-rma-dossier-btn" data-id="${o._id}" style="display:inline-flex; align-items:center; gap:5px; margin-top:4px; cursor:pointer; background:#eff6ff; border:1px solid #bfdbfe; padding:2px 6px; border-radius:5px;" title="Click to view ${rr.photos.length} customer photo(s)">
+                    ${rr.photos.slice(0, 2).map(p => `<img src="${p}" style="width:20px; height:20px; border-radius:3px; object-fit:cover; border:1px solid #93c5fd;" />`).join('')}
+                    <span style="font-size:10px; font-weight:800; color:#1d4ed8; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ${rr.photos.length} Photo${rr.photos.length > 1 ? 's' : ''}</span>
+                  </div>
+                ` : ''}
               </td>
               <td>
-                <div style="font-size:14.5px; font-weight:800; color:#0f172a;">${fmtPrice(o.total)}</div>
-                <div style="font-size:10.5px; color:#64748b; text-transform:uppercase; font-weight:700;">Via ${rr.refundMethod || 'Wallet'}</div>
+                <div style="font-size:14.5px; font-weight:800; color:#0f172a;">${fmtPrice(rr.refundAmount || o.total)}</div>
+                ${rr.refundMethod === 'bank' ? `
+                  <div style="font-size:10px; color:#2563eb; text-transform:uppercase; font-weight:800;">VIA BANK / UPI</div>
+                  ${rr.bankDetails?.bankName ? `<div style="font-size:10px; color:#64748b;">${rr.bankDetails.bankName} (${rr.bankDetails.accountNumber || rr.bankDetails.upiId})</div>` : ''}
+                ` : `
+                  <div style="font-size:10px; color:#059669; text-transform:uppercase; font-weight:800;">VIA WALLET (INSTANT)</div>
+                `}
               </td>
               <td>
                 ${statusBadgeHTML}
               </td>
               <td>
-                ${currentTab === 'returns' ? `
-                  <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                <div style="display:flex; flex-direction:column; gap:5px; width:110px; box-sizing:border-box;">
+                  <button class="ap-btn neutral ap-open-rma-dossier-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:700; background:#f8fafc; border:1.5px solid #cbd5e1; color:#0f172a; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; gap:5px; cursor:pointer;" title="View complete return &amp; refund dossier">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Details
+                  </button>
+                  ${currentTab === 'returns' ? `
                     ${rmaStatus === 'Requested' ? `
-                      <button class="ap-btn primary ap-rma-approve-btn" data-id="${o._id}" style="padding:5px 10px; font-size:11.5px; font-weight:700; background:#004ac6; color:#ffffff; border-color:#004ac6;">
+                      <button class="ap-btn primary ap-rma-approve-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:700; background:#004ac6; color:#ffffff; border:1.5px solid #004ac6; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Approve RMA
                       </button>
-                      <button class="ap-btn danger ap-rma-reject-btn" data-id="${o._id}" style="padding:5px 8px; font-size:11px;">
+                      <button class="ap-btn danger ap-rma-reject-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:700; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Reject
                       </button>
                     ` : ''}
                     ${rmaStatus === 'Approved' ? `
-                      <button class="ap-btn neutral ap-rma-receive-btn" data-id="${o._id}" style="padding:5px 10px; font-size:11.5px; font-weight:700; background:#f8fafc; border-color:#cbd5e1;">
-                        Mark Item Received
+                      <button class="ap-btn neutral ap-rma-receive-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:700; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
+                        Mark Received
                       </button>
                     ` : ''}
                     ${rmaStatus === 'Item_Picked_Up' ? `
-                      <button class="ap-btn success ap-rma-refund-btn" data-id="${o._id}" data-total="${o.total}" data-dest="${rr.refundMethod || 'wallet'}" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#059669; color:#ffffff; border-color:#059669;">
+                      <button class="ap-btn success ap-rma-refund-btn" data-id="${o._id}" data-total="${o.total}" data-dest="${rr.refundMethod || 'wallet'}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:800; background:#059669; color:#ffffff; border:1.5px solid #059669; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Authorize Refund
                       </button>
                     ` : ''}
                     ${rmaStatus === 'Refunded' || o.refundApproved ? `
-                      <button class="ap-btn ghost ap-view-refund-receipt-btn" data-id="${o._id}" style="padding:4px 9px; font-size:11px; font-weight:700;">
+                      <button class="ap-btn ghost ap-view-refund-receipt-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11px; font-weight:700; border:1px solid #cbd5e1; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Credit Note ↗
                       </button>
                     ` : ''}
-                  </div>
-                ` : `
-                  <div style="display:flex; align-items:center; gap:6px;">
+                  ` : `
                     ${!o.refundApproved ? `
-                      <button class="ap-btn primary ap-cancel-refund-btn" data-id="${o._id}" data-total="${o.total}" style="padding:5px 11px; font-size:11.5px; font-weight:700; background:#004ac6; color:#ffffff; border-color:#004ac6;">
+                      <button class="ap-btn primary ap-cancel-refund-btn" data-id="${o._id}" data-total="${o.total}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11.5px; font-weight:700; background:#004ac6; color:#ffffff; border:1.5px solid #004ac6; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Process Refund
                       </button>
                     ` : `
-                      <button class="ap-btn ghost ap-view-refund-receipt-btn" data-id="${o._id}" style="padding:4px 9px; font-size:11px; font-weight:700;">
+                      <button class="ap-btn ghost ap-view-refund-receipt-btn" data-id="${o._id}" style="width:100%; min-width:110px; max-width:110px; box-sizing:border-box; padding:6px 0; font-size:11px; font-weight:700; border:1px solid #cbd5e1; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
                         Credit Note ↗
                       </button>
                     `}
-                  </div>
-                `}
+                  `}
+                </div>
               </td>
             </tr>
           `;
@@ -8310,8 +9016,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const destination = receipt.refundMethod === 'wallet' ? 'X-Mart Wallet (Instant Balance)' : 'Original Payment Source / Direct Bank Account';
 
       backdrop.innerHTML = `
-        <div class="ap-modal-dialog" style="max-width: 580px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
-          <div class="ap-modal-header" style="background: linear-gradient(135deg, #064e3b, #047857); color: #ffffff;">
+        <div class="ap-modal-dialog" style="max-width:880px; width:95%; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+          <div class="ap-modal-header" style="background:#022F43 !important; color: #ffffff;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:20px;">📄</span>
               <div>
@@ -8324,7 +9030,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <div class="ap-modal-content" style="padding:22px; background:#ffffff;">
             <div style="text-align:center; padding:8px 0 14px; border-bottom:2px dashed #e2e8f0;">
-              <div style="display:inline-block; background:#ecfdf5; border:1px solid #86efac; border-radius:50%; width:48px; height:48px; line-height:48px; font-size:22px; color:#059669; margin-bottom:8px;">✓</div>
+              <div style="display:inline-flex; align-items:center; justify-content:center; background:#ecfdf5; border:1px solid #86efac; border-radius:50%; width:48px; height:48px; color:#059669; margin-bottom:8px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
               <h2 style="margin:0; font-size:18px; font-weight:900; color:#064e3b;">REFUND AUTHORIZED &amp; CLEARED</h2>
               <p style="margin:3px 0 0; font-size:12px; color:#64748b;">Credit settlement issued under Reference <strong>${receipt.refundUtr}</strong></p>
             </div>
@@ -8716,8 +9422,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     backdrop.id = 'ap-disbursement-modal';
 
     backdrop.innerHTML = `
-      <div class="ap-modal-dialog" style="max-width: 620px;">
-        <div class="ap-modal-header" style="background: linear-gradient(135deg, #0b1c30, #1e3a5f); color: #ffffff;">
+      <div class="ap-modal-dialog" style="max-width:880px; width:95%;">
+        <div class="ap-modal-header" style="background:#022F43 !important; color: #ffffff;">
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center;">
               <svg viewBox="0 0 24 24" width="20" height="20" stroke="#38bdf8" stroke-width="2.2" fill="none"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
@@ -8907,8 +9613,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     const maskedAcc = payout.bankAcc ? '•••• ' + String(payout.bankAcc).slice(-4) : '•••• 0123';
 
     backdrop.innerHTML = `
-      <div class="ap-modal-dialog" style="max-width: 580px; box-shadow:0 20px 40px rgba(0,0,0,0.22);">
-        <div class="ap-modal-header" style="background:#064e3b; color:#ffffff; border-bottom:1px solid #047857;">
+      <div class="ap-modal-dialog" style="max-width:880px; width:95%; box-shadow:0 20px 40px rgba(0,0,0,0.22);">
+        <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff; border-bottom:1px solid #047857;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:18px;">🏛️</span>
             <div>
@@ -8999,39 +9705,81 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     body.innerHTML = loadingHTML();
     async function load() {
       try {
-        const [offersRes, productsRes] = await Promise.all([
+        const [offersRes, productsRes, sellersRes] = await Promise.all([
           adminFetch('/offers'),
-          adminFetch('/products?limit=100'),
+          adminFetch('/products?limit=1000'),
+          adminFetch('/sellers').catch(() => ({ data: { sellers: [] } })),
         ]);
         const offers = offersRes.data.offers || [];
         const products = productsRes.data.products || [];
+        const sellers = sellersRes?.data?.sellers || [];
+
+        // Build unique store names list
+        const storeSet = new Set();
+        sellers.forEach(s => {
+          const sName = s.sellerProfile?.storeName || s.sellerProfile?.bizName;
+          if (sName) storeSet.add(sName.trim());
+        });
+        products.forEach(p => {
+          if (p.sellerStoreName) storeSet.add(p.sellerStoreName.trim());
+          else if (p.sellerEmail) storeSet.add(p.sellerEmail.trim());
+        });
+        const uniqueStores = Array.from(storeSet).filter(Boolean).sort();
 
         const productOptions = products.map(p =>
-          `<option value="${p._id}">${p.name} — ${fmtPrice(p.price)}</option>`
+          `<option value="${p._id}">${esc(p.name)} — ${fmtPrice(p.price)}</option>`
         ).join('');
 
-        const tableRows = offers.length ? offers.map(o => `
-          <tr>
-            <td>
-              <strong style="color:#0f172a; font-size:13px;">${o.name}</strong>
-              <div style="font-size:11px; color:#64748b;">${o.sellerStoreName || o.sellerEmail || 'X-Mart Store'}</div>
-            </td>
-            <td>
-              <span class="ap-badge orange" style="font-size:12.5px; font-weight:700;">${o.offer?.discountPct || 0}% OFF</span>
-            </td>
-            <td>
-              <span class="ap-badge blue">${o.offer?.label || 'Admin Promo'}</span>
-            </td>
-            <td style="color:#64748b; font-size:12px;">
-              ${o.offer?.validUntil ? fmtDate(o.offer.validUntil) : 'Ongoing (No Expiry)'}
-            </td>
-            <td>
-              <button class="ap-btn danger ap-remove-offer" data-id="${o._id}" style="padding:4px 10px; font-size:11.5px;">
-                Revoke Deal
-              </button>
-            </td>
-          </tr>
-        `).join('') : `
+        const storeOptions = `
+          <option value="storewide">Storewide Marketing (All Stores &amp; Entire Catalog)</option>
+          ${uniqueStores.length > 0 ? `
+            <optgroup label="Registered Merchant Stores (${uniqueStores.length})">
+              ${uniqueStores.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+            </optgroup>
+          ` : ''}
+        `;
+
+        const tableRows = offers.length ? offers.map(o => {
+          const scope = o.offer?.scope || 'product';
+          const isStore = scope === 'store' || scope === 'storewide';
+          const scopeBadge = scope === 'storewide'
+            ? `<span class="ap-badge green" style="font-weight:700;display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Storewide</span>`
+            : scope === 'store'
+            ? `<span class="ap-badge purple" style="font-weight:700;display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Store-wise</span>`
+            : `<span class="ap-badge blue" style="font-weight:700;display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Product-wise</span>`;
+
+          const storeName = o.offer?.storeName || o.sellerStoreName || o.sellerEmail || 'Storewide';
+
+          return `
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                  ${scopeBadge}
+                  ${isStore ? `<span style="font-size:11px; font-weight:700; color:#475569;">${esc(storeName)}</span>` : ''}
+                </div>
+                <strong style="color:#0f172a; font-size:13px;">${esc(o.name)}</strong>
+                <div style="font-size:11px; color:#64748b;">${esc(o.sellerStoreName || o.sellerEmail || 'X-Mart Store')} &bull; MRP ${fmtPrice(o.price)}</div>
+              </td>
+              <td>
+                <span class="ap-badge orange" style="font-size:12.5px; font-weight:800; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;">
+                  ${o.offer?.discountPct || 0}% OFF
+                </span>
+              </td>
+              <td>
+                <span class="ap-badge blue" style="font-weight:700;">${esc(o.offer?.label || 'Admin Promo')}</span>
+              </td>
+              <td style="color:#64748b; font-size:12px;">
+                ${o.offer?.validUntil ? fmtDate(o.offer.validUntil) : 'Ongoing (No Expiry)'}
+              </td>
+              <td>
+                <button class="ap-btn ap-remove-offer" data-id="${o._id}" data-scope="${scope}" data-store="${esc(storeName)}" style="background:#dc2626 !important; color:#ffffff !important; border:1px solid #b91c1c !important; padding:6px 14px; font-size:11.5px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:700; box-shadow:0 1px 4px rgba(220,38,38,0.3);">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Revoke Deal
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('') : `
           <tr>
             <td colspan="5" style="text-align:center; padding:36px; color:#94a3b8;">
               ${emptyHTML('', 'No active marketing offers yet. Create one above.')}
@@ -9040,18 +9788,128 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         `;
 
         body.innerHTML = `
-          <div class="ap-view-inner">
+          <div class="ap-view-inner ap-offers-window">
+            <style>
+              /* Default button style: #022f43 background and white font colour */
+              .ap-offers-window button,
+              .ap-offers-window .ap-btn,
+              .ap-offers-window input[type="button"],
+              .ap-offers-window input[type="submit"] {
+                background-color: #022f43 !important;
+                background: #022f43 !important;
+                color: #ffffff !important;
+                font-weight: 700 !important;
+                border: 1.5px solid #022f43 !important;
+                border-radius: 6px !important;
+                transition: all 0.15s ease-in-out !important;
+                box-shadow: 0 1px 4px rgba(2, 47, 67, 0.25) !important;
+                cursor: pointer !important;
+              }
+              .ap-offers-window button:hover,
+              .ap-offers-window .ap-btn:hover {
+                background-color: #05415c !important;
+                background: #05415c !important;
+                color: #ffffff !important;
+                border-color: #05415c !important;
+                box-shadow: 0 3px 8px rgba(2, 47, 67, 0.35) !important;
+              }
+              /* Clicked / Active state: turns into #ff9400 with white font colour */
+              .ap-offers-window button:active,
+              .ap-offers-window .ap-btn:active,
+              .ap-offers-window button.is-clicked,
+              .ap-offers-window .ap-btn.is-clicked,
+              .ap-offers-window button.active,
+              .ap-offers-window .ap-btn.active {
+                background-color: #ff9400 !important;
+                background: #ff9400 !important;
+                color: #ffffff !important;
+                border-color: #ff9400 !important;
+                box-shadow: 0 2px 8px rgba(255, 148, 0, 0.4) !important;
+                font-weight: 800 !important;
+              }
+              .ap-offers-window button svg,
+              .ap-offers-window .ap-btn svg {
+                stroke: #ffffff !important;
+                color: #ffffff !important;
+              }
+              .ap-offers-window .ap-scope-toggle-btn {
+                background: #022f43 !important;
+                color: #ffffff !important;
+                border: 1px solid #022f43 !important;
+                font-weight: 700 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+              }
+              .ap-offers-window .ap-scope-toggle-btn svg {
+                stroke: currentColor !important;
+                color: currentColor !important;
+              }
+              .ap-offers-window .ap-scope-toggle-btn.active {
+                background: #ff9400 !important;
+                color: #000000 !important;
+                border: 1px solid #ff9400 !important;
+                font-weight: 800 !important;
+                box-shadow: 0 2px 6px rgba(255, 148, 0, 0.35) !important;
+              }
+              .ap-offers-window .ap-scope-toggle-btn.active svg {
+                stroke: #000000 !important;
+                color: #000000 !important;
+              }
+              /* Revoke Deal button: Red background as requested in Image 2 */
+              .ap-offers-window button.ap-remove-offer,
+              .ap-offers-window .ap-btn.ap-remove-offer {
+                background-color: #dc2626 !important;
+                background: #dc2626 !important;
+                color: #ffffff !important;
+                border: 1px solid #b91c1c !important;
+                box-shadow: 0 1px 4px rgba(220, 38, 38, 0.3) !important;
+                font-weight: 700 !important;
+              }
+              .ap-offers-window button.ap-remove-offer:hover,
+              .ap-offers-window .ap-btn.ap-remove-offer:hover {
+                background-color: #b91c1c !important;
+                background: #b91c1c !important;
+                border-color: #991b1b !important;
+                box-shadow: 0 3px 8px rgba(220, 38, 38, 0.45) !important;
+              }
+              .ap-offers-window button.ap-remove-offer:active,
+              .ap-offers-window .ap-btn.ap-remove-offer:active {
+                background-color: #991b1b !important;
+                background: #991b1b !important;
+                border-color: #7f1d1d !important;
+              }
+              .ap-offers-window button.ap-remove-offer svg,
+              .ap-offers-window .ap-btn.ap-remove-offer svg {
+                stroke: #ffffff !important;
+                color: #ffffff !important;
+              }
+              /* Active Campaigns Table Header: #ff9400 background as requested in Image 1 */
+              .ap-offers-window .ap-table thead tr,
+              .ap-offers-window .ap-table thead tr th {
+                background-color: #ff9400 !important;
+                background: #ff9400 !important;
+                color: #000000 !important;
+                font-weight: 800 !important;
+                font-size: 11px !important;
+                padding: 12px 16px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.05em !important;
+                border-bottom: 2px solid #e08300 !important;
+              }
+            </style>
+
             <div class="ap-view-header">
               <div class="ap-view-title-group">
                 <h2 class="ap-view-title">
                   Marketing &amp; Promotions
                   <span class="ap-super-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">${offers.length} Active Deals</span>
                 </h2>
-                <p class="ap-view-sub">Manage storewide promotions, seasonal flash-sales, custom percentage discounts, and voucher campaigns.</p>
+                <p class="ap-view-sub">Manage storewise promotions, product-wise discounts, seasonal flash-sales, and marketplace campaigns.</p>
               </div>
               <div class="ap-view-actions">
-                <button class="ap-btn ghost" id="ap-offers-refresh-btn">
-                  <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <button class="ap-btn" id="ap-offers-refresh-btn" style="padding:8px 16px; display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                   Refresh
                 </button>
               </div>
@@ -9099,32 +9957,64 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Create Offer Form Card -->
             <div class="ap-form-card">
-              <h3>Create Promotional Campaign</h3>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">Create Promotional Campaign</h3>
+                
+                <!-- Campaign Scope Toggle: Product-wise vs Store-wise -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Campaign Scope:</span>
+                  <div style="display:inline-flex; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; padding:3px; gap:4px;">
+                    <button type="button" id="ap-scope-prod-btn" class="ap-scope-toggle-btn active" style="padding:6px 14px; border-radius:6px; font-size:12px; font-weight:800; cursor:pointer;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                      Product-wise
+                    </button>
+                    <button type="button" id="ap-scope-store-btn" class="ap-scope-toggle-btn" style="padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      Store-wise
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="ap-form-row">
-                <div class="ap-form-group" style="flex:2">
-                  <label>Select Target Product</label>
+                <!-- Product Target Group -->
+                <div class="ap-form-group" id="ap-target-prod-wrap" style="flex:2">
+                  <label style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Select Target Product</label>
                   <select id="ap-offer-product">
                     <option value="">— Select a catalog SKU —</option>
                     ${productOptions}
                   </select>
                 </div>
-                <div class="ap-form-group">
-                  <label>Discount Percentage (%)</label>
-                  <input type="number" id="ap-offer-pct" min="1" max="90">
+
+                <!-- Store Target Group -->
+                <div class="ap-form-group" id="ap-target-store-wrap" style="flex:2; display:none;">
+                  <label style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Select Target Store / Scope</label>
+                  <select id="ap-offer-store">
+                    <option value="">— Select a Store or Storewide —</option>
+                    ${storeOptions}
+                  </select>
+                </div>
+
+                <div class="ap-form-group" style="flex:1">
+                  <label style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Discount Percentage (%)</label>
+                  <input type="number" id="ap-offer-pct" min="1" max="90" placeholder="e.g. 20">
                 </div>
               </div>
+
               <div class="ap-form-row">
-                <div class="ap-form-group">
-                  <label>Campaign Label / Headline</label>
-                  <input type="text" id="ap-offer-label">
+                <div class="ap-form-group" style="flex:1">
+                  <label style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Campaign Label / Headline</label>
+                  <input type="text" id="ap-offer-label" placeholder="e.g. Mega Summer Flash Sale / Flat 20% Off">
                 </div>
-                <div class="ap-form-group">
-                  <label>Expiry Date (Optional)</label>
-                  <input type="date" id="ap-offer-date">
+                <div class="ap-form-group" style="flex:1">
+                  <label style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Expiry Date (Optional)</label>
+                  <input type="date" id="ap-offer-date" placeholder="dd-mm-yyyy">
                 </div>
               </div>
-              <div style="text-align:right; margin-top:8px;">
-                <button class="ap-btn primary" id="ap-create-offer-btn" style="padding:8px 18px;">
+
+              <div style="text-align:right; margin-top:10px;">
+                <button class="ap-btn" id="ap-create-offer-btn" style="padding:9px 22px; font-size:13px; display:inline-flex; align-items:center; gap:8px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                   Launch Campaign Offer
                 </button>
               </div>
@@ -9133,14 +10023,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <!-- Active Campaigns Table -->
             <div class="ap-table-card">
               <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th>Product Title</th>
-                      <th>Discount Applied</th>
-                      <th>Campaign Label</th>
-                      <th>Validity</th>
-                      <th>Action</th>
+                <table class="ap-table" style="width:100%; border-collapse:collapse;">
+                  <thead style="background:#ff9400 !important;">
+                    <tr style="background:#ff9400 !important;">
+                      <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e08300; text-align:left;">Target &amp; Details</th>
+                      <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e08300; text-align:left;">Discount Applied</th>
+                      <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e08300; text-align:left;">Campaign Label</th>
+                      <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e08300; text-align:left;">Validity</th>
+                      <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e08300; text-align:left;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -9150,7 +10040,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
               <div class="ap-table-footer">
                 <span>Showing <strong>${offers.length}</strong> active promo campaigns</span>
-                <span style="font-size:11px; color:#94a3b8;">X-Mart Growth Engine</span>
+                <span style="font-size:11px; color:#94a3b8;">X-Mart Growth &amp; Promotions Engine</span>
               </div>
             </div>
           </div>
@@ -9158,34 +10048,128 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         document.getElementById('ap-offers-refresh-btn')?.addEventListener('click', load);
 
+        // Scope switching logic
+        let currentScope = 'product';
+        const prodScopeBtn = document.getElementById('ap-scope-prod-btn');
+        const storeScopeBtn = document.getElementById('ap-scope-store-btn');
+        const prodWrap = document.getElementById('ap-target-prod-wrap');
+        const storeWrap = document.getElementById('ap-target-store-wrap');
+
+        prodScopeBtn?.addEventListener('click', () => {
+          currentScope = 'product';
+          prodScopeBtn.classList.add('active');
+          prodScopeBtn.style.setProperty('background', '#ff9400', 'important');
+          prodScopeBtn.style.setProperty('color', '#000000', 'important');
+          prodScopeBtn.style.setProperty('font-weight', '800', 'important');
+          prodScopeBtn.style.setProperty('border-color', '#ff9400', 'important');
+
+          storeScopeBtn.classList.remove('active');
+          storeScopeBtn.style.setProperty('background', '#022f43', 'important');
+          storeScopeBtn.style.setProperty('color', '#ffffff', 'important');
+          storeScopeBtn.style.setProperty('font-weight', '700', 'important');
+          storeScopeBtn.style.setProperty('border-color', '#022f43', 'important');
+
+          if (prodWrap) prodWrap.style.display = 'block';
+          if (storeWrap) storeWrap.style.display = 'none';
+        });
+
+        storeScopeBtn?.addEventListener('click', () => {
+          currentScope = 'store';
+          storeScopeBtn.classList.add('active');
+          storeScopeBtn.style.setProperty('background', '#ff9400', 'important');
+          storeScopeBtn.style.setProperty('color', '#000000', 'important');
+          storeScopeBtn.style.setProperty('font-weight', '800', 'important');
+          storeScopeBtn.style.setProperty('border-color', '#ff9400', 'important');
+
+          prodScopeBtn.classList.remove('active');
+          prodScopeBtn.style.setProperty('background', '#022f43', 'important');
+          prodScopeBtn.style.setProperty('color', '#ffffff', 'important');
+          prodScopeBtn.style.setProperty('font-weight', '700', 'important');
+          prodScopeBtn.style.setProperty('border-color', '#022f43', 'important');
+
+          if (prodWrap) prodWrap.style.display = 'none';
+          if (storeWrap) storeWrap.style.display = 'block';
+        });
+
+        // Click feedback for buttons: turns into #ff9400 with white font colour upon click
+        body.querySelectorAll('.ap-offers-window button, .ap-offers-window .ap-btn').forEach(btn => {
+          if (btn.id === 'ap-scope-prod-btn' || btn.id === 'ap-scope-store-btn' || btn.classList.contains('ap-remove-offer')) return;
+          btn.addEventListener('mousedown', () => btn.classList.add('is-clicked'));
+          btn.addEventListener('mouseup', () => setTimeout(() => btn.classList.remove('is-clicked'), 400));
+          btn.addEventListener('click', () => {
+            btn.classList.add('is-clicked');
+            setTimeout(() => btn.classList.remove('is-clicked'), 400);
+          });
+        });
+
         document.getElementById('ap-create-offer-btn')?.addEventListener('click', async () => {
-          const productId = document.getElementById('ap-offer-product')?.value;
           const discountPct = parseInt(document.getElementById('ap-offer-pct')?.value || '0', 10);
-          const label = document.getElementById('ap-offer-label')?.value?.trim() || 'Admin Offer';
+          const label = document.getElementById('ap-offer-label')?.value?.trim() || 'Admin Special Offer';
           const validUntil = document.getElementById('ap-offer-date')?.value || null;
 
-          if (!productId) { showToast('Please select a target product', 'warn'); return; }
-          if (!discountPct || discountPct < 1 || discountPct > 90) { showToast('Discount must be between 1% and 90%', 'warn'); return; }
+          if (!discountPct || discountPct < 1 || discountPct > 90) {
+            showToast('Discount must be between 1% and 90%', 'warn');
+            return;
+          }
 
-          try {
-            await adminFetch('/offers', {
-              method: 'POST',
-              body: JSON.stringify({ productId, discountPct, label, validUntil }),
-            });
-            showToast(`${discountPct}% discount applied successfully!`, 'success');
-            load();
-          } catch (e) { showToast(e.message, 'error'); }
+          if (currentScope === 'product') {
+            const productId = document.getElementById('ap-offer-product')?.value;
+            if (!productId) { showToast('Please select a target product SKU', 'warn'); return; }
+
+            try {
+              await adminFetch('/offers', {
+                method: 'POST',
+                body: JSON.stringify({ scope: 'product', productId, discountPct, label, validUntil }),
+              });
+              showToast(`${discountPct}% product discount applied successfully!`, 'success');
+              load();
+            } catch (e) { showToast(e.message, 'error'); }
+          } else {
+            const storeVal = document.getElementById('ap-offer-store')?.value;
+            if (!storeVal) { showToast('Please select a target store or storewide', 'warn'); return; }
+
+            const isStorewide = storeVal === 'storewide';
+            try {
+              const res = await adminFetch('/offers', {
+                method: 'POST',
+                body: JSON.stringify({
+                  scope: isStorewide ? 'storewide' : 'store',
+                  storeName: isStorewide ? 'storewide' : storeVal,
+                  discountPct,
+                  label,
+                  validUntil
+                }),
+              });
+              showToast(res.message || `${discountPct}% ${isStorewide ? 'Storewide' : storeVal} campaign launched!`, 'success');
+              load();
+            } catch (e) { showToast(e.message, 'error'); }
+          }
         });
 
         body.querySelectorAll('.ap-remove-offer').forEach(btn => {
           btn.addEventListener('click', async () => {
             const id = btn.dataset.id;
-            if (!confirm('Revoke this offer? Product will revert to regular MRP.')) return;
-            try {
-              await adminFetch(`/offers/${id}`, { method: 'DELETE' });
-              showToast('Campaign offer revoked.', 'success');
-              load();
-            } catch (e) { showToast(e.message, 'error'); }
+            const scope = btn.dataset.scope;
+            const store = btn.dataset.store;
+
+            if (scope === 'store' || scope === 'storewide') {
+              const isStorewide = scope === 'storewide';
+              const actionChoice = confirm(`This product belongs to an active ${isStorewide ? 'Storewide' : `"${store}" Store`} campaign.\n\nClick OK to revoke the campaign for ${isStorewide ? 'ALL products across the store' : `all products in "${store}"`}.\n(Cancel to abort)`);
+              if (!actionChoice) return;
+              try {
+                const query = isStorewide ? '?scope=storewide' : `?scope=store&storeName=${encodeURIComponent(store)}`;
+                await adminFetch(`/offers/${id}${query}`, { method: 'DELETE' });
+                showToast('Campaign offer revoked.', 'success');
+                load();
+              } catch (e) { showToast(e.message, 'error'); }
+            } else {
+              if (!confirm('Revoke this offer? Product will revert to regular MRP.')) return;
+              try {
+                await adminFetch(`/offers/${id}`, { method: 'DELETE' });
+                showToast('Campaign offer revoked.', 'success');
+                load();
+              } catch (e) { showToast(e.message, 'error'); }
+            }
           });
         });
 
@@ -9194,6 +10178,40 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       }
     }
     load();
+  }
+
+  /* ══════════════════════════════════════════════════════
+     SHARED HELPER: isBestsellerProduct
+     Defined here so all admin tab functions (Products, Bestsellers, etc.) can call it.
+     ══════════════════════════════════════════════════════ */
+  function isBestsellerProduct(p, strict = false) {
+    if (!p) return false;
+    const id = String(p._id || p.id || '');
+
+    // 1. Check manual override by admin / seller first
+    let overrides = {};
+    try { overrides = JSON.parse(localStorage.getItem('xmart_product_overrides') || '{}'); } catch {}
+    if (id && overrides[id] && overrides[id].isBestseller !== undefined) {
+      return Boolean(overrides[id].isBestseller);
+    }
+
+    // 2. Explicit database flag
+    if (p.isBestseller === true) return true;
+    if (p.isBestseller === false) return false;
+
+    // 3. Official designated Bestsellers (by ID or exact phrase match)
+    if (id && typeof OFFICIAL_BESTSELLER_IDS !== 'undefined' && OFFICIAL_BESTSELLER_IDS.has(id)) return true;
+    const lowerName = (p.name || '').toLowerCase();
+    if (typeof OFFICIAL_BESTSELLER_KEYPHRASES !== 'undefined' && OFFICIAL_BESTSELLER_KEYPHRASES.some(phrase => lowerName.includes(phrase))) return true;
+
+    // 4. When viewing the Best Sellers dedicated window, items inside this window get the tag
+    const isBestsellerPage = window._currentDedicatedPageArgs &&
+      (window._currentDedicatedPageArgs.type === 'bestseller' ||
+       window._currentDedicatedPageArgs.type === 'bestsellers' ||
+       window._currentDedicatedPageArgs.category?.toLowerCase() === 'bestseller');
+    if (!strict && isBestsellerPage) return true;
+
+    return false;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -9241,13 +10259,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           return `
             <tr>
-              <td>
+              <td style="max-width:260px;">
                 <div class="ap-cell-flex">
                   <div class="ap-prod-thumb">
                     ${((p.images && p.images[0]) || p.image) ? `<img src="${(p.images && p.images[0]) || p.image}" alt="${(p.name || 'Product').replace(/"/g, '&quot;')}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600';">` : `<img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600" alt="Product" loading="lazy">`}
                   </div>
-                  <div>
-                    <div class="ap-cell-title" style="max-width:240px; word-break:break-word;">${p.name}</div>
+                  <div style="min-width:0; flex:1;">
+                    <div class="ap-cell-title" title="${(p.name || '').replace(/"/g, '&quot;')}">${p.name}</div>
                     <div class="ap-cell-sub">SKU: ${p._id.slice(-6).toUpperCase()}</div>
                   </div>
                 </div>
@@ -9728,7 +10746,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       try {
         let trackingData = null;
         try {
-          const res = await fetch(`/api/orders/track/${encodeURIComponent(q)}`);
+          const res = await fetch(`${API_BASE}/orders/track/${encodeURIComponent(q)}`);
           const json = await res.json();
           if (json.success && json.data) trackingData = json.data;
         } catch (e) {
@@ -10467,41 +11485,1366 @@ window.openRazorpayCheckout = openRazorpayCheckout;
   /* ══════════════════════════════════════════════════════
      TAB: REVIEWS & RATINGS (MODERATION) — REAL WORLD ENGINE
      ══════════════════════════════════════════════════════ */
-  async function renderReviews(body) {
+    async function renderReviews(body) {
     body.innerHTML = loadingHTML();
     let filter = 'all';
     let searchQuery = '';
     let productSearchQuery = '';
+    let productCategoryFilter = 'all';
+    let productRatingFilter = 'all';
+    let productSortBy = 'rating-desc';
+    let productPage = 1;
+    let productPageSize = 20;
+
     let ratingFilter = 'all';
     let sortBy = 'newest';
-    let viewMode = 'reviews'; // 'reviews' or 'priority'
+    let viewMode = 'products'; // 'products' (default), 'reviews', or 'priority'
     let prioritySortBy = 'rating-desc';
     let selectedIds = new Set();
+
+    let cachedProducts = [];
     let cachedReviews = [];
     let productPriorities = JSON.parse(localStorage.getItem('xmart_product_priorities') || '{}');
-    let cachedStats = { totalReviews: 0, avgRating: 5.0, pendingModeration: 0, flagged: 0, approved: 0 };
+    let cachedStats = { totalReviews: 0, avgRating: 5.0, pendingModeration: 0, flagged: 0, approved: 0, totalProducts: 0 };
 
     async function load(preserveSelection = false) {
       if (!preserveSelection) selectedIds.clear();
       try {
         const res = await adminFetch('/reviews');
-        const { reviews: rawReviews, stats } = res.data;
+        const { reviews: rawReviews, products: rawProducts, stats } = res.data;
 
         cachedReviews = rawReviews || [];
+        cachedProducts = rawProducts || [];
+
+        // If products weren't formatted from backend, derive from Store or cachedReviews
+        if (!cachedProducts.length && Store.allProducts && Store.allProducts.length) {
+          cachedProducts = Store.allProducts.map(p => {
+            const pId = (p._id || p.id).toString();
+            const pRevs = cachedReviews.filter(r => r.productId === pId);
+            const total = pRevs.length;
+            const avg = total > 0 ? Number((pRevs.reduce((s, r) => s + (Number(r.rating) || 5), 0) / total).toFixed(1)) : (Number(p.rating) || 5.0);
+            return {
+              id: pId,
+              productId: pId,
+              name: p.name,
+              category: p.category || 'General',
+              brand: p.brand || '',
+              image: (p.images && p.images[0]) || p.img || '',
+              price: p.price || 0,
+              rating: avg,
+              numReviews: total,
+              reviewsCount: total,
+              reviews: pRevs,
+              approved: pRevs.filter(r => r.status === 'Approved').length,
+              pending: pRevs.filter(r => r.status === 'Pending').length,
+              flagged: pRevs.filter(r => r.status === 'Flagged').length,
+            };
+          });
+        }
+
         cachedStats = stats || {
           totalReviews: cachedReviews.length,
           avgRating: cachedReviews.length ? (cachedReviews.reduce((s, r) => s + (Number(r.rating) || 5), 0) / cachedReviews.length).toFixed(1) : 5.0,
           pendingModeration: cachedReviews.filter(r => r.status === 'Pending').length,
           flagged: cachedReviews.filter(r => r.status === 'Flagged').length,
           approved: cachedReviews.filter(r => r.status === 'Approved').length,
+          totalProducts: cachedProducts.length,
         };
 
-        renderUI();
+        if (viewMode === 'products') {
+          renderProductsView();
+        } else if (viewMode === 'reviews') {
+          renderReviewsView();
+        } else {
+          renderPriorityView();
+        }
       } catch (err) {
-        body.innerHTML = emptyHTML('', `Failed to load reviews: ${err.message}`);
+        body.innerHTML = emptyHTML('', `Failed to load reviews and products: ${err.message}`);
       }
     }
 
+    // Helper: render star strings
+    function getStarsHTML(rating, size = '13px') {
+      const r = Math.round(Number(rating) || 5);
+      const full = '★'.repeat(Math.max(0, Math.min(5, r)));
+      const empty = '☆'.repeat(Math.max(0, 5 - r));
+      return `<span style="color:#f59e0b; font-size:${size}; font-weight:800; letter-spacing:1px;">${full}${empty}</span>`;
+    }
+
+    function getRatingBarHTML(rating) {
+      const num = Number(rating) || 0;
+      const pct = Math.min(100, Math.max(0, Math.round((num / 5) * 100)));
+      const color = num >= 4.2 ? '#16a34a' : num >= 3.5 ? '#2563eb' : num >= 2.5 ? '#d97706' : '#dc2626';
+      return `
+        <div style="display:flex; align-items:center; gap:6px; width:100%; max-width:140px;">
+          <div style="flex:1; height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden;">
+            <div style="width:${pct}%; height:100%; background:${color}; border-radius:99px;"></div>
+          </div>
+          <span style="font-size:11px; font-weight:800; color:${color}; font-feature-settings:'tnum';">${num.toFixed(1)}</span>
+        </div>
+      `;
+    }
+
+    // ── COMMON HEADER & NAV TABS ──
+    function getHeaderHTML() {
+      return `
+        <div class="ap-view-header" style="flex-wrap:wrap; gap:12px;">
+          <div class="ap-view-title-group">
+            <h2 class="ap-view-title" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              Reviews &amp; Ratings Moderation
+              <span class="ap-super-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a; font-weight:800; font-size:11.5px; padding:3px 8px; border-radius:6px;">
+                ${cachedStats.avgRating} ★ Overall (${cachedStats.totalReviews} Reviews)
+              </span>
+            </h2>
+            <p class="ap-view-sub">Review incoming customer feedback, screen for spam or abusive language, and curate authentic marketplace feedback.</p>
+          </div>
+          <div class="ap-view-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="ap-btn primary" id="ap-new-review-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; box-shadow:0 2px 6px rgba(2,47,67,0.25); cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" style="stroke:#ffffff !important; color:#ffffff !important;" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Review
+            </button>
+            <button class="ap-btn ghost" id="ap-export-reviews-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;" title="Export Moderated Reviews to CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- View Mode Navigation Tabs -->
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:16px;">
+          <div style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:4px;">
+            <button id="ap-tab-products" style="padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'products' ? '#022F43' : 'transparent'}; color:${viewMode === 'products' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'products' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              All Products (${cachedProducts.length})
+            </button>
+            <button id="ap-tab-reviews" style="padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'reviews' ? '#022F43' : 'transparent'}; color:${viewMode === 'reviews' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'reviews' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              All Reviews (${cachedReviews.length})
+            </button>
+            <button id="ap-tab-priority" style="padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'priority' ? '#022F43' : 'transparent'}; color:${viewMode === 'priority' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'priority' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              Product Priority
+            </button>
+          </div>
+
+          <!-- Quick Search -->
+          <div style="position:relative; width:280px; max-width:100%;">
+            <input type="text" id="ap-top-search-input" value="${viewMode === 'products' ? productSearchQuery : searchQuery}" placeholder="Search product name or store..." style="width:100%; padding:8px 34px 8px 34px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; outline:none; box-sizing:border-box;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:11px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            ${(viewMode === 'products' ? productSearchQuery : searchQuery) ? `<button id="ap-top-clear-search" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px; padding:0;">✕</button>` : ''}
+          </div>
+        </div>
+
+        <!-- KPI Metric Chips -->
+        <div class="ap-stat-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); margin-top:16px;">
+          <div class="ap-stat-card ap-kpi-clickable" data-view="products" style="cursor:pointer; border:1px solid #e2e8f0; transition:all 0.15s ease;" title="Click to view all products list">
+            <div class="ap-stat-card-left">
+              <span class="ap-stat-card-lbl">Total Catalog Products</span>
+              <span class="ap-stat-card-val">${cachedProducts.length}</span>
+            </div>
+            <div class="ap-stat-card-icon blue">
+              <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+            </div>
+          </div>
+          <div class="ap-stat-card ap-kpi-clickable" data-view="reviews" data-kpi="all" style="cursor:pointer; border:1px solid #e2e8f0; transition:all 0.15s ease;" title="Click to view all customer reviews">
+            <div class="ap-stat-card-left">
+              <span class="ap-stat-card-lbl">Total Customer Reviews</span>
+              <span class="ap-stat-card-val">${cachedStats.totalReviews}</span>
+            </div>
+            <div class="ap-stat-card-icon blue">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+          <div class="ap-stat-card" style="border:1px solid #e2e8f0;">
+            <div class="ap-stat-card-left">
+              <span class="ap-stat-card-lbl">Marketplace Avg Rating</span>
+              <span class="ap-stat-card-val" style="color:#d97706;">${cachedStats.avgRating} / 5.0</span>
+            </div>
+            <div class="ap-stat-card-icon amber">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+          <div class="ap-stat-card ap-kpi-clickable" data-view="reviews" data-kpi="pending" style="cursor:pointer; border:1px solid #e2e8f0;" title="Click to view Pending Moderation Queue">
+            <div class="ap-stat-card-left">
+              <span class="ap-stat-card-lbl">Pending Moderation</span>
+              <span class="ap-stat-card-val" style="color:#6366f1;">${cachedStats.pendingModeration}</span>
+            </div>
+            <div class="ap-stat-card-icon purple">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            </div>
+          </div>
+          <div class="ap-stat-card ap-kpi-clickable" data-view="reviews" data-kpi="flagged" style="cursor:pointer; border:1px solid #e2e8f0;" title="Click to view Flagged / Spam Reviews">
+            <div class="ap-stat-card-left">
+              <span class="ap-stat-card-lbl">Flagged / Spam</span>
+              <span class="ap-stat-card-val" style="color:#ef4444;">${cachedStats.flagged}</span>
+            </div>
+            <div class="ap-stat-card-icon red">
+              <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Bind common header event listeners
+    function bindHeaderEvents() {
+      document.getElementById('ap-reviews-refresh-btn')?.addEventListener('click', () => load(false));
+      document.getElementById('ap-new-review-btn')?.addEventListener('click', () => openAddReviewModal());
+      document.getElementById('ap-export-reviews-btn')?.addEventListener('click', () => exportReviewsToCSV(cachedReviews));
+
+      document.getElementById('ap-tab-products')?.addEventListener('click', () => { viewMode = 'products'; renderProductsView(); });
+      document.getElementById('ap-tab-reviews')?.addEventListener('click', () => { viewMode = 'reviews'; renderReviewsView(); });
+      document.getElementById('ap-tab-priority')?.addEventListener('click', () => { viewMode = 'priority'; renderPriorityView(); });
+
+      // KPI click triggers
+      body.querySelectorAll('.ap-kpi-clickable').forEach(el => {
+        el.addEventListener('click', () => {
+          const v = el.dataset.view;
+          const kpi = el.dataset.kpi;
+          if (v === 'products') {
+            viewMode = 'products';
+            renderProductsView();
+          } else if (v === 'reviews') {
+            viewMode = 'reviews';
+            if (kpi) filter = kpi;
+            renderReviewsView();
+          }
+        });
+      });
+
+      // Quick Top Search
+      const topSearch = document.getElementById('ap-top-search-input');
+      if (topSearch) {
+        topSearch.addEventListener('input', (e) => {
+          if (viewMode === 'products') {
+            productSearchQuery = e.target.value;
+            productPage = 1;
+            renderProductsView();
+          } else {
+            searchQuery = e.target.value;
+            renderReviewsView();
+          }
+          const el = document.getElementById('ap-top-search-input');
+          if (el) { el.focus(); el.setSelectionRange(e.target.value.length, e.target.value.length); }
+        });
+      }
+
+      document.getElementById('ap-top-clear-search')?.addEventListener('click', () => {
+        if (viewMode === 'products') {
+          productSearchQuery = '';
+          productPage = 1;
+          renderProductsView();
+        } else {
+          searchQuery = '';
+          renderReviewsView();
+        }
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       1. VIEW MODE: ALL PRODUCTS & THEIR RATINGS / REVIEWS (DEFAULT)
+       ═══════════════════════════════════════════════════════════════ */
+    function renderProductsView() {
+      // Collect unique categories for filter
+      const categories = ['all', ...Array.from(new Set(cachedProducts.map(p => p.category).filter(Boolean))).sort()];
+
+      // Filter products
+      let list = [...cachedProducts];
+
+      // 1. Text Search
+      if (productSearchQuery.trim()) {
+        const q = productSearchQuery.toLowerCase().trim();
+        list = list.filter(p =>
+          (p.name || '').toLowerCase().includes(q) ||
+          (p.category || '').toLowerCase().includes(q) ||
+          (p.brand || '').toLowerCase().includes(q) ||
+          (p.productId || p.id || '').toLowerCase().includes(q)
+        );
+      }
+
+      // 2. Category Filter
+      if (productCategoryFilter !== 'all') {
+        list = list.filter(p => (p.category || '').toLowerCase() === productCategoryFilter.toLowerCase());
+      }
+
+      // 3. Rating Filter
+      if (productRatingFilter !== 'all') {
+        const minRating = Number(productRatingFilter);
+        list = list.filter(p => Number(p.rating || 5) >= minRating);
+      }
+
+      // 4. Sorting
+      list.sort((a, b) => {
+        if (productSortBy === 'rating-desc') return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+        if (productSortBy === 'rating-asc') return (Number(a.rating) || 0) - (Number(b.rating) || 0);
+        if (productSortBy === 'reviews-desc') return (b.reviewsCount || b.numReviews || 0) - (a.reviewsCount || a.numReviews || 0);
+        if (productSortBy === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+        if (productSortBy === 'price-asc') return (Number(a.price) || 0) - (Number(b.price) || 0);
+        if (productSortBy === 'price-desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+        return 0;
+      });
+
+      // Pagination
+      const totalItems = list.length;
+      const pageSize = productPageSize === 'all' ? totalItems : Number(productPageSize);
+      const totalPages = Math.max(1, Math.ceil(totalItems / (pageSize || 1)));
+      if (productPage > totalPages) productPage = totalPages;
+      const startIndex = (productPage - 1) * pageSize;
+      const paginatedList = productPageSize === 'all' ? list : list.slice(startIndex, startIndex + pageSize);
+
+      // Render Rows
+      const rowsHTML = paginatedList.length ? paginatedList.map((p, idx) => {
+        const pid = String(p._id || p.id || p.productId || idx);
+        const pName = (p.name || '').replace(/"/g, '&quot;');
+        const revCount = p.reviewsCount !== undefined ? p.reviewsCount : (p.reviews ? p.reviews.length : (p.numReviews || 0));
+        const ratingNum = Number(p.rating || 5.0);
+        const prodImg = (p.images && p.images[0]) || p.image || p.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120';
+        const pRevs = p.reviews || [];
+        const latestReview = pRevs.length > 0 ? pRevs[pRevs.length - 1] : null;
+
+        return `
+          <tr class="ap-prod-row" data-product-id="${pid}" data-product-idx="${idx}" data-product-name="${pName}" style="cursor:pointer; transition:background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='';">
+            <!-- Product Title & Details -->
+            <td style="padding:12px 14px; min-width:280px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <img src="${prodImg}" alt="${p.name}" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0; background:#f8fafc;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120'">
+                <div style="flex:1; min-width:0;">
+                  <strong style="color:#0f172a; font-size:13px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${p.name}">
+                    ${p.name}
+                  </strong>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap;">
+                    <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-weight:600;">${p.category || 'General'}</span>
+                    ${p.brand ? `<span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:600;">${p.brand}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Price -->
+            <td style="padding:12px 14px; white-space:nowrap;">
+              <div style="font-size:13px; font-weight:800; color:#0f172a; font-feature-settings:'tnum';">
+                ₹${Number(p.price || 0).toLocaleString('en-IN')}
+              </div>
+              ${p.originalPrice && p.originalPrice > p.price ? `<div style="font-size:10.5px; color:#94a3b8; text-decoration:line-through;">₹${Number(p.originalPrice).toLocaleString('en-IN')}</div>` : ''}
+            </td>
+
+            <!-- Rating & Visual Bar -->
+            <td style="padding:12px 14px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${getStarsHTML(ratingNum, '14px')}
+                <span style="font-size:12px; font-weight:800; color:#d97706; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px;">${ratingNum.toFixed(1)}</span>
+              </div>
+              <div style="margin-top:4px;">
+                ${getRatingBarHTML(ratingNum)}
+              </div>
+            </td>
+
+            <!-- Total Reviews & Moderation Breakdown -->
+            <td style="padding:12px 14px; white-space:nowrap;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:13px; font-weight:800; color:#0f172a;">${revCount} Reviews</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:4px; margin-top:4px; flex-wrap:wrap;">
+                ${p.approved ? `<span style="font-size:10px; background:#ecfdf5; color:#047857; padding:1px 5px; border-radius:3px; font-weight:700;">${p.approved} Approved</span>` : ''}
+                ${p.pending ? `<span style="font-size:10px; background:#fef3c7; color:#b45309; padding:1px 5px; border-radius:3px; font-weight:700;">${p.pending} Pending</span>` : ''}
+                ${p.flagged ? `<span style="font-size:10px; background:#fef2f2; color:#b91c1c; padding:1px 5px; border-radius:3px; font-weight:700;">${p.flagged} Flagged</span>` : ''}
+                ${!p.approved && !p.pending && !p.flagged && revCount > 0 ? `<span style="font-size:10px; background:#f1f5f9; color:#475569; padding:1px 5px; border-radius:3px; font-weight:600;">${revCount} Verified</span>` : ''}
+              </div>
+            </td>
+
+            <!-- Customer Feedback Preview -->
+            <td style="padding:12px 14px; max-width:260px;">
+              ${latestReview ? `
+                <div style="font-size:11.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  ${latestReview.headline || 'Feedback from ' + latestReview.author}
+                </div>
+                <div style="font-size:11px; color:#64748b; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${latestReview.comment}">
+                  "${latestReview.comment}"
+                </div>
+                <div style="font-size:10px; color:#94a3b8; margin-top:2px;">
+                  By ${latestReview.author} • ${fmtDate(latestReview.date)}
+                </div>
+              ` : `
+                <span style="font-size:11.5px; color:#94a3b8; font-style:italic;">No customer reviews yet</span>
+              `}
+            </td>
+
+            <!-- Interactive Clickable Action -->
+            <td style="padding:12px 14px; text-align:right; white-space:nowrap;">
+              <button class="ap-btn primary ap-view-prod-modal-btn" data-product-id="${pid}" data-product-idx="${idx}" data-product-name="${pName}" style="background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:6px 12px; font-size:11.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(2,47,67,0.2);" onmouseover="this.style.background='#04435e'; this.style.color='#ffffff';" onmouseout="this.style.background='#022F43'; this.style.color='#ffffff';" onmousedown="this.style.color='#ffffff';" onfocus="this.style.color='#ffffff';">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" style="stroke:#ffffff !important; color:#ffffff !important; flex-shrink:0;" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" style="stroke:#ffffff !important;"/><circle cx="12" cy="12" r="3" style="stroke:#ffffff !important;"/></svg>
+                <span style="color:#ffffff !important;">View Reviews (${revCount})</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="6" style="text-align:center; padding:48px 24px; color:#94a3b8;">
+            ${emptyHTML('⭐', productSearchQuery ? `No products match "${productSearchQuery}"` : 'No products found.')}
+            <div style="margin-top:14px;">
+              <button class="ap-btn ghost" id="ap-reset-prod-filter-btn" style="font-size:12px; border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px; cursor:pointer;">Reset Filters</button>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      body.innerHTML = `
+        <div class="ap-view-inner">
+          ${getHeaderHTML()}
+
+          <!-- Products Filter & Sort Toolbar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; padding:12px 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
+              <!-- Product Search Bar -->
+              <div style="position:relative; width:260px; max-width:100%;">
+                <input type="text" id="ap-prod-search-input" value="${productSearchQuery}" placeholder="Filter products by title..." style="width:100%; padding:7px 10px 7px 30px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; box-sizing:border-box;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                ${productSearchQuery ? `<button id="ap-prod-clear-search" style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px; padding:0;">✕</button>` : ''}
+              </div>
+
+              <!-- Category Filter -->
+              <select id="ap-prod-cat-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+                <option value="all" ${productCategoryFilter === 'all' ? 'selected' : ''}>All Categories (${categories.length - 1})</option>
+                ${categories.filter(c => c !== 'all').map(c => `<option value="${c}" ${productCategoryFilter.toLowerCase() === c.toLowerCase() ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+
+              <!-- Star Rating Filter -->
+              <select id="ap-prod-rating-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+                <option value="all" ${productRatingFilter === 'all' ? 'selected' : ''}>All Ratings</option>
+                <option value="5" ${productRatingFilter === '5' ? 'selected' : ''}>5 Stars Only ★★★★★</option>
+                <option value="4" ${productRatingFilter === '4' ? 'selected' : ''}>4+ Stars ★★★★☆</option>
+                <option value="3" ${productRatingFilter === '3' ? 'selected' : ''}>3+ Stars ★★★☆☆</option>
+                <option value="2" ${productRatingFilter === '2' ? 'selected' : ''}>2+ Stars ★★☆☆☆</option>
+                <option value="1" ${productRatingFilter === '1' ? 'selected' : ''}>1+ Star ★☆☆☆☆</option>
+              </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <!-- Sort -->
+              <select id="ap-prod-sort-by" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+                <option value="rating-desc" ${productSortBy === 'rating-desc' ? 'selected' : ''}>Highest Rating First</option>
+                <option value="reviews-desc" ${productSortBy === 'reviews-desc' ? 'selected' : ''}>Most Reviews First</option>
+                <option value="rating-asc" ${productSortBy === 'rating-asc' ? 'selected' : ''}>Lowest Rating First</option>
+                <option value="name-asc" ${productSortBy === 'name-asc' ? 'selected' : ''}>Product Name (A-Z)</option>
+                <option value="price-asc" ${productSortBy === 'price-asc' ? 'selected' : ''}>Price: Low to High</option>
+                <option value="price-desc" ${productSortBy === 'price-desc' ? 'selected' : ''}>Price: High to Low</option>
+              </select>
+
+              <!-- Page Size -->
+              <select id="ap-prod-page-size" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+                <option value="20" ${productPageSize === 20 ? 'selected' : ''}>20 per page</option>
+                <option value="50" ${productPageSize === 50 ? 'selected' : ''}>50 per page</option>
+                <option value="100" ${productPageSize === 100 ? 'selected' : ''}>100 per page</option>
+                <option value="all" ${productPageSize === 'all' ? 'selected' : ''}>Show All</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Ratings Table Card -->
+          <div class="ap-table-card" style="margin-top:14px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#ffffff; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+            <div class="ap-table-wrap">
+              <table class="ap-table">
+                <thead style="background:#FF9400 !important;">
+                  <tr style="background:#FF9400 !important; border-bottom:1px solid #e08300;">
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">Product Catalog Item</th>
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">Price</th>
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">Customer Rating</th>
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">Total Reviews</th>
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">Latest Customer Snippet</th>
+                    <th style="background:#FF9400 !important; padding:12px 14px; text-align:right; font-size:11.5px; font-weight:800; color:#000000 !important; text-transform:uppercase; letter-spacing:0.04em;">All Customer Feedback</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHTML}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination & Summary Footer -->
+            <div class="ap-table-footer" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:#f8fafc; border-top:1px solid #e2e8f0;">
+              <span style="font-size:12px; color:#64748b;">
+                Showing <strong>${totalItems === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + (productPageSize === 'all' ? totalItems : Number(productPageSize)), totalItems)}</strong> of <strong>${totalItems}</strong> products
+                ${productSearchQuery ? ` matching "<strong>${productSearchQuery}</strong>"` : ''}
+              </span>
+
+              <!-- Pagination Navigation -->
+              ${totalPages > 1 && productPageSize !== 'all' ? `
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button id="ap-prod-prev-page" ${productPage <= 1 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="ap-btn ghost" style="padding:5px 10px; font-size:11.5px; border-radius:5px; border:1px solid #cbd5e1; background:#ffffff;">
+                    « Prev
+                  </button>
+                  <span style="font-size:12px; font-weight:700; color:#0f172a; padding:0 8px;">
+                    Page ${productPage} of ${totalPages}
+                  </span>
+                  <button id="ap-prod-next-page" ${productPage >= totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="ap-btn ghost" style="padding:5px 10px; font-size:11.5px; border-radius:5px; border:1px solid #cbd5e1; background:#ffffff;">
+                    Next »
+                  </button>
+                </div>
+              ` : ''}
+
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:11px; color:#10b981; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Click any product to view all customer reviews
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      bindHeaderEvents();
+
+      // Row Click and Button Click -> Open Product Reviews Window
+      const findProdForElement = (el) => {
+        const row = el.closest('.ap-prod-row') || el;
+        const pIdx = Number(row.dataset.productIdx);
+        const pid = row.dataset.productId;
+        const prodName = row.dataset.productName;
+
+        let prod = (!isNaN(pIdx) && paginatedList && paginatedList[pIdx]) ? paginatedList[pIdx] : null;
+        if (!prod && cachedProducts) {
+          prod = cachedProducts.find(p =>
+            String(p._id || p.id || p.productId) === String(pid) ||
+            (prodName && p.name === prodName)
+          );
+        }
+        return prod;
+      };
+
+      body.querySelectorAll('.ap-prod-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          const prod = findProdForElement(row);
+          if (prod) openProductReviewsModal(prod);
+        });
+      });
+
+      body.querySelectorAll('.ap-view-prod-modal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const prod = findProdForElement(btn);
+          if (prod) openProductReviewsModal(prod);
+        });
+      });
+
+      // Product Search Input
+      const searchEl = document.getElementById('ap-prod-search-input');
+      if (searchEl) {
+        searchEl.addEventListener('input', (e) => {
+          productSearchQuery = e.target.value;
+          productPage = 1;
+          renderProductsView();
+          const newEl = document.getElementById('ap-prod-search-input');
+          if (newEl) { newEl.focus(); newEl.setSelectionRange(productSearchQuery.length, productSearchQuery.length); }
+        });
+      }
+
+      document.getElementById('ap-prod-clear-search')?.addEventListener('click', () => {
+        productSearchQuery = '';
+        productPage = 1;
+        renderProductsView();
+      });
+
+      // Category filter
+      document.getElementById('ap-prod-cat-filter')?.addEventListener('change', (e) => {
+        productCategoryFilter = e.target.value;
+        productPage = 1;
+        renderProductsView();
+      });
+
+      // Rating filter
+      document.getElementById('ap-prod-rating-filter')?.addEventListener('change', (e) => {
+        productRatingFilter = e.target.value;
+        productPage = 1;
+        renderProductsView();
+      });
+
+      // Sort
+      document.getElementById('ap-prod-sort-by')?.addEventListener('change', (e) => {
+        productSortBy = e.target.value;
+        renderProductsView();
+      });
+
+      // Page size
+      document.getElementById('ap-prod-page-size')?.addEventListener('change', (e) => {
+        productPageSize = e.target.value === 'all' ? 'all' : Number(e.target.value);
+        productPage = 1;
+        renderProductsView();
+      });
+
+      // Pagination buttons
+      document.getElementById('ap-prod-prev-page')?.addEventListener('click', () => {
+        if (productPage > 1) {
+          productPage--;
+          renderProductsView();
+        }
+      });
+
+      document.getElementById('ap-prod-next-page')?.addEventListener('click', () => {
+        if (productPage < totalPages) {
+          productPage++;
+          renderProductsView();
+        }
+      });
+
+      document.getElementById('ap-reset-prod-filter-btn')?.addEventListener('click', () => {
+        productSearchQuery = '';
+        productCategoryFilter = 'all';
+        productRatingFilter = 'all';
+        productSortBy = 'rating-desc';
+        productPage = 1;
+        renderProductsView();
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       2. INTERACTIVE MODAL: VIEW ALL CUSTOMER REVIEWS FOR A PRODUCT
+       ═══════════════════════════════════════════════════════════════ */
+    function openProductReviewsModal(prod, push = true) {
+      if (!prod) return;
+      const existing = document.getElementById('ap-product-reviews-window');
+      if (existing) existing.remove();
+
+      if (push) {
+        const pid = prod._id || prod.id || prod.productId || '';
+        try {
+          history.pushState({ type: 'product-reviews', prodId: pid, prod, hash: '#product-reviews/' + pid }, 'Customer Ratings & Reviews - ' + prod.name, '#product-reviews/' + pid);
+        } catch (e) {}
+      }
+
+      let modalFilter = 'all'; // 'all', 'Approved', 'Pending', 'Flagged'
+      let revs = Array.isArray(prod.reviews) ? [...prod.reviews] : [];
+
+      // Fallback: If product has no attached reviews array or it's empty, filter cachedReviews
+      if (revs.length === 0 && Array.isArray(cachedReviews)) {
+        const pid = String(prod._id || prod.id || prod.productId || '');
+        const pName = String(prod.name || '').trim().toLowerCase();
+        revs = cachedReviews.filter(r => {
+          const rPid = String(r.productId || r.product_id || (r.product && (r.product._id || r.product.id)) || '');
+          const rName = String(r.productName || (r.product && r.product.name) || '').trim().toLowerCase();
+          return (pid && rPid && rPid === pid) || (pName && rName && rName === pName);
+        });
+      }
+
+      // Calculate star distributions
+      const dist = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      revs.forEach(r => {
+        const star = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
+        dist[star] = (dist[star] || 0) + 1;
+      });
+
+      const modal = document.createElement('div');
+      modal.id = 'ap-product-reviews-window';
+      modal.className = 'ap-complete-window';
+      modal.style.cssText = 'position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; width:100vw !important; height:100vh !important; background:#f8fafc; z-index:1000050 !important; display:flex !important; flex-direction:column !important; box-sizing:border-box; overflow:hidden; inset:0 !important;';
+
+      const closeModal = () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        modal.remove();
+        if (window.location.hash.startsWith('#product-reviews')) {
+          history.back();
+        }
+      };
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') closeModal();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
+      function renderModalContent() {
+        let filteredRevs = [...revs];
+        if (modalFilter !== 'all') {
+          filteredRevs = filteredRevs.filter(r => (r.status || 'Approved').toLowerCase() === modalFilter.toLowerCase());
+        }
+
+        const approvedCount = revs.filter(r => r.status === 'Approved').length;
+        const pendingCount = revs.filter(r => r.status === 'Pending').length;
+        const flaggedCount = revs.filter(r => r.status === 'Flagged').length;
+        const prodImg = prod.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160';
+        const ratingNum = Number(prod.rating || 5.0);
+
+        const revItemsHTML = filteredRevs.length ? filteredRevs.map(r => {
+          const authorInitials = (r.author || 'CU').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+          const rRating = Math.max(1, Math.min(5, Number(r.rating) || 5));
+          const dateStr = fmtDate(r.date);
+
+          return `
+            <div class="ap-modal-rev-card" data-rev-id="${r.id}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(15,23,42,0.03); transition:all 0.15s ease;">
+              <!-- Author Row -->
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:36px; height:36px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    ${authorInitials}
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:5px;">
+                      ${r.author || 'Verified Customer'}
+                      ${r.verified !== false ? `<span style="background:#ecfdf5; color:#047857; font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="Verified X-Mart Buyer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>` : ''}
+                    </div>
+                    <div style="font-size:11px; color:#64748b;">${r.email || 'customer@example.com'} • ${dateStr}</div>
+                  </div>
+                </div>
+
+                <!-- Rating and Status Badge -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="text-align:right;">
+                    <div style="color:#f59e0b; font-size:14px; font-weight:800;">
+                      ${'★'.repeat(rRating)}${'☆'.repeat(5 - rRating)}
+                      <span style="font-size:12px; color:#475569; background:#fef3c7; padding:1px 5px; border-radius:4px; font-weight:800; margin-left:4px;">${rRating}.0</span>
+                    </div>
+                  </div>
+                  <span class="ap-badge ${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="font-weight:700; font-size:11px; padding:3px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">
+                    ${r.status === 'Approved' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approved' : r.status === 'Pending' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>Pending' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flagged'}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Feedback Content -->
+              <div style="margin-top:12px;">
+                ${r.headline ? `<div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:4px;">${r.headline}</div>` : ''}
+                <div style="font-size:12.5px; color:#334155; line-height:1.55; background:#f8fafc; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px;">
+                  "${r.comment}"
+                </div>
+              </div>
+
+              <!-- Tags / Sentiment Row -->
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span style="font-size:10.5px; padding:2px 7px; border-radius:4px; font-weight:600; ${r.status === 'Flagged' ? 'background:#fee2e2; color:#b91c1c;' : rRating >= 4 ? 'background:#ecfdf5; color:#047857;' : 'background:#eff6ff; color:#1d4ed8;'}">
+                    ${r.sentiment || (rRating >= 4 ? 'Positive (95%)' : 'Neutral (60%)')}
+                  </span>
+                  ${r.helpful ? `<span style="font-size:10.5px; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-flex; align-items:center; gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>${r.helpful} Helpful Votes</span>` : ''}
+                  ${r.flagReason ? `<span style="font-size:10.5px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-flex; align-items:center; gap:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Trigger: ${r.flagReason}</span>` : ''}
+                </div>
+
+                <!-- Inline Moderation Controls -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                  ${r.status !== 'Approved' ? `
+                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Approved" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;" title="Approve Review">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Approve
+                    </button>
+                  ` : ''}
+                  ${r.status !== 'Flagged' ? `
+                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Flagged" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;" title="Flag Review">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                      Flag
+                    </button>
+                  ` : ''}
+                  ${r.status !== 'Pending' ? `
+                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Pending" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;" title="Mark as Pending">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                      Re-queue
+                    </button>
+                  ` : ''}
+                  <button class="ap-modal-toggle-reply-btn" data-id="${r.id}" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    ${r.adminReply ? 'Edit Reply' : 'Reply'}
+                  </button>
+                  <button class="ap-modal-delete-rev-btn" data-id="${r.id}" style="padding:6px 10px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:all 0.15s ease;" title="Delete Review">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Official Merchant Reply Box (if present) -->
+              ${r.adminReply ? `
+                <div style="margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">
+                  <div style="font-size:11px; font-weight:800; color:#15803d; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px; display:flex; align-items:center; gap:5px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                    Official Merchant Reply:
+                  </div>
+                  <div style="font-size:12px; color:#166534; line-height:1.45;">
+                    ${r.adminReply}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Collapsible Reply Form -->
+              <div id="ap-reply-box-${r.id}" style="display:none; margin-top:12px; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                <textarea id="ap-reply-input-${r.id}" rows="2" placeholder="Write official merchant reply visible to all store customers..." style="width:100%; padding:8px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">${r.adminReply || ''}</textarea>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+                  <button type="button" class="ap-btn ghost ap-cancel-reply-btn" data-id="${r.id}" style="font-size:11px; padding:4px 10px;">Cancel</button>
+                  <button type="button" class="ap-btn primary ap-save-reply-btn" data-id="${r.id}" style="font-size:11px; padding:4px 12px; background:#022F43 !important; color:#ffffff !important; border:none; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Save Reply</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('') : `
+          <div style="text-align:center; padding:40px 20px; color:#94a3b8; background:#ffffff; border:1px dashed #cbd5e1; border-radius:10px;">
+            <div style="margin-bottom:8px; display:flex; justify-content:center;">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div style="font-size:14px; font-weight:700; color:#475569;">No reviews match the "${modalFilter}" filter.</div>
+            <p style="font-size:12px; color:#94a3b8; margin:4px 0 12px;">You can add a verified customer review using the button above.</p>
+          </div>
+        `;
+
+        modal.innerHTML = `
+          <div class="ap-window-content-wrapper" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f8fafc; border:none !important; outline:none; border-radius:0 !important; box-shadow:none !important;">
+            <!-- Window Header (022F43 background, white text) -->
+            <div class="ap-window-header" style="background:#022F43 !important; color:#ffffff; padding:16px 28px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+              <!-- Top Left: Title & Subtitle ONLY, NO BACK BUTTON -->
+              <div style="display:flex; align-items:center;">
+                <div>
+                  <h3 class="ap-window-title" style="color:#ffffff; font-size:18px; font-weight:800; margin:0; line-height:1.3; letter-spacing:-0.01em;">
+                    Customer Ratings &amp; Reviews
+                  </h3>
+                  <div style="color:#ffffff !important; font-size:13px; opacity:0.95; margin-top:3px; font-weight:500;">
+                    ${prod.name} <span style="color:#ffffff !important; opacity:0.75; margin:0 5px;">•</span> ${prod.category || 'General'}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top Right: Close Window Button -->
+              <button class="ap-modal-close-x" style="background:rgba(255,255,255,0.08); border:none; color:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.2)';" onmouseout="this.style.background='rgba(255,255,255,0.08)';" title="Close Window">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <!-- Scrollable Content Body (Full Window) -->
+            <div class="ap-window-scroll-body" style="padding:24px 32px; overflow-y:auto; flex:1; background:#f8fafc;">
+              <div style="max-width:1200px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:16px;">
+                <!-- Product Overview Banner -->
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+                  <div style="display:flex; align-items:center; gap:16px;">
+                    <img src="${prodImg}" alt="${prod.name}" style="width:72px; height:72px; border-radius:10px; object-fit:cover; border:1px solid #cbd5e1; background:#ffffff; flex-shrink:0;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160'">
+                    <div>
+                      <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 5px; line-height:1.35;">${prod.name}</h4>
+                      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:11.5px; background:#e2e8f0; color:#334155; padding:2px 8px; border-radius:4px; font-weight:600;">${prod.category || 'General'}</span>
+                        ${prod.brand ? `<span style="font-size:11.5px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">${prod.brand}</span>` : ''}
+                        <span style="font-size:14px; font-weight:800; color:#0f172a;">₹${Number(prod.price || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Add Review Button for this product -->
+                  <div>
+                    <button id="ap-add-prod-review-btn" style="background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:9px 16px; font-size:12.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:7px; box-shadow:0 2px 6px rgba(2,47,67,0.25); transition:transform 0.1s ease;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      + Add Review for this Product
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Rating Score & Distribution Grid -->
+                <div style="display:grid; grid-template-columns:220px 1fr 220px; gap:20px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; align-items:center; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+                  <!-- Overall Score Box -->
+                  <div style="text-align:center; border-right:1px solid #e2e8f0; padding-right:16px;">
+                    <div style="font-size:46px; font-weight:900; color:#0f172a; line-height:1; font-feature-settings:'tnum';">${ratingNum.toFixed(1)}</div>
+                    <div style="margin-top:6px;">
+                      ${getStarsHTML(ratingNum, '18px')}
+                    </div>
+                    <div style="font-size:12px; font-weight:700; color:#64748b; margin-top:5px;">
+                      Based on ${revs.length} verified reviews
+                    </div>
+                  </div>
+
+                  <!-- Star Breakdown Progress Bars -->
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${[5, 4, 3, 2, 1].map(star => {
+                      const count = dist[star] || 0;
+                      const pct = revs.length > 0 ? Math.round((count / revs.length) * 100) : 0;
+                      return `
+                        <div style="display:flex; align-items:center; gap:10px; font-size:12px;">
+                          <span style="width:28px; font-weight:700; color:#475569;">${star} ★</span>
+                          <div style="flex:1; height:8px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                            <div style="width:${pct}%; height:100%; background:${star >= 4 ? '#16a34a' : star === 3 ? '#eab308' : '#ef4444'}; border-radius:99px;"></div>
+                          </div>
+                          <span style="width:36px; text-align:right; font-weight:700; color:#64748b; font-feature-settings:'tnum';">${count}</span>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+
+                  <!-- Moderation Breakdown -->
+                  <div style="border-left:1px solid #e2e8f0; padding-left:16px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">Moderation Status</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:#ecfdf5; color:#047857; padding:5px 10px; border-radius:6px; font-weight:700;">
+                      <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approved</span> <span>${approvedCount}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:#fffbeb; color:#b45309; padding:5px 10px; border-radius:6px; font-weight:700;">
+                      <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending</span> <span>${pendingCount}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:#fef2f2; color:#b91c1c; padding:5px 10px; border-radius:6px; font-weight:700;">
+                      <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flagged</span> <span>${flaggedCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Filter Tabs Inside Window -->
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:6px; margin-bottom:4px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="ap-modal-filter-btn" data-filter="all" style="padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'all' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'all' ? '#ffffff' : '#475569'};">
+                      All (${revs.length})
+                    </button>
+                    <button class="ap-modal-filter-btn" data-filter="Approved" style="padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Approved' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Approved' ? '#ffffff' : '#475569'};">
+                      Approved (${approvedCount})
+                    </button>
+                    <button class="ap-modal-filter-btn" data-filter="Pending" style="padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Pending' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Pending' ? '#ffffff' : '#475569'};">
+                      Pending (${pendingCount})
+                    </button>
+                    <button class="ap-modal-filter-btn" data-filter="Flagged" style="padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Flagged' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Flagged' ? '#ffffff' : '#475569'};">
+                      Flagged (${flaggedCount})
+                    </button>
+                  </div>
+                  <div style="font-size:12.5px; color:#64748b; font-weight:500;">
+                    Showing ${filteredRevs.length} customer ratings/reviews
+                  </div>
+                </div>
+
+                <!-- Reviews Feed List -->
+                <div class="ap-modal-reviews-list">
+                  ${revItemsHTML}
+                </div>
+              </div>
+            </div>
+
+            <!-- Window Footer (Full-width bar with Close button) -->
+            <div class="ap-window-footer" style="padding:14px 32px; min-height:56px; background:#ffffff; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; position:relative; z-index:10; box-shadow:0 -1px 4px rgba(0,0,0,0.03);">
+              <span style="font-size:12.5px; color:#64748b; font-weight:600;">
+                Product ID: ${prod._id || prod.id || prod.productId || ''}
+              </span>
+              <button type="button" class="ap-modal-footer-close-btn" style="min-width:104px; height:38px; padding:7px 24px; border-radius:6px; border:none; background:#FF9400 !important; color:#000000 !important; font-size:12.5px; font-weight:800; cursor:pointer; box-shadow:0 2px 5px rgba(255,148,0,0.3); white-space:nowrap !important; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all 0.15s ease;" onmouseover="this.style.filter='brightness(1.08)';" onmouseout="this.style.filter='none';">
+                Close
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Event listeners inside modal
+        modal.querySelector('.ap-modal-close-x')?.addEventListener('click', closeModal);
+        modal.querySelector('.ap-modal-close-btn')?.addEventListener('click', closeModal);
+        modal.querySelector('.ap-modal-footer-close-btn')?.addEventListener('click', closeModal);
+
+        // Filter buttons
+        modal.querySelectorAll('.ap-modal-filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            modalFilter = btn.dataset.filter;
+            renderModalContent();
+          });
+        });
+
+        // Add review for this product
+        modal.querySelector('#ap-add-prod-review-btn')?.addEventListener('click', () => {
+          closeModal();
+          openAddReviewModal(prod);
+        });
+
+        // Toggle Reply Box
+        modal.querySelectorAll('.ap-modal-toggle-reply-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const rid = btn.dataset.id;
+            const box = modal.querySelector(`#ap-reply-box-${rid}`);
+            if (box) {
+              box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            }
+          });
+        });
+
+        modal.querySelectorAll('.ap-cancel-reply-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const rid = btn.dataset.id;
+            const box = modal.querySelector(`#ap-reply-box-${rid}`);
+            if (box) box.style.display = 'none';
+          });
+        });
+
+        // Save Reply
+        modal.querySelectorAll('.ap-save-reply-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const rid = btn.dataset.id;
+            const replyText = modal.querySelector(`#ap-reply-input-${rid}`).value.trim();
+            try {
+              await adminFetch(`/reviews/${rid}`, {
+                method: 'PUT',
+                body: JSON.stringify({ adminReply: replyText }),
+              });
+              const r = revs.find(x => x.id === rid);
+              if (r) r.adminReply = replyText;
+              showToast('Official merchant reply saved', 'success');
+              renderModalContent();
+            } catch (e) { showToast(e.message, 'error'); }
+          });
+        });
+
+        // Quick Moderation Action buttons
+        modal.querySelectorAll('.ap-modal-rev-action').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const rid = btn.dataset.id;
+            const act = btn.dataset.action;
+            try {
+              await adminFetch(`/reviews/${rid}`, {
+                method: 'PUT',
+                body: JSON.stringify({ status: act }),
+              });
+              const r = revs.find(x => x.id === rid);
+              if (r) r.status = act;
+              // update product stats
+              prod.approved = revs.filter(x => x.status === 'Approved').length;
+              prod.pending = revs.filter(x => x.status === 'Pending').length;
+              prod.flagged = revs.filter(x => x.status === 'Flagged').length;
+              showToast(`Review marked as ${act}`, 'success');
+              renderModalContent();
+              // also update background table
+              if (viewMode === 'products') renderProductsView();
+            } catch (e) { showToast(e.message, 'error'); }
+          });
+        });
+
+        // Delete Review inside modal
+        modal.querySelectorAll('.ap-modal-delete-rev-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const rid = btn.dataset.id;
+            if (!confirm('Are you sure you want to permanently delete this customer review?')) return;
+            try {
+              await adminFetch(`/reviews/${rid}`, { method: 'DELETE' });
+              revs = revs.filter(x => x.id !== rid);
+              prod.reviews = revs;
+              prod.numReviews = revs.length;
+              prod.reviewsCount = revs.length;
+              prod.rating = revs.length > 0 ? Number((revs.reduce((s, r) => s + (Number(r.rating) || 5), 0) / revs.length).toFixed(1)) : 5.0;
+              cachedReviews = cachedReviews.filter(x => x.id !== rid);
+              showToast('Review permanently deleted', 'success');
+              renderModalContent();
+              if (viewMode === 'products') renderProductsView();
+            } catch (e) { showToast(e.message, 'error'); }
+          });
+        });
+      }
+
+      renderModalContent();
+      document.body.appendChild(modal);
+    }
+    window._openProductReviewsModal = openProductReviewsModal;
+
+    /* ═══════════════════════════════════════════════════════════════
+       3. VIEW MODE: ALL CUSTOMER REVIEWS (MODERATION FEED TABLE)
+       ═══════════════════════════════════════════════════════════════ */
+    function renderReviewsView() {
+      let reviews = [...cachedReviews];
+      const counts = {
+        all: cachedReviews.length,
+        approved: cachedReviews.filter(r => r.status === 'Approved').length,
+        pending: cachedReviews.filter(r => r.status === 'Pending').length,
+        flagged: cachedReviews.filter(r => r.status === 'Flagged').length,
+      };
+
+      if (filter !== 'all') {
+        reviews = reviews.filter(r => (r.status || 'Approved').toLowerCase() === filter.toLowerCase());
+      }
+
+      if (ratingFilter !== 'all') {
+        const rVal = Number(ratingFilter);
+        reviews = reviews.filter(r => Number(r.rating) === rVal);
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        reviews = reviews.filter(r =>
+          (r.product || '').toLowerCase().includes(q) ||
+          (r.author || '').toLowerCase().includes(q) ||
+          (r.email || '').toLowerCase().includes(q) ||
+          (r.headline || '').toLowerCase().includes(q) ||
+          (r.comment || '').toLowerCase().includes(q)
+        );
+      }
+
+      reviews.sort((a, b) => {
+        if (sortBy === 'newest') return new Date(b.date || 0) - new Date(a.date || 0);
+        if (sortBy === 'oldest') return new Date(a.date || 0) - new Date(b.date || 0);
+        if (sortBy === 'rating-desc') return (b.rating || 5) - (a.rating || 5);
+        if (sortBy === 'rating-asc') return (a.rating || 5) - (b.rating || 5);
+        if (sortBy === 'helpful') return (b.helpful || 0) - (a.helpful || 0);
+        return 0;
+      });
+
+      const allSelected = reviews.length > 0 && reviews.every(r => selectedIds.has(r.id));
+      const hasSelection = selectedIds.size > 0;
+
+      const rowsHTML = reviews.length ? reviews.map(r => {
+        const isChecked = selectedIds.has(r.id);
+        const prodImg = r.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120';
+        const dateStr = fmtDate(r.date);
+        const authorInitials = (r.author || 'CU').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+        return `
+          <tr class="${isChecked ? 'is-selected-row' : ''}" style="${isChecked ? 'background:#f0fdf4;' : ''}">
+            <td style="width:40px; text-align:center;">
+              <input type="checkbox" class="ap-rev-chk" data-id="${r.id}" ${isChecked ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#022F43;">
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <img src="${prodImg}" alt="${r.product}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0; background:#f8fafc;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120'">
+                <div>
+                  <strong style="color:#0f172a; font-size:13px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${r.product}">${r.product}</strong>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+                    <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-weight:600;">${r.category || 'General'}</span>
+                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">${r.price ? fmtPrice(r.price) : ''}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:9px;">
+                <div style="width:34px; height:34px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  ${authorInitials}
+                </div>
+                <div>
+                  <div style="font-weight:700; color:#0f172a; font-size:12.5px; display:flex; align-items:center; gap:4px;">
+                    ${r.author}
+                    ${r.verified !== false ? `<span title="Verified X-Mart Buyer" style="color:#16a34a; font-size:13px;">✓</span>` : ''}
+                  </div>
+                  <div style="font-size:11px; color:#64748b;">${r.email || 'customer@example.com'}</div>
+                  <div style="font-size:10.5px; color:#94a3b8; margin-top:1px;">${dateStr}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="color:#f59e0b; font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                <span>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                <span style="font-size:11.5px; color:#475569; background:#fef3c7; padding:2px 5px; border-radius:4px; font-weight:700;">${r.rating}.0</span>
+              </div>
+              <div style="font-size:11px; color:#64748b; margin-top:3px;">
+                👍 ${r.helpful || 0} found helpful
+              </div>
+            </td>
+            <td style="max-width:300px;">
+              ${r.headline ? `<div style="font-weight:700; color:#0f172a; font-size:12.5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.headline}</div>` : ''}
+              <div style="font-size:12px; color:#334155; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${r.comment}">
+                "${r.comment}"
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:5px; flex-wrap:wrap;">
+                <span style="font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; ${r.status === 'Flagged' ? 'background:#fee2e2; color:#b91c1c;' : r.rating >= 4 ? 'background:#ecfdf5; color:#047857;' : 'background:#eff6ff; color:#1d4ed8;'}">
+                  ${r.sentiment || (r.rating >= 4 ? 'Positive (95%)' : 'Neutral (60%)')}
+                </span>
+                ${r.adminReply ? `<span style="font-size:10px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-flex; align-items:center; gap:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Replied</span>` : ''}
+              </div>
+            </td>
+            <td>
+              <span class="ap-badge ${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="display:inline-flex; align-items:center; gap:4px; font-weight:700; font-size:11px; padding:4px 8px;">
+                ${r.status === 'Approved' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approved' : r.status === 'Pending' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flagged'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:5px; flex-wrap:nowrap;">
+                ${r.status !== 'Approved' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Approved" title="Approve" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approve</button>` : ''}
+                ${r.status !== 'Flagged' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Flagged" title="Flag as Spam" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flag</button>` : ''}
+                ${r.status !== 'Pending' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Pending" title="Mark Pending" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Re-queue</button>` : ''}
+                <button class="ap-inspect-btn" data-id="${r.id}" title="Inspect Details & Reply" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer;">Inspect</button>
+                <button class="ap-delete-rev-btn" data-id="${r.id}" title="Delete Review" style="padding:5px 8px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="7" style="text-align:center; padding:48px 24px; color:#94a3b8;">
+            ${emptyHTML('⭐', 'No reviews match this filter or search query.')}
+            <div style="margin-top:14px;">
+              <button class="ap-btn ghost" id="ap-reset-filter-btn" style="font-size:12px; border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px;">Clear Filters</button>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      body.innerHTML = `
+        <div class="ap-view-inner">
+          ${getHeaderHTML()}
+
+          <!-- Moderation Toolbar -->
+          <div class="ap-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
+            <div class="ap-toolbar-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div class="ap-toolbar-tabs">
+                <button class="ap-tab-pill ${filter === 'all' ? 'active' : ''}" data-filter="all">All Reviews (${counts.all})</button>
+                <button class="ap-tab-pill ${filter === 'approved' ? 'active' : ''}" data-filter="approved">Approved (${counts.approved})</button>
+                <button class="ap-tab-pill ${filter === 'pending' ? 'active' : ''}" data-filter="pending">Pending (${counts.pending})</button>
+                <button class="ap-tab-pill ${filter === 'flagged' ? 'active' : ''}" data-filter="flagged">Flagged (${counts.flagged})</button>
+              </div>
+            </div>
+
+            <div class="ap-toolbar-right" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div style="position:relative; width:220px;">
+                <input type="text" id="ap-rev-search-input" value="${searchQuery}" placeholder="Search reviews..." style="width:100%; padding:7px 10px 7px 30px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; box-sizing:border-box;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                ${searchQuery ? `<button id="ap-rev-clear-search" style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px;">✕</button>` : ''}
+              </div>
+
+              <select id="ap-rev-rating-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff;">
+                <option value="all" ${ratingFilter === 'all' ? 'selected' : ''}>All Ratings</option>
+                <option value="5" ${ratingFilter === '5' ? 'selected' : ''}>5 Stars ★★★★★</option>
+                <option value="4" ${ratingFilter === '4' ? 'selected' : ''}>4 Stars ★★★★☆</option>
+                <option value="3" ${ratingFilter === '3' ? 'selected' : ''}>3 Stars ★★★☆☆</option>
+                <option value="2" ${ratingFilter === '2' ? 'selected' : ''}>2 Stars ★★☆☆☆</option>
+                <option value="1" ${ratingFilter === '1' ? 'selected' : ''}>1 Star ★☆☆☆☆</option>
+              </select>
+
+              <select id="ap-rev-sort-by" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff;">
+                <option value="newest" ${sortBy === 'newest' ? 'selected' : ''}>Newest First</option>
+                <option value="oldest" ${sortBy === 'oldest' ? 'selected' : ''}>Oldest First</option>
+                <option value="rating-desc" ${sortBy === 'rating-desc' ? 'selected' : ''}>Highest Rating</option>
+                <option value="rating-asc" ${sortBy === 'rating-asc' ? 'selected' : ''}>Lowest Rating</option>
+                <option value="helpful" ${sortBy === 'helpful' ? 'selected' : ''}>Most Helpful</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Bulk Selection Bar -->
+          ${hasSelection ? `
+            <div class="ap-bulk-bar" style="background:#022F43; color:#ffffff; padding:10px 16px; border-radius:8px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:12.5px; font-weight:700;">✓ <strong>${selectedIds.size}</strong> review(s) selected</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="ap-btn success ap-bulk-action" data-action="Approved" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">Approve Selected</button>
+                <button class="ap-btn danger ap-bulk-action" data-action="Flagged" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">Flag as Spam</button>
+                <button class="ap-btn ghost ap-bulk-action" data-action="Pending" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#ffffff; border-color:#475569;">Mark Pending</button>
+                <button class="ap-btn ghost ap-bulk-action" data-action="Delete" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#f87171; border-color:#ef4444;">Delete Selected</button>
+                <button class="ap-btn ghost" id="ap-bulk-clear-btn" style="padding:5px 10px; font-size:11.5px; border-radius:5px; color:#94a3b8;">Deselect All</button>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Reviews Table -->
+          <div class="ap-table-card" style="margin-top:12px;">
+            <div class="ap-table-wrap">
+              <table class="ap-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px; text-align:center;">
+                      <input type="checkbox" id="ap-select-all-revs" ${allSelected ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#022F43;">
+                    </th>
+                    <th>Product Title</th>
+                    <th>Author</th>
+                    <th>Rating</th>
+                    <th>Feedback Snippet</th>
+                    <th>Status</th>
+                    <th>Moderation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHTML}
+                </tbody>
+              </table>
+            </div>
+            <div class="ap-table-footer" style="padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
+              <span>Showing <strong>${reviews.length}</strong> of <strong>${cachedReviews.length}</strong> customer reviews</span>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:11px; color:#10b981; font-weight:600;">● Active Moderation Pipeline</span>
+                <span style="font-size:11px; color:#94a3b8;">X-Mart Reputation Engine v3.8</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      bindHeaderEvents();
+
+      // Filter tabs
+      body.querySelectorAll('.ap-tab-pill').forEach(btn => {
+        btn.addEventListener('click', () => { filter = btn.dataset.filter; renderReviewsView(); });
+      });
+
+      // Search input live
+      const searchInput = document.getElementById('ap-rev-search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          searchQuery = e.target.value;
+          renderReviewsView();
+          const newInput = document.getElementById('ap-rev-search-input');
+          if (newInput) { newInput.focus(); newInput.setSelectionRange(searchQuery.length, searchQuery.length); }
+        });
+      }
+
+      document.getElementById('ap-rev-clear-search')?.addEventListener('click', () => { searchQuery = ''; renderReviewsView(); });
+      document.getElementById('ap-rev-rating-filter')?.addEventListener('change', (e) => { ratingFilter = e.target.value; renderReviewsView(); });
+      document.getElementById('ap-rev-sort-by')?.addEventListener('change', (e) => { sortBy = e.target.value; renderReviewsView(); });
+      document.getElementById('ap-reset-filter-btn')?.addEventListener('click', () => {
+        filter = 'all'; searchQuery = ''; ratingFilter = 'all'; sortBy = 'newest'; renderReviewsView();
+      });
+
+      // Quick Moderation Action buttons
+      body.querySelectorAll('.ap-rev-action').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const action = btn.dataset.action;
+          try {
+            await adminFetch(`/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ status: action }) });
+            showToast(`Review marked as ${action}`, 'success');
+            load(true);
+          } catch (e) { showToast(e.message, 'error'); }
+        });
+      });
+
+      // Delete single review
+      body.querySelectorAll('.ap-delete-rev-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          if (!confirm('Are you sure you want to permanently delete this customer review?')) return;
+          try {
+            await adminFetch(`/reviews/${id}`, { method: 'DELETE' });
+            showToast('Review deleted permanently', 'success');
+            selectedIds.delete(id);
+            load(true);
+          } catch (e) { showToast(e.message, 'error'); }
+        });
+      });
+
+      // Checkbox select all & row
+      const selectAllEl = document.getElementById('ap-select-all-revs');
+      if (selectAllEl) {
+        selectAllEl.addEventListener('change', (e) => {
+          if (e.target.checked) reviews.forEach(r => selectedIds.add(r.id));
+          else reviews.forEach(r => selectedIds.delete(r.id));
+          renderReviewsView();
+        });
+      }
+
+      body.querySelectorAll('.ap-rev-chk').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          const id = e.target.dataset.id;
+          if (e.target.checked) selectedIds.add(id);
+          else selectedIds.delete(id);
+          renderReviewsView();
+        });
+      });
+
+      document.getElementById('ap-bulk-clear-btn')?.addEventListener('click', () => { selectedIds.clear(); renderReviewsView(); });
+
+      // Bulk actions
+      body.querySelectorAll('.ap-bulk-action').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.action;
+          const ids = Array.from(selectedIds);
+          if (ids.length === 0) return;
+          if (action === 'Delete' && !confirm(`Permanently delete ${ids.length} selected review(s)?`)) return;
+
+          try {
+            await adminFetch('/reviews/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) });
+            showToast(`Bulk updated ${ids.length} review(s) to ${action}`, 'success');
+            selectedIds.clear();
+            load(false);
+          } catch (e) { showToast(e.message, 'error'); }
+        });
+      });
+
+      // Inspect & Reply Modal
+      body.querySelectorAll('.ap-inspect-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const r = cachedReviews.find(x => x.id === id);
+          if (r) openReviewInspectionModal(r);
+        });
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       4. VIEW MODE: PRODUCT PRIORITY MATRIX
+       ═══════════════════════════════════════════════════════════════ */
     function getProductGroups(searchQ) {
       const groups = {};
       cachedReviews.forEach(r => {
@@ -10548,7 +12891,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
     function renderPriorityView() {
       const groups = getProductGroups(productSearchQuery);
-      // Sort
       groups.sort((a, b) => {
         if (prioritySortBy === 'rating-desc') return b.avgRating - a.avgRating;
         if (prioritySortBy === 'rating-asc') return a.avgRating - b.avgRating;
@@ -10566,245 +12908,117 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         lowest:  { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c', badge: '#fee2e2', badgeText: '#7f1d1d', label: 'Lowest Priority', icon: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>' },
       };
 
-      const getRatingBar = (rating) => {
-        const pct = Math.round((rating / 5) * 100);
-        const color = rating >= 4.5 ? '#16a34a' : rating >= 3.5 ? '#2563eb' : rating >= 2.5 ? '#d97706' : rating >= 1.5 ? '#ea580c' : '#dc2626';
-        return `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-          <div style="flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;transition:width 0.4s ease;"></div>
-          </div>
-          <span style="font-size:11.5px;font-weight:700;color:${color};min-width:28px;font-feature-settings:'tnum';">${rating.toFixed(1)}</span>
-        </div>`;
-      };
-
       const cardsHTML = groups.length ? groups.map(g => {
         const pc = priorityColors[g.priority] || priorityColors.normal;
         const fullStars = Math.round(g.avgRating);
         const stars = '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
         const isManuallySet = !!productPriorities[g.productId];
         return `
-          <div class="ap-priority-card" data-product-id="${g.productId}" style="
-            background:#ffffff;
-            border:1px solid #e2e8f0;
-            border-radius:12px;
-            overflow:hidden;
-            box-shadow:0 1px 3px rgba(15,23,42,0.05);
-            transition:all 0.16s ease;
-            display:flex;
-            flex-direction:column;
-          " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(15,23,42,0.08)';" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(15,23,42,0.05)';">
-            <!-- Priority Header Strip -->
-            <div style="background:${pc.bg};border-bottom:1px solid ${pc.border};padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:7px;color:${pc.text};">
-                <span style="display:inline-flex;align-items:center;">${pc.icon}</span>
+          <div class="ap-priority-card" data-product-id="${g.productId}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,0.05); transition:all 0.16s ease; display:flex; flex-direction:column;">
+            <div style="background:${pc.bg}; border-bottom:1px solid ${pc.border}; padding:10px 14px; display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:7px; color:${pc.text};">
+                <span style="display:inline-flex; align-items:center;">${pc.icon}</span>
                 <div>
-                  <div style="font-size:11px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase;">${pc.label}</div>
-                  <div style="font-size:10px;opacity:0.75;margin-top:1px;">${isManuallySet ? 'Admin Override' : 'Auto (Rating Based)'}</div>
+                  <div style="font-size:11px; font-weight:800; letter-spacing:0.02em; text-transform:uppercase;">${pc.label}</div>
+                  <div style="font-size:10px; opacity:0.75; margin-top:1px;">${isManuallySet ? 'Admin Override' : 'Auto (Rating Based)'}</div>
                 </div>
               </div>
-              <div style="background:#ffffff;border:1px solid ${pc.border};border-radius:6px;padding:3px 8px;">
-                <span style="font-size:12.5px;font-weight:800;color:${pc.text};font-feature-settings:'tnum';">${g.avgRating.toFixed(1)} ★</span>
+              <div style="background:#ffffff; border:1px solid ${pc.border}; border-radius:6px; padding:3px 8px;">
+                <span style="font-size:12.5px; font-weight:800; color:${pc.text}; font-feature-settings:'tnum';">${g.avgRating.toFixed(1)} ★</span>
               </div>
             </div>
 
-            <!-- Product Info -->
-            <div style="padding:14px;flex:1;display:flex;flex-direction:column;justify-content:space-between;">
+            <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
               <div>
-                <div style="display:flex;align-items:flex-start;gap:12px;">
-                  <img src="${g.image}" alt="${g.product}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;flex-shrink:0;background:#f8fafc;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120'">
-                  <div style="flex:1;min-width:0;">
-                    <div style="font-weight:700;color:#0f172a;font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="${g.product}">${g.product}</div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
-                      <span style="font-size:10.5px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:4px;font-weight:600;">${g.category}</span>
-                      ${g.price ? `<span style="font-size:11.5px;color:#0f172a;font-weight:700;font-feature-settings:'tnum';">₹${Number(g.price).toLocaleString('en-IN')}</span>` : ''}
+                <div style="display:flex; align-items:flex-start; gap:12px;">
+                  <img src="${g.image}" alt="${g.product}" style="width:52px; height:52px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0; background:#f8fafc;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120'">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-weight:700; color:#0f172a; font-size:13px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${g.product}">${g.product}</div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:5px; flex-wrap:wrap;">
+                      <span style="font-size:10.5px; background:#f1f5f9; color:#475569; padding:2px 7px; border-radius:4px; font-weight:600;">${g.category}</span>
+                      ${g.price ? `<span style="font-size:11.5px; color:#0f172a; font-weight:700; font-feature-settings:'tnum';">₹${Number(g.price).toLocaleString('en-IN')}</span>` : ''}
                     </div>
                   </div>
                 </div>
 
-                <!-- Rating Bar -->
                 <div style="margin-top:12px;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;">
-                    <span style="font-size:11px;color:#64748b;font-weight:600;">Avg. Customer Rating</span>
-                    <span style="color:#f59e0b;font-size:12px;font-weight:700;">${stars}</span>
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-size:11px; color:#64748b; font-weight:600;">Avg. Customer Rating</span>
+                    <span style="color:#f59e0b; font-size:12px; font-weight:700;">${stars}</span>
                   </div>
-                  ${getRatingBar(g.avgRating)}
+                  ${getRatingBarHTML(g.avgRating)}
                 </div>
 
-                <!-- Review Stats Row -->
-                <div style="display:flex;align-items:center;gap:0;margin-top:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
-                  <div style="flex:1;padding:7px 4px;text-align:center;border-right:1px solid #e2e8f0;">
-                    <div style="font-size:15px;font-weight:800;color:#0f172a;font-feature-settings:'tnum';">${g.totalReviews}</div>
-                    <div style="font-size:10px;color:#64748b;font-weight:600;">Total</div>
+                <div style="display:flex; align-items:center; gap:0; margin-top:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+                  <div style="flex:1; padding:7px 4px; text-align:center; border-right:1px solid #e2e8f0;">
+                    <div style="font-size:15px; font-weight:800; color:#0f172a; font-feature-settings:'tnum';">${g.totalReviews}</div>
+                    <div style="font-size:10px; color:#64748b; font-weight:600;">Total</div>
                   </div>
-                  <div style="flex:1;padding:7px 4px;text-align:center;border-right:1px solid #e2e8f0;">
-                    <div style="font-size:15px;font-weight:800;color:#16a34a;font-feature-settings:'tnum';">${g.approved}</div>
-                    <div style="font-size:10px;color:#64748b;font-weight:600;">Approved</div>
+                  <div style="flex:1; padding:7px 4px; text-align:center; border-right:1px solid #e2e8f0;">
+                    <div style="font-size:15px; font-weight:800; color:#16a34a; font-feature-settings:'tnum';">${g.approved}</div>
+                    <div style="font-size:10px; color:#64748b; font-weight:600;">Approved</div>
                   </div>
-                  <div style="flex:1;padding:7px 4px;text-align:center;border-right:1px solid #e2e8f0;">
-                    <div style="font-size:15px;font-weight:800;color:#2563eb;font-feature-settings:'tnum';">${g.pending}</div>
-                    <div style="font-size:10px;color:#64748b;font-weight:600;">Pending</div>
+                  <div style="flex:1; padding:7px 4px; text-align:center; border-right:1px solid #e2e8f0;">
+                    <div style="font-size:15px; font-weight:800; color:#2563eb; font-feature-settings:'tnum';">${g.pending}</div>
+                    <div style="font-size:10px; color:#64748b; font-weight:600;">Pending</div>
                   </div>
-                  <div style="flex:1;padding:7px 4px;text-align:center;">
-                    <div style="font-size:15px;font-weight:800;color:#dc2626;font-feature-settings:'tnum';">${g.flagged}</div>
-                    <div style="font-size:10px;color:#64748b;font-weight:600;">Flagged</div>
+                  <div style="flex:1; padding:7px 4px; text-align:center;">
+                    <div style="font-size:15px; font-weight:800; color:#dc2626; font-feature-settings:'tnum';">${g.flagged}</div>
+                    <div style="font-size:10px; color:#64748b; font-weight:600;">Flagged</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Priority Control Buttons -->
               <div style="margin-top:14px;">
-                <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px;">Set Priority Status:</div>
-                <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="highest" style="flex:1;min-width:0;padding:5px 2px;font-size:10.5px;font-weight:700;border-radius:6px;border:1px solid ${g.priority==='highest'?'#93c5fd':'#e2e8f0'};background:${g.priority==='highest'?'#eff6ff':'#ffffff'};color:${g.priority==='highest'?'#1e40af':'#64748b'};cursor:pointer;transition:all 0.14s;" title="Set Highest Priority - Top listing priority">Highest</button>
-                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="high" style="flex:1;min-width:0;padding:5px 2px;font-size:10.5px;font-weight:700;border-radius:6px;border:1px solid ${g.priority==='high'?'#86efac':'#e2e8f0'};background:${g.priority==='high'?'#f0fdf4':'#ffffff'};color:${g.priority==='high'?'#15803d':'#64748b'};cursor:pointer;transition:all 0.14s;" title="High Priority">High</button>
-                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="normal" style="flex:1;min-width:0;padding:5px 2px;font-size:10.5px;font-weight:700;border-radius:6px;border:1px solid ${g.priority==='normal'?'#cbd5e1':'#e2e8f0'};background:${g.priority==='normal'?'#f8fafc':'#ffffff'};color:${g.priority==='normal'?'#334155':'#94a3b8'};cursor:pointer;transition:all 0.14s;">Normal</button>
-                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="low" style="flex:1;min-width:0;padding:5px 2px;font-size:10.5px;font-weight:700;border-radius:6px;border:1px solid ${g.priority==='low'?'#fde68a':'#e2e8f0'};background:${g.priority==='low'?'#fffbeb':'#ffffff'};color:${g.priority==='low'?'#92400e':'#94a3b8'};cursor:pointer;transition:all 0.14s;">Low</button>
-                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="lowest" style="flex:1;min-width:0;padding:5px 2px;font-size:10.5px;font-weight:700;border-radius:6px;border:1px solid ${g.priority==='lowest'?'#fecaca':'#e2e8f0'};background:${g.priority==='lowest'?'#fef2f2':'#ffffff'};color:${g.priority==='lowest'?'#b91c1c':'#94a3b8'};cursor:pointer;transition:all 0.14s;">Lowest</button>
+                <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:6px;">Set Priority Status:</div>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="highest" style="flex:1; min-width:0; padding:5px 2px; font-size:10.5px; font-weight:700; border-radius:6px; border:1px solid ${g.priority==='highest'?'#93c5fd':'#e2e8f0'}; background:${g.priority==='highest'?'#eff6ff':'#ffffff'}; color:${g.priority==='highest'?'#1e40af':'#64748b'}; cursor:pointer;">Highest</button>
+                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="high" style="flex:1; min-width:0; padding:5px 2px; font-size:10.5px; font-weight:700; border-radius:6px; border:1px solid ${g.priority==='high'?'#86efac':'#e2e8f0'}; background:${g.priority==='high'?'#f0fdf4':'#ffffff'}; color:${g.priority==='high'?'#15803d':'#64748b'}; cursor:pointer;">High</button>
+                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="normal" style="flex:1; min-width:0; padding:5px 2px; font-size:10.5px; font-weight:700; border-radius:6px; border:1px solid ${g.priority==='normal'?'#cbd5e1':'#e2e8f0'}; background:${g.priority==='normal'?'#f8fafc':'#ffffff'}; color:${g.priority==='normal'?'#334155':'#94a3b8'}; cursor:pointer;">Normal</button>
+                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="low" style="flex:1; min-width:0; padding:5px 2px; font-size:10.5px; font-weight:700; border-radius:6px; border:1px solid ${g.priority==='low'?'#fde68a':'#e2e8f0'}; background:${g.priority==='low'?'#fffbeb':'#ffffff'}; color:${g.priority==='low'?'#92400e':'#94a3b8'}; cursor:pointer;">Low</button>
+                  <button class="ap-set-priority-btn" data-product-id="${g.productId}" data-priority="lowest" style="flex:1; min-width:0; padding:5px 2px; font-size:10.5px; font-weight:700; border-radius:6px; border:1px solid ${g.priority==='lowest'?'#fecaca':'#e2e8f0'}; background:${g.priority==='lowest'?'#fef2f2':'#ffffff'}; color:${g.priority==='lowest'?'#b91c1c':'#94a3b8'}; cursor:pointer;">Lowest</button>
                 </div>
-                ${isManuallySet ? `<button class="ap-reset-priority-btn" data-product-id="${g.productId}" style="width:100%;margin-top:6px;padding:4px;font-size:10.5px;color:#64748b;border:1px dashed #cbd5e1;background:none;border-radius:6px;cursor:pointer;transition:all 0.14s;">Reset to Auto Calculation</button>` : ''}
+                ${isManuallySet ? `<button class="ap-reset-priority-btn" data-product-id="${g.productId}" style="width:100%; margin-top:6px; padding:4px; font-size:10.5px; color:#64748b; border:1px dashed #cbd5e1; background:none; border-radius:6px; cursor:pointer;">Reset to Auto Calculation</button>` : ''}
               </div>
             </div>
           </div>
         `;
       }).join('') : `
-        <div style="grid-column:1/-1;text-align:center;padding:48px;color:#94a3b8;">
-          ${emptyHTML('', productSearchQuery ? `No products match "${productSearchQuery}"` : 'No product reviews found. Seed demo reviews to get started.')}
+        <div style="grid-column:1/-1; text-align:center; padding:48px; color:#94a3b8;">
+          ${emptyHTML('', productSearchQuery ? `No products match "${productSearchQuery}"` : 'No product reviews found.')}
         </div>
       `;
-
-      // Priority summary stats
-      const allGroups = getProductGroups('');
-      const highPriorityCount = allGroups.filter(g => ['highest','high'].includes(g.priority)).length;
-      const lowPriorityCount = allGroups.filter(g => ['low','lowest'].includes(g.priority)).length;
 
       body.innerHTML = `
         <div class="ap-view-inner">
-          <!-- Header -->
-          <div class="ap-view-header" style="flex-wrap:wrap;gap:12px;">
-            <div class="ap-view-title-group">
-              <h2 class="ap-view-title">
-                Reviews &amp; Ratings Moderation
-                <span class="ap-super-badge" style="background:#fef3c7;color:#d97706;border-color:#fde68a;">${cachedStats.avgRating} ★ Overall (${cachedStats.totalReviews})</span>
-              </h2>
-              <p class="ap-view-sub">Review customer feedback, regulate marketplace ratings, and adjust product listing priorities based on review sentiment.</p>
+          ${getHeaderHTML()}
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
+            <div style="font-size:13px; font-weight:700; color:#334155;">
+              Product Listing Priority Matrix based on customer satisfaction
             </div>
-            <div class="ap-view-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Refresh
-              </button>
-            </div>
+            <select id="ap-priority-sort-by" style="padding:7px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; font-weight:600; cursor:pointer;">
+              <option value="rating-desc" ${prioritySortBy==='rating-desc'?'selected':''}>Highest Rating First</option>
+              <option value="rating-asc" ${prioritySortBy==='rating-asc'?'selected':''}>Lowest Rating First</option>
+              <option value="priority" ${prioritySortBy==='priority'?'selected':''}>By Priority Level</option>
+              <option value="reviews-desc" ${prioritySortBy==='reviews-desc'?'selected':''}>Most Reviews First</option>
+              <option value="name-asc" ${prioritySortBy==='name-asc'?'selected':''}>Name (A to Z)</option>
+            </select>
           </div>
 
-          <!-- View Mode Toggle -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;">
-            <div style="display:flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:3px;">
-              <button id="ap-view-reviews-btn" style="padding:6px 16px;font-size:12px;font-weight:700;border-radius:6px;border:none;cursor:pointer;transition:all 0.15s;background:${viewMode==='reviews'?'#ffffff':'transparent'};color:${viewMode==='reviews'?'#0f172a':'#64748b'};box-shadow:${viewMode==='reviews'?'0 1px 3px rgba(15,23,42,0.08)':'none'};display:inline-flex;align-items:center;gap:6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                All Reviews
-              </button>
-              <button id="ap-view-priority-btn" style="padding:6px 16px;font-size:12px;font-weight:700;border-radius:6px;border:none;cursor:pointer;transition:all 0.15s;background:${viewMode==='priority'?'#ffffff':'transparent'};color:${viewMode==='priority'?'#0f172a':'#64748b'};box-shadow:${viewMode==='priority'?'0 1px 3px rgba(15,23,42,0.08)':'none'};display:inline-flex;align-items:center;gap:6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                Product Priority
-                ${lowPriorityCount > 0 ? `<span style="background:#ef4444;color:#fff;font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;">${lowPriorityCount} Low</span>` : ''}
-              </button>
-            </div>
-
-            <!-- Priority View Search + Sort -->
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <!-- Product Search Bar -->
-              <div style="position:relative;">
-                <input type="text" id="ap-product-search-input" value="${productSearchQuery}" placeholder="Search product or store name..." style="width:260px;padding:8px 12px 8px 34px;font-size:12.5px;border:1px solid ${productSearchQuery?'#2563eb':'#cbd5e1'};border-radius:8px;background:#ffffff;transition:border-color 0.15s;outline:none;font-family:inherit;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${productSearchQuery?'#2563eb':'#94a3b8'}" stroke-width="2" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                ${productSearchQuery ? `<button id="ap-product-clear-search" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#94a3b8;font-size:14px;padding:0;">✕</button>` : ''}
-              </div>
-              ${viewMode === 'priority' ? `
-              <select id="ap-priority-sort-by" style="padding:7px 12px;font-size:12px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;font-weight:600;cursor:pointer;color:#334155;font-family:inherit;">
-                <option value="rating-desc" ${prioritySortBy==='rating-desc'?'selected':''}>Highest Rating First</option>
-                <option value="rating-asc" ${prioritySortBy==='rating-asc'?'selected':''}>Lowest Rating First</option>
-                <option value="priority" ${prioritySortBy==='priority'?'selected':''}>By Priority Level</option>
-                <option value="reviews-desc" ${prioritySortBy==='reviews-desc'?'selected':''}>Most Reviews First</option>
-                <option value="name-asc" ${prioritySortBy==='name-asc'?'selected':''}>Name (A to Z)</option>
-              </select>` : ''}
-            </div>
-          </div>
-
-          <!-- Priority Summary Banners -->
-          ${viewMode === 'priority' ? `
-          <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:180px;background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #2563eb;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(15,23,42,0.04);">
-              <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Highest Priority</div>
-              <div style="font-size:22px;font-weight:800;color:#1e40af;margin-top:4px;font-feature-settings:'tnum';">${allGroups.filter(g=>g.priority==='highest').length}</div>
-              <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Prime catalog placement</div>
-            </div>
-            <div style="flex:1;min-width:180px;background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #16a34a;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(15,23,42,0.04);">
-              <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">High Priority</div>
-              <div style="font-size:22px;font-weight:800;color:#15803d;margin-top:4px;font-feature-settings:'tnum';">${allGroups.filter(g=>g.priority==='high').length}</div>
-              <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Elevated search rank</div>
-            </div>
-            <div style="flex:1;min-width:180px;background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #d97706;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(15,23,42,0.04);">
-              <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Low Priority</div>
-              <div style="font-size:22px;font-weight:800;color:#b45309;margin-top:4px;font-feature-settings:'tnum';">${allGroups.filter(g=>g.priority==='low').length}</div>
-              <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Lower visibility tier</div>
-            </div>
-            <div style="flex:1;min-width:180px;background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #dc2626;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(15,23,42,0.04);">
-              <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Lowest Priority</div>
-              <div style="font-size:22px;font-weight:800;color:#b91c1c;margin-top:4px;font-feature-settings:'tnum';">${allGroups.filter(g=>g.priority==='lowest').length}</div>
-              <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Deprioritized listings</div>
-            </div>
-          </div>` : ''}
-
-          <!-- Product Priority Grid -->
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:16px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px; margin-top:16px;">
             ${cardsHTML}
-          </div>
-
-          <!-- Footer -->
-          <div style="margin-top:16px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <span style="font-size:12px;color:#64748b;">
-              Showing <strong>${groups.length}</strong> of <strong>${allGroups.length}</strong> products
-              ${productSearchQuery ? ` matching "<strong>${productSearchQuery}</strong>"` : ''}
-            </span>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="font-size:11px;color:#10b981;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
-                <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Active Priority Engine
-              </span>
-              <span style="font-size:11px;color:#94a3b8;">Reputation Engine v3.8</span>
-            </div>
           </div>
         </div>
       `;
 
-      // Priority view event handlers
-      document.getElementById('ap-reviews-refresh-btn')?.addEventListener('click', () => load(false));
+      bindHeaderEvents();
 
-      document.getElementById('ap-view-reviews-btn')?.addEventListener('click', () => { viewMode = 'reviews'; renderUI(); });
-      document.getElementById('ap-view-priority-btn')?.addEventListener('click', () => { viewMode = 'priority'; renderPriorityView(); });
-
-      // Priority product search
-      const prodSearchEl = document.getElementById('ap-product-search-input');
-      if (prodSearchEl) {
-        prodSearchEl.addEventListener('input', (e) => {
-          productSearchQuery = e.target.value;
-          renderPriorityView();
-          const el = document.getElementById('ap-product-search-input');
-          if (el) { el.focus(); el.setSelectionRange(productSearchQuery.length, productSearchQuery.length); }
-        });
-        prodSearchEl.addEventListener('focus', () => { prodSearchEl.style.borderColor = '#0284c7'; });
-        prodSearchEl.addEventListener('blur', () => { if (!productSearchQuery) prodSearchEl.style.borderColor = '#e2e8f0'; });
-      }
-      document.getElementById('ap-product-clear-search')?.addEventListener('click', () => {
-        productSearchQuery = '';
-        renderPriorityView();
-      });
-
-      // Priority sort
       document.getElementById('ap-priority-sort-by')?.addEventListener('change', (e) => {
         prioritySortBy = e.target.value;
         renderPriorityView();
       });
 
-      // Set priority buttons
       body.querySelectorAll('.ap-set-priority-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const pid = btn.dataset.productId;
@@ -10816,556 +13030,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
       });
 
-      // Reset priority buttons
       body.querySelectorAll('.ap-reset-priority-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const pid = btn.dataset.productId;
           delete productPriorities[pid];
           localStorage.setItem('xmart_product_priorities', JSON.stringify(productPriorities));
-          showToast('Priority reset to auto (rating-based)', 'success');
+          showToast('Priority reset to auto calculation', 'success');
           renderPriorityView();
         });
       });
-    }
-
-    function renderUI() {
-      // 1. Filter by Status Tab
-      let reviews = [...cachedReviews];
-      const counts = {
-        all: cachedReviews.length,
-        approved: cachedReviews.filter(r => r.status === 'Approved').length,
-        pending: cachedReviews.filter(r => r.status === 'Pending').length,
-        flagged: cachedReviews.filter(r => r.status === 'Flagged').length,
-      };
-
-      if (filter !== 'all') {
-        reviews = reviews.filter(r => (r.status || 'Approved').toLowerCase() === filter.toLowerCase());
-      }
-
-      // 2. Filter by Star Rating
-      if (ratingFilter !== 'all') {
-        const rVal = Number(ratingFilter);
-        reviews = reviews.filter(r => Number(r.rating) === rVal);
-      }
-
-      // 3. Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        reviews = reviews.filter(r =>
-          (r.product || '').toLowerCase().includes(q) ||
-          (r.author || '').toLowerCase().includes(q) ||
-          (r.email || '').toLowerCase().includes(q) ||
-          (r.headline || '').toLowerCase().includes(q) ||
-          (r.comment || '').toLowerCase().includes(q)
-        );
-      }
-
-      // 4. Sorting
-      reviews.sort((a, b) => {
-        if (sortBy === 'newest') return new Date(b.date || 0) - new Date(a.date || 0);
-        if (sortBy === 'oldest') return new Date(a.date || 0) - new Date(b.date || 0);
-        if (sortBy === 'rating-desc') return (b.rating || 5) - (a.rating || 5);
-        if (sortBy === 'rating-asc') return (a.rating || 5) - (b.rating || 5);
-        if (sortBy === 'helpful') return (b.helpful || 0) - (a.helpful || 0);
-        return 0;
-      });
-
-      const allSelected = reviews.length > 0 && reviews.every(r => selectedIds.has(r.id));
-      const hasSelection = selectedIds.size > 0;
-
-      const rowsHTML = reviews.length ? reviews.map(r => {
-        const isChecked = selectedIds.has(r.id);
-        const prodImg = r.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=120';
-        const dateStr = fmtDate(r.date);
-        const authorInitials = (r.author || 'CU').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-
-        return `
-          <tr class="${isChecked ? 'is-selected-row' : ''}" style="${isChecked ? 'background:#f0fdf4;' : ''}">
-            <td style="width:40px; text-align:center;">
-              <input type="checkbox" class="ap-rev-chk" data-id="${r.id}" ${isChecked ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#0284c7;">
-            </td>
-            <td>
-              <div style="display:flex; align-items:center; gap:12px;">
-                <img src="${prodImg}" alt="${r.product}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0; background:#f8fafc;">
-                <div>
-                  <strong style="color:#0f172a; font-size:13px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${r.product}">${r.product}</strong>
-                  <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
-                    <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-weight:600;">${r.category || 'General'}</span>
-                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">${r.price ? fmtPrice(r.price) : ''}</span>
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td>
-              <div style="display:flex; align-items:center; gap:9px;">
-                <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #0369a1); color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
-                  ${authorInitials}
-                </div>
-                <div>
-                  <div style="font-weight:700; color:#0f172a; font-size:12.5px; display:flex; align-items:center; gap:4px;">
-                    ${r.author}
-                    ${r.verified !== false ? `<span title="Verified X-Mart Buyer" style="color:#16a34a; font-size:13px;">✓</span>` : ''}
-                  </div>
-                  <div style="font-size:11px; color:#64748b;">${r.email || 'customer@example.com'}</div>
-                  <div style="font-size:10.5px; color:#94a3b8; margin-top:1px;">${dateStr}</div>
-                </div>
-              </div>
-            </td>
-            <td>
-              <div style="color:#f59e0b; font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:4px;">
-                <span>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
-                <span style="font-size:11.5px; color:#475569; background:#fef3c7; padding:2px 5px; border-radius:4px; font-weight:700;">${r.rating}.0</span>
-              </div>
-              <div style="font-size:11px; color:#64748b; margin-top:3px;">
-                👍 ${r.helpful || 0} found helpful
-              </div>
-            </td>
-            <td style="max-width:320px;">
-              ${r.headline ? `<div style="font-weight:700; color:#0f172a; font-size:12.5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.headline}</div>` : ''}
-              <div style="font-size:12px; color:#334155; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${r.comment}">
-                "${r.comment}"
-              </div>
-              <div style="display:flex; align-items:center; gap:6px; margin-top:5px; flex-wrap:wrap;">
-                <span style="font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; ${r.status === 'Flagged' ? 'background:#fee2e2; color:#b91c1c;' : r.rating >= 4 ? 'background:#ecfdf5; color:#047857;' : 'background:#eff6ff; color:#1d4ed8;'}">
-                  ${r.sentiment || (r.rating >= 4 ? 'Positive (95%)' : 'Neutral (60%)')}
-                </span>
-                ${r.status === 'Flagged' && r.flagReason ? `
-                  <span style="font-size:10px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:2px 5px; border-radius:4px; font-weight:600;" title="${r.flagReason}">
-                    ${r.flagReason.split(':')[0]}
-                  </span>
-                ` : ''}
-                ${r.adminReply ? `
-                  <span style="font-size:10px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 5px; border-radius:4px; font-weight:600;" title="Replied: ${r.adminReply}">
-                    💬 Official Reply Posted
-                  </span>
-                ` : ''}
-              </div>
-            </td>
-            <td>
-              <span class="ap-badge ${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="display:inline-flex; align-items:center; gap:4px; font-weight:700; font-size:11px; padding:4px 8px;">
-                ${r.status === 'Approved' ? '✓ Approved' : r.status === 'Pending' ? '⏳ Pending' : '🚩 Flagged'}
-              </span>
-            </td>
-            <td>
-              <div style="display:flex; align-items:center; gap:5px; flex-wrap:nowrap;">
-                ${r.status !== 'Approved' ? `
-                  <button class="ap-btn success ap-rev-action" data-id="${r.id}" data-action="Approved" title="Approve & Publish to Storefront" style="padding:4px 7px; font-size:11px; border-radius:5px;">
-                    Approve
-                  </button>
-                ` : ''}
-                ${r.status !== 'Flagged' ? `
-                  <button class="ap-btn danger ap-rev-action" data-id="${r.id}" data-action="Flagged" title="Mark as Spam / Toxic" style="padding:4px 7px; font-size:11px; border-radius:5px;">
-                    Flag
-                  </button>
-                ` : ''}
-                ${r.status !== 'Pending' ? `
-                  <button class="ap-btn ghost ap-rev-action" data-id="${r.id}" data-action="Pending" title="Send Back to Pending Moderation" style="padding:4px 7px; font-size:11px; border-radius:5px; border:1px solid #cbd5e1;">
-                    Re-queue
-                  </button>
-                ` : ''}
-                <button class="ap-btn ghost ap-inspect-btn" data-id="${r.id}" title="Inspect Details & Reply" style="padding:4px 8px; font-size:11px; border-radius:5px; border:1px solid #0284c7; color:#0284c7;">
-                  Inspect &amp; Reply
-                </button>
-                <button class="ap-btn ghost ap-delete-rev-btn" data-id="${r.id}" title="Delete Review" style="padding:4px 6px; font-size:11px; border-radius:5px; color:#ef4444;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('') : `
-        <tr>
-          <td colspan="7" style="text-align:center; padding:48px 24px; color:#94a3b8;">
-            ${emptyHTML('⭐', 'No reviews match this filter or search query.')}
-            <div style="margin-top:14px; display:flex; justify-content:center; gap:8px;">
-              <button class="ap-btn ghost" id="ap-reset-filter-btn" style="font-size:12px;">Clear Filters</button>
-            </div>
-          </td>
-        </tr>
-      `;
-
-      body.innerHTML = `
-        <div class="ap-view-inner">
-          <div class="ap-view-header" style="flex-wrap:wrap; gap:12px;">
-            <div class="ap-view-title-group">
-              <h2 class="ap-view-title">
-                Reviews &amp; Ratings Moderation
-                <span class="ap-super-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a;">${cachedStats.avgRating}★ Overall (${cachedStats.totalReviews})</span>
-              </h2>
-              <p class="ap-view-sub">Review incoming customer feedback, screen for spam or abusive language, and curate authentic marketplace feedback.</p>
-            </div>
-            <div class="ap-view-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="ap-btn primary" id="ap-new-review-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, #0284c7, #0369a1); border:none; box-shadow:0 2px 8px rgba(2,132,199,0.3);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                + New Review
-              </button>
-              <button class="ap-btn ghost" id="ap-export-reviews-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="Export Moderated Reviews to CSV">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Export CSV
-              </button>
-              <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:5px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          <!-- View Mode Toggle + Product Search Bar -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1px solid #e2e8f0;border-radius:10px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="display:flex;align-items:center;gap:6px;background:#ffffff;border-radius:8px;padding:4px;border:1px solid #e2e8f0;">
-                <button id="ap-view-reviews-btn" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:5px;border:none;cursor:pointer;transition:all 0.15s;background:${viewMode==='reviews'?'linear-gradient(135deg,#0284c7,#0369a1)':'transparent'};color:${viewMode==='reviews'?'#ffffff':'#64748b'};display:inline-flex;align-items:center;gap:5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                  All Reviews
-                </button>
-                <button id="ap-view-priority-btn" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:5px;border:none;cursor:pointer;transition:all 0.15s;background:${viewMode==='priority'?'linear-gradient(135deg,#7c3aed,#6d28d9)':'transparent'};color:${viewMode==='priority'?'#ffffff':'#64748b'};display:inline-flex;align-items:center;gap:5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                  Product Priority
-                </button>
-              </div>
-            </div>
-            <!-- Dedicated Product/Store Search Bar -->
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;max-width:480px;">
-              <div style="position:relative;flex:1;min-width:200px;">
-                <input type="text" id="ap-product-search-input" value="${productSearchQuery}" placeholder="🔍 Search product name or store..." style="width:100%;padding:8px 36px 8px 36px;font-size:12.5px;border:2px solid ${productSearchQuery?'#0284c7':'#cbd5e1'};border-radius:8px;background:#ffffff;transition:border-color 0.15s;outline:none;font-family:inherit;box-sizing:border-box;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${productSearchQuery?'#0284c7':'#94a3b8'}" stroke-width="2" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                ${productSearchQuery ? `<button id="ap-product-clear-search" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#94a3b8;font-size:15px;padding:0;line-height:1;">✕</button>` : ''}
-              </div>
-              ${productSearchQuery ? `<span style="font-size:11.5px;color:#0284c7;font-weight:700;white-space:nowrap;">Filtering by: "${productSearchQuery}"</span>` : ''}
-            </div>
-          </div>
-
-          <!-- KPI Metric Chips (Clickable to Filter) -->
-          <div class="ap-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <div class="ap-stat-card ap-kpi-clickable" data-kpi="all" style="cursor:pointer; border:${filter === 'all' ? '2px solid #0284c7' : '1px solid #e2e8f0'}; transition:all 0.15s ease;" title="Click to show All Reviews">
-              <div class="ap-stat-card-left">
-                <span class="ap-stat-card-lbl">Total Customer Reviews</span>
-                <span class="ap-stat-card-val">${cachedStats.totalReviews}</span>
-              </div>
-              <div class="ap-stat-card-icon blue">
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              </div>
-            </div>
-            <div class="ap-stat-card ap-kpi-clickable" data-kpi="all" style="cursor:pointer; border:1px solid #e2e8f0; transition:all 0.15s ease;" title="Marketplace Customer Satisfaction">
-              <div class="ap-stat-card-left">
-                <span class="ap-stat-card-lbl">Marketplace Avg Rating</span>
-                <span class="ap-stat-card-val" style="color:#d97706">${cachedStats.avgRating} / 5.0</span>
-              </div>
-              <div class="ap-stat-card-icon amber">
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              </div>
-            </div>
-            <div class="ap-stat-card ap-kpi-clickable" data-kpi="pending" style="cursor:pointer; border:${filter === 'pending' ? '2px solid #6366f1' : '1px solid #e2e8f0'}; transition:all 0.15s ease;" title="Click to show Pending Moderation Queue">
-              <div class="ap-stat-card-left">
-                <span class="ap-stat-card-lbl">Pending Moderation</span>
-                <span class="ap-stat-card-val" style="color:#6366f1">${cachedStats.pendingModeration}</span>
-              </div>
-              <div class="ap-stat-card-icon purple">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-              </div>
-            </div>
-            <div class="ap-stat-card ap-kpi-clickable" data-kpi="flagged" style="cursor:pointer; border:${filter === 'flagged' ? '2px solid #ef4444' : '1px solid #e2e8f0'}; transition:all 0.15s ease;" title="Click to show Flagged / Spam Reviews">
-              <div class="ap-stat-card-left">
-                <span class="ap-stat-card-lbl">Flagged / Spam</span>
-                <span class="ap-stat-card-val" style="color:#ef4444">${cachedStats.flagged}</span>
-              </div>
-              <div class="ap-stat-card-icon red">
-                <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Toolbar / Filter Tabs & Search / Sort -->
-          <div class="ap-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
-            <div class="ap-toolbar-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <div class="ap-toolbar-tabs">
-                <button class="ap-tab-pill ${filter === 'all' ? 'active' : ''}" data-filter="all">
-                  All Reviews <span style="margin-left:4px; font-size:11px; opacity:0.8;">(${counts.all})</span>
-                </button>
-                <button class="ap-tab-pill ${filter === 'approved' ? 'active' : ''}" data-filter="approved">
-                  Approved <span style="margin-left:4px; font-size:11px; opacity:0.8;">(${counts.approved})</span>
-                </button>
-                <button class="ap-tab-pill ${filter === 'pending' ? 'active' : ''}" data-filter="pending">
-                  Pending <span style="margin-left:4px; font-size:11px; opacity:0.8;">(${counts.pending})</span>
-                </button>
-                <button class="ap-tab-pill ${filter === 'flagged' ? 'active' : ''}" data-filter="flagged">
-                  Flagged <span style="margin-left:4px; font-size:11px; opacity:0.8;">(${counts.flagged})</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Right Controls: Review Search, Rating & Sort -->
-            <div class="ap-toolbar-right" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <!-- Live Review Search -->
-              <div style="position:relative; width:230px;">
-                <input type="text" id="ap-rev-search-input" value="${searchQuery}" placeholder="Search reviews & feedback..." style="width:100%; padding:7px 10px 7px 30px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                ${searchQuery ? `<button id="ap-rev-clear-search" style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px;">✕</button>` : ''}
-              </div>
-
-              <!-- Rating Filter -->
-              <select id="ap-rev-rating-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff;">
-                <option value="all" ${ratingFilter === 'all' ? 'selected' : ''}>All Ratings</option>
-                <option value="5" ${ratingFilter === '5' ? 'selected' : ''}>5 Stars ★★★★★</option>
-                <option value="4" ${ratingFilter === '4' ? 'selected' : ''}>4 Stars ★★★★☆</option>
-                <option value="3" ${ratingFilter === '3' ? 'selected' : ''}>3 Stars ★★★☆☆</option>
-                <option value="2" ${ratingFilter === '2' ? 'selected' : ''}>2 Stars ★★☆☆☆</option>
-                <option value="1" ${ratingFilter === '1' ? 'selected' : ''}>1 Star ★☆☆☆☆</option>
-              </select>
-
-              <!-- Sort Dropdown -->
-              <select id="ap-rev-sort-by" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff;">
-                <option value="newest" ${sortBy === 'newest' ? 'selected' : ''}>Newest First</option>
-                <option value="oldest" ${sortBy === 'oldest' ? 'selected' : ''}>Oldest First</option>
-                <option value="rating-desc" ${sortBy === 'rating-desc' ? 'selected' : ''}>Highest Rating</option>
-                <option value="rating-asc" ${sortBy === 'rating-asc' ? 'selected' : ''}>Lowest Rating</option>
-                <option value="helpful" ${sortBy === 'helpful' ? 'selected' : ''}>Most Helpful</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Bulk Actions Sticky Bar (shows if selection > 0) -->
-          ${hasSelection ? `
-            <div class="ap-bulk-bar" style="background:#0f172a; color:#ffffff; padding:10px 16px; border-radius:8px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 14px rgba(15,23,42,0.25); animation:fadeIn 0.2s ease;">
-              <div style="font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:8px;">
-                <span>✓ <strong>${selectedIds.size}</strong> review(s) selected</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <button class="ap-btn success ap-bulk-action" data-action="Approved" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">
-                  Approve Selected
-                </button>
-                <button class="ap-btn danger ap-bulk-action" data-action="Flagged" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">
-                  Flag as Spam
-                </button>
-                <button class="ap-btn ghost ap-bulk-action" data-action="Pending" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#ffffff; border-color:#475569;">
-                  Mark Pending
-                </button>
-                <button class="ap-btn ghost ap-bulk-action" data-action="Delete" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#f87171; border-color:#ef4444;">
-                  Delete Selected
-                </button>
-                <button class="ap-btn ghost" id="ap-bulk-clear-btn" style="padding:5px 10px; font-size:11.5px; border-radius:5px; color:#94a3b8;">
-                  Deselect All
-                </button>
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Reviews Table Card -->
-          <div class="ap-table-card" style="margin-top:12px;">
-            <div class="ap-table-wrap">
-              <table class="ap-table">
-                <thead>
-                  <tr>
-                    <th style="width:40px; text-align:center;">
-                      <input type="checkbox" id="ap-select-all-revs" ${allSelected ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#0284c7;" title="Select All Matching">
-                    </th>
-                    <th>Product Title</th>
-                    <th>Author</th>
-                    <th>Rating</th>
-                    <th>Feedback Snippet</th>
-                    <th>Status</th>
-                    <th>Moderation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rowsHTML}
-                </tbody>
-              </table>
-            </div>
-            <div class="ap-table-footer" style="padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
-              <span>Showing <strong>${reviews.length}</strong> of <strong>${cachedReviews.length}</strong> customer reviews</span>
-              <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:11px; color:#10b981; font-weight:600;">● Active Moderation Pipeline</span>
-                <span style="font-size:11px; color:#94a3b8;">X-Mart Reputation Engine v3.8</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // ── Event Handlers ──
-      // Refresh
-      document.getElementById('ap-reviews-refresh-btn')?.addEventListener('click', () => load(false));
-
-      // View Mode Toggle
-      document.getElementById('ap-view-reviews-btn')?.addEventListener('click', () => { viewMode = 'reviews'; renderUI(); });
-      document.getElementById('ap-view-priority-btn')?.addEventListener('click', () => { viewMode = 'priority'; renderPriorityView(); });
-
-      // Product/Store Search
-      const prodSearchInReviews = document.getElementById('ap-product-search-input');
-      if (prodSearchInReviews) {
-        prodSearchInReviews.addEventListener('input', (e) => {
-          productSearchQuery = e.target.value;
-          searchQuery = e.target.value; // Also filter the review list
-          renderUI();
-          const el = document.getElementById('ap-product-search-input');
-          if (el) { el.focus(); el.setSelectionRange(productSearchQuery.length, productSearchQuery.length); }
-        });
-        prodSearchInReviews.addEventListener('focus', () => prodSearchInReviews.style.borderColor = '#0284c7');
-        prodSearchInReviews.addEventListener('blur', () => { if (!productSearchQuery) prodSearchInReviews.style.borderColor = '#cbd5e1'; });
-      }
-      document.getElementById('ap-product-clear-search')?.addEventListener('click', () => {
-        productSearchQuery = '';
-        searchQuery = '';
-        renderUI();
-      });
-
-      // Filter tabs
-      body.querySelectorAll('.ap-tab-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-          filter = btn.dataset.filter;
-          renderUI();
-        });
-      });
-
-      // KPI Clickable Cards
-      body.querySelectorAll('.ap-kpi-clickable').forEach(card => {
-        card.addEventListener('click', () => {
-          filter = card.dataset.kpi;
-          renderUI();
-        });
-      });
-
-      // Search input live
-      const searchInput = document.getElementById('ap-rev-search-input');
-      if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-          searchQuery = e.target.value;
-          renderUI();
-          // Maintain focus on search
-          const newInput = document.getElementById('ap-rev-search-input');
-          if (newInput) {
-            newInput.focus();
-            newInput.setSelectionRange(searchQuery.length, searchQuery.length);
-          }
-        });
-      }
-
-      // Clear search
-      document.getElementById('ap-rev-clear-search')?.addEventListener('click', () => {
-        searchQuery = '';
-        renderUI();
-      });
-
-      // Rating filter
-      document.getElementById('ap-rev-rating-filter')?.addEventListener('change', (e) => {
-        ratingFilter = e.target.value;
-        renderUI();
-      });
-
-      // Sort
-      document.getElementById('ap-rev-sort-by')?.addEventListener('change', (e) => {
-        sortBy = e.target.value;
-        renderUI();
-      });
-
-      // Reset filters button
-      document.getElementById('ap-reset-filter-btn')?.addEventListener('click', () => {
-        filter = 'all';
-        searchQuery = '';
-        ratingFilter = 'all';
-        sortBy = 'newest';
-        renderUI();
-      });
-
-      // Quick Moderation Action buttons
-      body.querySelectorAll('.ap-rev-action').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.id;
-          const action = btn.dataset.action;
-          try {
-            await adminFetch(`/reviews/${id}`, {
-              method: 'PUT',
-              body: JSON.stringify({ status: action }),
-            });
-            showToast(`Review marked as ${action}`, 'success');
-            load(true);
-          } catch (e) { showToast(e.message, 'error'); }
-        });
-      });
-
-      // Delete single review
-      body.querySelectorAll('.ap-delete-rev-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.id;
-          if (!confirm('Are you sure you want to permanently delete this customer review?')) return;
-          try {
-            await adminFetch(`/reviews/${id}`, { method: 'DELETE' });
-            showToast('Review deleted permanently', 'success');
-            selectedIds.delete(id);
-            load(true);
-          } catch (e) { showToast(e.message, 'error'); }
-        });
-      });
-
-      // Select All Checkbox
-      const selectAllEl = document.getElementById('ap-select-all-revs');
-      if (selectAllEl) {
-        selectAllEl.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            reviews.forEach(r => selectedIds.add(r.id));
-          } else {
-            reviews.forEach(r => selectedIds.delete(r.id));
-          }
-          renderUI();
-        });
-      }
-
-      // Row Checkbox
-      body.querySelectorAll('.ap-rev-chk').forEach(chk => {
-        chk.addEventListener('change', (e) => {
-          const id = e.target.dataset.id;
-          if (e.target.checked) selectedIds.add(id);
-          else selectedIds.delete(id);
-          renderUI();
-        });
-      });
-
-      // Clear selection
-      document.getElementById('ap-bulk-clear-btn')?.addEventListener('click', () => {
-        selectedIds.clear();
-        renderUI();
-      });
-
-      // Bulk actions
-      body.querySelectorAll('.ap-bulk-action').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const action = btn.dataset.action;
-          const ids = Array.from(selectedIds);
-          if (ids.length === 0) return;
-          if (action === 'Delete' && !confirm(`Permanently delete ${ids.length} selected review(s)?`)) return;
-
-          try {
-            await adminFetch('/reviews/bulk', {
-              method: 'POST',
-              body: JSON.stringify({ ids, action }),
-            });
-            showToast(`Bulk updated ${ids.length} review(s) to ${action}`, 'success');
-            selectedIds.clear();
-            load(false);
-          } catch (e) { showToast(e.message, 'error'); }
-        });
-      });
-
-      // Inspect & Reply Modal
-      body.querySelectorAll('.ap-inspect-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const r = cachedReviews.find(x => x.id === id);
-          if (r) openReviewInspectionModal(r);
-        });
-      });
-
-      // Export CSV
-      document.getElementById('ap-export-reviews-btn')?.addEventListener('click', () => {
-        exportReviewsToCSV(reviews);
-      });
-
-      // Seed demo reviews
-
-
-      // + New Review
-      document.getElementById('ap-new-review-btn')?.addEventListener('click', openAddReviewModal);
     }
 
     // ── Inspection & Official Reply Modal ──
@@ -11381,19 +13054,20 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const prodImg = r.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160';
 
       modal.innerHTML = `
-        <div class="ap-modal-dialog" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); animation:modalSlideUp 0.2s ease;">
-          <div class="ap-modal-header" style="background:linear-gradient(135deg, #0b1c30, #1e3a5f); color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div class="ap-modal-dialog" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none !important; outline:none;">
+          <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800; margin:0;">
                 Review Moderation &amp; Merchant Response
               </h3>
               <span style="font-size:11px; opacity:0.8; margin-top:2px; display:block;">Review ID: ${r.id} • ${fmtDate(r.date)}</span>
             </div>
-            <button class="ap-modal-close-btn" style="background:none; border:none; color:#ffffff; font-size:20px; cursor:pointer; padding:4px 8px;">✕</button>
+            <button class="ap-modal-close-x" style="background:none; border:none; color:#ffffff; cursor:pointer; padding:4px 8px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:opacity 0.15s ease;" title="Close Window">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
 
           <div class="ap-modal-content" style="padding:22px; max-height:78vh; overflow-y:auto;">
-            <!-- Product Brief -->
             <div style="display:flex; align-items:center; gap:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
               <img src="${prodImg}" alt="${r.product}" style="width:54px; height:54px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; background:#ffffff; flex-shrink:0;">
               <div style="flex:1;">
@@ -11405,12 +13079,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
             </div>
 
-            <!-- Customer & Rating -->
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:16px; padding-bottom:12px; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;">
               <div>
                 <div style="font-weight:700; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:6px;">
                   ${r.author}
-                  ${r.verified !== false ? `<span style="background:#ecfdf5; color:#047857; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700;">Verified Buyer ✓</span>` : `<span style="background:#f1f5f9; color:#64748b; font-size:11px; padding:2px 6px; border-radius:4px;">Unverified Purchase</span>`}
+                  ${r.verified !== false ? `<span style="background:#ecfdf5; color:#047857; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; display:inline-flex; align-items:center; gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Verified Buyer</span>` : `<span style="background:#f1f5f9; color:#64748b; font-size:11px; padding:2px 6px; border-radius:4px;">Unverified Purchase</span>`}
                 </div>
                 <div style="font-size:12px; color:#64748b; margin-top:2px;">${r.email || 'customer@example.com'}</div>
               </div>
@@ -11418,13 +13091,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div style="color:#f59e0b; font-size:16px; font-weight:800;">
                   ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)} (${r.rating}/5)
                 </div>
-                <span class="ap-badge ${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="margin-top:4px;">
-                  Status: ${r.status}
+                <span class="ap-badge ${r.status === 'Approved' ? 'green' : r.status === 'Pending' ? 'orange' : 'red'}" style="margin-top:4px; display:inline-flex; align-items:center; gap:4px;">
+                  ${r.status === 'Approved' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : r.status === 'Pending' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'}Status: ${r.status}
                 </span>
               </div>
             </div>
 
-            <!-- Full Review Feedback -->
             <div style="margin-top:14px;">
               ${r.headline ? `<h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 6px;">${r.headline}</h4>` : ''}
               <p style="font-size:13px; color:#334155; line-height:1.6; background:#fafafa; border:1px solid #f1f5f9; border-radius:8px; padding:12px; margin:0;">
@@ -11432,57 +13104,27 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </p>
             </div>
 
-            <!-- Merchant Reputation & Trust Signals -->
-            <div style="margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
-              <h5 style="margin:0 0 8px; font-size:12px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">
-                Merchant Reputation &amp; Trust Telemetry
-              </h5>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
-                <div>
-                  <span style="color:#64748b;">Sentiment Polarity:</span>
-                  <strong style="color:${r.status === 'Flagged' ? '#dc2626' : '#16a34a'}; margin-left:4px;">${r.sentiment || 'Positive (95%)'}</strong>
-                </div>
-                <div>
-                  <span style="color:#64748b;">Spam Probability:</span>
-                  <strong style="color:${(r.spamScore || 0) > 50 ? '#dc2626' : '#16a34a'}; margin-left:4px;">${r.spamScore ? r.spamScore + '%' : 'Low (<2%)'}</strong>
-                </div>
-                ${r.flagReason ? `
-                  <div style="grid-column:1 / -1; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px; color:#b91c1c;">
-                    <strong>Flag Trigger:</strong> ${r.flagReason}
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-
-            <!-- Official Merchant Response Box -->
             <div style="margin-top:18px;">
-              <label style="display:block; font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:6px;">
-                💬 Official Merchant / Admin Response
+              <label style="display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                Official Merchant / Admin Response
               </label>
-              <textarea id="ap-admin-reply-input" rows="3" placeholder="Write an official response visible to customers on the product page..." style="width:100%; padding:10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:8px; line-height:1.5;">${r.adminReply || ''}</textarea>
+              <textarea id="ap-admin-reply-input" rows="3" placeholder="Write an official response visible to customers on the product page..." style="width:100%; padding:10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:8px; line-height:1.5; box-sizing:border-box;">${r.adminReply || ''}</textarea>
               <div style="display:flex; justify-content:flex-end; margin-top:6px;">
-                <button class="ap-btn primary" id="ap-save-reply-btn" style="font-size:12px; padding:6px 14px;">
+                <button class="ap-btn primary" id="ap-save-reply-btn" style="font-size:12px; padding:6px 14px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   Save Official Reply
                 </button>
               </div>
             </div>
 
-            <!-- Action Buttons Footer -->
             <div style="margin-top:20px; padding-top:14px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
               <div style="display:flex; gap:8px;">
-                <button class="ap-btn success" id="ap-modal-approve-btn" style="font-size:12px; padding:7px 14px;">
-                  Approve Review
-                </button>
-                <button class="ap-btn danger" id="ap-modal-flag-btn" style="font-size:12px; padding:7px 14px;">
-                  Flag as Spam
-                </button>
-                <button class="ap-btn ghost" id="ap-modal-pending-btn" style="font-size:12px; padding:7px 14px;">
-                  Send to Pending
-                </button>
+                <button class="ap-modal-approve-btn" id="ap-modal-approve-btn" style="font-size:12px; padding:7px 14px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approve Review</button>
+                <button class="ap-modal-flag-btn" id="ap-modal-flag-btn" style="font-size:12px; padding:7px 14px; background:#dc2626 !important; color:#ffffff !important; border:none; border-radius:6px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flag as Spam</button>
+                <button class="ap-modal-pending-btn" id="ap-modal-pending-btn" style="font-size:12px; padding:7px 14px; background:#022F43 !important; color:#ffffff !important; border:1px solid #022F43 !important; border-radius:6px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Re-queue / Pending</button>
               </div>
-              <button class="ap-btn ghost" id="ap-modal-close-btn2" style="font-size:12px; padding:7px 14px;">
-                Close
-              </button>
+              <button type="button" class="ap-modal-footer-close-btn" id="ap-modal-close-btn2" style="min-width:96px; height:36px; padding:7px 22px; border:none; border-radius:6px; background:#FF9400 !important; color:#000000 !important; font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 2px 5px rgba(255,148,0,0.3); transition:all 0.15s ease;" onmouseover="this.style.filter='brightness(1.08)';" onmouseout="this.style.filter='none';">Close</button>
             </div>
           </div>
         </div>
@@ -11491,18 +13133,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       document.body.appendChild(modal);
 
       const closeModal = () => modal.remove();
-      modal.querySelector('.ap-modal-close-btn').addEventListener('click', closeModal);
-      modal.querySelector('#ap-modal-close-btn2').addEventListener('click', closeModal);
+      modal.querySelector('.ap-modal-close-x')?.addEventListener('click', closeModal);
+      modal.querySelector('.ap-modal-close-btn')?.addEventListener('click', closeModal);
+      modal.querySelector('.ap-modal-footer-close-btn')?.addEventListener('click', closeModal);
+      modal.querySelector('#ap-modal-close-btn2')?.addEventListener('click', closeModal);
       modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-      // Save Reply
-      modal.querySelector('#ap-save-reply-btn').addEventListener('click', async () => {
+      modal.querySelector('#ap-save-reply-btn')?.addEventListener('click', async () => {
         const replyText = modal.querySelector('#ap-admin-reply-input').value.trim();
         try {
-          await adminFetch(`/reviews/${r.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ adminReply: replyText }),
-          });
+          await adminFetch(`/reviews/${r.id}`, { method: 'PUT', body: JSON.stringify({ adminReply: replyText }) });
           r.adminReply = replyText;
           showToast('Official response saved successfully', 'success');
           closeModal();
@@ -11510,8 +13150,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         } catch (e) { showToast(e.message, 'error'); }
       });
 
-      // Status Toggles from Modal
-      modal.querySelector('#ap-modal-approve-btn').addEventListener('click', async () => {
+      modal.querySelector('#ap-modal-approve-btn')?.addEventListener('click', async () => {
         try {
           await adminFetch(`/reviews/${r.id}`, { method: 'PUT', body: JSON.stringify({ status: 'Approved' }) });
           showToast('Review approved & published', 'success');
@@ -11520,7 +13159,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         } catch (e) { showToast(e.message, 'error'); }
       });
 
-      modal.querySelector('#ap-modal-flag-btn').addEventListener('click', async () => {
+      modal.querySelector('#ap-modal-flag-btn')?.addEventListener('click', async () => {
         try {
           await adminFetch(`/reviews/${r.id}`, { method: 'PUT', body: JSON.stringify({ status: 'Flagged' }) });
           showToast('Review marked as spam', 'success');
@@ -11529,7 +13168,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         } catch (e) { showToast(e.message, 'error'); }
       });
 
-      modal.querySelector('#ap-modal-pending-btn').addEventListener('click', async () => {
+      modal.querySelector('#ap-modal-pending-btn')?.addEventListener('click', async () => {
         try {
           await adminFetch(`/reviews/${r.id}`, { method: 'PUT', body: JSON.stringify({ status: 'Pending' }) });
           showToast('Review sent to pending moderation queue', 'success');
@@ -11540,53 +13179,61 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     }
 
     // ── Add New Review Modal ──
-    function openAddReviewModal() {
+    function openAddReviewModal(preselectedProd = null, push = true) {
       const existing = document.getElementById('ap-add-rev-modal');
       if (existing) existing.remove();
+
+      if (push) {
+        try {
+          history.pushState({ type: 'add-review', hash: '#add-review' }, 'Create Customer Review', '#add-review');
+        } catch (e) {}
+      }
 
       const modal = document.createElement('div');
       modal.id = 'ap-add-rev-modal';
       modal.className = 'ap-modal-backdrop';
       modal.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px;';
 
-      const prods = (Store.allProducts && Store.allProducts.length > 0) ? Store.allProducts : [
-        { id: 'p1', name: 'Apple iPhone 15 Pro Max (256 GB)' },
-        { id: 'p2', name: 'Sony WH-1000XM5 Wireless Headphones' },
-        { id: 'p3', name: 'Samsung Galaxy S24 Ultra 5G' },
-        { id: 'p4', name: 'Nike Air Zoom Pegasus 40 Running Shoes' }
-      ];
+      const prods = (cachedProducts && cachedProducts.length > 0) ? cachedProducts : ((Store.allProducts && Store.allProducts.length > 0) ? Store.allProducts : []);
+      const preselectedId = preselectedProd ? (preselectedProd.id || preselectedProd.productId) : (prods[0] ? (prods[0].id || prods[0]._id) : '');
 
       modal.innerHTML = `
-        <div class="ap-modal-dialog" style="max-width:540px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-          <div class="ap-modal-header" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div class="ap-modal-dialog" style="max-width:540px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none !important; outline:none;">
+          <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
             <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800; margin:0;">
-              + Create Verified Customer Review
+              Create Customer Review
             </h3>
-            <button class="ap-modal-close-btn" style="background:none; border:none; color:#ffffff; font-size:20px; cursor:pointer;">✕</button>
+            <button class="ap-modal-close-x" style="background:none; border:none; color:#ffffff; cursor:pointer; padding:4px 8px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:opacity 0.15s ease;" title="Close Window">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
           <form id="ap-new-rev-form" style="padding:22px;">
             <div style="margin-bottom:14px;">
               <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Product to Review *</label>
-              <select id="ap-new-rev-prod" required style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
-                ${prods.slice(0, 30).map(p => `<option value="${p._id || p.id}" data-name="${p.name}" data-img="${(p.images && p.images[0]) || p.img || ''}" data-cat="${p.category || 'General'}" data-price="${p.price || 999}">${p.name}</option>`).join('')}
+              <select id="ap-new-rev-prod" required style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
+                ${prods.slice(0, 100).map(p => {
+                  const pid = p.id || p._id || p.productId;
+                  const isSel = pid === preselectedId ? 'selected' : '';
+                  return `<option value="${pid}" ${isSel} data-name="${p.name}" data-img="${(p.images && p.images[0]) || p.image || p.img || ''}" data-cat="${p.category || 'General'}" data-price="${p.price || 999}">${p.name}</option>`;
+                }).join('')}
               </select>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
               <div>
                 <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Customer Name *</label>
-                <input type="text" id="ap-new-rev-author" required placeholder="e.g. Siddharth Sen" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
+                <input type="text" id="ap-new-rev-author" required placeholder="e.g. Rahul Sharma" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
               </div>
               <div>
                 <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Customer Email</label>
-                <input type="email" id="ap-new-rev-email" placeholder="customer@example.com" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
+                <input type="email" id="ap-new-rev-email" placeholder="customer@example.com" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
               <div>
                 <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Star Rating *</label>
-                <select id="ap-new-rev-rating" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
+                <select id="ap-new-rev-rating" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
                   <option value="5">5 Stars ★★★★★ (Exceptional)</option>
                   <option value="4">4 Stars ★★★★☆ (Very Good)</option>
                   <option value="3">3 Stars ★★★☆☆ (Average)</option>
@@ -11596,7 +13243,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
               <div>
                 <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Initial Moderation Status</label>
-                <select id="ap-new-rev-status" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
+                <select id="ap-new-rev-status" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
                   <option value="Approved">Approved (Publish Immediately)</option>
                   <option value="Pending">Pending (Requires Moderation)</option>
                   <option value="Flagged">Flagged (Spam Screen)</option>
@@ -11606,17 +13253,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <div style="margin-bottom:14px;">
               <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Review Headline *</label>
-              <input type="text" id="ap-new-rev-title" required placeholder="e.g. Excellent build quality and sleek design" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px;">
+              <input type="text" id="ap-new-rev-title" required placeholder="e.g. Great quality and fast delivery" style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box;">
             </div>
 
             <div style="margin-bottom:16px;">
               <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">Detailed Customer Feedback *</label>
-              <textarea id="ap-new-rev-comment" required rows="3" placeholder="Provide genuine customer experience feedback..." style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; line-height:1.5;"></textarea>
+              <textarea id="ap-new-rev-comment" required rows="3" placeholder="Provide customer experience feedback..." style="width:100%; padding:8px 10px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:6px; line-height:1.5; box-sizing:border-box;"></textarea>
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-              <button type="button" class="ap-btn ghost ap-add-rev-cancel" style="font-size:12px; padding:7px 14px;">Cancel</button>
-              <button type="submit" class="ap-btn primary" style="font-size:12px; padding:7px 18px; background:#0284c7; border:none;">Submit Review</button>
+              <button type="button" class="ap-btn ghost ap-add-rev-cancel" style="font-size:12px; padding:7px 14px; border:1px solid #cbd5e1; border-radius:6px;">Cancel</button>
+              <button type="submit" class="ap-btn primary" style="font-size:12px; padding:7px 20px; background:#FF9400 !important; color:#000000 !important; border:none; border-radius:6px; font-weight:800; cursor:pointer; box-shadow:0 2px 5px rgba(255,148,0,0.3); transition:filter 0.15s ease;" onmouseover="this.style.filter='brightness(1.08)';" onmouseout="this.style.filter='none';">Submit Review</button>
             </div>
           </form>
         </div>
@@ -11624,12 +13271,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       document.body.appendChild(modal);
 
-      const closeModal = () => modal.remove();
-      modal.querySelector('.ap-modal-close-btn').addEventListener('click', closeModal);
-      modal.querySelector('.ap-add-rev-cancel').addEventListener('click', closeModal);
+      const closeModal = () => {
+        modal.remove();
+        if (window.location.hash === '#add-review') {
+          history.back();
+        }
+      };
+      modal.querySelector('.ap-modal-close-x')?.addEventListener('click', closeModal);
+      modal.querySelector('.ap-modal-close-btn')?.addEventListener('click', closeModal);
+      modal.querySelector('.ap-add-rev-cancel')?.addEventListener('click', closeModal);
       modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-      modal.querySelector('#ap-new-rev-form').addEventListener('submit', async (e) => {
+      modal.querySelector('#ap-new-rev-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const prodSel = modal.querySelector('#ap-new-rev-prod');
         const selectedOpt = prodSel.options[prodSel.selectedIndex];
@@ -11650,10 +13303,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         };
 
         try {
-          await adminFetch('/reviews', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          });
+          await adminFetch('/reviews', { method: 'POST', body: JSON.stringify(payload) });
           showToast('Customer review added successfully', 'success');
           closeModal();
           load(false);
@@ -11698,9 +13348,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     load();
   }
 
-  /* ══════════════════════════════════════════════════════
-     TAB: SUPPORT & DISPUTES (PROFESSIONAL CRM HELP-DESK)
-     ══════════════════════════════════════════════════════ */
   async function renderSupport(body) {
     body.innerHTML = loadingHTML();
     let filter = 'all';
@@ -11720,11 +13367,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
         let res = await adminFetch(`/support?${queryParams.toString()}`);
         cachedTickets = (res && res.data && res.data.tickets) ? res.data.tickets : [];
-        if (cachedTickets.length === 0 && filter === 'all' && priorityFilter === 'all' && !searchQuery) {
-          await adminFetch('/support/seed', { method: 'POST' });
-          res = await adminFetch(`/support?${queryParams.toString()}`);
-          cachedTickets = (res && res.data && res.data.tickets) ? res.data.tickets : [];
-        }
+
         cachedStats = (res && res.data && res.data.stats) ? res.data.stats : {
           total: cachedTickets.length,
           open: cachedTickets.filter(t => t.status === 'Open').length,
@@ -11759,6 +13402,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         resolved: cachedStats.resolved,
       };
 
+      const complianceRate = cachedStats.total > 0 ? Math.round((cachedStats.resolved / cachedStats.total) * 100) : 100;
+
       const priorityBadge = (p) => {
         const pLower = (p || 'medium').toLowerCase();
         if (pLower === 'urgent') return `<span class="ap-badge red" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;animation:apPulse 1.5s infinite;"></span> Urgent</span>`;
@@ -11768,7 +13413,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       };
 
       const statusBadge = (s) => {
-        if (s === 'Resolved') return `<span class="ap-badge green" style="font-weight:700;">✓ Resolved</span>`;
+        if (s === 'Resolved') return `<span class="ap-badge" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; border:1px solid #e08300; padding:3px 9px; border-radius:99px; display:inline-flex; align-items:center; gap:5px; font-size:11.5px;"><span style="width:6px;height:6px;border-radius:50%;background:#000000;display:inline-block;"></span> ✓ Resolved</span>`;
         if (s === 'In Progress') return `<span class="ap-badge blue" style="font-weight:700;">● In Progress</span>`;
         return `<span class="ap-badge orange" style="font-weight:700;">⏳ Open</span>`;
       };
@@ -11805,16 +13450,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <td>${priorityBadge(t.priority)}</td>
             <td>${statusBadge(t.status)}</td>
             <td>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <button class="ap-btn primary ap-view-ticket-btn" data-id="${t.id}" style="padding:5px 10px;font-size:11.5px;font-weight:700;white-space:nowrap;">
-                  Manage / Respond
-                </button>
-                <select class="ap-select ap-quick-status-sel" data-id="${t.id}" style="padding:3px 6px;font-size:11px;height:27px;min-width:90px;" onclick="event.stopPropagation();">
-                  <option value="Open" ${t.status === 'Open' ? 'selected' : ''}>Open</option>
-                  <option value="In Progress" ${t.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-                  <option value="Resolved" ${t.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
-                </select>
-              </div>
+              <button class="ap-btn primary ap-view-ticket-btn" data-id="${t.id}" style="padding:6px 12px;font-size:11.5px;font-weight:700;white-space:nowrap;background:#022f43 !important;color:#ffffff !important;border-radius:6px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(2,47,67,0.3);">
+                Manage / Respond
+              </button>
             </td>
           </tr>
         `;
@@ -11823,7 +13461,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <td colspan="6" style="text-align:center;padding:48px 20px;color:#94a3b8;">
             <div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px;">No disputes or support tickets match your filter.</div>
             <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Try clearing search terms or reload default customer disputes.</div>
-            <button class="ap-btn ghost" id="ap-empty-seed-btn" style="font-size:12px;">Load Seed Disputes</button>
+            <button class="ap-btn ghost" id="ap-empty-seed-btn" style="font-size:12px;">Sync Order Disputes</button>
           </td>
         </tr>
       `;
@@ -11843,7 +13481,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <div class="ap-view-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="ap-btn primary" id="ap-log-ticket-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                + Log New Dispute
+                Log New Dispute
               </button>
               <button class="ap-btn ghost" id="ap-support-seed-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;" title="Reset dispute queue with rich realistic scenarios">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -11896,7 +13534,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <div class="ap-stat-card-left">
                 <span class="ap-stat-card-lbl">Resolved Cases</span>
                 <span class="ap-stat-card-val" style="color:#059669">${cachedStats.resolved}</span>
-                <span style="font-size:11px;color:#059669;font-weight:700;margin-top:2px;">98.4% SLA Compliance</span>
+                <span style="font-size:11px;color:#059669;font-weight:700;margin-top:2px;">${complianceRate}% Resolution Rate</span>
               </div>
               <div class="ap-stat-card-icon green">
                 <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -11938,10 +13576,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <select id="ap-support-category-select" style="padding:7px 10px;font-size:12px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;font-weight:600;color:#334155;cursor:pointer;">
                 <option value="all" ${categoryFilter==='all'?'selected':''}>All Categories</option>
                 <option value="damaged" ${categoryFilter==='damaged'?'selected':''}>Damaged / Transit Loss</option>
-                <option value="payment" ${categoryFilter==='payment'?'selected':''}>Payment & Billing</option>
+                <option value="return" ${categoryFilter==='return'?'selected':''}>Return &amp; Refund</option>
+                <option value="cancellation" ${categoryFilter==='cancellation'?'selected':''}>Order Cancellation</option>
+                <option value="payment" ${categoryFilter==='payment'?'selected':''}>Payment &amp; Billing</option>
                 <option value="wrong" ${categoryFilter==='wrong'?'selected':''}>Wrong Item Delivered</option>
                 <option value="delay" ${categoryFilter==='delay'?'selected':''}>Delivery Delay</option>
-                <option value="warranty" ${categoryFilter==='warranty'?'selected':''}>Warranty / Brand</option>
+                <option value="exchange" ${categoryFilter==='exchange'?'selected':''}>Size / Fit Exchange</option>
               </select>
 
               <!-- Real-time Search Input -->
@@ -11954,27 +13594,50 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           </div>
 
           <!-- Tickets Data Table Card -->
-          <div class="ap-table-card" style="margin-top:16px;">
-            <div class="ap-table-wrap">
-              <table class="ap-table">
+          <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+            <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO scrollbar in this part) -->
+            <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300;">
+              <table class="ap-table ap-support-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0;">
+                <colgroup>
+                  <col style="width:16%;">
+                  <col style="width:20%;">
+                  <col style="width:30%;">
+                  <col style="width:11%;">
+                  <col style="width:11%;">
+                  <col style="width:12%;">
+                </colgroup>
                 <thead>
-                  <tr>
-                    <th>Ticket ID & Date</th>
-                    <th>Customer Account</th>
-                    <th>Dispute Subject & Order</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                  <tr style="background:#ff9400 !important;">
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Ticket ID &amp; Date</th>
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Customer Account</th>
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Dispute Subject &amp; Order</th>
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Priority</th>
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Status</th>
+                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Action</th>
                   </tr>
                 </thead>
+              </table>
+            </div>
+
+            <!-- Scrollable Body Part (scroll-y starts strictly BELOW the header part, NO scroll-x) -->
+            <div class="ap-table-wrap" style="overflow-y:auto; overflow-x:hidden !important; max-height:480px; -webkit-overflow-scrolling:touch; width:100%;">
+              <table class="ap-table ap-support-table" id="ap-support-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin-top:0;">
+                <colgroup>
+                  <col style="width:16%;">
+                  <col style="width:20%;">
+                  <col style="width:30%;">
+                  <col style="width:11%;">
+                  <col style="width:11%;">
+                  <col style="width:12%;">
+                </colgroup>
                 <tbody>
                   ${rowsHTML}
                 </tbody>
               </table>
             </div>
-            <div class="ap-table-footer">
-              <span>Showing <strong>${tickets.length}</strong> of <strong>${cachedTickets.length}</strong> support disputes</span>
-              <span style="font-size:11px;color:#94a3b8;">X-Mart CRM Customer Escalations Suite v4.2</span>
+            <div class="ap-table-footer" style="padding:12px 16px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+              <span style="font-size:12px; color:#475569;">Showing <strong>${tickets.length}</strong> of <strong>${cachedTickets.length}</strong> support disputes</span>
+              <span style="font-size:11px; color:#94a3b8;">X-Mart CRM Customer Escalations Suite v4.2</span>
             </div>
           </div>
         </div>
@@ -11991,14 +13654,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       document.getElementById('ap-support-seed-btn')?.addEventListener('click', async () => {
         try {
           await adminFetch('/support/seed', { method: 'POST' });
-          showToast('Dispute queue refreshed with rich demo data', 'success');
+          showToast('Dispute queue synchronized with genuine customer orders', 'success');
           load();
         } catch (e) { showToast(e.message, 'error'); }
       });
       document.getElementById('ap-empty-seed-btn')?.addEventListener('click', async () => {
         try {
           await adminFetch('/support/seed', { method: 'POST' });
-          showToast('Dispute queue refreshed with rich demo data', 'success');
+          showToast('Dispute queue synchronized with genuine customer orders', 'success');
           load();
         } catch (e) { showToast(e.message, 'error'); }
       });
@@ -12131,16 +13794,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         <div class="ap-crm-drawer-backdrop" id="ap-drawer-backdrop">
           <div class="ap-crm-drawer" style="max-width:620px;">
             <!-- Drawer Header -->
-            <div class="ap-crm-drawer-header" style="align-items:center;">
+            <div class="ap-crm-drawer-header" style="background:#022f43 !important; color:#ffffff !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:space-between;">
               <div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-family:monospace;font-weight:800;color:#2563eb;font-size:14px;">${tkt.id}</span>
-                  <span class="ap-badge ${priorityBadgeClass}">${tkt.priority}</span>
-                  <span class="ap-badge ${tkt.status==='Resolved'?'green':tkt.status==='In Progress'?'blue':'orange'}">${tkt.status}</span>
+                  <span style="font-family:monospace;font-weight:800;color:#38bdf8;font-size:14px;">${tkt.id}</span>
+                  <span class="ap-badge ${priorityBadgeClass}" style="${(tkt.priority || '').toLowerCase() === 'medium' ? 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;' : ''}">${(tkt.priority || '').toLowerCase() === 'medium' ? '● Medium' : tkt.priority}</span>
+                  <span class="ap-badge ${tkt.status==='Resolved'?'green':tkt.status==='In Progress'?'blue':'orange'}" style="${tkt.status === 'Resolved' ? 'background:#dcfce7;color:#15803d;border:1px solid #86efac;' : ''}">${tkt.status === 'Resolved' ? '● Resolved' : tkt.status}</span>
                 </div>
-                <h3 style="margin:4px 0 0;font-size:15px;font-weight:800;color:#0f172a;">${tkt.subject}</h3>
+                <h3 style="margin:4px 0 0;font-size:15px;font-weight:800;color:#ffffff !important;">${tkt.subject}</h3>
               </div>
-              <button id="ap-drawer-close-btn" style="border:none;background:#f1f5f9;width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;">✕</button>
+              <button id="ap-drawer-close-btn" style="border:none;background:rgba(255,255,255,0.15);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;color:#ffffff;display:flex;align-items:center;justify-content:center;transition:background 0.2s;">✕</button>
             </div>
 
             <!-- Drawer Quick KPIs -->
@@ -12304,7 +13967,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       container.innerHTML = `
         <div class="ap-modal-backdrop" id="ap-new-ticket-backdrop">
-          <div class="ap-modal-dialog" style="max-width:540px;">
+          <div class="ap-modal-dialog" style="max-width:850px; width:95%;">
             <div class="ap-modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e2e8f0;">
               <div>
                 <h3 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;">Log Customer Dispute / Escalation</h3>
@@ -12452,6 +14115,114 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const quadCards = cms.quadCards || [];
         const heroPromoCards = cms.heroPromoCards || [];
         const quickBrowseItems = cms.quickBrowseItems || [];
+        const announcements = Array.isArray(cms.announcements) && cms.announcements.length > 0
+          ? cms.announcements
+          : (cms.announcementText ? [{
+              _id: 'default_ann',
+              text: cms.announcementText,
+              tag: 'Store Offer',
+              link: '#deals',
+              active: Boolean(cms.announcementActive !== false),
+              validFrom: null,
+              validUntil: null,
+              order: 0,
+            }] : []);
+
+        function formatTimeLimit(validUntil) {
+          if (!validUntil) {
+            return `<span class="ap-badge green" style="background:#ecfdf5; color:#059669; font-weight:800; border:1px solid #a7f3d0; font-size:11px; padding:3px 8px; display:inline-block;">∞ No Expiry (Always Active)</span>`;
+          }
+          const d = new Date(validUntil);
+          if (isNaN(d.getTime())) {
+            return `<span class="ap-badge green" style="background:#ecfdf5; color:#059669; font-weight:800; font-size:11px;">∞ No Expiry</span>`;
+          }
+          const now = new Date();
+          const diffMs = d.getTime() - now.getTime();
+          const formattedDate = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          
+          if (diffMs <= 0) {
+            return `
+              <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:2px 8px;">Expired</span>
+                <span style="font-size:10.5px; color:#dc2626; font-weight:600;">Ended ${formattedDate}</span>
+              </div>
+            `;
+          }
+
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const diffDays = Math.floor(diffHours / 24);
+          const remainingHours = diffHours % 24;
+          let timeRemainingText = '';
+          if (diffDays > 0) {
+            timeRemainingText = `${diffDays}d ${remainingHours}h left`;
+          } else if (diffHours > 0) {
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            timeRemainingText = `${diffHours}h ${diffMins}m left`;
+          } else {
+            const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+            timeRemainingText = `${diffMins}m left`;
+          }
+
+          const isEndingSoon = diffHours < 24;
+          const badgeBg = isEndingSoon ? '#fef3c7' : '#e0f2fe';
+          const badgeColor = isEndingSoon ? '#92400e' : '#0369a1';
+          const badgeBorder = isEndingSoon ? '#fde68a' : '#bae6fd';
+
+          return `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+              <span class="ap-badge" style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; font-weight:800; font-size:11px; padding:2px 8px;">
+                ⏳ ${timeRemainingText}
+              </span>
+              <span style="font-size:10.5px; color:#475569; font-weight:600;">Until ${formattedDate}</span>
+            </div>
+          `;
+        }
+
+        function renderAnnouncementRows(annList) {
+          if (!annList || !annList.length) {
+            return `<tr><td colspan="5" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No top navigation announcement bars found. Click <strong>"+ Add Announcement Bar"</strong> to create your first announcement!</td></tr>`;
+          }
+          const now = new Date();
+          return annList.map((a, idx) => {
+            const annId = String(a._id || a.id || idx);
+            const isExpired = a.validUntil && new Date(a.validUntil) < now;
+            const tagHtml = a.tag ? `<span class="ap-badge blue" style="font-size:10.5px; margin-right:6px; flex-shrink:0;">${esc(a.tag)}</span>` : '';
+            return `
+              <tr data-announcement-id="${annId}">
+                <td style="padding:10px 14px; vertical-align:middle;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    ${tagHtml}
+                    <span style="font-weight:750; color:#000000; font-size:13px; line-height:1.4;">
+                      ${esc(a.text)}
+                    </span>
+                  </div>
+                  ${a.link && a.link !== '#' ? `<div style="font-size:11.5px; color:#2563eb; margin-top:4px;"><span style="color:#64748b;">Target:</span> <code>${esc(a.link)}</code></div>` : ''}
+                </td>
+                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
+                  ${formatTimeLimit(a.validUntil)}
+                </td>
+                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
+                  ${isExpired ? `
+                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:3px 8px;">
+                      Expired
+                    </span>
+                  ` : `
+                    <button type="button" class="ap-btn-tiny ap-announcement-toggle-btn ${a.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${annId}" data-active="${a.active}" title="Click to toggle Active / Paused status" style="cursor:pointer; border:none; font-weight:800; padding:3px 8px; font-size:11px;">
+                      ${a.active ? '● Active' : '○ Paused'}
+                    </button>
+                  `}
+                </td>
+                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
+                  <span class="ap-badge gray" style="font-weight:700;">#${a.order ?? idx}</span>
+                </td>
+                <td style="text-align:center; padding:10px 8px; vertical-align:middle; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-announcement-btn" data-id="${annId}" title="Edit announcement text, time limit, and link" style="padding:4px 10px; font-size:12px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-announcement-btn" data-id="${annId}" title="Delete announcement" style="padding:4px 10px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
 
         let currentFilter = 'all';
         let storeSearchQuery = '';
@@ -12495,8 +14266,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             return `
               <tr data-quad-id="${cardId}">
-                <td style="width:160px;">
-                  <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:80px;">
+                <td style="width:160px; text-align:center;">
+                  <div style="display:inline-flex; gap:4px; flex-wrap:wrap; max-width:80px; justify-content:center;">
                     ${thumbsHtml}
                   </div>
                 </td>
@@ -12504,9 +14275,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${esc(c.title)}</div>
                   <div style="margin-top:4px;">${itemsSummary || '<span style="color:#94a3b8; font-size:11px;">No sub-items</span>'}</div>
                 </td>
-                <td>
-                  <span class="ap-badge blue" style="font-weight:700;">Row ${c.row || 1}</span>
-                  <span class="ap-badge gray" style="margin-left:4px;">#${c.order ?? idx}</span>
+                <td style="white-space:nowrap; text-align:center;">
+                  <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap;">
+                    <span class="ap-badge blue" style="font-weight:700;">Row ${c.row || 1}</span>
+                    <span class="ap-badge gray">#${c.order ?? idx}</span>
+                  </div>
                 </td>
                 <td>
                   <div style="font-size:12px; color:#475569;">
@@ -12516,14 +14289,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     Footer: <em>"${esc(c.footerText || 'See more')}"</em>
                   </div>
                 </td>
-                <td>
+                <td style="text-align:center;">
                   <button type="button" class="ap-btn-tiny ap-quad-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${cardId}" data-active="${c.active !== false}" title="Click to toggle Active / Hidden" style="cursor:pointer; border:none; font-weight:800; padding:4px 10px;">
                     ${c.active !== false ? 'Active' : 'Hidden'}
                   </button>
                 </td>
-                <td style="white-space:nowrap; text-align:right;">
-                  <button type="button" class="ap-btn ghost ap-edit-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-delete-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                <td style="white-space:nowrap; text-align:center;">
+                  <button type="button" class="ap-btn ghost ap-edit-quad-btn" data-id="${cardId}" style="padding:4px 12px; font-size:12px; margin-right:6px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-quad-btn" data-id="${cardId}" style="padding:4px 12px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
                 </td>
               </tr>
             `;
@@ -12536,22 +14309,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const id = String(c._id || c.id || idx);
             return `
               <tr data-hero-id="${id}">
-                <td style="width:60px;">
-                  <img src="${esc(c.image)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                <td style="width:60px; text-align:center;">
+                  <img src="${esc(c.image)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; display:inline-block;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
                 </td>
                 <td>
                   <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(c.brand || c.sub || 'Promo Banner')}</div>
                   <div style="font-size:11px; color:#64748b;">${esc(c.badge || '')} • ${esc(c.sub || '')}</div>
                   <div style="font-size:10.5px; color:#0284c7; margin-top:2px;">${esc(c.pill || '')}</div>
                 </td>
-                <td>
-                  <button type="button" class="ap-btn-tiny ap-hero-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${c.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
+                <td style="text-align:center;">
+                  <button type="button" class="ap-btn-tiny ap-hero-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${c.active !== false}" style="cursor:pointer; border:none; padding:3px 10px; font-size:11px; font-weight:700;">
                     ${c.active !== false ? 'Active' : 'Paused'}
                   </button>
                 </td>
-                <td style="text-align:right; white-space:nowrap;">
-                  <button type="button" class="ap-btn ghost ap-edit-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-del-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Del</button>
+                <td style="text-align:center; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-hero-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-hero-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
                 </td>
               </tr>
             `;
@@ -12564,21 +14337,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const id = String(it._id || it.id || idx);
             return `
               <tr data-quick-id="${id}">
-                <td style="width:60px;">
-                  <img src="${esc(it.image)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                <td style="width:60px; text-align:center;">
+                  <img src="${esc(it.image)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; display:inline-block;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
                 </td>
                 <td>
                   <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(it.title || 'Browse Item')}</div>
                   ${it.badge ? `<span style="font-size:10.5px; color:#dc2626; font-weight:700;">${esc(it.badge)}</span>` : ''}
                 </td>
-                <td>
-                  <button type="button" class="ap-btn-tiny ap-quick-toggle-btn ${it.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${it.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
+                <td style="text-align:center;">
+                  <button type="button" class="ap-btn-tiny ap-quick-toggle-btn ${it.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${it.active !== false}" style="cursor:pointer; border:none; padding:3px 10px; font-size:11px; font-weight:700;">
                     ${it.active !== false ? 'Active' : 'Paused'}
                   </button>
                 </td>
-                <td style="text-align:right; white-space:nowrap;">
-                  <button type="button" class="ap-btn ghost ap-edit-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-del-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Del</button>
+                <td style="text-align:center; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-quick-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-quick-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
                 </td>
               </tr>
             `;
@@ -12593,24 +14366,24 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const bannerId = String(b._id || b.id);
             return `
             <tr data-banner-id="${bannerId}">
-              <td style="width:100px;">
-                <img class="ap-banner-thumb" src="${esc(b.image)}" alt="${esc(b.title)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=200';" />
+              <td style="width:100px; text-align:center;">
+                <img class="ap-banner-thumb" src="${esc(b.image)}" alt="${esc(b.title)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=200';" style="display:inline-block;" />
               </td>
               <td>
                 <div style="font-weight:750; color:#000000; font-size:13.5px;">${esc(b.title)}</div>
                 <div style="font-size:12px; color:#1e293b; margin-top:2px;">${esc(b.subtitle || '')}</div>
               </td>
-              <td><span class="ap-badge blue">${esc(b.tag || 'Featured')}</span></td>
-              <td><code style="font-size:11.5px; color:#2563eb; background:#eff6ff; padding:2px 6px; border-radius:4px;">${esc(b.link || '#')}</code></td>
-              <td><span class="ap-badge gray" style="font-weight:700;">#${b.order ?? 0}</span></td>
-              <td>
+              <td style="text-align:center;"><span class="ap-badge blue">${esc(b.tag || 'Featured')}</span></td>
+              <td style="text-align:center;"><code style="font-size:11.5px; color:#2563eb; background:#eff6ff; padding:2px 6px; border-radius:4px;">${esc(b.link || '#')}</code></td>
+              <td style="text-align:center;"><span class="ap-badge gray" style="font-weight:700;">#${b.order ?? 0}</span></td>
+              <td style="text-align:center;">
                 <button type="button" class="ap-btn-tiny ap-banner-toggle-btn ${b.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${bannerId}" data-active="${b.active}" title="Click to toggle Active / Paused status" style="cursor:pointer; border:none; font-weight:800; padding:3px 8px;">
                   ${b.active ? 'Active' : 'Paused'}
                 </button>
               </td>
-              <td style="white-space:nowrap; text-align:right;">
-                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${bannerId}" title="Edit banner headline, image, or link" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
-                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${bannerId}" title="Delete banner" style="padding:4px 10px; font-size:12px;">Delete</button>
+              <td style="white-space:nowrap; text-align:center;">
+                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${bannerId}" title="Edit banner headline, image, or link" style="padding:4px 10px; font-size:12px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
+                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${bannerId}" title="Delete banner" style="padding:4px 10px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
               </td>
             </tr>
           `;
@@ -12730,62 +14503,92 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               ? `<strong style="color:#000000;">${p.discountValue}% OFF</strong>${p.maxDiscount ? `<div style="font-size:11px; color:#1e293b; font-weight:600;">Max ₹${p.maxDiscount.toLocaleString('en-IN')}</div>` : ''}`
               : `<strong style="color:#000000;">₹${p.discountValue.toLocaleString('en-IN')} FLAT</strong>`;
 
-            let partnerStr = p.bankPartner || p.upiProvider || `<span style="color:#64748b;">—</span>`;
+            // Build Partner / Provider items list for ticker display
+            const tickerItems = [];
             if (p.type === 'bank') {
               if (Array.isArray(p.bankRules) && p.bankRules.length > 0) {
-                partnerStr = `<div style="display:flex; flex-direction:column; gap:5px; min-width:210px;">` +
-                  p.bankRules.map(r => {
-                    const badgeBg = r.cardType === 'debit' ? '#e0f2fe' : r.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
-                    const badgeColor = r.cardType === 'debit' ? '#0369a1' : r.cardType === 'credit' ? '#92400e' : '#15803d';
-                    const badgeBorder = r.cardType === 'debit' ? '#bae6fd' : r.cardType === 'credit' ? '#fde68a' : '#86efac';
-                    const badgeText = r.cardType === 'debit' ? 'Debit Only' : r.cardType === 'credit' ? 'Credit Only' : 'Debit & Credit';
-                    const logoUrl = getBankLogoUrl(r.bank);
-                    return `
-                      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                          <div style="width:20px; height:20px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
-                            <img src="${logoUrl}" alt="${esc(r.bank)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
-                          </div>
-                          <span style="font-weight:700; color:#000000; font-size:12px;">${esc(r.bank)}</span>
-                        </div>
-                        <span style="font-size:10px; font-weight:800; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; padding:1px 6px; border-radius:4px; white-space:nowrap;">${badgeText}</span>
-                      </div>
-                    `;
-                  }).join('') + `</div>`;
+                p.bankRules.forEach(r => {
+                  const bText = r.cardType === 'debit' ? 'Debit Only' : r.cardType === 'credit' ? 'Credit Only' : 'Debit & Credit';
+                  const bBg = r.cardType === 'debit' ? '#e0f2fe' : r.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
+                  const bColor = r.cardType === 'debit' ? '#0369a1' : r.cardType === 'credit' ? '#92400e' : '#15803d';
+                  const bBorder = r.cardType === 'debit' ? '#bae6fd' : r.cardType === 'credit' ? '#fde68a' : '#86efac';
+                  tickerItems.push({
+                    name: r.bank,
+                    logoUrl: getBankLogoUrl(r.bank),
+                    badgeText: bText,
+                    badgeBg: bBg,
+                    badgeColor: bColor,
+                    badgeBorder: bBorder
+                  });
+                });
               } else if (p.bankPartner) {
-                const cardLabel = p.cardType === 'debit' ? 'Debit Cards Only' : p.cardType === 'credit' ? 'Credit Cards Only' : 'Debit & Credit Cards';
-                const logoUrl = getBankLogoUrl(p.bankPartner);
-                partnerStr = `
-                  <div style="display:flex; align-items:flex-start; gap:8px;">
-                    <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
-                      <img src="${logoUrl}" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
-                    </div>
-                    <div>
-                      <div style="font-weight:700; color:#000000; font-size:12px;">${esc(p.bankPartner)}</div>
-                      <span style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">${cardLabel}</span>
-                    </div>
-                  </div>
-                `;
+                const bText = p.cardType === 'debit' ? 'Debit Cards Only' : p.cardType === 'credit' ? 'Credit Cards Only' : 'Debit & Credit Cards';
+                const bBg = p.cardType === 'debit' ? '#e0f2fe' : p.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
+                const bColor = p.cardType === 'debit' ? '#0369a1' : p.cardType === 'credit' ? '#92400e' : '#15803d';
+                const bBorder = p.cardType === 'debit' ? '#bae6fd' : p.cardType === 'credit' ? '#fde68a' : '#86efac';
+                const rawBanks = p.bankPartner.split(',').map(s => s.trim()).filter(Boolean);
+                if (rawBanks.length === 0) rawBanks.push(p.bankPartner);
+                rawBanks.forEach(b => {
+                  tickerItems.push({
+                    name: b,
+                    logoUrl: getBankLogoUrl(b),
+                    badgeText: bText,
+                    badgeBg: bBg,
+                    badgeColor: bColor,
+                    badgeBorder: bBorder
+                  });
+                });
               }
-            } else if (p.type === 'upi' && p.upiProvider) {
+            } else if (p.type === 'upi' && (p.upiProvider || (p.upiProviders && p.upiProviders.length > 0))) {
               const providers = Array.isArray(p.upiProviders) && p.upiProviders.length > 0
                 ? p.upiProviders
                 : (p.upiProvider ? p.upiProvider.split(',').map(s => s.trim()).filter(Boolean) : []);
-              const upiHtml = providers.map(u => {
-                const logoUrl = getUpiLogoUrl(u);
-                return `
-                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
-                    <div style="width:18px; height:18px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
-                      <img src="${logoUrl}" alt="${esc(u)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
-                    </div>
-                    <span style="font-weight:700; color:#000000; font-size:12px;">${esc(u)}</span>
-                  </div>
-                `;
-              }).join('');
+              if (providers.length === 0 && p.upiProvider) providers.push(p.upiProvider);
+              providers.forEach(u => {
+                tickerItems.push({
+                  name: u,
+                  logoUrl: getUpiLogoUrl(u),
+                  badgeText: 'UPI Cashback',
+                  badgeBg: '#e0f2fe',
+                  badgeColor: '#0369a1',
+                  badgeBorder: '#bae6fd'
+                });
+              });
+            }
+
+            let partnerStr = `<span style="color:#64748b;">—</span>`;
+            if (tickerItems.length === 1) {
+              const item = tickerItems[0];
               partnerStr = `
-                <div>
-                  ${upiHtml || `<div style="font-weight:700; color:#000000; font-size:12px;">${esc(p.upiProvider)}</div>`}
-                  <span style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px;">UPI Cashback</span>
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center; width:100%;">
+                  <div style="display:flex; align-items:center; justify-content:center; gap:5px; max-width:100%;">
+                    <div style="width:18px; height:18px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
+                      <img src="${item.logoUrl}" alt="${esc(item.name)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                    </div>
+                    <span style="font-weight:700; color:#000000; font-size:11.5px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(item.name)}">${esc(item.name)}</span>
+                  </div>
+                  <div>
+                    <span style="font-size:9.5px; font-weight:800; background:${item.badgeBg}; color:${item.badgeColor}; border:1px solid ${item.badgeBorder}; padding:1px 6px; border-radius:4px; display:inline-block; white-space:nowrap;">${item.badgeText}</span>
+                  </div>
+                </div>
+              `;
+            } else if (tickerItems.length > 1) {
+              partnerStr = `
+                <div class="ap-partner-ticker" data-total="${tickerItems.length}" style="position:relative; width:100%; min-height:42px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                  ${tickerItems.map((item, idx) => `
+                    <div class="ap-ticker-slide ${idx === 0 ? 'active' : ''}" data-index="${idx}" style="width:100%; display:${idx === 0 ? 'flex' : 'none'}; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center;">
+                      <div style="display:flex; align-items:center; justify-content:center; gap:5px; max-width:100%;">
+                        <div style="width:18px; height:18px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
+                          <img src="${item.logoUrl}" alt="${esc(item.name)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                        </div>
+                        <span style="font-weight:700; color:#000000; font-size:11.5px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(item.name)}">${esc(item.name)}</span>
+                        <span style="font-size:8.5px; font-weight:800; color:#022F43; background:#e2e8f0; padding:1px 5px; border-radius:8px; flex-shrink:0;">${idx + 1}/${tickerItems.length}</span>
+                      </div>
+                      <div>
+                        <span style="font-size:9.5px; font-weight:800; background:${item.badgeBg}; color:${item.badgeColor}; border:1px solid ${item.badgeBorder}; padding:1px 6px; border-radius:4px; display:inline-block; white-space:nowrap;">${item.badgeText}</span>
+                      </div>
+                    </div>
+                  `).join('')}
                 </div>
               `;
             }
@@ -12797,19 +14600,20 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             let durationBadge = `<span style="font-size:11.5px; color:#000000; font-weight:600;">Always Active</span>`;
             if (p.validUntil) {
               const untilDate = new Date(p.validUntil);
-              const dateStr = untilDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+              const dateStr = untilDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+              const timeStr = untilDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
               if (isExpired) {
                 durationBadge = `
-                  <div>
-                    <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">Expired</span>
-                    <div style="font-size:11px; color:#b91c1c; font-weight:700; margin-top:3px;">Ended: ${esc(dateStr)}</div>
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                    <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-size:10px; padding:2px 6px;">Expired</span>
+                    <div style="font-size:10px; color:#b91c1c; font-weight:700; margin-top:2px; line-height:1.2; text-align:center;">Ended: ${esc(dateStr)}</div>
                   </div>
                 `;
               } else if (isScheduled) {
                 durationBadge = `
-                  <div>
-                    <span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; border:1px solid #fde047;">Scheduled</span>
-                    <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Starts: ${new Date(p.validFrom).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                    <span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; border:1px solid #fde047; font-size:10px; padding:2px 6px;">Scheduled</span>
+                    <div style="font-size:10px; color:#475569; font-weight:600; margin-top:2px; line-height:1.2; text-align:center;">Starts: ${new Date(p.validFrom).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
                   </div>
                 `;
               } else {
@@ -12817,51 +14621,58 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const diffHours = Math.round(diffMs / (1000 * 60 * 60));
                 const timeLeft = diffHours < 24 ? `${diffHours}h left` : `${Math.round(diffHours / 24)}d left`;
                 durationBadge = `
-                  <div>
-                    <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (${timeLeft})</span>
-                    <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: ${esc(dateStr)}</div>
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                    <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:10px; padding:2px 6px; white-space:nowrap;">Active (${timeLeft})</span>
+                    <div style="font-size:10.5px; color:#475569; font-weight:600; line-height:1.2; text-align:center; margin-top:2px;">
+                      Expires: <span style="color:#000000; font-weight:700;">${esc(dateStr)}</span>
+                      <div style="font-size:9.5px; color:#64748b;">${esc(timeStr)}</div>
+                    </div>
                   </div>
                 `;
               }
             } else if (isScheduled) {
-              durationBadge = `<span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e;">Starts Later</span>`;
+              durationBadge = `<span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; font-size:10px;">Starts Later</span>`;
             }
 
             let productsBadge = '';
             if (p.applicableProducts && p.applicableProducts.length > 0) {
-              productsBadge = `<div style="font-size:11px; color:#000000; font-weight:700; margin-top:4px;" title="Applies to: ${esc(p.applicableProducts.join(', '))}">Applies to: ${p.applicableProducts.slice(0, 2).map(esc).join(', ')}${p.applicableProducts.length > 2 ? ` +${p.applicableProducts.length - 2}` : ''}</div>`;
+              productsBadge = `<div style="font-size:10.5px; color:#000000; font-weight:700; margin-top:3px;" title="Applies to: ${esc(p.applicableProducts.join(', '))}">Applies to: ${p.applicableProducts.slice(0, 2).map(esc).join(', ')}${p.applicableProducts.length > 2 ? ` +${p.applicableProducts.length - 2}` : ''}</div>`;
             }
 
             const promoId = String(p._id || p.id);
             return `
-              <tr data-promo-id="${promoId}">
-                <td>
-                  <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">${esc(p.code)}</div>
-                  <div style="margin-top:2px;">${typeBadge}</div>
+              <tr data-promo-id="${promoId}" class="ap-promo-row" style="cursor:pointer; transition:background-color 0.15s ease;" title="Click offer to view or edit details">
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">
+                  <div style="font-family:monospace; font-weight:800; color:#022F43; font-size:12.5px; letter-spacing:0.02em; background:#e0f2fe; padding:2px 6px; border-radius:5px; border:1px solid #bae6fd; display:inline-block;" title="Click to open offer">${esc(p.code)}</div>
+                  <div style="margin-top:3px;">${typeBadge}</div>
                 </td>
-                <td>
-                  <div style="font-weight:700; color:#000000; font-size:13px;">${esc(p.title)}</div>
-                  <div style="font-size:11.5px; color:#334155; margin-top:2px; max-width:240px; line-height:1.35;">${esc(p.description || '')}</div>
+                <td style="text-align:center; padding:8px 6px; overflow:hidden; vertical-align:middle; word-break:break-word;">
+                  <div style="font-weight:700; color:#022F43; font-size:12px; line-height:1.25; text-align:center;" title="Click to open offer">${esc(p.title)}</div>
+                  <div style="font-size:11px; color:#475569; margin-top:2px; line-height:1.25; text-align:center;">${esc(p.description || '')}</div>
                 </td>
-                <td>${scopeBadge}</td>
-                <td>${rateStr}</td>
-                <td><strong style="color:#000000; font-size:12.5px;">₹${(p.minOrder || 0).toLocaleString('en-IN')}</strong></td>
-                <td><div style="font-size:12px; color:#000000;">${partnerStr}</div></td>
-                <td>${durationBadge}${productsBadge}</td>
-                <td>
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">${scopeBadge}</td>
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">${rateStr}</td>
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;"><strong style="color:#000000; font-size:12px;">₹${(p.minOrder || 0).toLocaleString('en-IN')}</strong></td>
+                <td style="text-align:center; padding:8px 5px; overflow:hidden; vertical-align:middle; word-break:break-word;">
+                  <div style="font-size:11px; color:#000000; display:flex; justify-content:center; align-items:center; width:100%; text-align:center;">${partnerStr}</div>
+                </td>
+                <td style="text-align:center; padding:8px 5px; overflow:hidden; vertical-align:middle; word-break:break-word;">${durationBadge}${productsBadge}</td>
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle;">
                   ${isExpired ? `
-                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5;">
+                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:3px 6px;">
                       Expired
                     </span>
                   ` : `
-                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${promoId}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800;">
+                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${promoId}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800; font-size:11px; padding:3px 6px;">
                       ${p.active ? '● Active' : '○ Paused'}
                     </button>
                   `}
                 </td>
-                <td style="white-space:nowrap; text-align:right;">
-                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${promoId}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${promoId}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle;">
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                    <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${promoId}" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Delete</button>
+                    <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${promoId}" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Edit</button>
+                  </div>
                 </td>
               </tr>
             `;
@@ -12888,60 +14699,75 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                   Refresh
                 </button>
-                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#2563eb; border-color:#1d4ed8; color:#ffffff !important; font-weight:800;">
+                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
                   <span>+ Add Homepage Card</span>
                 </button>
-                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="color:#000000; font-weight:800;">
+                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
                   <span style="color:#000000; font-weight:800;">+ Add Featured Banner</span>
                 </button>
-                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#ea580c; border-color:#c2410c; color:#000000; font-weight:800;">
+                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">
                   <span style="color:#000000; font-weight:800;">+ Create Offer / Voucher</span>
                 </button>
               </div>
             </div>
 
-            <!-- Global Announcement Ticker Manager -->
-            <div class="ap-form-card" style="margin-bottom:24px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <!-- Global Announcement Ticker Manager (Multi-item with Time Limits, Edit & Delete) -->
+            <div class="ap-table-card" style="margin-bottom:24px;" id="ap-announcements-section">
+              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                 <div>
-                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#000000;">Top Navigation Announcement Bar</h3>
-                  <p style="font-size:12px; color:#1e293b; font-weight:600; margin:2px 0 0;">This marquee message is pinned at the top-left utility bar of the customer-facing storefront.</p>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
+                    Top Navigation Announcement Bar
+                    <span class="ap-badge green" style="font-size:11px; font-weight:800; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; padding:3px 10px; border-radius:12px; display:inline-flex; align-items:center; gap:5px;">● Live on Production</span>
+                    <span class="ap-badge blue" id="ap-announcement-count-badge" style="font-weight:800; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important; padding:3px 10px; border-radius:12px; font-size:11px; display:inline-flex; align-items:center; gap:5px;">● ${announcements.length} Announcement${announcements.length === 1 ? '' : 's'}</span>
+                  </h3>
+                  <p style="font-size:12px; color:#cbd5e1 !important; font-weight:600; margin:3px 0 0;">This marquee message is pinned at the top-left utility bar of the customer-facing storefront.</p>
                 </div>
-                <span class="ap-badge green">● Live on Production</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-announcement-btn" style="padding:7px 18px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important;">
+                    + Add Announcement Bar
+                  </button>
+                </div>
               </div>
-              <div class="ap-form-group" style="margin-bottom:12px;">
-                <label for="ap-cms-announcement-input" class="ap-cms-label" style="display:block; margin-bottom:6px; color:#000000; font-weight:800;">Ticker Announcement Text</label>
-                <input type="text" id="ap-cms-announcement-input" class="ap-input" value="${esc(cms.announcementText || '')}" style="width:100%; font-size:13px; font-weight:700; color:#000000; padding:10px 14px;" />
-              </div>
-              <div style="display:flex; justify-content:flex-end;">
-                <button class="ap-btn primary" id="ap-save-cms-announcement-btn" style="padding:8px 20px;">
-                  Save Announcement Bar
-                </button>
+              <div class="ap-table-wrap" style="max-height:290px; overflow-y:auto; overflow-x:hidden;">
+                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                    <tr style="background:#FF9400;">
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:44%;">TICKER ANNOUNCEMENT TEXT</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">TIME LIMIT / SCHEDULE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">STATUS</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:8%;">ORDER</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ap-announcements-table-body">
+                    ${renderAnnouncementRows(announcements)}
+                  </tbody>
+                </table>
               </div>
             </div>
 
             <!-- Homepage 4-Quadrant Category Cards Manager -->
             <div class="ap-table-card" style="margin-bottom:24px;" id="ap-quad-cards-section">
-              <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                 <div>
-                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#000000; display:flex; align-items:center; gap:8px;">
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
                     Homepage 4-Quadrant Category Cards
-                    <span class="ap-badge blue" id="ap-quad-count-badge" style="font-weight:700;">${quadCards.length} Cards</span>
+                    <span class="ap-badge blue" id="ap-quad-count-badge" style="font-weight:800; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important; padding:3px 10px; border-radius:12px; font-size:11px;">${quadCards.length} Cards</span>
                   </h3>
-                  <p style="margin:2px 0 0; font-size:12px; color:#1e293b; font-weight:600;">Full control over all 4-item category cards on the customer homepage. Change titles, swap images, edit deal badges, and add/remove cards.</p>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Full control over all 4-item category cards on the customer homepage. Change titles, swap images, edit deal badges, and add/remove cards.</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:700;" title="Restore original factory preset cards">
+                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;" title="Restore original factory preset cards">
                     ↺ Reset to Defaults
                   </button>
-                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#2563eb; color:#ffffff !important;">
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">
                     + Add New Homepage Card
                   </button>
                 </div>
               </div>
 
               <!-- Filter Toolbar with Search & Row Filters -->
-              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43 !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div class="ap-cms-pills" id="ap-quad-row-pills">
                   <button type="button" class="ap-cms-pill active" data-row="all">All Rows (${quadCards.length})</button>
                   <button type="button" class="ap-cms-pill" data-row="1">Row 1</button>
@@ -12953,20 +14779,20 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <button type="button" class="ap-cms-pill" data-row="7">Row 7</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <input type="text" id="ap-quad-search-input" placeholder="Search cards by title or item..." style="width:240px; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none;" />
+                  <input type="text" id="ap-quad-search-input" placeholder="Search cards by title or item..." style="width:240px; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; background:#ffffff; color:#000000;" />
                 </div>
               </div>
 
-              <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th style="color:#000000; font-weight:800;">4 Tile Preview</th>
-                      <th style="color:#000000; font-weight:800;">Card Title &amp; Items Summary</th>
-                      <th style="color:#000000; font-weight:800;">Row &amp; Order</th>
-                      <th style="color:#000000; font-weight:800;">Destination &amp; Footer</th>
-                      <th style="color:#000000; font-weight:800;">Status</th>
-                      <th style="text-align:right; color:#000000; font-weight:800;">Actions</th>
+              <div class="ap-table-wrap" style="max-height:330px; overflow-y:auto; overflow-x:hidden;">
+                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                    <tr style="background:#FF9400;">
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">4 TILE PREVIEW</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:32%;">CARD TITLE &amp; ITEMS SUMMARY</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; white-space:nowrap; position:sticky; top:0; z-index:5; width:14%;">ROW &amp; ORDER</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:18%;">DESTINATION &amp; FOOTER</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:10%;">STATUS</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody id="ap-quad-table-body">
@@ -12980,21 +14806,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
               <!-- Top Hero Cards (4 Cards) -->
               <div class="ap-table-card">
-                <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#000000;">Top Hero Promo Cards</h3>
-                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">The 4 showcase cards below the main banner slider.</p>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Top Hero Promo Cards</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The 4 showcase cards below the main banner slider.</p>
                   </div>
-                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800;">+ Add</button>
+                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">+ Add</button>
                 </div>
-                <div class="ap-table-wrap">
-                  <table class="ap-table">
-                    <thead>
-                      <tr>
-                        <th>Image</th>
-                        <th>Details &amp; Badge</th>
-                        <th>Status</th>
-                        <th style="text-align:right;">Actions</th>
+                <div class="ap-table-wrap" style="max-height:260px; overflow-y:auto; overflow-x:hidden;">
+                  <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                    <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                      <tr style="background:#FF9400;">
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">Image</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:48%;">Details &amp; Badge</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">Status</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="ap-hero-promo-table-body">
@@ -13006,21 +14832,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
               <!-- Quick Browse Items (7 Items) -->
               <div class="ap-table-card">
-                <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#000000;">Quick-Browse Strip Items</h3>
-                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">The mini horizontal browse items above the quad grid.</p>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Quick-Browse Strip Items</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The mini horizontal browse items above the quad grid.</p>
                   </div>
-                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800;">+ Add</button>
+                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">+ Add</button>
                 </div>
-                <div class="ap-table-wrap">
-                  <table class="ap-table">
-                    <thead>
-                      <tr>
-                        <th>Image</th>
-                        <th>Title &amp; Badge</th>
-                        <th>Status</th>
-                        <th style="text-align:right;">Actions</th>
+                <div class="ap-table-wrap" style="max-height:250px; overflow-y:auto; overflow-x:hidden;">
+                  <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                    <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                      <tr style="background:#FF9400;">
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">Image</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:48%;">Title &amp; Badge</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">Status</th>
+                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="ap-quick-browse-table-body">
@@ -13033,29 +14859,29 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Active Featured Banners Table Card -->
             <div class="ap-table-card" style="margin-bottom:24px;">
-              <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#000000;">Active Featured Banners</h3>
-                  <p style="margin:2px 0 0; font-size:12px; color:#1e293b; font-weight:600;">Hero slider images, headlines, and category callouts shown on the homepage.</p>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Active Featured Banners</h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Hero slider images, headlines, and category callouts shown on the homepage.</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:700; color:#000000;">${banners.length} Banners</span>
-                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; color:#ffffff !important; font-weight:800;">
+                  <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:800; color:#cbd5e1 !important; background:#1e293b !important; border:1px solid #334155 !important; padding:3px 10px; border-radius:12px; font-size:11px;">${banners.length} Banners</span>
+                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
                     + Add Featured Banner
                   </button>
                 </div>
               </div>
-              <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th style="color:#000000; font-weight:800;">Image Preview</th>
-                      <th style="color:#000000; font-weight:800;">Banner Headline &amp; Subtitle</th>
-                      <th style="color:#000000; font-weight:800;">Tag Badge</th>
-                      <th style="color:#000000; font-weight:800;">Destination Link</th>
-                      <th style="color:#000000; font-weight:800;">Order</th>
-                      <th style="color:#000000; font-weight:800;">Status</th>
-                      <th style="text-align:right; color:#000000; font-weight:800;">Actions</th>
+              <div class="ap-table-wrap" style="max-height:280px; overflow-y:auto; overflow-x:hidden;">
+                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                    <tr style="background:#FF9400;">
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:13%;">IMAGE PREVIEW</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:27%;">BANNER HEADLINE &amp; SUBTITLE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">TAG BADGE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">DESTINATION LINK</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:8%;">ORDER</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:10%;">STATUS</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody id="ap-banners-table-body">
@@ -13067,21 +14893,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Promotional Offers, Bank Cards & UPI Vouchers -->
             <div class="ap-table-card">
-              <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#000000;">Promotional Offers, Bank Cards &amp; Vouchers</h3>
-                  <p style="margin:2px 0 0; font-size:12px; color:#1e293b; font-weight:600;">Manage storewide vouchers, bank instant discounts, UPI cashback, and store-specific campaigns.</p>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Promotional Offers, Bank Cards &amp; Vouchers</h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Manage storewide vouchers, bank instant discounts, UPI cashback, and store-specific campaigns.</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span class="ap-badge green" id="ap-promo-count-badge" style="font-weight:700;">${promotions.length} Offers</span>
-                  <button class="ap-btn primary" id="ap-cms-add-promo-btn" style="background:#ea580c; border-color:#c2410c; padding:6px 14px; font-size:12px; color:#000000; font-weight:800;">
+                  <span class="ap-badge green" id="ap-promo-count-badge" style="font-weight:800; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; padding:3px 10px; border-radius:12px; font-size:11px;">${promotions.length} Offers</span>
+                  <button class="ap-btn primary" id="ap-cms-add-promo-btn" style="background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; padding:6px 14px; font-size:12px; border-radius:6px; cursor:pointer;">
                     + Create Offer / Voucher
                   </button>
                 </div>
               </div>
 
               <!-- Filter Toolbar with Dedicated Searchbar for Stores -->
-              <div class="ap-cms-toolbar">
+              <div class="ap-cms-toolbar" style="background:#022F43 !important; border-bottom:1px solid rgba(255,255,255,0.12); padding:12px 20px;">
                 <div class="ap-cms-pills">
                   <button type="button" class="ap-cms-pill active" data-filter="all">All Offers (${promotions.length})</button>
                   <button type="button" class="ap-cms-pill" data-filter="voucher">Vouchers (${voucherCount})</button>
@@ -13093,39 +14919,39 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div class="ap-cms-searches">
                   <!-- DEDICATED SEARCHBAR FOR STORES -->
                   <div class="ap-cms-search-field">
-                    <label for="ap-cms-store-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search by Store / Merchant</label>
-                    <div class="ap-cms-input-box">
+                    <label for="ap-cms-store-search-input" class="ap-cms-label" style="color:#ffffff !important; font-weight:800;">Search by Store / Merchant</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px;">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                      <input type="text" id="ap-cms-store-search-input" style="color:#000000; font-weight:600;" />
+                      <input type="text" id="ap-cms-store-search-input" placeholder="Search by store or merchant..." style="color:#000000; font-weight:600; background:transparent;" />
                       <button type="button" id="ap-cms-clear-store-search" class="ap-cms-clear-btn" style="display:none;" title="Clear store search">✕</button>
                     </div>
                   </div>
 
                   <!-- Offer Code & Title Search -->
                   <div class="ap-cms-search-field">
-                    <label for="ap-cms-offer-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search Voucher / Code</label>
-                    <div class="ap-cms-input-box">
+                    <label for="ap-cms-offer-search-input" class="ap-cms-label" style="color:#ffffff !important; font-weight:800;">Search Voucher / Code</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px;">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                      <input type="text" id="ap-cms-offer-search-input" style="color:#000000; font-weight:600;" />
+                      <input type="text" id="ap-cms-offer-search-input" placeholder="Search voucher or code..." style="color:#000000; font-weight:600; background:transparent;" />
                       <button type="button" id="ap-cms-clear-offer-search" class="ap-cms-clear-btn" style="display:none;" title="Clear search">✕</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th style="color:#000000; font-weight:800;">Voucher Code &amp; Type</th>
-                      <th style="color:#000000; font-weight:800;">Offer Title &amp; Terms</th>
-                      <th style="color:#000000; font-weight:800;">Scope / Target Store</th>
-                      <th style="color:#000000; font-weight:800;">Discount Rate</th>
-                      <th style="color:#000000; font-weight:800;">Min Bag Value</th>
-                      <th style="color:#000000; font-weight:800;">Bank / UPI Partner</th>
-                      <th style="color:#000000; font-weight:800;">Duration / Expiry</th>
-                      <th style="color:#000000; font-weight:800;">Status</th>
-                      <th style="text-align:right; color:#000000; font-weight:800;">Actions</th>
+              <div class="ap-table-wrap" style="max-height:285px; overflow-y:auto; overflow-x:hidden;">
+                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
+                    <tr style="background:#FF9400;">
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:10%;">VOUCHER CODE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:19%;">OFFER TITLE &amp; TERMS</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">SCOPE / STORE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">DISCOUNT RATE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:7%;">MIN BAG VALUE</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:19%;">BANK / UPI PARTNER</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:15%;">DURATION / EXPIRY</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:6%;">STATUS</th>
+                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody id="ap-promos-table-body">
@@ -13148,28 +14974,332 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           showToast('Storefront CMS & promotional data refreshed successfully!', 'success');
         });
 
-        // Wire Announcement Bar Update
-        document.getElementById('ap-save-cms-announcement-btn')?.addEventListener('click', async () => {
-          const announcementInput = document.getElementById('ap-cms-announcement-input');
-          const announcementText = announcementInput?.value ?? '';
-          const btn = document.getElementById('ap-save-cms-announcement-btn');
-          if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-          try {
-            await adminFetch('/cms', {
-              method: 'PUT',
-              body: JSON.stringify({ announcementText, announcementActive: true }),
-            });
-            showToast('Storefront announcement bar updated successfully!', 'success');
-            // Update live ticker across storefront
-            document.querySelectorAll('#utility-ticker .ticker-slide, .utility-ticker-text, #store-announcement-bar, .announcement-bar-text').forEach(el => {
-              el.textContent = announcementText;
-            });
-          } catch (e) {
-            showToast(e.message, 'error');
-          } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Save Announcement Bar'; }
-          }
+        // Wire Announcement Bar Add Button
+        document.getElementById('ap-cms-add-announcement-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showAnnouncementModal(null);
         });
+
+        // Announcement Row Handlers (Toggle, Edit, Delete)
+        function attachAnnouncementRowHandlers() {
+          // Toggle Active/Paused
+          body.querySelectorAll('.ap-announcement-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              btn.disabled = true;
+              try {
+                await adminFetch(`/cms/announcements/${id}/toggle`, { method: 'PUT' });
+                showToast('Announcement status updated!', 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+              }
+            });
+          });
+
+          // Edit Announcement
+          body.querySelectorAll('.ap-edit-announcement-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const ann = announcements.find(a => String(a._id || a.id) === String(id));
+              if (ann) {
+                showAnnouncementModal(ann);
+              } else {
+                showToast('Announcement not found.', 'error');
+              }
+            });
+          });
+
+          // Delete Announcement
+          body.querySelectorAll('.ap-delete-announcement-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              const ann = announcements.find(a => String(a._id || a.id) === String(id));
+              const textSnippet = ann?.text ? (ann.text.length > 50 ? ann.text.substring(0, 50) + '...' : ann.text) : 'this announcement';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); border:none !important;">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Announcement Bar?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to permanently delete: <strong>"${esc(textSnippet)}"</strong>? It will immediately stop displaying on the storefront top utility bar.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-ann-cancel" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-ann-confirm" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#dc2626 !important; border-color:#dc2626 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">Delete Announcement</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-ann-cancel')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-ann-confirm')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-ann-confirm');
+                delBtn.disabled = true;
+                delBtn.textContent = 'Deleting...';
+                try {
+                  await adminFetch(`/cms/announcements/${id}`, { method: 'DELETE' });
+                  showToast('Announcement bar deleted successfully!', 'success');
+                  window._fetchStorefrontCMS?.();
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  delBtn.disabled = false;
+                  delBtn.textContent = 'Delete Announcement';
+                }
+              });
+            });
+          });
+        }
+
+        // Add / Edit Announcement Modal
+        function showAnnouncementModal(existingAnn) {
+          const isEdit = Boolean(existingAnn);
+          const backdrop = document.createElement('div');
+          backdrop.className = 'ap-modal-backdrop';
+          backdrop.style.zIndex = '100050';
+
+          const currentValidUntilStr = existingAnn?.validUntil ? formatDatetimeLocal(existingAnn.validUntil) : '';
+
+          backdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:760px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden; border:none !important;">
+              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:none !important; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
+                  ${isEdit ? 'Edit Top Navigation Announcement' : 'Add Top Navigation Announcement'}
+                  <span style="font-size:11.5px; font-weight:600; background:rgba(255,255,255,0.18); color:#ffffff; padding:2px 8px; border-radius:12px;">Top Utility Marquee</span>
+                </h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-ann-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;" title="Close">✕</button>
+              </div>
+
+              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
+                <form id="ap-ann-form" style="display:flex; flex-direction:column; gap:16px;">
+                  <!-- Announcement Message -->
+                  <div>
+                    <label class="ap-cms-label" style="display:block; font-size:12.5px; font-weight:800; color:#000000; margin-bottom:5px;">
+                      Ticker Announcement Text <span style="color:#ef4444;">*</span>
+                    </label>
+                    <textarea id="ann-m-text" class="ap-input" rows="3" placeholder="e.g. Mega Festive Super Sale: Up to 10% OFF Across All Electronics & Fashion_XYZ" style="width:100%; font-size:13px; font-weight:600; color:#000000; padding:10px 12px; line-height:1.45; box-sizing:border-box;" required>${esc(existingAnn?.text || '')}</textarea>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">This message will display in the top navigation announcement ticker on the customer storefront.</div>
+                  </div>
+
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <!-- Badge / Tag -->
+                    <div>
+                      <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:4px;">
+                        Category Tag / Badge (Optional)
+                      </label>
+                      <input type="text" id="ann-m-tag" class="ap-input" value="${esc(existingAnn?.tag || '')}" placeholder="e.g. Limited Deal, Festive Offer, Super Sale" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
+                    </div>
+
+                    <!-- Destination Link -->
+                    <div>
+                      <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:4px;">
+                        Destination Link / Anchor
+                      </label>
+                      <input type="text" id="ann-m-link" class="ap-input" value="${esc(existingAnn?.link || '#deals')}" placeholder="#deals or #category/Electronics" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
+                    </div>
+                  </div>
+
+                  <!-- Time Limit & Expiry Schedule -->
+                  <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                      <div>
+                        <strong style="font-size:13px; color:#0f172a; display:block;">Time Limit &amp; Expiry Schedule</strong>
+                        <span style="font-size:11px; color:#64748b;">Set an automatic expiry limit or preset duration for this announcement.</span>
+                      </div>
+                      <span id="ann-m-schedule-preview" class="ap-badge green" style="font-size:11px; font-weight:700;">
+                        ${existingAnn?.validUntil ? 'Time Limit Scheduled' : '∞ No Expiry (Always Active)'}
+                      </span>
+                    </div>
+
+                    <!-- Quick Preset Buttons -->
+                    <div style="margin-bottom:12px;">
+                      <label style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:6px;">Quick Presets:</label>
+                      <div style="display:flex; flex-wrap:wrap; gap:8px;" id="ann-m-presets">
+                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="none" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">No Expiry</button>
+                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="24h" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">24 Hours</button>
+                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="3d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">3 Days</button>
+                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="7d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">7 Days</button>
+                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="30d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">30 Days</button>
+                      </div>
+                    </div>
+
+                    <!-- DateTime Picker -->
+                    <div>
+                      <label for="ann-m-until" style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">
+                        Exact Expiry Date &amp; Time (Valid Until):
+                      </label>
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="datetime-local" id="ann-m-until" class="ap-input" value="${currentValidUntilStr}" style="flex:1; font-size:12.5px; font-weight:700; box-sizing:border-box;" />
+                        <button type="button" id="ann-m-clear-time" class="ap-btn ghost" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;" title="Clear time limit so it never expires">Clear</button>
+                      </div>
+                      <div id="ann-m-live-calc" style="font-size:11px; color:#2563eb; font-weight:600; margin-top:5px;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Order & Active Checkbox -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:4px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <label class="ap-switch-label" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:700; color:#0f172a;">
+                        <input type="checkbox" id="ann-m-active" ${existingAnn ? (existingAnn.active !== false ? 'checked' : '') : 'checked'} style="width:18px; height:18px; cursor:pointer; accent-color:#059669;" />
+                        <span>Active on Storefront</span>
+                      </label>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <label for="ann-m-order" style="font-size:12px; font-weight:700; color:#475569;">Sort Order:</label>
+                      <input type="number" id="ann-m-order" class="ap-input" value="${existingAnn?.order ?? announcements.length}" min="0" style="width:44px; padding:4px 6px; font-size:12px; font-weight:700; text-align:center;" />
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px; border-top:1px solid #e2e8f0; padding-top:16px;">
+                    <button type="button" class="ap-btn ghost" id="ap-ann-m-cancel" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                    <button type="submit" class="ap-btn primary" id="ap-ann-m-save" style="padding:8px 24px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important;">
+                      ${isEdit ? 'Update Announcement Bar' : 'Publish Announcement Bar'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          `;
+
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
+
+          const closeModal = () => backdrop.remove();
+          backdrop.querySelector('#ap-ann-m-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-ann-m-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+          const untilInput = backdrop.querySelector('#ann-m-until');
+          const previewBadge = backdrop.querySelector('#ann-m-schedule-preview');
+          const liveCalc = backdrop.querySelector('#ann-m-live-calc');
+
+          function updateCalcDisplay() {
+            if (!untilInput.value) {
+              if (previewBadge) {
+                previewBadge.className = 'ap-badge green';
+                previewBadge.textContent = '∞ No Expiry (Always Active)';
+              }
+              if (liveCalc) liveCalc.textContent = 'No expiry date set. This announcement will run indefinitely.';
+              return;
+            }
+            const dt = new Date(untilInput.value);
+            const now = new Date();
+            const diff = dt.getTime() - now.getTime();
+            if (diff <= 0) {
+              if (previewBadge) {
+                previewBadge.className = 'ap-badge red';
+                previewBadge.textContent = '⚠️ Date is in the past (Expired)';
+              }
+              if (liveCalc) liveCalc.textContent = 'Warning: Selected time has already passed. This announcement will show as Expired.';
+            } else {
+              const hours = Math.floor(diff / (1000 * 60 * 60));
+              const days = Math.floor(hours / 24);
+              const remHours = hours % 24;
+              let durStr = days > 0 ? `${days} days, ${remHours} hours` : `${hours} hours`;
+              if (previewBadge) {
+                previewBadge.className = 'ap-badge orange';
+                previewBadge.textContent = `⏳ Expires in ${durStr}`;
+              }
+              if (liveCalc) liveCalc.textContent = `Announcement will automatically expire on ${dt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (in ${durStr}).`;
+            }
+          }
+
+          untilInput?.addEventListener('input', updateCalcDisplay);
+          updateCalcDisplay();
+
+          // Preset click handlers
+          backdrop.querySelectorAll('.ann-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const p = btn.dataset.preset;
+              const now = new Date();
+              if (p === 'none') {
+                untilInput.value = '';
+              } else if (p === '24h') {
+                now.setHours(now.getHours() + 24);
+                untilInput.value = formatDatetimeLocal(now);
+              } else if (p === '3d') {
+                now.setDate(now.getDate() + 3);
+                untilInput.value = formatDatetimeLocal(now);
+              } else if (p === '7d') {
+                now.setDate(now.getDate() + 7);
+                untilInput.value = formatDatetimeLocal(now);
+              } else if (p === '30d') {
+                now.setDate(now.getDate() + 30);
+                untilInput.value = formatDatetimeLocal(now);
+              }
+              updateCalcDisplay();
+            });
+          });
+
+          backdrop.querySelector('#ann-m-clear-time')?.addEventListener('click', () => {
+            untilInput.value = '';
+            updateCalcDisplay();
+          });
+
+          // Form Submit
+          backdrop.querySelector('#ap-ann-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = backdrop.querySelector('#ann-m-text')?.value.trim();
+            if (!text) {
+              return showToast('Announcement text is required.', 'error');
+            }
+            const tag = backdrop.querySelector('#ann-m-tag')?.value.trim() || '';
+            const link = backdrop.querySelector('#ann-m-link')?.value.trim() || '#deals';
+            const untilVal = untilInput?.value;
+            const validUntil = untilVal ? new Date(untilVal).toISOString() : null;
+            const active = Boolean(backdrop.querySelector('#ann-m-active')?.checked);
+            const orderVal = backdrop.querySelector('#ann-m-order')?.value;
+            const order = orderVal !== '' && !isNaN(Number(orderVal)) ? Number(orderVal) : announcements.length;
+
+            const saveBtn = backdrop.querySelector('#ap-ann-m-save');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+              if (isEdit && existingAnn._id && existingAnn._id !== 'default_ann') {
+                await adminFetch(`/cms/announcements/${existingAnn._id || existingAnn.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ text, tag, link, validUntil, active, order }),
+                });
+                showToast('Announcement bar updated successfully!', 'success');
+              } else {
+                await adminFetch('/cms/announcements', {
+                  method: 'POST',
+                  body: JSON.stringify({ text, tag, link, validUntil, active, order }),
+                });
+                showToast('New announcement bar published successfully!', 'success');
+              }
+              window._fetchStorefrontCMS?.();
+              closeModal();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+              saveBtn.disabled = false;
+              saveBtn.textContent = isEdit ? 'Update Announcement Bar' : 'Publish Announcement Bar';
+            }
+          });
+        }
+
+        // Attach announcement row handlers
+        attachAnnouncementRowHandlers();
 
         // Wire Filter Pills
         body.querySelectorAll('.ap-cms-pill').forEach(pill => {
@@ -13377,14 +15507,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:780px; width:95%; max-height:90vh; overflow-y:auto; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:24px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:14px; margin-bottom:18px;">
+                        <div class="ap-modal-dialog" style="max-width:960px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
+              <div class="ap-modal-header" style="background:#022F43 !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                 <div>
-                  <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Homepage Category Card' : 'Add New Homepage Category Card'}</h3>
-                  <p style="margin:3px 0 0; font-size:12px; color:#64748b;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
+                  <h3 style="margin:0; font-size:17px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Homepage Category Card' : 'Add New Homepage Category Card'}</h3>
+                  <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1 !important;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
                 </div>
-                <button type="button" class="ap-btn ghost" id="ap-quad-modal-close" style="font-size:18px; line-height:1; padding:4px 8px;">✕</button>
+                <button type="button" class="ap-modal-close-btn" id="ap-quad-modal-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:34px; height:34px; font-size:16px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 140ms ease;" title="Close">✕</button>
               </div>
+
+              <div class="ap-modal-content" style="padding:24px; max-height:calc(90vh - 75px); overflow-y:auto;">
 
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
                 <div style="grid-column: 1 / -1;">
@@ -13464,10 +15596,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
               <!-- Modal Buttons -->
               <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; background:#2563eb; font-weight:800; color:#ffffff !important;">
+                <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
                   ${isEdit ? 'Save Changes' : 'Create Homepage Card'}
                 </button>
+              </div>
               </div>
             </div>
           `;
@@ -13561,23 +15694,64 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
-              const card = heroPromoCards.find(c => String(c._id || c.id) === String(id));
-              if (card) showHeroPromoModal(card);
+              const card = heroPromoCards.find((c, idx) => String(c._id || c.id || idx) === String(id));
+              if (card) {
+                if (!card._id && !card.id) card._id = id;
+                showHeroPromoModal(card);
+              } else {
+                showToast('Promo card not found.', 'error');
+              }
             });
           });
 
           body.querySelectorAll('.ap-del-hero-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', (e) => {
               e.stopPropagation();
-              if (!confirm('Delete this top hero promo card?')) return;
-              try {
-                await adminFetch(`/cms/hero-promo-cards/${btn.dataset.id}`, { method: 'DELETE' });
-                showToast('Top promo card deleted!', 'success');
-                window._fetchStorefrontCMS?.();
-                load();
-              } catch (err) {
-                showToast(err.message, 'error');
-              }
+              const id = btn.dataset.id;
+              const card = heroPromoCards.find((c, idx) => String(c._id || c.id || idx) === String(id));
+              const title = card?.brand || card?.sub || 'this promo card';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Top Promo Card?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to remove <strong>"${esc(title)}"</strong>?
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-hero-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-hero-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Card</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-hero-cancel')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-hero-confirm')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-hero-confirm');
+                delBtn.disabled = true;
+                delBtn.textContent = 'Deleting...';
+                try {
+                  await adminFetch(`/cms/hero-promo-cards/${id}`, { method: 'DELETE' });
+                  showToast('Top promo card deleted!', 'success');
+                  window._fetchStorefrontCMS?.();
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  delBtn.disabled = false;
+                  delBtn.textContent = 'Delete Card';
+                }
+              });
             });
           });
         }
@@ -13588,11 +15762,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:520px; background:#ffffff; border-radius:14px; padding:22px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
-                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
-                <button type="button" class="ap-btn ghost" id="ap-hero-m-close" style="font-size:18px; padding:2px 8px;">✕</button>
+            <div class="ap-modal-dialog" style="max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
+              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-hero-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
+              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
               <div style="display:flex; flex-direction:column; gap:12px;">
                 <div>
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
@@ -13623,8 +15798,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-                <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; color:#ffffff !important;">Save Card</button>
+                <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Save Card</button>
+              </div>
               </div>
             </div>
           `;
@@ -13696,23 +15872,64 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
-              const item = quickBrowseItems.find(c => String(c._id || c.id) === String(id));
-              if (item) showQuickBrowseModal(item);
+              const item = quickBrowseItems.find((c, idx) => String(c._id || c.id || idx) === String(id));
+              if (item) {
+                if (!item._id && !item.id) item._id = id;
+                showQuickBrowseModal(item);
+              } else {
+                showToast('Quick browse item not found.', 'error');
+              }
             });
           });
 
           body.querySelectorAll('.ap-del-quick-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', (e) => {
               e.stopPropagation();
-              if (!confirm('Delete this quick browse item?')) return;
-              try {
-                await adminFetch(`/cms/quick-browse/${btn.dataset.id}`, { method: 'DELETE' });
-                showToast('Quick browse item deleted!', 'success');
-                window._fetchStorefrontCMS?.();
-                load();
-              } catch (err) {
-                showToast(err.message, 'error');
-              }
+              const id = btn.dataset.id;
+              const item = quickBrowseItems.find((c, idx) => String(c._id || c.id || idx) === String(id));
+              const title = item?.title || 'this quick browse item';
+
+              const confirmBackdrop = document.createElement('div');
+              confirmBackdrop.className = 'ap-modal-backdrop';
+              confirmBackdrop.style.zIndex = '100060';
+              confirmBackdrop.innerHTML = `
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </div>
+                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Quick Browse Item?</h4>
+                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                    Are you sure you want to remove <strong>"${esc(title)}"</strong>?
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:10px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-quick-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-quick-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Item</button>
+                  </div>
+                </div>
+              `;
+              const mount = document.getElementById('admin-panel-overlay') || document.body;
+              mount.appendChild(confirmBackdrop);
+
+              const closeConfirm = () => confirmBackdrop.remove();
+              confirmBackdrop.querySelector('#ap-del-quick-cancel')?.addEventListener('click', closeConfirm);
+              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
+
+              confirmBackdrop.querySelector('#ap-del-quick-confirm')?.addEventListener('click', async () => {
+                const delBtn = confirmBackdrop.querySelector('#ap-del-quick-confirm');
+                delBtn.disabled = true;
+                delBtn.textContent = 'Deleting...';
+                try {
+                  await adminFetch(`/cms/quick-browse/${id}`, { method: 'DELETE' });
+                  showToast('Quick browse item deleted!', 'success');
+                  window._fetchStorefrontCMS?.();
+                  closeConfirm();
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                  delBtn.disabled = false;
+                  delBtn.textContent = 'Delete Item';
+                }
+              });
             });
           });
         }
@@ -13723,11 +15940,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:480px; background:#ffffff; border-radius:14px; padding:22px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
-                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">${isEdit ? 'Edit Quick Browse Item' : 'Add Quick Browse Item'}</h3>
-                <button type="button" class="ap-btn ghost" id="ap-quick-m-close" style="font-size:18px; padding:2px 8px;">✕</button>
+            <div class="ap-modal-dialog" style="max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
+              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Quick Browse Item' : 'Add Quick Browse Item'}</h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-quick-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
+              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
               <div style="display:flex; flex-direction:column; gap:12px;">
                 <div>
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
@@ -13750,8 +15968,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-                <button type="button" class="ap-btn ghost" id="ap-quick-m-cancel">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-quick-m-save" style="padding:8px 20px; font-weight:800; color:#ffffff !important;">Save Item</button>
+                <button type="button" class="ap-btn ghost" id="ap-quick-m-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                <button type="button" class="ap-btn primary" id="ap-quick-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Save Item</button>
+              </div>
               </div>
             </div>
           `;
@@ -13811,6 +16030,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         document.getElementById('ap-cms-add-banner-btn')?.addEventListener('click', (e) => {
           e.preventDefault();
           showBannerModal(null);
+        });
+        document.getElementById('ap-top-add-promo-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showPromoModal(null);
+        });
+        document.getElementById('ap-cms-add-promo-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showPromoModal(null);
         });
 
         // Banner Row Handlers
@@ -13927,6 +16154,26 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             });
           });
 
+          // Make entire promo row clickable to view / edit offer details
+          body.querySelectorAll('.ap-promo-row').forEach(row => {
+            row.addEventListener('click', (e) => {
+              if (e.target.closest('button') || e.target.closest('.ap-promo-toggle-btn') || e.target.closest('.ap-delete-promo-btn') || e.target.closest('.ap-edit-promo-btn')) {
+                return;
+              }
+              const id = row.dataset.promoId;
+              const promo = promotions.find(p => String(p._id || p.id) === String(id));
+              if (promo) {
+                showPromoModal(promo);
+              }
+            });
+            row.addEventListener('mouseenter', () => {
+              row.style.backgroundColor = '#f1f5f9';
+            });
+            row.addEventListener('mouseleave', () => {
+              row.style.backgroundColor = '';
+            });
+          });
+
           // Edit Promo
           body.querySelectorAll('.ap-edit-promo-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -13961,8 +16208,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     Are you sure you want to remove code <strong style="font-family:monospace; color:#0284c7;">"${esc(promoCode)}"</strong>? Customers will no longer be able to redeem this coupon at checkout.
                   </p>
                   <div style="display:flex; justify-content:center; gap:10px;">
-                    <button type="button" class="ap-btn ghost" id="ap-del-promo-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
-                    <button type="button" class="ap-btn danger" id="ap-del-promo-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Offer</button>
+                    <button type="button" class="ap-btn ghost" id="ap-del-promo-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-promo-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626 !important; border-color:#dc2626 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">Delete Offer</button>
                   </div>
                 </div>
               `;
@@ -13988,6 +16235,29 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               });
             });
           });
+
+          // Auto-rotator ticker for Bank & UPI Partner items
+          startPromoTickers();
+        }
+
+        function startPromoTickers() {
+          if (window._apPromoTickerTimer) {
+            clearInterval(window._apPromoTickerTimer);
+          }
+          window._apPromoTickerTimer = setInterval(() => {
+            const tickers = document.querySelectorAll('.ap-partner-ticker');
+            tickers.forEach(ticker => {
+              const slides = Array.from(ticker.querySelectorAll('.ap-ticker-slide'));
+              if (slides.length <= 1) return;
+              let curIdx = slides.findIndex(s => s.classList.contains('active') || s.style.display !== 'none');
+              if (curIdx === -1) curIdx = 0;
+              slides[curIdx].style.display = 'none';
+              slides[curIdx].classList.remove('active');
+              const nextIdx = (curIdx + 1) % slides.length;
+              slides[nextIdx].style.display = 'flex';
+              slides[nextIdx].classList.add('active');
+            });
+          }, 2400);
         }
         attachPromoRowHandlers();
 
@@ -13997,18 +16267,20 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           const backdrop = document.createElement('div');
           backdrop.className = 'ap-modal-backdrop';
 
+          // For new banners, start empty so input is clean without accidental leftover prefixes
           const defaultImg = existingBanner?.image || '';
+          const previewPlaceholderImg = existingBanner?.image || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';
 
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:580px;">
-              <div class="ap-modal-header" style="background:linear-gradient(135deg, #0b1c30, #1e3a5f); color:#ffffff;">
+            <div class="ap-modal-dialog" style="max-width:880px; width:95%;">
+              <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff;">
                 <div>
                   <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800;">
                     ${isEdit ? 'Edit Featured Banner' : 'Add New Featured Banner'}
                   </h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload an image file, headline, and link for customer storefront.</p>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload a local image file, headline, and link for customer storefront.</p>
                 </div>
-                <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="color:#ffffff;">✕</button>
+                <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;" title="Close">✕</button>
               </div>
 
               <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
@@ -14040,23 +16312,34 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <!-- Image URL + Live Preview -->
                 <div class="ap-form-group" style="margin-bottom:14px;">
                   <label for="banner-modal-image" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Banner Image URL</label>
-                  <input type="url" id="banner-modal-image" class="ap-input" value="${esc(defaultImg)}" style="width:100%; color:#000000; font-weight:600;" />
+                  <input type="text" id="banner-modal-image" class="ap-input" value="${esc(defaultImg)}" placeholder="https://images.unsplash.com/... or paste image URL / upload a local image file" style="width:100%; color:#000000; font-weight:600;" />
                   
-                  <div style="margin-top:6px;">
-                    <span style="font-size:11.5px; color:#000000; font-weight:800;">One-click high-res presets:</span>
-                    <div class="ap-preset-pills">
-                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80">Flagship Electronics</button>
-                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80">Audio &amp; Headphones</button>
-                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80">Designer Fashion</button>
-                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80">Modern Living</button>
-                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80">Gaming Battle Station</button>
+                  <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                    <div>
+                      <span style="font-size:11.5px; color:#000000; font-weight:800;">One-click high-res presets:</span>
+                      <div class="ap-preset-pills" style="margin-top:4px;">
+                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80">Flagship Electronics</button>
+                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80">Audio &amp; Headphones</button>
+                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80">Designer Fashion</button>
+                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80">Modern Living</button>
+                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80">Gaming Battle Station</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label for="banner-modal-file-upload" id="banner-modal-upload-btn" class="banner-upload-local-btn" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:#022F43 !important; color:#ffffff !important; font-weight:700 !important; border:1.5px solid #022F43 !important; padding:7px 15px !important; border-radius:6px !important; font-size:12px !important; margin-top:4px; box-shadow:0 2px 4px rgba(2,47,67,0.25) !important;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="color:#ffffff !important; stroke:#ffffff !important;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span style="color:#ffffff !important; font-weight:700 !important;">Upload Local Image</span>
+                      </label>
+                      <input type="file" id="banner-modal-file-upload" accept="image/*" style="display:none;" />
                     </div>
                   </div>
 
                   <!-- Live Image Preview Container -->
-                  <div class="banner-preview-box">
-                    <img id="banner-modal-preview-img" src="${esc(defaultImg)}" alt="Banner Live Preview" onerror="this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=600';" />
-                    <span style="font-size:11.5px; color:#000000; font-weight:700; margin-top:6px;">Live Image Preview</span>
+                  <div class="banner-preview-box" id="banner-modal-preview-box" style="margin-top:10px;">
+                    <img id="banner-modal-preview-img" src="${esc(defaultImg || previewPlaceholderImg)}" alt="Banner Live Preview" style="max-height:160px; object-fit:cover; border-radius:6px;" onerror="if(!this.dataset.errored){this.dataset.errored='1';this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=600';}" />
+                    <span id="banner-modal-preview-status" style="font-size:11.5px; color:#022F43; font-weight:700; margin-top:6px; display:inline-flex; align-items:center; gap:6px;">
+                      ${defaultImg ? '✓ Live Image Preview Ready' : 'Live Image Preview (Default Placeholder)'}
+                    </span>
                   </div>
                 </div>
 
@@ -14064,11 +16347,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:14px;">
                   <div class="ap-form-group">
                     <label for="banner-modal-link" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Destination Link / Hash</label>
-                    <input type="text" id="banner-modal-link" class="ap-input" value="${esc(existingBanner?.link || '#category/Electronics')}" style="width:100%; color:#000000;" />
+                    <input type="text" id="banner-modal-link" class="ap-input" value="${esc(existingBanner?.link || '#deals')}" style="width:100%; color:#000000;" />
                   </div>
                   <div class="ap-form-group">
-                    <label for="banner-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order</label>
-                    <input type="number" id="banner-modal-order" class="ap-input" value="${existingBanner?.order ?? banners.length}" min="0" style="width:100%; color:#000000;" />
+                    <label for="banner-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order (0 = First)</label>
+                    <input type="number" id="banner-modal-order" class="ap-input" value="${existingBanner?.order ?? 0}" min="0" style="width:100%; color:#000000;" />
                   </div>
                 </div>
 
@@ -14082,8 +16365,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
                 <!-- Actions -->
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
-                  <button type="button" class="ap-btn ghost" id="ap-banner-modal-cancel">Cancel</button>
-                  <button type="button" class="ap-btn primary" id="ap-banner-modal-save" style="padding:8px 22px; color:#ffffff !important;">
+                  <button type="button" class="ap-btn" id="ap-banner-modal-cancel" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; font-size:13px; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
+                    Cancel
+                  </button>
+                  <button type="button" class="ap-btn" id="ap-banner-modal-save" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; font-size:13px; border:none; padding:8px 22px; border-radius:6px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
                     ${isEdit ? 'Save Changes' : 'Publish Banner'}
                   </button>
                 </div>
@@ -14101,11 +16386,115 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.querySelector('#ap-banner-modal-cancel')?.addEventListener('click', closeModal);
           backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
-          // Live Image Preview updates
+          // Live Image Preview updates with automatic input sanitization
           const imgInput = backdrop.querySelector('#banner-modal-image');
           const previewImg = backdrop.querySelector('#banner-modal-preview-img');
-          imgInput?.addEventListener('input', () => {
-            if (previewImg) previewImg.src = imgInput.value.trim() || defaultImg;
+          const previewStatus = backdrop.querySelector('#banner-modal-preview-status');
+
+          const updatePreview = () => {
+            if (!imgInput || !previewImg) return;
+            const rawVal = imgInput.value;
+            const cleanVal = sanitizeBannerImageUrl(rawVal);
+            if (cleanVal !== rawVal) {
+              imgInput.value = cleanVal;
+            }
+            if (!cleanVal) {
+              previewImg.dataset.errored = '';
+              previewImg.src = previewPlaceholderImg;
+              if (previewStatus) {
+                previewStatus.innerHTML = '<span style="color:#64748b; font-weight:600;">Live Image Preview (Default Placeholder)</span>';
+              }
+              return;
+            }
+            previewImg.dataset.errored = '';
+            previewImg.src = cleanVal;
+            if (previewStatus) {
+              previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Live Image Preview Ready</span>';
+            }
+          };
+
+          imgInput?.addEventListener('input', updatePreview);
+          imgInput?.addEventListener('change', updatePreview);
+          imgInput?.addEventListener('paste', () => setTimeout(updatePreview, 25));
+
+          previewImg?.addEventListener('error', () => {
+            if (previewStatus && imgInput?.value.trim()) {
+              previewStatus.innerHTML = '<span style="color:#dc2626; font-weight:700;">⚠️ Could not render image from URL. Please check URL or upload an image file.</span>';
+            }
+          });
+          previewImg?.addEventListener('load', () => {
+            if (previewStatus && imgInput?.value.trim()) {
+              previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Live Image Preview Ready</span>';
+            }
+          });
+
+          // Local file upload support with automatic canvas compression
+          const fileInput = backdrop.querySelector('#banner-modal-file-upload');
+          fileInput?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const uploadBtn = backdrop.querySelector('#banner-modal-upload-btn');
+            const originalBtnHtml = uploadBtn ? uploadBtn.innerHTML : '';
+            if (uploadBtn) {
+              uploadBtn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+                <span style="color:#ffffff !important; font-weight:700 !important;">Processing Image...</span>
+              `;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const rawDataUrl = ev.target?.result;
+              if (!rawDataUrl) {
+                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
+                return;
+              }
+
+              const img = new Image();
+              img.onload = () => {
+                let finalDataUrl = rawDataUrl;
+                const MAX_W = 1600;
+                const MAX_H = 1000;
+                let w = img.width;
+                let h = img.height;
+
+                if (w > MAX_W || h > MAX_H || (typeof file.size === 'number' && file.size > 600000)) {
+                  if (w > MAX_W) {
+                    h = Math.round((h * MAX_W) / w);
+                    w = MAX_W;
+                  }
+                  if (h > MAX_H) {
+                    w = Math.round((w * MAX_H) / h);
+                    h = MAX_H;
+                  }
+                  const canvas = document.createElement('canvas');
+                  canvas.width = w;
+                  canvas.height = h;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, w, h);
+                  finalDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+                }
+
+                if (imgInput) imgInput.value = finalDataUrl;
+                if (previewImg) {
+                  previewImg.dataset.errored = '';
+                  previewImg.src = finalDataUrl;
+                }
+                if (previewStatus) {
+                  previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Local Image Loaded &amp; Preview Ready</span>';
+                }
+                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
+                if (typeof showToast === 'function') showToast('Image uploaded and ready for preview!', 'success');
+              };
+              img.onerror = () => {
+                if (imgInput) imgInput.value = rawDataUrl;
+                if (previewImg) previewImg.src = rawDataUrl;
+                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
+              };
+              img.src = rawDataUrl;
+            };
+            reader.readAsDataURL(file);
           });
 
           // Preset buttons
@@ -14116,8 +16505,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               const targetInput = backdrop.querySelector(`#${targetId}`);
               if (targetInput) {
                 targetInput.value = val;
-                if (targetId === 'banner-modal-image' && previewImg) {
-                  previewImg.src = val;
+                if (targetId === 'banner-modal-image') {
+                  updatePreview();
                 }
               }
             });
@@ -14125,19 +16514,35 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           // Save Banner
           backdrop.querySelector('#ap-banner-modal-save')?.addEventListener('click', async () => {
-            const title = backdrop.querySelector('#banner-modal-title')?.value.trim();
+            const titleInput = backdrop.querySelector('#banner-modal-title');
+            const title = titleInput?.value.trim();
             const subtitle = backdrop.querySelector('#banner-modal-subtitle')?.value.trim();
             const tag = backdrop.querySelector('#banner-modal-tag')?.value.trim() || 'Featured';
-            const image = backdrop.querySelector('#banner-modal-image')?.value.trim();
-            const link = backdrop.querySelector('#banner-modal-link')?.value.trim() || '#';
+            let image = sanitizeBannerImageUrl(backdrop.querySelector('#banner-modal-image')?.value);
+            const link = backdrop.querySelector('#banner-modal-link')?.value.trim() || '#deals';
             const order = parseInt(backdrop.querySelector('#banner-modal-order')?.value, 10) || 0;
             const active = backdrop.querySelector('#banner-modal-active')?.checked ?? true;
 
-            if (!title) return showToast('Please enter a banner headline.', 'error');
-            if (!image) return showToast('Please provide a banner image URL.', 'error');
+            // Auto-fallback image if left blank to whatever is loaded in the live preview
+            if (!image) {
+              image = sanitizeBannerImageUrl(previewImg?.src) || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';
+              if (imgInput) imgInput.value = image;
+            }
+
+            if (!title) {
+              if (titleInput) {
+                titleInput.focus();
+                titleInput.style.borderColor = '#FF9400';
+              }
+              return showToast('Please enter a banner headline.', 'error');
+            }
 
             const saveBtn = backdrop.querySelector('#ap-banner-modal-save');
-            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+            if (saveBtn) {
+              saveBtn.disabled = true;
+              saveBtn.textContent = isEdit ? 'Saving...' : 'Publishing...';
+              saveBtn.style.opacity = '0.7';
+            }
 
             try {
               const bannerId = existingBanner?._id || existingBanner?.id;
@@ -14146,19 +16551,26 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   method: 'PUT',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('Featured banner updated successfully!', 'success'); window._fetchStorefrontCMS?.();
+                showToast('Featured banner updated successfully!', 'success');
               } else {
                 await adminFetch('/cms/banners', {
                   method: 'POST',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('New featured banner published!', 'success'); window._fetchStorefrontCMS?.();
+                showToast('New featured banner published!', 'success');
+              }
+              if (typeof window._fetchStorefrontCMS === 'function') {
+                await window._fetchStorefrontCMS(order);
               }
               closeModal();
               load();
             } catch (e) {
               showToast(e.message, 'error');
-              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Save Changes' : 'Publish Banner'; }
+              if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = isEdit ? 'Save Changes' : 'Publish Banner';
+                saveBtn.style.opacity = '1';
+              }
             }
           });
         }
@@ -14167,7 +16579,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         function showPromoModal(existingPromo = null) {
           const isEdit = !!existingPromo;
           const backdrop = document.createElement('div');
-          backdrop.className = 'ap-modal-backdrop';
+          backdrop.className = 'ap-promo-full-window';
+          backdrop.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f1f5f9; z-index:100060; display:flex; flex-direction:column; overflow:hidden;';
 
           const currentType = existingPromo?.type || 'voucher';
           const currentScope = existingPromo?.scope || 'storewide';
@@ -14175,18 +16588,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           let selectedStoreName = existingPromo?.storeName || '';
 
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:640px;">
-              <div class="ap-modal-header" style="background:linear-gradient(135deg, #19324c, #0f172a); color:#ffffff;">
-                <div>
-                  <h3 class="ap-modal-title" style="color:#ffffff; font-size:15.5px; font-weight:800;">
-                    ${isEdit ? 'Edit Promotional Offer / Voucher' : 'Create New Promotional Offer / Voucher'}
-                  </h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.</p>
-                </div>
-                <button type="button" class="ap-modal-close-btn" id="ap-promo-modal-close" style="color:#ffffff;">✕</button>
+            <!-- Top App Bar / Complete Window Header -->
+            <div style="background:#022F43 !important; color:#ffffff; padding:16px 36px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 3px 12px rgba(0,0,0,0.18); flex-shrink:0; z-index:10;">
+              <div>
+                <h2 style="color:#ffffff !important; font-size:18px; font-weight:800; margin:0; line-height:1.2;">
+                  ${isEdit ? 'Edit Promotional Offer / Voucher' : 'Create New Promotional Offer / Voucher'}
+                </h2>
+                <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1; line-height:1.2;">Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.</p>
               </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <button type="button" class="ap-modal-close-btn" id="ap-promo-modal-close" style="color:#ffffff; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); border-radius:8px; width:34px; height:34px; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Close Window">✕</button>
+              </div>
+            </div>
 
-              <div class="ap-modal-content" style="padding:22px; max-height:82vh; overflow-y:auto; color:#000000;">
+            <!-- Full Window Scrollable Content Canvas -->
+            <div style="flex:1; overflow-y:auto; padding:28px 24px 80px; display:flex; justify-content:center; align-items:flex-start; background:#f1f5f9;">
+              <div id="ap-promo-modal-card" style="width:100%; max-width:1150px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:32px 40px; box-shadow:0 4px 20px rgba(0,0,0,0.06); box-sizing:border-box; height:fit-content; min-height:min-content;">
                 ${!isEdit ? `
                   <div style="background:#fff7ed; border:1.5px solid #fed7aa; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
                     <div style="font-size:12px; color:#000000; font-weight:700; line-height:1.4;">
@@ -14215,7 +16632,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Conditional Bank Partner Field (Multi-Select & Per-Bank Card Eligibility Supported with Top 10 Most Valued Banks Dropdown Window) -->
-                <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:14px; display:${currentType === 'bank' ? 'block' : 'none'};">
+                <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:22px; display:${currentType === 'bank' ? 'block' : 'none'};">
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
                     <label class="ap-cms-label" style="color:#000000; font-weight:800;">Eligible Bank Partner(s) — Top 10 Most Valued Banks of India</label>
                     <span style="font-size:11px; color:#475569; font-weight:600;">Select banks from dropdown window below</span>
@@ -14225,8 +16642,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <!-- Bank Dropdown Window Selector -->
                   <div style="position:relative; margin-bottom:10px;" id="promo-bank-picker-container">
                     <button type="button" id="promo-bank-dropdown-trigger" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:9px 12px; cursor:pointer; font-family:inherit; text-align:left; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                      <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-                        <span style="font-size:15px;">🏛️</span>
+                      <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                        <div id="promo-bank-trigger-icon-wrap" style="width:26px; height:26px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+                          <img id="promo-bank-trigger-icon" src="assets/banks/allbanks.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" />
+                        </div>
                         <span id="promo-bank-dropdown-summary" style="font-weight:700; color:#0f172a; font-size:12.5px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">
                           Select Banks (HDFC, SBI, ICICI, Axis, Kotak, IndusInd, BoB, PNB, Canara, Union)...
                         </span>
@@ -14240,7 +16659,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     <!-- Floating Dropdown Window with Real Logos -->
                     <div id="promo-bank-dropdown-window" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; max-height:350px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.18); z-index:1050; flex-direction:column;">
                       <div style="padding:8px 10px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <input type="text" id="promo-bank-dropdown-search" placeholder="🔍 Search Top 10 Indian Banks..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
+                        <input type="text" id="promo-bank-dropdown-search" placeholder="Search Top 10 Indian Banks..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
                         <div style="display:flex; gap:4px; flex-shrink:0;">
                           <button type="button" id="promo-bank-select-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#0f172a; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Select All</button>
                           <button type="button" id="promo-bank-clear-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#b91c1c; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Clear</button>
@@ -14270,7 +16689,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     </div>
 
                     <!-- Populated dynamically by renderBankRules() with Real Bank Logos -->
-                    <div id="promo-bank-rules-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+                    <div id="promo-bank-rules-list" style="display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto; padding-right:4px; scrollbar-width:thin;"></div>
                   </div>
                 </div>
 
@@ -14285,8 +16704,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <!-- UPI Dropdown Window Selector -->
                   <div style="position:relative; margin-bottom:10px;" id="promo-upi-picker-container">
                     <button type="button" id="promo-upi-dropdown-trigger" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:9px 12px; cursor:pointer; font-family:inherit; text-align:left; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                      <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-                        <span style="font-size:15px;">📱</span>
+                      <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                        <div id="promo-upi-trigger-icon-wrap" style="width:26px; height:26px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+                          <img id="promo-upi-trigger-icon" src="assets/upi/upi.svg" alt="UPI" style="max-width:100%; max-height:100%; object-fit:contain;" />
+                        </div>
                         <span id="promo-upi-dropdown-summary" style="font-weight:700; color:#0f172a; font-size:12.5px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">
                           Select UPI Apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay, CRED)...
                         </span>
@@ -14300,7 +16721,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     <!-- Floating UPI Dropdown Window with Real Logos -->
                     <div id="promo-upi-dropdown-window" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; max-height:350px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.18); z-index:1050; flex-direction:column;">
                       <div style="padding:8px 10px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <input type="text" id="promo-upi-dropdown-search" placeholder="🔍 Search Top Indian UPI Apps..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
+                        <input type="text" id="promo-upi-dropdown-search" placeholder="Search Top Indian UPI Apps..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
                         <div style="display:flex; gap:4px; flex-shrink:0;">
                           <button type="button" id="promo-upi-select-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#0f172a; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Select All</button>
                           <button type="button" id="promo-upi-clear-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#b91c1c; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Clear</button>
@@ -14319,70 +16740,96 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </div>
                 </div>
 
-                <!-- DEDICATED STORE SEARCH & SELECTOR (For store-specific promotions) -->
-                <div id="promo-store-picker-wrap" class="ap-form-group" style="margin-bottom:14px; display:${currentScope === 'store' ? 'block' : 'none'};">
-                  <label for="promo-store-search-field" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Search &amp; Select Merchant Store</label>
-                  <div class="promo-store-picker-box">
-                    <input type="text" id="promo-store-search-field" class="ap-input" style="width:100%; color:#000000; font-weight:600;" />
+                <!-- DEDICATED STORE SEARCH & SELECTOR (Container 1: Merchant Store Targeting) -->
+                <div id="promo-store-picker-wrap" class="ap-form-group" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-top:20px; margin-bottom:20px; display:${currentScope === 'store' ? 'block' : 'none'};">
+                  <div style="margin-bottom:10px;">
+                    <label for="promo-store-search-field" class="ap-cms-label" style="display:block; margin:0 0 2px 0; color:#000000; font-weight:800; font-size:12.5px;">Search &amp; Select Merchant Store</label>
+                    <div style="font-size:11px; color:#475569; font-weight:600;">Restrict this promotion exclusively to products from a specific merchant store</div>
+                  </div>
+                  <div class="promo-store-picker-box" style="position:relative;">
+                    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <input type="text" id="promo-store-search-field" placeholder="Search merchant store by name, store ID, or seller (e.g. Apex Tech Store)..." style="width:100%; border:none !important; outline:none !important; box-shadow:none !important; color:#000000; font-weight:600; font-size:13px; background:transparent; padding:2px 0;" />
+                    </div>
                     <div id="promo-store-dropdown" class="promo-store-results-list" style="display:none;"></div>
                   </div>
-                  <div id="promo-selected-store-box" class="promo-selected-store-pill" style="display:${selectedStoreName ? 'flex' : 'none'};">
-                    <span>Targeted Store: <strong id="promo-store-name-display">${esc(selectedStoreName)}</strong></span>
-                    <button type="button" id="promo-clear-store-selection" class="ap-btn-tiny" style="background:#065f46; color:#ffffff; border:none; border-radius:4px; padding:2px 8px; cursor:pointer;">Change</button>
+
+                  <!-- Standalone Selected Store Card -->
+                  <div id="promo-selected-store-box" class="promo-selected-store-pill" style="display:${selectedStoreName ? 'flex' : 'none'}; margin-top:10px; border-radius:8px; background:#ecfdf5; border:1.5px solid #a7f3d0; padding:9px 14px; justify-content:space-between; align-items:center; box-shadow:0 1px 2px rgba(16,185,129,0.06);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                        <path d="M2 3h20l-2 7H4L2 3z"></path>
+                        <path d="M4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"></path>
+                        <path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
+                      </svg>
+                      <span style="font-size:12.5px; color:#065f46;">Targeted Store: <strong id="promo-store-name-display" style="color:#064e3b; font-weight:800;">${esc(selectedStoreName)}</strong></span>
+                    </div>
+                    <button type="button" id="promo-clear-store-selection" class="ap-btn-tiny" style="background:#065f46; color:#ffffff; border:none; border-radius:4px; padding:4px 12px; font-weight:700; cursor:pointer; font-size:11px;">Change</button>
                   </div>
                 </div>
 
-                <!-- Coupon Code & Title -->
-                <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px; margin-bottom:14px;">
-                  <div class="ap-form-group">
-                    <label for="promo-modal-code" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Code / Promo Key</label>
-                    <input type="text" id="promo-modal-code" class="ap-input" value="${esc(existingPromo?.code || (currentType === 'bank' ? 'CARDOFF500' : currentType === 'upi' ? 'UPI100' : 'SUPER20'))}" style="width:100%; text-transform:uppercase; font-family:monospace; font-weight:800; color:#2563eb;" />
+                <!-- OFFER CONFIGURATION & DISCOUNT RULES (Container 2: Offer Details & Rules) -->
+                <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:16px;">
+                  <div style="margin-bottom:12px;">
+                    <h4 style="margin:0; font-size:13px; font-weight:800; color:#000000;">Offer Details &amp; Discount Configuration</h4>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">Define the promo code, headline, discount calculation method, and order constraints.</p>
                   </div>
-                  <div class="ap-form-group">
-                    <label for="promo-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Headline / Display Title</label>
-                    <input type="text" id="promo-modal-title" class="ap-input" value="${esc(existingPromo?.title || (currentType === 'bank' ? 'Flat ₹500 Instant Discount on Debit/Credit Cards' : currentType === 'upi' ? 'Flat ₹100 Cashback on UPI' : 'Storewide Discount Voucher'))}" style="width:100%; color:#000000; font-weight:600;" />
-                  </div>
-                </div>
 
-                <!-- Discount Type, Discount Value & Min Order -->
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:8px;">
-                  <div class="ap-form-group">
-                    <label for="promo-modal-discount-type" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Discount Method</label>
-                    <select id="promo-modal-discount-type" class="ap-input" style="width:100%; font-weight:700; color:#000000;">
-                      <option value="flat" ${(!existingPromo || existingPromo?.discountType === 'flat') ? 'selected' : ''}>Flat Amount (₹ Off)</option>
-                      <option value="percent" ${(existingPromo && existingPromo?.discountType === 'percent') ? 'selected' : ''}>Percentage (%)</option>
-                    </select>
+                  <!-- Coupon Code & Title -->
+                  <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px; margin-bottom:12px;">
+                    <div class="ap-form-group">
+                      <label for="promo-modal-code" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Code / Promo Key</label>
+                      <input type="text" id="promo-modal-code" class="ap-input" value="${esc(existingPromo?.code || '')}" placeholder="e.g. SUPER20" style="width:100%; text-transform:uppercase; font-family:monospace; font-weight:800; color:#2563eb;" />
+                    </div>
+                    <div class="ap-form-group">
+                      <label for="promo-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Headline / Display Title</label>
+                      <input type="text" id="promo-modal-title" class="ap-input" value="${esc(existingPromo?.title || '')}" placeholder="e.g. Storewide Discount Voucher" style="width:100%; color:#000000; font-weight:600;" />
+                    </div>
                   </div>
-                  <div class="ap-form-group">
-                    <label for="promo-modal-val" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;" id="promo-modal-val-label">Discount Amount (₹)</label>
-                    <input type="number" id="promo-modal-val" class="ap-input" value="${existingPromo?.discountValue ?? (currentType === 'bank' ? 500 : currentType === 'upi' ? 100 : 10)}" min="1" style="width:100%; color:#000000; font-weight:800;" />
-                  </div>
-                  <div class="ap-form-group">
-                    <label for="promo-modal-min" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Min Order (₹)</label>
-                    <input type="number" id="promo-modal-min" class="ap-input" value="${existingPromo?.minOrder ?? 0}" min="0" style="width:100%; color:#000000; font-weight:700;" />
-                  </div>
-                  <div class="ap-form-group">
-                    <label for="promo-modal-max" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Max Cap (₹)</label>
-                    <input type="number" id="promo-modal-max" class="ap-input" value="${existingPromo?.maxDiscount ?? 0}" min="0" style="width:100%; color:#000000; font-weight:700;" />
-                  </div>
-                </div>
 
-                <!-- Quick Discount Price Presets -->
-                <div style="margin-bottom:14px;">
-                  <span style="font-size:11px; color:#000000; font-weight:700;">Quick Discount Presets:</span>
-                  <div class="ap-preset-pills" id="promo-discount-presets" style="margin-top:4px;">
-                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="100">₹100 Flat Off</button>
-                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="250">₹250 Flat Off</button>
-                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="500">₹500 Flat Off (Recommended)</button>
-                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="1000">₹1,000 Flat Off</button>
-                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="percent" data-val="10">10% Off</button>
+                  <!-- Discount Type, Discount Value & Min Order -->
+                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:8px;">
+                    <div class="ap-form-group">
+                      <label for="promo-modal-discount-type" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Discount Method</label>
+                      <select id="promo-modal-discount-type" class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+                        <option value="flat" ${(!existingPromo || existingPromo?.discountType === 'flat') ? 'selected' : ''}>Flat Amount (₹ Off)</option>
+                        <option value="percent" ${(existingPromo && existingPromo?.discountType === 'percent') ? 'selected' : ''}>Percentage (%)</option>
+                      </select>
+                    </div>
+                    <div class="ap-form-group">
+                      <label for="promo-modal-val" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;" id="promo-modal-val-label">Discount Amount (₹)</label>
+                      <input type="number" id="promo-modal-val" class="ap-input" value="${existingPromo?.discountValue ?? ''}" placeholder="e.g. 500" min="1" style="width:100%; color:#000000; font-weight:800;" />
+                    </div>
+                    <div class="ap-form-group">
+                      <label for="promo-modal-min" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Min Order (₹)</label>
+                      <input type="number" id="promo-modal-min" class="ap-input" value="${existingPromo?.minOrder ?? ''}" placeholder="e.g. 999 (0 for no min)" min="0" style="width:100%; color:#000000; font-weight:700;" />
+                    </div>
+                    <div class="ap-form-group">
+                      <label for="promo-modal-max" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Max Cap (₹)</label>
+                      <input type="number" id="promo-modal-max" class="ap-input" value="${existingPromo?.maxDiscount ?? ''}" placeholder="e.g. 1000 (0 for no cap)" min="0" style="width:100%; color:#000000; font-weight:700;" />
+                    </div>
                   </div>
-                </div>
 
-                <!-- Description / Terms -->
-                <div class="ap-form-group" style="margin-bottom:14px;">
-                  <label for="promo-modal-desc" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Description &amp; Terms</label>
-                  <textarea id="promo-modal-desc" class="ap-input" style="width:100%; height:55px; font-size:12.5px; color:#000000; font-weight:600; resize:vertical;">${esc(existingPromo?.description || '')}</textarea>
+                  <!-- Quick Discount Price Presets -->
+                  <div style="margin-bottom:12px;">
+                    <span style="font-size:11px; color:#000000; font-weight:700;">Quick Discount Presets:</span>
+                    <div class="ap-preset-pills" id="promo-discount-presets" style="margin-top:4px;">
+                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="100">₹100 Flat Off</button>
+                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="250">₹250 Flat Off</button>
+                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="500">₹500 Flat Off (Recommended)</button>
+                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="1000">₹1,000 Flat Off</button>
+                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="percent" data-val="10">10% Off</button>
+                    </div>
+                  </div>
+
+                  <!-- Description / Terms -->
+                  <div class="ap-form-group" style="margin-bottom:0;">
+                    <label for="promo-modal-desc" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Description &amp; Terms</label>
+                    <textarea id="promo-modal-desc" class="ap-input" placeholder="e.g. Applicable on orders above ₹999. Max discount ₹500. Valid once per customer on select categories." style="width:100%; height:55px; font-size:12.5px; color:#000000; font-weight:600; resize:vertical;">${esc(existingPromo?.description || '')}</textarea>
+                  </div>
                 </div>
 
                 <!-- Promotion Validity Duration & Expiry Schedule -->
@@ -14407,11 +16854,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <div style="margin-top:6px;">
                     <span style="font-size:11.5px; color:#000000; font-weight:800;">Quick Expiry Presets:</span>
                     <div class="ap-preset-pills" id="promo-duration-presets" style="margin-top:4px;">
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="24">24 Hours</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="72">3 Days</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="168">7 Days</button>
-                      <button type="button" class="ap-preset-pill" data-hours="720">30 Days</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="0">No Expiry</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="24" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">24 Hours</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="72" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">3 Days</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="168" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">7 Days</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="720" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">30 Days</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="0" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">No Expiry</button>
                     </div>
                   </div>
 
@@ -14432,9 +16879,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Actions -->
-                <div style="display:flex; justify-content:flex-end; gap:10px;">
-                  <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel">Cancel</button>
-                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="padding:8px 22px; background:#ea580c; border-color:#c2410c; color:#ffffff !important; font-weight:800;">
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:28px; padding-top:20px; border-top:1px solid #e2e8f0;">
+                  <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel" style="padding:10px 24px; font-size:13px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:8px; cursor:pointer;">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="padding:10px 32px; font-size:13px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; border-radius:8px; box-shadow:0 4px 14px rgba(255,148,0,0.35); cursor:pointer;">
                     ${isEdit ? 'Save Offer' : 'Create Offer'}
                   </button>
                 </div>
@@ -14442,15 +16889,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
           `;
 
-          backdrop.style.zIndex = '100050';
           const mount = document.getElementById('admin-panel-overlay') || document.body;
           mount.appendChild(backdrop);
 
-          // Close modal
+          // Close window
           const closeModal = () => backdrop.remove();
           backdrop.querySelector('#ap-promo-modal-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-promo-modal-back')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-promo-header-cancel')?.addEventListener('click', closeModal);
           backdrop.querySelector('#ap-promo-modal-cancel')?.addEventListener('click', closeModal);
-          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
           // Toggle conditional bank/upi sections
           const typeSelect = backdrop.querySelector('#promo-modal-type');
@@ -14475,17 +16922,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             if (!isEdit) {
               if (val === 'bank') {
-                if (codeInput && (!codeInput.value || codeInput.value === 'UPI100' || codeInput.value === 'SUPER20')) codeInput.value = 'CARDOFF500';
-                if (titleInput && (!titleInput.value || titleInput.value.includes('Cashback') || titleInput.value.includes('Voucher'))) titleInput.value = 'Flat ₹500 Instant Discount on Debit/Credit Cards';
+                if (codeInput) { if (!codeInput.value || codeInput.value === 'UPI100' || codeInput.value === 'SUPER20') codeInput.value = ''; codeInput.placeholder = 'e.g. CARDOFF500'; }
+                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cashback') || titleInput.value.includes('Voucher')) titleInput.value = ''; titleInput.placeholder = 'e.g. Flat ₹500 Instant Discount on Debit/Credit Cards'; }
                 if (discTypeSelect) discTypeSelect.value = 'flat';
-                if (valInput) valInput.value = '500';
+                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 500';
                 if (valLabel) valLabel.textContent = 'Discount Amount (₹)';
               } else if (val === 'upi') {
-                if (codeInput && (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'SUPER20')) codeInput.value = 'UPI100';
-                if (titleInput && (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Voucher'))) titleInput.value = 'Flat ₹100 Cashback on UPI Payment';
+                if (codeInput) { if (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'SUPER20') codeInput.value = ''; codeInput.placeholder = 'e.g. UPI100'; }
+                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Voucher')) titleInput.value = ''; titleInput.placeholder = 'e.g. Flat ₹100 Cashback on UPI Payment'; }
                 if (discTypeSelect) discTypeSelect.value = 'flat';
-                if (valInput) valInput.value = '100';
+                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 100';
                 if (valLabel) valLabel.textContent = 'Discount Amount (₹)';
+              } else {
+                if (codeInput) { if (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'UPI100') codeInput.value = ''; codeInput.placeholder = 'e.g. SUPER20'; }
+                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Cashback')) titleInput.value = ''; titleInput.placeholder = 'e.g. Storewide Discount Voucher'; }
+                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 500';
               }
             }
           });
@@ -14579,22 +17030,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const bankId = item.dataset.id;
                 const isAll = bankId.toLowerCase().startsWith('all');
                 if (isAll) {
-                  if (selectedBankRules.has('All Banks (Any Debit/Credit Card)')) {
-                    selectedBankRules.clear();
-                  } else {
-                    selectedBankRules.clear();
-                    selectedBankRules.set('All Banks (Any Debit/Credit Card)', 'all');
-                  }
+                  selectedBankRules.clear();
+                  selectedBankRules.set('All Banks (Any Debit/Credit Card)', 'all');
                 } else {
                   selectedBankRules.delete('All Banks (Any Debit/Credit Card)');
-                  if (selectedBankRules.has(bankId)) {
-                    selectedBankRules.delete(bankId);
-                  } else {
-                    selectedBankRules.set(bankId, 'all');
-                  }
+                  selectedBankRules.set(bankId, 'all');
                 }
                 renderBankRules();
                 renderBankDropdownItems(bankSearchInput ? bankSearchInput.value : '');
+                if (bankWindow) {
+                  bankWindow.style.display = 'none';
+                }
               });
             });
           }
@@ -14604,11 +17050,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             const count = selectedBankRules.size;
             if (bankCountBadge) bankCountBadge.textContent = `${count} Bank${count === 1 ? '' : 's'}`;
+            const triggerIcon = backdrop.querySelector('#promo-bank-trigger-icon');
 
             if (count === 0) {
               bankRulesList.innerHTML = `<div style="font-size:12px; color:#64748b; font-style:italic; padding:6px 4px;">No banks selected. Click the dropdown window above to choose banks.</div>`;
               if (bankInput) bankInput.value = '';
               if (bankSummary) bankSummary.textContent = 'Select Banks from Top 10 Most Valued Indian Banks...';
+              if (triggerIcon) triggerIcon.src = 'assets/banks/allbanks.svg';
               return;
             }
 
@@ -14617,6 +17065,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (bankSummary) {
               bankSummary.textContent = banks.length <= 3 ? banks.join(', ') : `${banks.slice(0, 3).join(', ')} +${banks.length - 3} more`;
             }
+            if (triggerIcon) {
+              if (banks.includes('All Banks (Any Debit/Credit Card)')) {
+                triggerIcon.src = 'assets/banks/allbanks.svg';
+              } else {
+                triggerIcon.src = getBankLogoUrl(banks[0]);
+              }
+            }
 
             bankRulesList.innerHTML = Array.from(selectedBankRules.entries()).map(([bank, cType]) => {
               const isAll = cType === 'all';
@@ -14624,7 +17079,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               const isCredit = cType === 'credit';
               const logoUrl = getBankLogoUrl(bank);
               return `
-                <div class="promo-bank-rule-item" data-bank="${esc(bank)}" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:7px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                <div class="promo-bank-rule-item" data-bank="${esc(bank)}" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.03); flex-shrink:0; min-height:44px; box-sizing:border-box;">
                   <div style="display:flex; align-items:center; gap:10px;">
                     <div style="width:28px; height:28px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:3px; flex-shrink:0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
                       <img src="${logoUrl}" alt="${esc(bank)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
@@ -14781,22 +17236,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const upiId = item.dataset.id;
                 const isAll = upiId.toLowerCase().startsWith('all');
                 if (isAll) {
-                  if (selectedUpiApps.has('All UPI Apps (Any UPI Payment)')) {
-                    selectedUpiApps.clear();
-                  } else {
-                    selectedUpiApps.clear();
-                    selectedUpiApps.add('All UPI Apps (Any UPI Payment)');
-                  }
+                  selectedUpiApps.clear();
+                  selectedUpiApps.add('All UPI Apps (Any UPI Payment)');
                 } else {
                   selectedUpiApps.delete('All UPI Apps (Any UPI Payment)');
-                  if (selectedUpiApps.has(upiId)) {
-                    selectedUpiApps.delete(upiId);
-                  } else {
-                    selectedUpiApps.add(upiId);
-                  }
+                  selectedUpiApps.add(upiId);
                 }
                 renderUpiChips();
                 renderUpiDropdownItems(upiSearchInput ? upiSearchInput.value : '');
+                if (upiWindow) {
+                  upiWindow.style.display = 'none';
+                }
               });
             });
           }
@@ -14806,11 +17256,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             const count = selectedUpiApps.size;
             if (upiCountBadge) upiCountBadge.textContent = `${count} Selected`;
+            const upiTriggerIcon = backdrop.querySelector('#promo-upi-trigger-icon');
 
             if (count === 0) {
               upiChipsBox.innerHTML = `<div style="font-size:12px; color:#64748b; font-style:italic; padding:4px;">No UPI apps selected. Click the dropdown window above to add apps.</div>`;
               if (upiInput) upiInput.value = '';
               if (upiSummary) upiSummary.textContent = 'Select UPI Apps (PhonePe, Google Pay, Paytm, BHIM...)...';
+              if (upiTriggerIcon) upiTriggerIcon.src = 'assets/upi/upi.svg';
               return;
             }
 
@@ -14818,6 +17270,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (upiInput) upiInput.value = upiList.join(', ');
             if (upiSummary) {
               upiSummary.textContent = upiList.length <= 3 ? upiList.join(', ') : `${upiList.slice(0, 3).join(', ')} +${upiList.length - 3} more`;
+            }
+            if (upiTriggerIcon) {
+              if (upiList.includes('All UPI Apps (Any UPI Payment)')) {
+                upiTriggerIcon.src = 'assets/upi/upi.svg';
+              } else {
+                upiTriggerIcon.src = getUpiLogoUrl(upiList[0]);
+              }
             }
 
             upiChipsBox.innerHTML = upiList.map(u => {
@@ -14886,6 +17345,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (!e.target.closest('#promo-upi-picker-container')) {
               if (upiWindow) upiWindow.style.display = 'none';
             }
+            if (!e.target.closest('.promo-store-picker-box')) {
+              if (storeDropdown) storeDropdown.style.display = 'none';
+            }
           });
 
           // Discount price presets click
@@ -14942,9 +17404,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 }
                 if (storeDropdown) {
                   storeDropdown.innerHTML = stores.map(s => `
-                    <div class="promo-store-item" data-id="${s.id}" data-name="${esc(s.storeName)}">
-                      <div class="promo-store-item-name" style="color:#000000; font-weight:700;">${esc(s.storeName)}</div>
-                      <div class="promo-store-item-sub" style="color:#334155;">${esc(s.bizName || s.email)} ${s.isActive ? '● Active Merchant' : ''}</div>
+                    <div class="promo-store-item" data-id="${s.id}" data-name="${esc(s.storeName)}" style="display:flex; align-items:center; gap:9px; padding:8px 10px; cursor:pointer;">
+                      <div style="width:24px; height:24px; border-radius:5px; background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M2 3h20l-2 7H4L2 3z"></path>
+                          <path d="M4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"></path>
+                          <path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
+                        </svg>
+                      </div>
+                      <div style="flex:1; min-width:0;">
+                        <div class="promo-store-item-name" style="color:#000000; font-weight:700; font-size:12.5px;">${esc(s.storeName)}</div>
+                        <div class="promo-store-item-sub" style="color:#475569; font-size:11px;">${esc(s.bizName || s.email)} ${s.isActive ? '<span style="color:#16a34a; font-weight:700;">● Active</span>' : ''}</div>
+                      </div>
                     </div>
                   `).join('');
                   storeDropdown.style.display = 'block';
@@ -14977,8 +17448,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.querySelector('#ap-promo-modal-save')?.addEventListener('click', async () => {
             const type = backdrop.querySelector('#promo-modal-type')?.value;
             const scope = backdrop.querySelector('#promo-modal-scope')?.value;
-            const code = backdrop.querySelector('#promo-modal-code')?.value.trim().toUpperCase();
-            const title = backdrop.querySelector('#promo-modal-title')?.value.trim();
+            const codeEl = backdrop.querySelector('#promo-modal-code');
+            const titleEl = backdrop.querySelector('#promo-modal-title');
+            const code = (codeEl?.value.trim() || codeEl?.placeholder?.replace(/^e\.g\.\s*/i, '') || '').toUpperCase();
+            const title = titleEl?.value.trim() || titleEl?.placeholder?.replace(/^e\.g\.\s*/i, '') || '';
             const discountType = backdrop.querySelector('#promo-modal-discount-type')?.value;
             const discountValue = parseFloat(backdrop.querySelector('#promo-modal-val')?.value) || 0;
             const minOrder = parseFloat(backdrop.querySelector('#promo-modal-min')?.value) || 0;
@@ -15088,12 +17561,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     const currentUser = Auth.getUser() || {};
     const simulatedRole = window._simulatedStaffRole || null;
     const effectiveStaffRole = simulatedRole || currentUser.staffRole || (currentUser.email && (currentUser.email.includes('admin') || currentUser.email === 'mitralokcolonybuxar@gmail.com') ? 'Super Administrator' : 'Staff');
-    const userPerms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
 
-    const isHR = /hr|human\s*resources/i.test(effectiveStaffRole);
-    const isSuperAdmin = /super\s*admin/i.test(effectiveStaffRole);
-    const hasStaffPermission = userPerms.includes('Staff') || userPerms.includes('All Modules');
-    const isEligible = isHR || isSuperAdmin || hasStaffPermission;
+    // If a role is explicitly being simulated, determine eligibility based strictly on that simulated role!
+    let isEligible = false;
+    if (simulatedRole) {
+      isEligible = /hr|human\s*resources/i.test(simulatedRole) || /super\s*admin/i.test(simulatedRole);
+    } else {
+      const userPerms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+      const isHR = /hr|human\s*resources/i.test(effectiveStaffRole);
+      const isSuperAdmin = /super\s*admin/i.test(effectiveStaffRole);
+      const hasStaffPermission = userPerms.includes('Staff') || userPerms.includes('All Modules');
+      isEligible = isHR || isSuperAdmin || hasStaffPermission;
+    }
 
     // Helper modal to test HR constraints across roles
     function openRoleSimulationModal() {
@@ -15102,11 +17581,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       const backdrop = document.createElement('div');
       backdrop.id = 'ap-role-sim-modal-backdrop';
-      backdrop.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:999999; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px);';
+      backdrop.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:99999999; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(4px);';
 
       backdrop.innerHTML = `
         <div style="max-width:460px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.25); border:1px solid #cbd5e1;">
-          <div style="background:#0f172a; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff;">Staff Access Role Simulator</h3>
               <p style="margin:2px 0 0; font-size:11.5px; color:#94a3b8;">Select a role to test HR window eligibility constraints</p>
@@ -15151,10 +17630,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
                 <span style="font-size:11px; font-weight:800; color:#b91c1c; background:#fee2e2; padding:3px 8px; border-radius:4px;">Restricted</span>
               </button>
+              <button type="button" class="ap-sim-select-btn" data-role="RESET" style="padding:11px 14px; text-align:left; border:1.5px dashed #cbd5e1; border-radius:8px; background:#f8fafc; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <strong style="color:#0f172a; font-size:13px; display:block;">Reset Simulation</strong>
+                  <span style="font-size:11px; color:#64748b;">Restore actual credentials (${esc(currentUser.staffRole || 'Super Administrator')})</span>
+                </div>
+                <span style="font-size:11px; font-weight:800; color:#475569; background:#e2e8f0; padding:3px 8px; border-radius:4px;">Default</span>
+              </button>
             </div>
           </div>
           <div style="padding:12px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end;">
-            <button type="button" id="ap-role-sim-cancel" style="padding:8px 16px; border:1px solid #cbd5e1; background:#ffffff; font-size:12.5px; font-weight:700; border-radius:6px; cursor:pointer;">Cancel</button>
+            <button type="button" id="ap-role-sim-cancel" style="padding:8px 18px; border:1.5px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; font-size:12.5px; font-weight:800 !important; border-radius:6px; cursor:pointer;">Cancel</button>
           </div>
         </div>
       `;
@@ -15165,18 +17651,30 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       backdrop.querySelector('#ap-role-sim-cancel')?.addEventListener('click', close);
       backdrop.querySelectorAll('.ap-sim-select-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          window._simulatedStaffRole = btn.dataset.role;
+          const role = btn.dataset.role;
+          if (role === 'RESET') {
+            delete window._simulatedStaffRole;
+            showToast('Role simulation reset. Restored actual account permissions.', 'info');
+          } else {
+            window._simulatedStaffRole = role;
+            showToast(`Role simulation switched to: ${role}`, 'info');
+          }
           close();
-          const tabBody = document.getElementById('ap-tab-body');
+          const tabBody = document.getElementById('ap-tab-body') || body;
           if (tabBody) renderStaff(tabBody);
         });
       });
     }
 
+    // Expose globally so inline onclick always succeeds
+    window._openStaffRoleSimulator = function () {
+      openRoleSimulationModal();
+    };
+
     // If active role is not eligible, block access and render restriction notice
     if (!isEligible) {
       body.innerHTML = `
-        <div class="ap-view-inner" style="padding:48px 20px; display:flex; justify-content:center; align-items:center; min-height:460px;">
+        <div class="ap-view-inner ap-staff-window" style="padding:48px 20px; display:flex; justify-content:center; align-items:center; min-height:460px;">
           <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; max-width:560px; width:100%; padding:36px 30px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.06);">
             <div style="display:inline-block; background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; padding:4px 12px; border-radius:999px; margin-bottom:16px;">
               Access Constraint Enforced
@@ -15192,10 +17690,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
             </div>
             <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-              <button type="button" class="ap-btn primary" id="ap-hr-return-dash" style="padding:10px 20px; font-size:12.5px; font-weight:800; border-radius:8px; cursor:pointer; background:#2563eb; color:#ffffff; border:none;">
+              <button type="button" class="ap-btn" id="ap-hr-return-dash" onclick="window._switchAdminTab?.('dashboard')" style="padding:10px 20px; font-size:12.5px; font-weight:800 !important; border-radius:8px; cursor:pointer; background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important;">
                 Return to Dashboard
               </button>
-              <button type="button" class="ap-btn ghost" id="ap-hr-test-role-btn" style="padding:10px 18px; font-size:12.5px; font-weight:700; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; color:#0f172a; cursor:pointer;">
+              <button type="button" class="ap-btn" id="ap-hr-test-role-btn" onclick="window._openStaffRoleSimulator?.()" style="padding:10px 18px; font-size:12.5px; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:8px; background:#ff9400 !important; color:#000000 !important; cursor:pointer;">
                 Simulate Role Constraint
               </button>
             </div>
@@ -15313,7 +17811,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <tr style="transition:background 0.15s;">
             <td>
               <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #1e293b, #0f172a); color:#ffffff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                <div style="width:38px; height:38px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
                   ${initials}
                 </div>
                 <div>
@@ -15340,11 +17838,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </button>
             </td>
             <td>
-              <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
-                <button type="button" class="ap-btn ghost ap-edit-staff-btn" data-id="${s.id}" style="padding:5px 12px; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; background:#ffffff; color:#0f172a; border-radius:6px; cursor:pointer;">
+              <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+                <button type="button" class="ap-btn ap-edit-staff-btn" data-id="${s.id}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
                   Edit
                 </button>
-                <button type="button" class="ap-btn danger ap-del-staff" data-id="${s.id}" data-name="${s.name}" data-email="${s.email}" style="padding:5px 12px; font-size:11.5px; font-weight:700; border-radius:6px; cursor:pointer;">
+                <button type="button" class="ap-btn ap-del-staff" data-id="${s.id}" data-name="${s.name}" data-email="${s.email}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
                   Revoke
                 </button>
               </div>
@@ -15354,7 +17852,38 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       }).join('');
 
       body.innerHTML = `
-        <div class="ap-view-inner">
+        <div class="ap-view-inner ap-staff-window">
+          <style>
+            /* All buttons in Staff & RBAC window: #ff9400 background and black font colour */
+            .ap-staff-window button:not(.ap-toggle-status-btn):not(#ap-edit-modal-close):not(#ap-role-sim-close):not(.ap-sim-select-btn),
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn),
+            .ap-staff-window input[type="button"],
+            .ap-staff-window input[type="submit"] {
+              background-color: #ff9400 !important;
+              background: #ff9400 !important;
+              color: #000000 !important;
+              font-weight: 800 !important;
+              border: 1.5px solid #e08300 !important;
+              border-radius: 6px !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(255, 148, 0, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button:not(.ap-toggle-status-btn):hover,
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):hover {
+              background-color: #e68500 !important;
+              background: #e68500 !important;
+              color: #000000 !important;
+              border-color: #d97706 !important;
+              box-shadow: 0 3px 8px rgba(255, 148, 0, 0.42) !important;
+            }
+            .ap-staff-window button svg,
+            .ap-staff-window .ap-btn svg {
+              stroke: #000000 !important;
+              color: #000000 !important;
+            }
+          </style>
+
           <!-- Page Header -->
           <div class="ap-view-header">
             <div class="ap-view-title-group">
@@ -15370,10 +17899,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <p class="ap-view-sub">Manage administrator credentials, assign granular operational module privileges, and enforce organizational security access policies.</p>
             </div>
             <div class="ap-view-actions" style="display:flex; gap:8px;">
-              <button type="button" class="ap-btn ghost" id="ap-hr-test-role-btn" style="padding:7px 14px; font-size:12px; font-weight:700; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; cursor:pointer;">
+              <button type="button" class="ap-btn" id="ap-hr-test-role-btn" onclick="window._openStaffRoleSimulator?.()" style="padding:8px 16px; font-size:12px; font-weight:800 !important; border:1px solid #e08300 !important; border-radius:6px; background:#ff9400 !important; color:#000000 !important; cursor:pointer;">
                 Simulate Role Constraint
               </button>
-              <button class="ap-btn ghost" id="ap-staff-refresh-btn" style="font-weight:700; padding:7px 14px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; cursor:pointer;">
+              <button type="button" class="ap-btn" id="ap-staff-refresh-btn" onclick="window._handleStaffRefresh?.()" style="font-weight:800 !important; padding:8px 16px; font-size:12px; border:1px solid #e08300 !important; border-radius:6px; background:#ff9400 !important; color:#000000 !important; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Refresh
               </button>
             </div>
@@ -15420,14 +17950,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">
                   Full Name <span style="color:#dc2626;">*</span>
                 </label>
-                <input type="text" id="ap-staff-name" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
+                <input type="text" id="ap-staff-name" placeholder="e.g. Rahul Sharma" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
               </div>
 
               <div>
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">
                   Corporate Email <span style="color:#dc2626;">*</span>
                 </label>
-                <input type="email" id="ap-staff-email" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
+                <input type="email" id="ap-staff-email" placeholder="e.g. rahul.sharma@xmart.com" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
               </div>
 
               <div>
@@ -15449,7 +17979,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">
                   Initial Access Password <span style="color:#64748b; font-weight:600;">(Min 6 chars)</span>
                 </label>
-                <input type="text" id="ap-staff-password" value="Staff@123" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
+                <input type="text" id="ap-staff-password" placeholder="e.g. Staff@123" value="Staff@123" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; background:#ffffff; outline:none; box-sizing:border-box;" />
               </div>
             </div>
 
@@ -15461,15 +17991,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <div style="font-size:11px; color:#64748b; font-weight:600;">Module-level security authorization granted to this staff account</div>
                 </div>
                 <div style="display:flex; gap:6px;">
-                  <button type="button" id="ap-perm-select-all" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; cursor:pointer;">Select All</button>
-                  <button type="button" id="ap-perm-clear-all" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#b91c1c; font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; cursor:pointer;">Clear</button>
+                  <button type="button" id="ap-perm-select-all" class="ap-btn-tiny" style="background:#ff9400 !important; border:1px solid #e08300 !important; color:#000000 !important; font-size:11px; font-weight:800 !important; padding:5px 12px; border-radius:6px; cursor:pointer;">Select All</button>
+                  <button type="button" id="ap-perm-clear-all" class="ap-btn-tiny" style="background:#ff9400 !important; border:1px solid #e08300 !important; color:#000000 !important; font-size:11px; font-weight:800 !important; padding:5px 12px; border-radius:6px; cursor:pointer;">Clear</button>
                 </div>
               </div>
 
               <div id="ap-staff-perms-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
                 ${RBAC_MODULES.map(m => `
                   <label class="ap-perm-item" style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:7px; padding:9px 12px; cursor:pointer; transition:all 0.15s; user-select:none;">
-                    <input type="checkbox" class="ap-perm-checkbox" value="${m.id}" style="accent-color:#2563eb; width:15px; height:15px; cursor:pointer;" />
+                    <input type="checkbox" class="ap-perm-checkbox" value="${m.id}" style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
                     <span style="font-size:12.5px; font-weight:700; color:#0f172a;">${m.name}</span>
                   </label>
                 `).join('')}
@@ -15479,7 +18009,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <!-- Form Submit Button (No Icon) -->
             <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px;">
               <span id="ap-provision-status" style="font-size:12px; font-weight:700; color:#059669; display:none;"></span>
-              <button type="button" class="ap-btn primary" id="ap-create-staff-btn" style="padding:10px 24px; font-size:13px; font-weight:800; border-radius:8px; cursor:pointer; background:#2563eb; color:#ffffff; border:none; box-shadow:0 2px 6px rgba(37,99,235,0.25);">
+              <button type="button" class="ap-btn" id="ap-create-staff-btn" style="padding:10px 24px; font-size:13px; font-weight:800 !important; border-radius:8px; cursor:pointer; background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; box-shadow:0 2px 6px rgba(255,148,0,0.3);">
                 Provision Staff Account
               </button>
             </div>
@@ -15487,16 +18017,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <!-- Staff Directory Table Card -->
           <div class="ap-table-card" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.04);">
-            <!-- Toolbar for Search and Filtering (No Icon in Search) -->
-            <div style="padding:14px 16px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:240px; max-width:420px;">
-                <input type="text" id="ap-staff-search-input" value="${esc(staffSearchTerm)}" placeholder="Search staff by name, email, or role..." style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; font-weight:600; outline:none; background:#ffffff;" />
+            <!-- Toolbar for Search and Filtering (First row of the header part: #022f43 bg and white font as in Image 2) -->
+            <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:240px; max-width:440px;">
+                <input type="text" id="ap-staff-search-input" value="${esc(staffSearchTerm)}" placeholder="Search staff by name, email, or role..." style="width:100%; padding:9px 14px; border:1.5px solid rgba(255,255,255,0.25); border-radius:7px; font-size:13px; font-weight:600; outline:none; background:#ffffff; color:#0f172a;" />
               </div>
 
-              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-size:11.5px; font-weight:700; color:#64748b;">Role:</span>
-                  <select id="ap-staff-filter-role" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
+              <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:12px; font-weight:800; color:#ffffff !important;">Role:</span>
+                  <select id="ap-staff-filter-role" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
                     <option value="all" ${staffRoleFilter === 'all' ? 'selected' : ''}>All Roles</option>
                     <option value="Human Resources (HR)" ${staffRoleFilter === 'Human Resources (HR)' ? 'selected' : ''}>Human Resources (HR)</option>
                     <option value="Super Administrator" ${staffRoleFilter === 'Super Administrator' ? 'selected' : ''}>Super Administrator</option>
@@ -15507,9 +18037,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </select>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-size:11.5px; font-weight:700; color:#64748b;">Status:</span>
-                  <select id="ap-staff-filter-status" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:12px; font-weight:800; color:#ffffff !important;">Status:</span>
+                  <select id="ap-staff-filter-status" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
                     <option value="all" ${staffStatusFilter === 'all' ? 'selected' : ''}>All States</option>
                     <option value="active" ${staffStatusFilter === 'active' ? 'selected' : ''}>Active Only</option>
                     <option value="suspended" ${staffStatusFilter === 'suspended' ? 'selected' : ''}>Suspended Only</option>
@@ -15518,16 +18048,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
             </div>
 
-            <!-- Table -->
+            <!-- Table (Second row of the header part: #ff9400 bg and black font as in Image 2) -->
             <div class="ap-table-wrap">
               <table class="ap-table" style="width:100%; border-collapse:collapse;">
-                <thead>
-                  <tr style="background:#f1f5f9; border-bottom:1px solid #cbd5e1;">
-                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Staff Member</th>
-                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Assigned Role</th>
-                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Authorized Modules</th>
-                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">State</th>
-                    <th style="padding:12px 16px; text-align:right; font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Actions</th>
+                <thead style="background:#ff9400 !important;">
+                  <tr style="background:#ff9400 !important;">
+                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; background:#ff9400 !important; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e08300;">Staff Member</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; background:#ff9400 !important; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e08300;">Assigned Role</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; background:#ff9400 !important; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e08300;">Authorized Modules</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:11.5px; font-weight:800; color:#000000 !important; background:#ff9400 !important; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e08300;">State</th>
+                    <th style="padding:12px 16px; text-align:right; font-size:11.5px; font-weight:800; color:#000000 !important; background:#ff9400 !important; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e08300;">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -15546,11 +18076,48 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         </div>
       `;
 
+      // Define robust refresh handler with visual spinning and toast confirmation
+      window._handleStaffRefresh = async function () {
+        const refreshBtn = document.getElementById('ap-staff-refresh-btn') || body.querySelector('#ap-staff-refresh-btn');
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.style.opacity = '0.75';
+          refreshBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5" class="ap-spin"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refreshing...
+          `;
+        }
+        try {
+          await load();
+          showToast('Staff and RBAC access records refreshed successfully.', 'success');
+        } catch (err) {
+          showToast('Failed to refresh staff records: ' + err.message, 'error');
+        } finally {
+          const btnAfter = document.getElementById('ap-staff-refresh-btn') || body.querySelector('#ap-staff-refresh-btn');
+          if (btnAfter) {
+            btnAfter.disabled = false;
+            btnAfter.style.opacity = '1';
+            btnAfter.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Refresh
+            `;
+          }
+        }
+      };
+
       // Wire refresh button
-      document.getElementById('ap-staff-refresh-btn')?.addEventListener('click', load);
+      const staffRefBtn = document.getElementById('ap-staff-refresh-btn') || body.querySelector('#ap-staff-refresh-btn');
+      staffRefBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window._handleStaffRefresh?.();
+      });
 
       // Wire role simulation modal button
-      document.getElementById('ap-hr-test-role-btn')?.addEventListener('click', () => openRoleSimulationModal());
+      const staffSimBtn = document.getElementById('ap-hr-test-role-btn') || body.querySelector('#ap-hr-test-role-btn');
+      staffSimBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window._openStaffRoleSimulator?.();
+      });
 
       // Sync role preset to checkboxes in the creation form
       const roleSelect = document.getElementById('ap-staff-role');
@@ -15764,7 +18331,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       backdrop.innerHTML = `
         <div class="ap-modal-dialog" style="max-width:580px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.25); border:1px solid #cbd5e1;">
-          <div class="ap-modal-header" style="background:linear-gradient(135deg, #1e293b, #0f172a); color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+          <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff;">Edit Staff Account &amp; Module Privileges</h3>
               <p style="margin:2px 0 0; font-size:11.5px; color:#94a3b8;">${esc(staffMember.name)} &bull; ${esc(staffMember.email)}</p>
@@ -15776,7 +18343,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
               <div>
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Staff Member Name</label>
-                <input type="text" id="ap-edit-staff-name" value="${esc(staffMember.name)}" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
+                <input type="text" id="ap-edit-staff-name" placeholder="e.g. Rahul Sharma" value="${esc(staffMember.name)}" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
               </div>
               <div>
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Assigned Role</label>
@@ -15802,7 +18369,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
               <div>
                 <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Reset Login Password <span style="font-size:11px; color:#64748b;">(Optional)</span></label>
-                <input type="text" id="ap-edit-staff-password" placeholder="Leave empty to keep current" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
+                <input type="text" id="ap-edit-staff-password" placeholder="Leave empty to keep current password" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
               </div>
             </div>
 
@@ -15811,8 +18378,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div style="font-weight:800; color:#0f172a; font-size:12px;">Authorized Operational Modules:</div>
                 <div style="display:flex; gap:6px;">
-                  <button type="button" id="ap-modal-perm-select-all" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">Select All</button>
-                  <button type="button" id="ap-modal-perm-clear-all" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700; color:#b91c1c; cursor:pointer;">Clear</button>
+                  <button type="button" id="ap-modal-perm-select-all" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1px solid #e08300 !important; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">Select All</button>
+                  <button type="button" id="ap-modal-perm-clear-all" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1px solid #e08300 !important; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">Clear</button>
                 </div>
               </div>
 
@@ -15821,7 +18388,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const isChecked = isSuper || currentPerms.has(m.id) || currentPerms.has(m.name) || (currentPerms.has('All Modules'));
         return `
                     <label class="ap-edit-perm-item" style="display:flex; align-items:center; gap:8px; background:${isChecked ? '#eff6ff' : '#ffffff'}; border:1px solid ${isChecked ? '#bfdbfe' : '#cbd5e1'}; border-radius:7px; padding:9px 12px; cursor:pointer; user-select:none;">
-                      <input type="checkbox" class="ap-edit-perm-checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} style="accent-color:#2563eb; width:15px; height:15px; cursor:pointer;" />
+                      <input type="checkbox" class="ap-edit-perm-checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
                       <span style="font-size:12px; font-weight:700; color:#0f172a;">${m.name}</span>
                     </label>
                   `;
@@ -15831,8 +18398,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           </div>
 
           <div style="padding:14px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:10px;">
-            <button type="button" id="ap-edit-modal-cancel" style="padding:8px 16px; border:1px solid #cbd5e1; background:#ffffff; color:#334155; font-size:13px; font-weight:700; border-radius:6px; cursor:pointer;">Cancel</button>
-            <button type="button" id="ap-edit-modal-save" style="padding:8px 20px; border:none; background:#2563eb; color:#ffffff; font-size:13px; font-weight:800; border-radius:6px; cursor:pointer; box-shadow:0 2px 6px rgba(37,99,235,0.3);">Save Changes</button>
+            <button type="button" id="ap-edit-modal-cancel" style="padding:8px 18px; border:1.5px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; font-size:13px; font-weight:800 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+            <button type="button" id="ap-edit-modal-save" style="padding:8px 22px; border:1.5px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; font-size:13px; font-weight:800 !important; border-radius:6px; cursor:pointer; box-shadow:0 2px 6px rgba(255,148,0,0.3);">Save Changes</button>
           </div>
         </div>
       `;
@@ -16428,7 +18995,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               method: 'PUT',
               body: JSON.stringify(payload),
             });
-            showToast('Platform & commerce settings saved successfully!', 'success');
+            if (typeof updateLocalPlatformSettings === 'function') {
+              updateLocalPlatformSettings(payload);
+            }
+            showToast('Platform & commerce settings saved successfully! Customer storefront updated.', 'success');
             load();
           } catch (e) {
             showToast(e.message, 'error');
@@ -16442,35 +19012,39 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         // Wire Reset Defaults Button
         document.getElementById('ap-reset-settings-btn')?.addEventListener('click', async () => {
           if (!confirm('Reset all platform and commerce settings to system factory defaults?')) return;
+          const defPayload = {
+            platformFeePct: 8.5,
+            freeShippingThreshold: 499,
+            standardShippingFee: 49,
+            codFee: 40,
+            codMaxLimit: 25000,
+            codEnabled: true,
+            standardTaxRate: 18,
+            taxInclusive: true,
+            autoInvoicing: true,
+            returnWindowDays: 7,
+            replacementWindowDays: 7,
+            unpaidOrderTimeoutHours: 24,
+            deliveryLeadTime: '2 to 4 Business Days',
+            expressCutoffTime: '14:00',
+            timezone: 'Asia/Kolkata',
+            lowStockThreshold: 5,
+            allowBackorders: false,
+            minOrderQty: 1,
+            maxOrderQtyPerItem: 10,
+            maintenanceMode: false,
+            inactivityTimeoutMinutes: 30,
+            fraudDetectionMode: 'standard',
+          };
           try {
             await adminFetch('/settings', {
               method: 'PUT',
-              body: JSON.stringify({
-                platformFeePct: 8.5,
-                freeShippingThreshold: 499,
-                standardShippingFee: 49,
-                codFee: 40,
-                codMaxLimit: 25000,
-                codEnabled: true,
-                standardTaxRate: 18,
-                taxInclusive: true,
-                autoInvoicing: true,
-                returnWindowDays: 7,
-                replacementWindowDays: 7,
-                unpaidOrderTimeoutHours: 24,
-                deliveryLeadTime: '2 to 4 Business Days',
-                expressCutoffTime: '14:00',
-                timezone: 'Asia/Kolkata',
-                lowStockThreshold: 5,
-                allowBackorders: false,
-                minOrderQty: 1,
-                maxOrderQtyPerItem: 10,
-                maintenanceMode: false,
-                inactivityTimeoutMinutes: 30,
-                fraudDetectionMode: 'standard',
-              }),
+              body: JSON.stringify(defPayload),
             });
-            showToast('Settings restored to factory defaults.', 'info');
+            if (typeof updateLocalPlatformSettings === 'function') {
+              updateLocalPlatformSettings(defPayload);
+            }
+            showToast('Settings restored to factory defaults and storefront updated.', 'info');
             load();
           } catch (e) {
             showToast(e.message, 'error');
@@ -16965,13 +19539,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     return 'dashboard';
   }
 
-  function switchTab(tabId) {
+  function switchTab(tabId, push = true) {
     _activeTab = tabId;
     try {
       sessionStorage.setItem('xmart_admin_active_tab', tabId);
       localStorage.setItem('xmart_admin_active_tab', tabId);
       if (window.location.hash !== '#admin-' + tabId) {
-        history.replaceState(null, '', '#admin-' + tabId);
+        if (push) {
+          history.pushState({ type: 'admin', tab: tabId, hash: '#admin-' + tabId }, 'Admin - ' + (TAB_LABELS[tabId] || tabId), '#admin-' + tabId);
+        } else {
+          history.replaceState({ type: 'admin', tab: tabId, hash: '#admin-' + tabId }, 'Admin - ' + (TAB_LABELS[tabId] || tabId), '#admin-' + tabId);
+        }
       }
     } catch (e) {}
 
@@ -17012,6 +19590,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
   /* ══════════════════════════════════════════════════════
      OPEN / CLOSE PANEL
      ══════════════════════════════════════════════════════ */
+  window._switchAdminTab = switchTab;
   window._openAdminPanel = function (startTab) {
     const user = Auth.getUser();
     const isExplicit = localStorage.getItem('xmart_admin_active') === '1' || sessionStorage.getItem('xmart_admin_active') === '1';
@@ -17052,30 +19631,50 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       document.documentElement.style.visibility = '';
     } catch (e) {}
 
-    // Mobile Off-Canvas Drawer Controls
+    // Off-Canvas Sidebar Drawer Controls (Works on both desktop & mobile)
+    const shell = _overlay.querySelector('#ap-shell');
     const mobileMenuBtn = _overlay.querySelector('#ap-mobile-menu-btn');
     const mobileCloseBtn = _overlay.querySelector('#ap-mobile-sidebar-close');
     const sidebarBackdrop = _overlay.querySelector('#ap-sidebar-backdrop');
     const sidebar = _overlay.querySelector('#ap-sidebar');
 
-    function openMobileSidebar() {
+    function openSidebar() {
+      shell?.classList.add('ap-sidebar-open');
+      sidebar?.classList.add('ap-sidebar-open');
       sidebar?.classList.add('ap-sidebar-mobile-open');
       sidebarBackdrop?.classList.add('ap-backdrop-active');
     }
 
-    function closeMobileSidebar() {
+    function closeSidebar() {
+      shell?.classList.remove('ap-sidebar-open');
+      sidebar?.classList.remove('ap-sidebar-open');
       sidebar?.classList.remove('ap-sidebar-mobile-open');
       sidebarBackdrop?.classList.remove('ap-backdrop-active');
     }
 
-    mobileMenuBtn?.addEventListener('click', openMobileSidebar);
-    mobileCloseBtn?.addEventListener('click', closeMobileSidebar);
-    sidebarBackdrop?.addEventListener('click', closeMobileSidebar);
+    function toggleSidebar(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const isOpen = shell?.classList.contains('ap-sidebar-open') ||
+                     sidebar?.classList.contains('ap-sidebar-open') ||
+                     sidebar?.classList.contains('ap-sidebar-mobile-open');
+      if (isOpen) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    }
+
+    mobileMenuBtn?.addEventListener('click', toggleSidebar);
+    mobileCloseBtn?.addEventListener('click', closeSidebar);
+    sidebarBackdrop?.addEventListener('click', closeSidebar);
 
     // Sidebar nav
     _overlay.querySelectorAll('.ap-nav-item').forEach(li => {
       li.addEventListener('click', () => {
-        closeMobileSidebar();
+        closeSidebar();
         switchTab(li.dataset.apTab);
       });
     });
@@ -17085,7 +19684,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       p.style.cursor = 'pointer';
       p.title = 'Open Admin Profile & Security Center';
       p.addEventListener('click', () => {
-        closeMobileSidebar();
+        closeSidebar();
         switchTab('admin-profile');
       });
     });
@@ -17099,11 +19698,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     window.switchAdminTab = switchTab;
 
     // Logo Click Navigation: Clicking either mobile brand logo or sidebar brand logo opens Dashboard
-    _overlay.querySelectorAll('#ap-mobile-brand-link, .ap-mobile-brand, #ap-sidebar-logo-link, .ap-sidebar-logo').forEach(logoEl => {
+    _overlay.querySelectorAll('#ap-topnav-brand-link, .ap-topnav-brand, #ap-mobile-brand-link, .ap-mobile-brand, #ap-sidebar-logo-link, .ap-sidebar-logo').forEach(logoEl => {
       logoEl.style.cursor = 'pointer';
       logoEl.addEventListener('click', (e) => {
         if (e.target.closest('#ap-mobile-sidebar-close')) return;
-        closeMobileSidebar();
+        closeSidebar();
         switchTab('dashboard');
       });
     });
@@ -17969,6 +20568,24 @@ window.openRazorpayCheckout = openRazorpayCheckout;
   /* ══════════════════════════════════════════════════════
      INJECT ADMIN ENTRY POINT IN ACCOUNT DROPDOWN
      ══════════════════════════════════════════════════════ */
+  // Handle browser back and forward navigation for admin tabs and modals
+  window.addEventListener('popstate', () => {
+    const revModal = document.getElementById('ap-prod-reviews-modal');
+    if (revModal && !window.location.hash.startsWith('#reviews-product')) {
+      revModal.remove();
+    }
+    const addRevModal = document.getElementById('ap-add-rev-modal');
+    if (addRevModal && window.location.hash !== '#add-review') {
+      addRevModal.remove();
+    }
+    const adminMatch = window.location.hash.match(/^#admin-([a-zA-Z0-9_-]+)/);
+    if (adminMatch && adminMatch[1]) {
+      if (typeof switchTab === 'function' && _activeTab !== adminMatch[1]) {
+        switchTab(adminMatch[1], false);
+      }
+    }
+  });
+
   function injectAdminLink() {
     const user = Auth.getUser();
     if (!user || user.role !== 'admin') return;
@@ -18079,8 +20696,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 })();
 /* ── 5. Multi-Step Checkout & Payment Modal (3 Commercial Steps) ────── */
 function buildCheckoutModal() {
+  const currentSettings = Store.platformSettings || {};
+  if (currentSettings.maintenanceMode) {
+    if (typeof showToast === 'function') {
+      showToast(currentSettings.maintenanceNotice || 'Platform checkouts are temporarily paused for scheduled maintenance.', 'warn');
+    }
+    return;
+  }
   const modal = createModal('checkout-interactive-modal', {
     title: 'Commercial 3-Step Checkout',
+    titleHtml: `
+      <div style="display:flex;align-items:center;gap:12px;">
+        <img src="logo.png" alt="X-Mart" style="height:32px;width:auto;border-radius:8px;object-fit:contain;background:#ffffff;padding:2px;" onerror="this.src='https://beautiful-druid-f9f6aa.netlify.app/logo.png';" />
+        <h3 style="margin:0;font-size:17px;font-weight:800;color:#ffffff;line-height:1.2;">Commercial 3-Step Checkout</h3>
+      </div>
+    `,
     large: true,
     bodyHtml: `
       <div class="checkout-stepper-wrap">
@@ -18142,7 +20772,7 @@ function buildCheckoutModal() {
 
             <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
               <span style="font-size:14.5px;font-weight:800;color:#0f172a;">Total Payable:</span>
-              <strong id="chk-step1-grand-total" style="font-size:18px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
+              <strong id="chk-step1-grand-total" style="font-size:18px;font-weight:900;color:#000000;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
             </div>
 
             <button type="button" id="chk-goto-step2-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 16px;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
@@ -18292,15 +20922,6 @@ function buildCheckoutModal() {
                     <span id="chk-upi-offer-badge" class="chk-method-offer-badge" style="display:none;"></span>
                   </div>
                   <p id="chk-upi-offer-desc">Instant authorization with zero processing fees.</p>
-
-                  <!-- Dynamic UPI App Selector -->
-                  <div id="chk-upi-config-box" style="margin-top:10px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:none;" onclick="event.stopPropagation();">
-                    <label for="chk-upi-app-select" style="display:block; font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px;">Select Your UPI App:</label>
-                    <select id="chk-upi-app-select" style="width:100%; padding:7px 10px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; outline:none;">
-                      <option value="">Best Available UPI Offer (Auto Apply)</option>
-                    </select>
-                    <div id="chk-upi-applied-offer-text" style="margin-top:6px; font-size:11px; font-weight:700; color:#16a34a;"></div>
-                  </div>
                 </div>
               </label>
 
@@ -18313,26 +20934,6 @@ function buildCheckoutModal() {
                     <span id="chk-card-offer-badge" class="chk-method-offer-badge" style="display:none;"></span>
                   </div>
                   <p id="chk-card-offer-desc">Bank-grade 256-Bit SSL encrypted transaction.</p>
-
-                  <!-- Dynamic Card Bank & Type Selector -->
-                  <div id="chk-card-config-box" style="margin-top:10px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:none;" onclick="event.stopPropagation();">
-                    <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:8px;">
-                      <div>
-                        <label for="chk-card-bank-select" style="display:block; font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px;">Select Card Bank:</label>
-                        <select id="chk-card-bank-select" style="width:100%; padding:7px 8px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; outline:none;">
-                          <option value="">Best Available Bank Offer (Auto Apply)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label for="chk-card-type-select" style="display:block; font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px;">Card Type:</label>
-                        <select id="chk-card-type-select" style="width:100%; padding:7px 8px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; outline:none;">
-                          <option value="debit">Debit Card (Eligible)</option>
-                          <option value="credit">Credit Card (Eligible)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div id="chk-card-applied-offer-text" style="margin-top:6px; font-size:11px; font-weight:700; color:#16a34a;"></div>
-                  </div>
                 </div>
               </label>
 
@@ -18359,7 +20960,11 @@ function buildCheckoutModal() {
             </div>
             <div class="chk-price-row">
               <span>Delivery Charges:</span>
-              <strong style="color:#16a34a;font-size:14px;">FREE</strong>
+              <strong id="chk-step3-shipping" style="color:#16a34a;font-size:14px;">FREE</strong>
+            </div>
+            <div class="chk-price-row" id="chk-step3-cod-fee-row" style="display:none;color:#0f172a;">
+              <span>COD Handling Fee:</span>
+              <strong id="chk-step3-cod-fee" style="font-size:14px;">₹0</strong>
             </div>
             <div class="chk-price-row">
               <span>GST &amp; Tax:</span>
@@ -18367,25 +20972,34 @@ function buildCheckoutModal() {
             </div>
 
             <!-- Applied Coupon Discount Row -->
-            <div class="chk-price-row" id="chk-step3-coupon-discount-row" style="display:none;color:#16a34a;">
+            <div class="chk-price-row" id="chk-step3-coupon-discount-row" style="display:flex;color:#16a34a;">
               <span>Coupon Savings:</span>
               <strong id="chk-step3-coupon-discount-val" style="font-size:14px;">-₹0</strong>
             </div>
 
             <!-- Applied Payment Method (Card / UPI) Discount Row -->
-            <div class="chk-price-row" id="chk-step3-pay-discount-row" style="display:none;color:#16a34a;">
+            <div class="chk-price-row" id="chk-step3-pay-discount-row" style="display:flex;color:#16a34a;">
               <span id="chk-step3-pay-discount-label">Offer Discount:</span>
               <strong id="chk-step3-pay-discount-val" style="font-size:14px;">-₹0</strong>
             </div>
 
-            <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-              <span style="font-size:14.5px;font-weight:800;color:#0f172a;">Grand Total:</span>
-              <strong id="chk-step3-grand-total" style="font-size:18px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
+            <!-- Total Savings Row (Before/After price benefit) -->
+            <div id="chk-step3-savings-alert" class="chk-savings-row" style="display:none;margin-top:10px;margin-bottom:10px;">
+              <span>🎉 Total Savings on Order:</span>
+              <strong id="chk-step3-savings-val">-₹0</strong>
             </div>
 
-            <button type="button" id="chk-place-order-final-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:13px 16px;border-radius:10px;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Place Order Now</span>
+            <div style="border-top:1.5px dashed #cbd5e1;padding-top:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span style="font-size:14.5px;font-weight:800;color:#0f172a;">Grand Total:</span>
+              <div style="display:flex;align-items:baseline;gap:6px;white-space:nowrap;">
+                <span id="chk-step3-prev-total" style="display:none;text-decoration:line-through;color:#94a3b8;font-size:14px;font-weight:700;">₹0</span>
+                <strong id="chk-step3-grand-total" style="font-size:18px;font-weight:900;color:#16a34a;white-space:nowrap;font-variant-numeric:tabular-nums;">₹0</strong>
+              </div>
+            </div>
+
+            <button type="button" id="chk-place-order-final-btn" class="com-btn-primary" style="width:100%;background:#ff9700;color:#000;font-weight:800;border:none;padding:12px 8px;border-radius:10px;font-size:13px;white-space:nowrap;cursor:pointer;box-shadow:0 4px 14px rgba(255,151,0,0.35);display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>
+              <span style="white-space:nowrap;display:inline-block;">Place Order Now</span>
             </button>
 
             <button type="button" id="chk-backto-step2-btn" style="width:100%;background:transparent;border:none;color:#64748b;font-weight:700;padding:8px;margin-top:6px;font-size:12.5px;cursor:pointer;">
@@ -18428,6 +21042,25 @@ function buildCheckoutModal() {
   let currentCheckoutStep = 1;
   let savedDeliveryAddress = null;
 
+  // Immediately initialize savedDeliveryAddress from user's default address
+  try {
+    const initSavedAddrs = JSON.parse(localStorage.getItem('xmart_saved_addresses') || '[]');
+    if (Array.isArray(initSavedAddrs) && initSavedAddrs.length > 0) {
+      const def = initSavedAddrs.find(a => a.isDefault) || initSavedAddrs[0];
+      const u = Auth.getUser() || {};
+      savedDeliveryAddress = {
+        name: def.name || u.name || '',
+        phone: def.phone || u.phone || '',
+        street: def.street || def.address || '',
+        city: def.city || '',
+        state: def.state || '',
+        pincode: def.pincode || '',
+        type: def.type || 'HOME',
+        country: 'India'
+      };
+    }
+  } catch {}
+
   function goToStep(step) {
     if (!Auth.isLoggedIn()) {
       modal._close();
@@ -18463,7 +21096,12 @@ function buildCheckoutModal() {
   function renderStep1() {
     const subtotal = Store.cartTotal();
     const count = Store.cartCount();
-    const tax = Math.round(subtotal * 0.18);
+    const settings = Store.platformSettings || {};
+    const taxRate = settings.standardTaxRate !== undefined ? Number(settings.standardTaxRate) : 18;
+    const tax = Math.round(subtotal * (taxRate / 100));
+    const freeThresh = settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 499;
+    const stdShipping = settings.standardShippingFee !== undefined ? Number(settings.standardShippingFee) : 49;
+    const shipping = subtotal >= freeThresh ? 0 : stdShipping;
 
     // Auto-fill preselected coupon from product page offer card
     if (window._preselectedCouponCode && modal.querySelector('#chk-coupon-input')) {
@@ -18502,11 +21140,16 @@ function buildCheckoutModal() {
       }
     }
 
-    const grandTotal = Math.max(0, subtotal + tax - couponDiscount);
+    const grandTotal = Math.max(0, subtotal + tax + shipping - couponDiscount);
 
     modal.querySelector('#chk-step1-count').textContent = count;
     modal.querySelector('#chk-step1-summary-count').textContent = count;
     modal.querySelector('#chk-step1-subtotal').textContent = Currency.format(subtotal);
+    const shipEl = modal.querySelector('#chk-step1-shipping');
+    if (shipEl) {
+      shipEl.textContent = shipping === 0 ? 'FREE' : Currency.format(shipping);
+      shipEl.style.color = shipping === 0 ? '#16a34a' : '#0f172a';
+    }
     modal.querySelector('#chk-step1-tax').textContent = Currency.format(tax);
     modal.querySelector('#chk-step1-grand-total').textContent = Currency.format(grandTotal);
 
@@ -18550,26 +21193,63 @@ function buildCheckoutModal() {
 
     itemsList.innerHTML = Store.cart.map(item => {
       const isDeact = typeof isSellerProductDeactivated === 'function' && isSellerProductDeactivated(item);
+      const unitPrice = item.price || 0;
       return `
-      <div class="checkout-item-card" style="${isDeact ? 'background:#fff5f5;border:1px solid #fecaca;' : ''}">
-        <img class="chk-item-link" data-id="${item.id}" src="${item.image || item.img || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}" alt="${item.name}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;flex-shrink:0;${isDeact ? 'filter:grayscale(80%);opacity:0.75;' : ''}" />
-        <div style="flex:1;min-width:0;overflow:hidden;padding:0 4px;">
-          <div class="chk-item-link" data-id="${item.id}" style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;width:100%;" title="${item.name}">${item.name}</div>
-          <div style="font-size:11.5px;color:#64748b;">${Currency.format(item.price)} × ${item.qty}</div>
-          ${isDeact ? `<div style="color:#dc2626;font-size:11px;font-weight:800;margin-top:2px;">● Currently Unavailable (Seller Deactivated)</div>` : ''}
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:13.5px;font-weight:800;color:#0f172a;white-space:nowrap;">${Currency.format(item.price * item.qty)}</div>
-          <button type="button" class="btn-chk-remove-item" data-id="${item.id}" style="background:transparent;border:none;color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;padding:2px 0;">Remove</button>
+      <div class="checkout-item-card" style="display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;margin-bottom:10px;box-sizing:border-box;${isDeact ? 'background:#fff5f5;border:1px solid #fecaca;' : ''}">
+        <img class="chk-item-link" data-id="${item.id}" src="${item.image || item.img || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}" alt="${item.name}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;flex-shrink:0;${isDeact ? 'filter:grayscale(80%);opacity:0.75;' : ''}" />
+        <div class="chk-item-content" style="flex:1;min-width:0;text-align:left;">
+          <div class="chk-item-link" data-id="${item.id}" style="font-size:14px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;margin-bottom:3px;line-height:1.3;" title="${item.name}">${item.name}</div>
+          <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:6px;">${Currency.format(unitPrice)}</div>
+          ${isDeact ? `<div style="color:#dc2626;font-size:11px;font-weight:800;margin-bottom:6px;">● Currently Unavailable (Seller Deactivated)</div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" class="chk-qty-btn" data-id="${item.id}" data-action="dec" aria-label="Decrease quantity" style="width:24px;height:24px;border-radius:50%;border:1.5px solid #cbd5e1;background:#ffffff;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;color:#0f172a;padding:0;line-height:1;transition:all 0.15s ease;" ${isDeact ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>−</button>
+            <span style="font-size:14px;font-weight:800;color:#0f172a;min-width:18px;text-align:center;">${item.qty || 1}</span>
+            <button type="button" class="chk-qty-btn" data-id="${item.id}" data-action="inc" aria-label="Increase quantity" style="width:24px;height:24px;border-radius:50%;border:1.5px solid #cbd5e1;background:#ffffff;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;color:#0f172a;padding:0;line-height:1;transition:all 0.15s ease;" ${isDeact ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>+</button>
+            <button type="button" class="btn-chk-remove-item" data-id="${item.id}" style="margin-left:auto;background:transparent;border:none;color:#ef4444;font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 4px;transition:opacity 0.15s;">Remove</button>
+          </div>
         </div>
       </div>
     `;
     }).join('');
 
+    itemsList.querySelectorAll('.chk-qty-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = Store.cart.find(c => c.id === btn.dataset.id);
+        if (!item) return;
+        if (btn.dataset.action === 'inc') {
+          item.qty = (item.qty || 1) + 1;
+        } else {
+          item.qty = (item.qty || 1) - 1;
+          if (item.qty <= 0) {
+            Store.removeFromCart(btn.dataset.id);
+            renderStep1();
+            return;
+          }
+        }
+        Store.save();
+        Store.syncUI();
+        renderStep1();
+      });
+    });
+
     itemsList.querySelectorAll('.btn-chk-remove-item').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         Store.removeFromCart(btn.dataset.id);
         renderStep1();
+      });
+    });
+
+    itemsList.querySelectorAll('.chk-item-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = Store.cart.find(c => c.id === link.dataset.id);
+        if (item) {
+          modal.remove();
+          const full = (Store.allProducts || []).find(p => (p._id === item.id || p.id === item.id || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()))) || item;
+          window._openProductDetail?.(full);
+        }
       });
     });
   }
@@ -18577,9 +21257,14 @@ function buildCheckoutModal() {
   // Pre-fill Step 2 Address with user / saved data
   function initStep2Address() {
     const user = Auth.getUser() || {};
-    const savedAddrs = (() => {
+    let savedAddrs = (() => {
       try { return JSON.parse(localStorage.getItem('xmart_saved_addresses') || '[]'); } catch { return []; }
     })();
+
+    // Always place the user's default address at the very top (index 0) of the list
+    if (Array.isArray(savedAddrs) && savedAddrs.length > 0) {
+      savedAddrs.sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+    }
 
     const savedSection = modal.querySelector('#chk-saved-addr-section');
     const newFormWrap = modal.querySelector('#chk-new-addr-form-wrap');
@@ -18589,7 +21274,7 @@ function buildCheckoutModal() {
     const proceedBar = modal.querySelector('#chk-addr-card-proceed-bar');
     const addrFormTitle = modal.querySelector('#chk-addr-form-title');
 
-    // ── Determine active delivery location from navbar / localStorage (Image 1) ──
+    // ── Determine active delivery location from navbar / localStorage ──
     let activePin = (localStorage.getItem('xmart_pincode') || '').trim();
     let activeCity = '';
     let activeState = '';
@@ -18614,35 +21299,12 @@ function buildCheckoutModal() {
     let selectedAddrIndex = 0;
 
     if (Array.isArray(savedAddrs) && savedAddrs.length > 0) {
-      // 1. Highest priority: Match exact 6-digit PIN
-      let matchIdx = -1;
-      if (activePin) {
-        matchIdx = savedAddrs.findIndex(a => {
-          const p = String(a.pincode || '').trim();
-          if (p && p === activePin) return true;
-          const full = `${a.street || ''} ${a.city || ''} ${a.address || ''}`;
-          return full.includes(activePin);
-        });
-      }
-
-      // 2. Second priority: Match City / State / Address text
-      if (matchIdx === -1 && activeCity) {
-        matchIdx = savedAddrs.findIndex(a => {
-          const c = String(a.city || '').trim().toLowerCase();
-          const s = String(a.street || '').trim().toLowerCase();
-          const addr = String(a.address || '').trim().toLowerCase();
-          return (c && (c === activeCity || c.includes(activeCity) || activeCity.includes(c))) ||
-                 (s && s.includes(activeCity)) ||
-                 (addr && addr.includes(activeCity));
-        });
-      }
-
-      // 3. Fallback: If no location matched, prefer default address or first address
-      if (matchIdx !== -1) {
-        selectedAddrIndex = matchIdx;
+      // Default address is placed at index 0 (top)
+      const defIdx = savedAddrs.findIndex(a => a.isDefault);
+      if (defIdx !== -1) {
+        selectedAddrIndex = defIdx;
       } else {
-        const defIdx = savedAddrs.findIndex(a => a.isDefault);
-        if (defIdx !== -1) selectedAddrIndex = defIdx;
+        selectedAddrIndex = 0;
       }
 
       // Pre-assign savedDeliveryAddress to the matched address so Step 3 is ready immediately
@@ -18945,6 +21607,68 @@ function buildCheckoutModal() {
     return productOffersList;
   }
 
+  // Helper to normalize and strictly verify bank partner eligibility
+  function isExactBankMatch(ruleBank, userBank) {
+    if (!ruleBank || !userBank) return false;
+    const r = (ruleBank || '').toLowerCase().trim();
+    const u = (userBank || '').toLowerCase().trim();
+
+    if (!r || !u) return false;
+    if (u === 'other bank card' || u === 'other bank' || u === 'other' || u === 'any card' || u === 'all bank') return false;
+
+    // Universal offers apply to any card/bank
+    if (r.includes('all bank') || r.includes('all card') || r.includes('any card') || r.includes('any bank')) return true;
+
+    // Specific Indian Banks normalization
+    const isR_SBI = r.includes('sbi') || r.includes('state bank');
+    const isU_SBI = u.includes('sbi') || u.includes('state bank');
+    if (isR_SBI || isU_SBI) return Boolean(isR_SBI && isU_SBI);
+
+    const isR_HDFC = r.includes('hdfc');
+    const isU_HDFC = u.includes('hdfc');
+    if (isR_HDFC || isU_HDFC) return Boolean(isR_HDFC && isU_HDFC);
+
+    const isR_ICICI = r.includes('icici');
+    const isU_ICICI = u.includes('icici');
+    if (isR_ICICI || isU_ICICI) return Boolean(isR_ICICI && isU_ICICI);
+
+    const isR_AXIS = r.includes('axis');
+    const isU_AXIS = u.includes('axis');
+    if (isR_AXIS || isU_AXIS) return Boolean(isR_AXIS && isU_AXIS);
+
+    const isR_KOTAK = r.includes('kotak');
+    const isU_KOTAK = u.includes('kotak');
+    if (isR_KOTAK || isU_KOTAK) return Boolean(isR_KOTAK && isU_KOTAK);
+
+    const isR_PNB = r.includes('pnb') || r.includes('punjab');
+    const isU_PNB = u.includes('pnb') || u.includes('punjab');
+    if (isR_PNB || isU_PNB) return Boolean(isR_PNB && isU_PNB);
+
+    const isR_BOB = r.includes('baroda') || r.includes('bob');
+    const isU_BOB = u.includes('baroda') || u.includes('bob');
+    if (isR_BOB || isU_BOB) return Boolean(isR_BOB && isU_BOB);
+
+    const isR_CANARA = r.includes('canara');
+    const isU_CANARA = u.includes('canara');
+    if (isR_CANARA || isU_CANARA) return Boolean(isR_CANARA && isU_CANARA);
+
+    const isR_UNION = r.includes('union');
+    const isU_UNION = u.includes('union');
+    if (isR_UNION || isU_UNION) return Boolean(isR_UNION && isU_UNION);
+
+    // CRITICAL: Indian Bank vs Generic words or other banks
+    const isR_IndianBank = r.includes('indian bank') && !r.includes('overseas');
+    const isU_IndianBank = u.includes('indian bank') && !u.includes('overseas');
+    if (isR_IndianBank || isU_IndianBank) return Boolean(isR_IndianBank && isU_IndianBank);
+
+    // Direct cleaned name check
+    const cleanR = r.replace(/bank/g, '').replace(/[^a-z0-9]/g, '').trim();
+    const cleanU = u.replace(/bank/g, '').replace(/[^a-z0-9]/g, '').trim();
+    if (cleanR && cleanU && cleanR === cleanU) return true;
+
+    return r === u;
+  }
+
   // Helper to find the best active bank/UPI promotion for a payment method on the ordered products
   function getPaymentMethodPromo(method, subtotal, selectedBank = '', selectedCardType = 'all', selectedUpiApp = '') {
     const targetType = (method === 'Card') ? 'bank' : (method === 'UPI') ? 'upi' : null;
@@ -18967,45 +21691,52 @@ function buildCheckoutModal() {
       // Bank Partner & Card Type Eligibility check
       if (targetType === 'bank') {
         if (Array.isArray(p.bankRules) && p.bankRules.length > 0) {
-          if (selectedBank) {
-            const matchedRule = p.bankRules.find(r => {
-              const b = (r.bank || '').toLowerCase();
-              const s = selectedBank.toLowerCase();
-              return b.includes(s) || s.includes(b) || b.includes('all bank') || b.includes('all card') || b.includes('any card') || (b.includes('sbi') && s.includes('sbi'));
-            });
-            if (!matchedRule) return false;
-            if (selectedCardType && selectedCardType !== 'all') {
-              const ruleCardType = matchedRule.cardType || 'all';
-              if (ruleCardType !== 'all' && ruleCardType !== selectedCardType) return false;
-            }
-          } else if (selectedCardType && selectedCardType !== 'all') {
-            const hasCompat = p.bankRules.some(r => (r.cardType || 'all') === 'all' || r.cardType === selectedCardType);
-            if (!hasCompat) return false;
+          const matchedRule = p.bankRules.find(r => {
+            const b = (r.bank || '').toLowerCase();
+            const isAll = b.includes('all bank') || b.includes('all card') || b.includes('any card') || b.includes('any bank');
+            if (isAll) return true;
+            if (!selectedBank) return false;
+            return isExactBankMatch(r.bank, selectedBank);
+          });
+          if (!matchedRule) return false;
+          if (selectedCardType && selectedCardType !== 'all') {
+            const ruleCardType = matchedRule.cardType || 'all';
+            if (ruleCardType !== 'all' && ruleCardType !== selectedCardType) return false;
           }
         } else {
+          const partners = Array.isArray(p.bankPartners) && p.bankPartners.length > 0
+            ? p.bankPartners
+            : (p.bankPartner ? p.bankPartner.split(',').map(s => s.trim()) : []);
+          const isAllBanks = partners.length === 0 || partners.some(b => b.toLowerCase().includes('all bank') || b.toLowerCase().includes('all card') || b.toLowerCase().includes('any card') || b.toLowerCase().includes('any bank'));
+
+          if (!isAllBanks) {
+            if (!selectedBank) return false;
+            const isMatchingBank = partners.some(b => isExactBankMatch(b, selectedBank));
+            if (!isMatchingBank) return false;
+          }
+
           if (selectedCardType && selectedCardType !== 'all') {
             const pCardType = p.cardType || 'all';
             if (pCardType !== 'all' && pCardType !== selectedCardType) return false;
-          }
-          if (selectedBank) {
-            const partners = Array.isArray(p.bankPartners) && p.bankPartners.length > 0
-              ? p.bankPartners
-              : (p.bankPartner ? p.bankPartner.split(',').map(s => s.trim()) : []);
-            const isAllBanks = partners.length === 0 || partners.some(b => b.toLowerCase().includes('all bank') || b.toLowerCase().includes('all card') || b.toLowerCase().includes('any card'));
-            const isMatchingBank = partners.some(b => b.toLowerCase().includes(selectedBank.toLowerCase()) || selectedBank.toLowerCase().includes(b.toLowerCase()) || (b.toLowerCase().includes('sbi') && selectedBank.toLowerCase().includes('sbi')));
-            if (!isAllBanks && !isMatchingBank) return false;
           }
         }
       }
 
       // UPI App check
-      if (targetType === 'upi' && selectedUpiApp) {
+      if (targetType === 'upi') {
         const providers = Array.isArray(p.upiProviders) && p.upiProviders.length > 0
           ? p.upiProviders
           : (p.upiProvider ? p.upiProvider.split(',').map(s => s.trim()) : []);
         const isAllUpi = providers.length === 0 || providers.some(u => u.toLowerCase().includes('all upi') || u.toLowerCase().includes('any upi'));
-        const isMatchingApp = providers.some(u => u.toLowerCase().includes(selectedUpiApp.toLowerCase()) || selectedUpiApp.toLowerCase().includes(u.toLowerCase()));
-        if (!isAllUpi && !isMatchingApp) return false;
+        if (!isAllUpi) {
+          if (!selectedUpiApp) return false;
+          const isMatchingApp = providers.some(u => {
+            const uLow = u.toLowerCase();
+            const selLow = selectedUpiApp.toLowerCase();
+            return uLow.includes(selLow) || selLow.includes(uLow);
+          });
+          if (!isMatchingApp) return false;
+        }
       }
 
       return true;
@@ -19051,7 +21782,13 @@ function buildCheckoutModal() {
   // Calculate live checkout totals including subtotal, tax, coupon, and payment method discount
   function calculateCheckoutTotals() {
     const subtotal = Store.cartTotal();
-    const tax = Math.round(subtotal * 0.18);
+    const settings = Store.platformSettings || {};
+    const taxRate = settings.standardTaxRate !== undefined ? Number(settings.standardTaxRate) : 18;
+    const tax = Math.round(subtotal * (taxRate / 100));
+    const freeThresh = settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 499;
+    const stdShipping = settings.standardShippingFee !== undefined ? Number(settings.standardShippingFee) : 49;
+    const shipping = subtotal >= freeThresh ? 0 : stdShipping;
+
     const activeCoupon = (typeof appliedCoupon !== 'undefined' && appliedCoupon) || window.appliedCoupon || null;
     const couponDiscount = (activeCoupon && activeCoupon.discountAmount)
       ? activeCoupon.discountAmount
@@ -19062,14 +21799,18 @@ function buildCheckoutModal() {
     const selectedCardType = modal.querySelector('#chk-card-type-select')?.value || 'debit';
     const selectedUpiApp = modal.querySelector('#chk-upi-app-select')?.value || '';
 
+    const codFee = (selectedMethod === 'COD' && settings.codFee) ? Number(settings.codFee) : 0;
+
     const payPromo = getPaymentMethodPromo(selectedMethod, subtotal, selectedBank, selectedCardType, selectedUpiApp);
     const paymentDiscount = payPromo ? (payPromo.calculatedSavings || 0) : 0;
 
-    const grandTotal = Math.max(0, subtotal + tax - couponDiscount - paymentDiscount);
+    const grandTotal = Math.max(0, subtotal + tax + shipping + codFee - couponDiscount - paymentDiscount);
 
     return {
       subtotal,
       tax,
+      shipping,
+      codFee,
       couponDiscount,
       paymentDiscount,
       payPromo,
@@ -19085,9 +21826,66 @@ function buildCheckoutModal() {
   function renderStep3() {
     const totals = calculateCheckoutTotals();
     const subtotal = totals.subtotal;
+    const settings = Store.platformSettings || {};
+
+    // Dynamic COD policy enforcement
+    const codCard = modal.querySelector('input[name="checkoutPaymentMethod"][value="COD"]')?.closest('.payment-method-card');
+    const codRadio = modal.querySelector('input[name="checkoutPaymentMethod"][value="COD"]');
+    const codMax = settings.codMaxLimit !== undefined ? Number(settings.codMaxLimit) : 25000;
+    const isCodOverLimit = subtotal > codMax;
+
+    if (codCard && codRadio) {
+      const codTitle = codCard.querySelector('strong');
+      const codDesc = codCard.querySelector('p');
+      if (settings.codEnabled === false) {
+        codRadio.disabled = true;
+        codCard.style.opacity = '0.5';
+        codCard.style.cursor = 'not-allowed';
+        if (codTitle) codTitle.textContent = 'Cash on Delivery (COD) — Disabled';
+        if (codDesc) codDesc.textContent = 'Cash on delivery is currently disabled by store policy. Please choose an online payment method.';
+        if (codRadio.checked) {
+          const upiRadio = modal.querySelector('input[name="checkoutPaymentMethod"][value="UPI"]');
+          if (upiRadio) upiRadio.click();
+        }
+      } else if (isCodOverLimit) {
+        codRadio.disabled = true;
+        codCard.style.opacity = '0.5';
+        codCard.style.cursor = 'not-allowed';
+        if (codTitle) codTitle.textContent = `Cash on Delivery (COD) — Orders ≤ ₹${codMax.toLocaleString('en-IN')}`;
+        if (codDesc) codDesc.textContent = `COD is unavailable for orders above ₹${codMax.toLocaleString('en-IN')}. Please choose an online payment method.`;
+        if (codRadio.checked) {
+          const upiRadio = modal.querySelector('input[name="checkoutPaymentMethod"][value="UPI"]');
+          if (upiRadio) upiRadio.click();
+        }
+      } else {
+        codRadio.disabled = false;
+        codCard.style.opacity = '1';
+        codCard.style.cursor = 'pointer';
+        if (codTitle) codTitle.textContent = 'Cash on Delivery (COD) / Pay on Delivery';
+        const feeNotice = (settings.codFee && Number(settings.codFee) > 0) ? ` (+₹${settings.codFee} handling fee)` : '';
+        if (codDesc) codDesc.textContent = `Pay safely in cash or UPI QR code at your doorstep${feeNotice}.`;
+      }
+    }
 
     modal.querySelector('#chk-step3-subtotal').textContent = Currency.format(totals.subtotal);
     modal.querySelector('#chk-step3-tax').textContent = Currency.format(totals.tax);
+
+    const shipEl = modal.querySelector('#chk-step3-shipping');
+    if (shipEl) {
+      shipEl.textContent = totals.shipping === 0 ? 'FREE' : Currency.format(totals.shipping);
+      shipEl.style.color = totals.shipping === 0 ? '#16a34a' : '#0f172a';
+    }
+
+    const codRow = modal.querySelector('#chk-step3-cod-fee-row');
+    const codEl = modal.querySelector('#chk-step3-cod-fee');
+    if (codRow && codEl) {
+      if (totals.codFee > 0) {
+        codRow.style.display = 'flex';
+        codEl.textContent = Currency.format(totals.codFee);
+      } else {
+        codRow.style.display = 'none';
+      }
+    }
 
     // Coupon discount row
     const couponRow = modal.querySelector('#chk-step3-coupon-discount-row');
@@ -19159,7 +21957,7 @@ function buildCheckoutModal() {
       });
 
       const currentVal = cardBankSelect.value;
-      cardBankSelect.innerHTML = '<option value="">Best Available Bank Offer (Auto Apply)</option>';
+      cardBankSelect.innerHTML = '<option value="">Other Bank Card / Standard Payment (Full Amount)</option>';
 
       bankList.forEach(b => {
         const promo = getPaymentMethodPromo('Card', subtotal, b.id, 'all', '');
@@ -19168,7 +21966,7 @@ function buildCheckoutModal() {
           const disc = promo.discountType === 'flat' ? `₹${promo.discountValue} OFF` : `${promo.discountValue}% OFF`;
           let cardTypeVal = promo.cardType;
           if (Array.isArray(promo.bankRules) && promo.bankRules.length > 0) {
-            const rule = promo.bankRules.find(r => r.bank.toLowerCase().includes(b.id.toLowerCase()) || b.id.toLowerCase().includes(r.bank.toLowerCase()) || (b.id.toLowerCase().includes('sbi') && r.bank.toLowerCase().includes('sbi')));
+            const rule = promo.bankRules.find(r => isExactBankMatch(r.bank, b.id));
             if (rule) cardTypeVal = rule.cardType;
           }
           const cType = cardTypeVal === 'credit' ? 'Credit Only' : cardTypeVal === 'debit' ? 'Debit Only' : 'Debit & Credit';
@@ -19197,7 +21995,7 @@ function buildCheckoutModal() {
       ];
 
       const currentVal = upiAppSelect.value;
-      upiAppSelect.innerHTML = '<option value="">Best Available UPI Offer (Auto Apply)</option>';
+      upiAppSelect.innerHTML = '<option value="">Other / Any UPI App (Standard Payment)</option>';
 
       standardApps.forEach(a => {
         const promo = getPaymentMethodPromo('UPI', subtotal, '', 'all', a.id);
@@ -19382,6 +22180,7 @@ function buildCheckoutModal() {
     const method = totals.selectedMethod;
     const btnSpan = modal.querySelector('#chk-place-order-final-btn span');
     if (!btnSpan) return;
+    btnSpan.style.whiteSpace = 'nowrap';
 
     if (method === 'COD') {
       btnSpan.textContent = `Place Order • ${formattedTotal} (COD)`;
@@ -19409,6 +22208,10 @@ function buildCheckoutModal() {
   // Payment method selection radio & card click handling
   modal.querySelectorAll('.payment-method-card').forEach(card => {
     card.addEventListener('click', (e) => {
+      if (e.target.closest('select') || e.target.closest('input') || e.target.closest('button') || e.target.closest('a')) {
+        return;
+      }
+      modal._userExplicitlySwitchedMethod = true;
       const radio = card.querySelector('input[name="checkoutPaymentMethod"]');
       if (radio && !radio.checked) {
         radio.checked = true;
@@ -19421,6 +22224,7 @@ function buildCheckoutModal() {
 
   modal.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(r => {
     r.addEventListener('change', () => {
+      modal._userExplicitlySwitchedMethod = true;
       modal.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('is-selected'));
       r.closest('.payment-method-card')?.classList.add('is-selected');
       renderStep3();
@@ -19492,6 +22296,9 @@ function buildCheckoutModal() {
 
       openRazorpayCheckout({
         amount: grandTotal,
+        originalAmount: Math.max(0, totals.subtotal + totals.tax - (totals.couponDiscount || 0)),
+        offerDiscount: totals.paymentDiscount,
+        offerPartner: totals.payPromo?.bankPartner || totals.payPromo?.upiProvider || totals.selectedBank || totals.selectedUpiApp || '',
         paymentMethod: selectedPayMethod,
         user: Auth.getUser() || {},
         address: savedDeliveryAddress,
@@ -19509,6 +22316,12 @@ function buildCheckoutModal() {
             const signature = paymentResult.razorpay_signature || paymentResult.signature || 'verified_inapp_signature';
             const isSandbox = paymentResult.isSandbox !== undefined ? paymentResult.isSandbox : false;
 
+            const finalActualAmount = paymentResult.finalPaidAmount !== undefined ? paymentResult.finalPaidAmount : grandTotal;
+            const finalOfferDiscount = paymentResult.offerApplied === false ? 0 : totals.paymentDiscount;
+            const finalBank = paymentResult.bank || totals.selectedBank;
+            const finalUpiId = paymentResult.upiId || null;
+            const finalUpiApp = paymentResult.upiApp || totals.selectedUpiApp || null;
+
             let finalOrderRef = orderRef;
             try {
               const verifyRes = await apiFetch('/payment/verify', {
@@ -19522,11 +22335,14 @@ function buildCheckoutModal() {
                   shippingAddress: savedDeliveryAddress,
                   paymentMethod: selectedPayMethod,
                   items: cartCopy,
-                  totalAmount: grandTotal,
-                  offerDiscount: totals.paymentDiscount,
+                  totalAmount: finalActualAmount,
+                  offerDiscount: finalOfferDiscount,
                   offerCode: totals.payPromo?.code || null,
-                  bank: totals.selectedBank,
-                  cardType: totals.selectedCardType
+                  offerPartner: totals.payPromo?.bankPartner || totals.payPromo?.upiProvider || '',
+                  bank: finalBank,
+                  cardType: totals.selectedCardType,
+                  upiId: finalUpiId,
+                  upiApp: finalUpiApp
                 })
               });
               if (verifyRes?.data?.orderId) finalOrderRef = verifyRes.data.orderId;
@@ -19540,11 +22356,13 @@ function buildCheckoutModal() {
               paymentMethod: selectedPayMethod,
               shippingAddress: savedDeliveryAddress,
               items: cartCopy,
-              totalAmount: grandTotal,
-              offerDiscount: totals.paymentDiscount,
+              totalAmount: finalActualAmount,
+              offerDiscount: finalOfferDiscount,
               offerCode: totals.payPromo?.code || null,
-              bank: totals.selectedBank,
-              cardType: totals.selectedCardType
+              bank: finalBank,
+              cardType: totals.selectedCardType,
+              upiId: finalUpiId,
+              upiApp: finalUpiApp
             });
 
             Store.clearCart(); window.appliedCoupon = null;
@@ -19583,7 +22401,10 @@ function buildCheckoutModal() {
             items: cartCopy,
             totalAmount: grandTotal,
             offerDiscount: totals.paymentDiscount,
-            offerCode: totals.payPromo?.code || null
+            offerCode: totals.payPromo?.code || null,
+            offerPartner: totals.payPromo?.bankPartner || totals.payPromo?.upiProvider || '',
+            bank: totals.selectedBank,
+            cardType: totals.selectedCardType
           })
         });
         if (orderRes?.data?.orderId) finalOrderRef = orderRes.data.orderId;
@@ -19599,7 +22420,9 @@ function buildCheckoutModal() {
         items: cartCopy,
         totalAmount: grandTotal,
         offerDiscount: totals.paymentDiscount,
-        offerCode: totals.payPromo?.code || null
+        offerCode: totals.payPromo?.code || null,
+        bank: totals.selectedBank,
+        cardType: totals.selectedCardType
       });
 
       Store.clearCart(); window.appliedCoupon = null;
@@ -19617,6 +22440,10 @@ function buildCheckoutModal() {
   });
 
   window._openCheckout = () => {
+    if (Store.platformSettings && Store.platformSettings.maintenanceMode) {
+      showToast(Store.platformSettings.maintenanceNotice || 'Store checkouts are temporarily paused for system maintenance. Please try again shortly.', 'error', 6000);
+      return;
+    }
     if (!Auth.isLoggedIn()) {
       showToast('Please sign in to proceed to checkout', 'warn');
       window._openAuth?.('signin');
@@ -19624,6 +22451,12 @@ function buildCheckoutModal() {
     }
     if (Store.cart.length === 0) {
       showToast('Please add items to your cart first!', 'warn');
+      return;
+    }
+    const minQ = (Store.platformSettings && Store.platformSettings.minOrderQty) || 1;
+    const underMin = Store.cart.find(i => (i.qty || 1) < minQ);
+    if (underMin) {
+      showToast(`Minimum order requirement is ${minQ} unit(s) per item.`, 'warning');
       return;
     }
     if (typeof isSellerProductDeactivated === 'function') {
@@ -20340,32 +23173,32 @@ function initPageRouter() {
                     <div class="fk-rating-pop-caret"></div>
                     <div class="fk-rating-pop-body">
                       <div class="fk-rating-pop-left">
-                        <div class="fk-rating-pop-score">${rating} ★</div>
+                        <div class="fk-rating-pop-score">${rating} <span class="fk-star-icon" style="color: #f59e0b; margin-left: 2px;">★</span></div>
                         <div class="fk-rating-pop-counts">${b.total.toLocaleString()} Ratings &amp;<br>${reviews.toLocaleString()} Reviews</div>
                       </div>
                       <div class="fk-rating-pop-right">
                         <div class="fk-pop-bar-row">
-                          <span class="fk-pop-star-label">5 ★</span>
+                          <span class="fk-pop-star-label">5 <span class="fk-star-icon" style="color: #f59e0b;">★</span></span>
                           <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct5}%;"></div></div>
                           <span class="fk-pop-count-label">${b.c5.toLocaleString()}</span>
                         </div>
                         <div class="fk-pop-bar-row">
-                          <span class="fk-pop-star-label">4 ★</span>
+                          <span class="fk-pop-star-label">4 <span class="fk-star-icon" style="color: #f59e0b;">★</span></span>
                           <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct4}%;"></div></div>
                           <span class="fk-pop-count-label">${b.c4.toLocaleString()}</span>
                         </div>
                         <div class="fk-pop-bar-row">
-                          <span class="fk-pop-star-label">3 ★</span>
+                          <span class="fk-pop-star-label">3 <span class="fk-star-icon" style="color: #f59e0b;">★</span></span>
                           <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-green" style="width: ${b.pct3}%;"></div></div>
                           <span class="fk-pop-count-label">${b.c3.toLocaleString()}</span>
                         </div>
                         <div class="fk-pop-bar-row">
-                          <span class="fk-pop-star-label">2 ★</span>
+                          <span class="fk-pop-star-label">2 <span class="fk-star-icon" style="color: #f59e0b;">★</span></span>
                           <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-orange" style="width: ${b.pct2}%;"></div></div>
                           <span class="fk-pop-count-label">${b.c2.toLocaleString()}</span>
                         </div>
                         <div class="fk-pop-bar-row">
-                          <span class="fk-pop-star-label">1 ★</span>
+                          <span class="fk-pop-star-label">1 <span class="fk-star-icon" style="color: #f59e0b;">★</span></span>
                           <div class="fk-pop-bar-track"><div class="fk-pop-bar-fill is-red" style="width: ${b.pct1}%;"></div></div>
                           <span class="fk-pop-count-label">${b.c1.toLocaleString()}</span>
                         </div>
@@ -20374,7 +23207,7 @@ function initPageRouter() {
                   </div>
                 </div>
                 <span class="fk-rating-count">${reviews.toLocaleString()} Ratings &amp; ${Math.round(reviews / 7)} Reviews</span>
-                <span class="fk-assured-tag" style="background:#eef6ff !important;color:#0878f9 !important;border:1px solid #bfdbfe !important;">✓ Assured</span>
+                <span class="fk-assured-tag" style="background:#0878f9 !important;color:#ffffff !important;border:1px solid #0878f9 !important;border-radius:9999px !important;padding:2px 9px !important;">✓ Assured</span>
               </div>
               <ul class="fk-specs-list">
                 ${specs.slice(0, 5).map(s => `<li>${s}</li>`).join('')}
@@ -23925,7 +26758,7 @@ function initPageRouter() {
                     <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">
                       <small style="color:#64748b;">${item.brand || 'X-Mart Verified'}</small>
                       ${isDeal ? '<span class="deal-tag-pill">Today\'s Deal</span>' : ''}
-                      ${isBestseller ? '<span class="deal-tag-pill" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;">★ Bestseller</span>' : ''}
+                      ${isBestseller ? '<span class="deal-tag-pill" style="background:#dc2626;color:#ffffff;border:1px solid #b91c1c;border-radius:9999px;padding:2px 8px;">★ Bestseller</span>' : ''}
                     </div>
                   </div>
                 </div>
@@ -27656,6 +30489,14 @@ function initPageRouter() {
       pincode: '495009'
     };
 
+    const platformSettings = Store.platformSettings || {};
+    const bizName = platformSettings.businessName || 'X-Mart Superstore India Pvt. Ltd.';
+    const bizAddr = platformSettings.businessAddress || 'Plot 14, Tech Park, Link Road, Bilaspur, Chhattisgarh, PIN: 495001';
+    const gstin = platformSettings.gstin || '22AABCX9921D1ZZ';
+    const pan = platformSettings.panNumber || 'AABCX9921D';
+    const supportPhone = platformSettings.supportPhone || '1800-120-9988';
+    const supportEmail = platformSettings.supportEmail || 'care@xmart.in';
+
     mainContent.style.display = 'none';
     pageContainer.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -27934,9 +30775,9 @@ function initPageRouter() {
                   <span class="inv-brand-name">X-MART SUPERSTORE</span>
                 </div>
                 <div class="inv-company-info" style="font-size:12.5px;color:#000000;margin-top:6px;line-height:1.5;">
-                  <strong>X-Mart Retail Superstore India Pvt. Ltd.</strong><br/>
-                  Plot 14, Tech Park, Link Road, Bilaspur, Chhattisgarh, PIN: 495001<br/>
-                  <strong>GSTIN:</strong> 22AABCX9921D1ZZ &nbsp;|&nbsp; <strong>PAN:</strong> AABCX9921D
+                  <strong>${bizName}</strong><br/>
+                  ${bizAddr}<br/>
+                  <strong>GSTIN:</strong> ${gstin} &nbsp;|&nbsp; <strong>PAN:</strong> ${pan}
                 </div>
               </div>
               <div class="inv-header-right" style="text-align:right;">
@@ -28025,7 +30866,7 @@ function initPageRouter() {
                 <div style="margin-top:6px;font-family:monospace;color:#000000;">Digitally generated via X-Mart E-Commerce Automated Billing System.</div>
               </div>
               <div class="inv-footer-right" style="text-align:right;min-width:200px;">
-                <div style="font-weight:800;color:#000000;margin-bottom:28px;">For X-Mart Retail Superstore Pvt Ltd:</div>
+                <div style="font-weight:800;color:#000000;margin-bottom:28px;">For ${bizName}:</div>
                 <div style="font-weight:800;color:#000000;border-top:1px dashed #000000;padding-top:4px;">Authorized Signatory</div>
               </div>
             </div>
@@ -28049,7 +30890,7 @@ function initPageRouter() {
                   OFFICIAL WARRANTY & AUTHENTICITY CERTIFICATE
                 </div>
                 <div style="font-size:13px;color:#000000;margin-top:4px;">
-                  Issued by <strong>X-Mart Retail Superstore India Pvt. Ltd.</strong> in partnership with Authorized Brand Distributors.
+                  Issued by <strong>${bizName}</strong> in partnership with Authorized Brand Distributors.
                 </div>
               </div>
               <div class="wrn-header-right" style="text-align:right;flex-shrink:0;">
@@ -28113,7 +30954,7 @@ function initPageRouter() {
             <div class="wrn-footer-row" style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid #000000;font-size:12.5px;color:#000000;">
               <div class="wrn-footer-left">
                 <div style="font-weight:700;color:#000000;">Direct Claim Support:</div>
-                Toll-Free Helpline: 1800-419-0123 &nbsp;|&nbsp; Email: warranty@xmart-retail.com
+                Toll-Free Helpline: ${supportPhone} &nbsp;|&nbsp; Email: ${supportEmail}
               </div>
               <div class="wrn-footer-right" style="text-align:right;">
                 <div style="font-weight:800;color:#000000;">X-Mart Quality Assurance Seal</div>
@@ -28202,6 +31043,41 @@ function initPageRouter() {
         });
       });
     });
+
+    // ── Card Applied State Sync (Session Storage + Live Event) ──
+    const syncCardAppliedUI = (state) => {
+      const cardBadge = pageContainer.querySelector('#card-applied-badge');
+      const grandTotalEl = pageContainer.querySelector('#order-grand-total');
+      if (!cardBadge || !grandTotalEl) return;
+      const originalTotalStr = grandTotalEl.getAttribute('data-original') || Currency.format(grandTotal);
+
+      if (state && state.applied) {
+        const bankName = state.bank || 'Bank Card';
+        const cardTypeName = (state.type === 'credit' || String(state.type).toLowerCase().includes('credit')) ? 'Credit Card' : 'Debit Card';
+        const discountVal = Number(state.discount) || 0;
+        cardBadge.textContent = `💳 ${bankName} ${cardTypeName} Applied${discountVal > 0 ? ` (-${Currency.format(discountVal)})` : ''}`;
+        cardBadge.style.display = 'inline-block';
+
+        if (discountVal > 0) {
+          const discountedTotal = Math.max(0, grandTotal - discountVal);
+          grandTotalEl.innerHTML = `<span style="text-decoration:line-through;color:#94a3b8;font-size:13.5px;font-weight:600;margin-right:8px;">${originalTotalStr}</span><span style="color:#16a34a;font-weight:900;">${Currency.format(discountedTotal)}</span>`;
+        } else {
+          grandTotalEl.textContent = originalTotalStr;
+        }
+      } else {
+        cardBadge.style.display = 'none';
+        cardBadge.textContent = '';
+        grandTotalEl.textContent = originalTotalStr;
+      }
+    };
+
+    try {
+      const savedCardState = JSON.parse(sessionStorage.getItem('cardApplyState') || 'null');
+      if (savedCardState) syncCardAppliedUI(savedCardState);
+    } catch (e) {}
+
+    const onCardAppliedHandler = (e) => syncCardAppliedUI(e.detail);
+    window.addEventListener('cardApplied', onCardAppliedHandler);
   };
 
   // ── 4B. DEDICATED RETURN & REPLACEMENT CENTER WINDOW ───────────
@@ -28926,7 +31802,7 @@ function initPageRouter() {
           </div>
 
           <div style="display:flex;gap:10px;border-top:1px solid #f1f5f9;padding-top:14px;">
-            <button type="button" class="btn-card-select" data-pin="${addr.pincode}" style="flex:1;background:#FF9400;color:#000000;border:none;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:800;cursor:pointer;transition:all 140ms ease;box-shadow:0 2px 8px rgba(255,148,0,0.25);">Deliver to this PIN</button>
+            <button type="button" class="btn-card-select" data-id="${addr.id}" data-pin="${addr.pincode}" style="flex:1;background:#FF9400;color:#000000;border:none;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:800;cursor:pointer;transition:all 140ms ease;box-shadow:0 2px 8px rgba(255,148,0,0.25);">Deliver to this Address</button>
             ${!addr.isDefault ? `<button type="button" class="btn-card-default" data-id="${addr.id}" style="background:#f1f5f9;color:#334155;border:none;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Set Default</button>` : ''}
           </div>
         </div>
@@ -28973,20 +31849,54 @@ function initPageRouter() {
           const id = btn.dataset.id;
           let list = getSavedAddresses().map(a => ({ ...a, isDefault: a.id === id }));
           saveAddresses(list);
+          const defAddr = list.find(a => a.id === id);
+          if (defAddr) {
+            if (defAddr.pincode) localStorage.setItem('xmart_pincode', defAddr.pincode);
+            localStorage.setItem('xmart_delivery_location', JSON.stringify({
+              city: defAddr.city || '',
+              state: defAddr.state || '',
+              pincode: defAddr.pincode || '',
+              address: `${defAddr.street || ''}, ${defAddr.city || ''} ${defAddr.pincode || ''}`.trim()
+            }));
+            const displayText = `${defAddr.city || ''} ${defAddr.pincode || ''}`.trim();
+            if (displayText) {
+              document.querySelectorAll('.location-control strong').forEach(el => el.textContent = displayText);
+            }
+          }
           renderCards();
-          showToast('Default delivery address updated!', 'success');
+          showToast('Default delivery & ordering address updated!', 'success');
         });
       });
 
-      // Wire deliver to PIN button
+      // Wire deliver to Address button
       gridEl.querySelectorAll('.btn-card-select').forEach(btn => {
         btn.addEventListener('click', () => {
           const pin = btn.dataset.pin;
-          if (pin) {
+          const id = btn.dataset.id;
+          let list = getSavedAddresses();
+          if (id) {
+            list = list.map(a => ({ ...a, isDefault: a.id === id }));
+            saveAddresses(list);
+          }
+          const selAddr = list.find(a => (id ? a.id === id : a.pincode === pin));
+          if (selAddr) {
+            if (selAddr.pincode) localStorage.setItem('xmart_pincode', selAddr.pincode);
+            localStorage.setItem('xmart_delivery_location', JSON.stringify({
+              city: selAddr.city || '',
+              state: selAddr.state || '',
+              pincode: selAddr.pincode || pin || '',
+              address: `${selAddr.street || ''}, ${selAddr.city || ''} ${selAddr.pincode || pin || ''}`.trim()
+            }));
+            const displayText = `${selAddr.city || ''} ${selAddr.pincode || pin || ''}`.trim();
+            if (displayText) {
+              document.querySelectorAll('.location-control strong').forEach(el => el.textContent = displayText);
+            }
+          } else if (pin) {
             localStorage.setItem('xmart_pincode', pin);
             document.querySelectorAll('.location-control strong').forEach(el => el.textContent = pin);
           }
-          showToast(`Active delivery location set to PIN: ${pin}!`, 'success');
+          renderCards();
+          showToast(`Active delivery & ordering address set to PIN: ${pin}!`, 'success');
         });
       });
     }
@@ -29748,7 +32658,10 @@ function initPageRouter() {
     const stockUnits = (prod.stock !== undefined) ? prod.stock : ((prod.countInStock !== undefined) ? prod.countInStock : 25);
     const isOutOfStock = !isSellerDeactivated && (stockUnits <= 0 || prod.isOutOfStock === true);
     const isUnavailable = isOutOfStock || isSellerDeactivated;
-    const maxQty = isUnavailable ? 0 : Math.min(10, Math.max(1, stockUnits));
+    const platformSettings = Store.platformSettings || {};
+    const minOrderQty = Math.max(1, platformSettings.minOrderQty !== undefined ? Number(platformSettings.minOrderQty) : 1);
+    const maxOrderQtyLimit = Math.max(minOrderQty, platformSettings.maxOrderQtyPerItem !== undefined ? Number(platformSettings.maxOrderQtyPerItem) : (platformSettings.maxOrderQty !== undefined ? Number(platformSettings.maxOrderQty) : 10));
+    const maxQty = isUnavailable ? 0 : Math.min(maxOrderQtyLimit, Math.max(minOrderQty, stockUnits));
 
     // Check if user is subscribed to back-in-stock notification
     const currentUser = Auth.getUser();
@@ -30104,7 +33017,7 @@ function initPageRouter() {
             </h5>
             <ul style="margin: 0; padding-left: 18px; font-size: 12.5px; color: #334155; line-height: 1.6;">
               ${item.description ? `<li>${item.description}</li>` : ''}
-              <li>Applicable when paying with <strong style="color: #000000;">${item.partnerName}</strong> at payment step during checkout.</li>
+              <li>Applicable when paying with <strong style="color: #000000;">${item.footer || item.partnerName}</strong> at payment step during checkout.</li>
               <li>Instant discount is directly applied to total amount upon coupon activation or payment selection.</li>
               <li>Valid for single redemption per customer account during active campaign period.</li>
               <li>Non-transferable and cannot be combined with unauthorized promo codes.</li>
@@ -30140,29 +33053,83 @@ function initPageRouter() {
         document.body.style.overflow = '';
       });
 
-      // Apply button inside modal
+      // Apply / Unapply button inside modal
       const modalApplyBtn = footerEl.querySelector('.modal-apply-offer-btn');
-      if (modalApplyBtn && !isAlreadyApplied) {
+      if (modalApplyBtn) {
         modalApplyBtn.addEventListener('click', () => {
           const code = item.code;
-          if (!code || code === 'NO_COST_EMI') {
+          if (code === 'NO_COST_EMI') {
             showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
+            return;
+          }
+
+          const currentlyActive = Boolean(
+            window._appliedPaymentOffer &&
+            ((item.code && window._appliedPaymentOffer.code === item.code) ||
+             (item.partnerName && window._appliedPaymentOffer.partnerName === item.partnerName))
+          );
+
+          if (currentlyActive) {
+            // Unapply
+            window._appliedPaymentOffer = null;
+            window._preselectedCouponCode = null;
+            modalApplyBtn.textContent = 'Apply Offer to Checkout';
+            modalApplyBtn.style.background = '#0f172a';
+            modalApplyBtn.style.borderColor = '#0f172a';
+            if (pageApplyBtn) {
+              pageApplyBtn.textContent = 'Apply';
+              pageApplyBtn.classList.remove('is-applied');
+            }
+            showToast('Offer unapplied', 'info', 3000);
           } else {
-            try { navigator.clipboard.writeText(code); } catch {}
-            window._preselectedCouponCode = code;
+            // Reset any other offer buttons on this page
+            document.querySelectorAll('.offer-card-apply-btn').forEach(btn => {
+              btn.textContent = 'Apply';
+              btn.classList.remove('is-applied');
+            });
+
+            const isUpi = item?.footer?.toLowerCase().includes('upi') ||
+                          item?.partnerName?.toLowerCase().includes('upi') ||
+                          item?.partnerName?.toLowerCase().includes('bhim') ||
+                          item?.partnerName?.toLowerCase().includes('phonepe') ||
+                          item?.partnerName?.toLowerCase().includes('gpay');
+            const isBank = !isUpi;
+
+            let discountValue = 0;
+            let discountType = 'flat';
+            const amtStr = item?.amountOff || '';
+            const flatMatch = amtStr.match(/₹\s*([\d,]+)/);
+            const pctMatch = amtStr.match(/(\d+)\s*%/);
+            if (pctMatch) {
+              discountType = 'percent';
+              discountValue = parseInt(pctMatch[1], 10);
+            } else if (flatMatch) {
+              discountType = 'flat';
+              discountValue = parseInt(flatMatch[1].replace(/,/g, ''), 10);
+            }
+
+            window._appliedPaymentOffer = {
+              ...(item || {}),
+              method: isBank ? 'Card' : 'UPI',
+              partnerName: item?.partnerName || 'Bank',
+              discountValue: discountValue,
+              discountType: discountType,
+              amountOff: item?.amountOff || '',
+              code: item?.code || code || ''
+            };
+            window._preselectedCouponCode = item?.code || code || '';
 
             modalApplyBtn.textContent = 'Applied ✓';
             modalApplyBtn.style.background = '#16a34a';
             modalApplyBtn.style.borderColor = '#16a34a';
-            modalApplyBtn.disabled = true;
 
             if (pageApplyBtn) {
-              pageApplyBtn.textContent = 'Applied ✓';
-              pageApplyBtn.style.color = '#16a34a';
-              pageApplyBtn.disabled = true;
+              pageApplyBtn.textContent = 'Applied';
+              pageApplyBtn.classList.add('is-applied');
             }
 
-            showToast(`Offer "${code || item.amountOff}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+            try { if (code) navigator.clipboard.writeText(code); } catch {}
+            showToast(`Offer "${item.partnerName || code || item.amountOff}" applied! It will be automatically activated at checkout.`, 'success', 4000);
           }
         });
       }
@@ -30173,6 +33140,11 @@ function initPageRouter() {
     // Helper to render individual Flipkart-Style offer card
     function renderFlipkartOfferCard(item) {
       const offerJsonEscaped = encodeURIComponent(JSON.stringify(item));
+      const isAlreadyActive = Boolean(
+        window._appliedPaymentOffer &&
+        ((item.code && window._appliedPaymentOffer.code === item.code) ||
+         (item.partnerName && window._appliedPaymentOffer.partnerName === item.partnerName))
+      );
       return `
         <div class="offer-card-item" data-offer-data="${offerJsonEscaped}">
           ${item.badge ? `<span class="offer-best-pill">${item.badge}</span>` : `<div class="offer-card-placeholder-pill"></div>`}
@@ -30186,7 +33158,7 @@ function initPageRouter() {
                 <div class="offer-card-partner" title="${item.partnerName}">${item.partnerName}</div>
               </div>
               <div class="offer-card-action-col">
-                <button type="button" class="offer-card-apply-btn" data-code="${item.code || ''}">Apply</button>
+                <button type="button" class="offer-card-apply-btn${isAlreadyActive ? ' is-applied' : ''}" data-code="${item.code || ''}">${isAlreadyActive ? 'Applied' : 'Apply'}</button>
               </div>
             </div>
             <div class="offer-card-footer" title="Click arrow to view details and terms">
@@ -30220,12 +33192,48 @@ function initPageRouter() {
       const amountStr = o.amountOff || (o.discountValue ? (o.discountType === 'percent' ? `${o.discountValue}% off` : `Flat ₹${o.discountValue} off`) : 'Active Offer');
       const partnerStr = o.partnerName || o.partner || o.tag || 'Promotional Offer';
       const logo = o.logoSrc || (isUpi ? 'assets/upi/gpay.svg' : 'assets/banks/allbanks.svg');
-      const footerStr = isUpi ? 'UPI App • Instant Discount' : (isBank ? 'Bank Card • Instant Discount' : `Special Voucher ${o.minOrder ? '• Min ₹' + o.minOrder : ''}`);
+
+      // Determine precise card type (Credit Card, Debit Card, or Credit & Debit Card)
+      let cardKindStr = 'Credit Card';
+      let cardKindRaw = 'credit';
+      const searchBlob = `${o.cardType || ''} ${o.category || ''} ${o.tag || ''} ${o.text || ''} ${o.headline || ''} ${o.title || ''} ${o.description || ''} ${o.terms || ''}`.toLowerCase();
+
+      if (o.cardType === 'debit' || (searchBlob.includes('debit') && !searchBlob.includes('credit'))) {
+        cardKindStr = 'Debit Card';
+        cardKindRaw = 'debit';
+      } else if (o.cardType === 'credit' || (searchBlob.includes('credit') && !searchBlob.includes('debit'))) {
+        cardKindStr = 'Credit Card';
+        cardKindRaw = 'credit';
+      } else if (searchBlob.includes('debit') && searchBlob.includes('credit')) {
+        cardKindStr = 'Credit & Debit Card';
+        cardKindRaw = 'all';
+      } else if (o.cardType === 'all') {
+        cardKindStr = 'Credit & Debit Card';
+        cardKindRaw = 'all';
+      } else {
+        cardKindStr = 'Credit Card';
+        cardKindRaw = 'credit';
+      }
+
+      let bankCleanName = (partnerStr || 'Bank').trim();
+      if (/cards?$/i.test(bankCleanName)) {
+        bankCleanName = bankCleanName.replace(/\s*cards?$/i, '').trim();
+      }
+      if (!/bank/i.test(bankCleanName)) {
+        bankCleanName += ' Bank';
+      }
+
+      const footerStr = isUpi
+        ? (partnerStr ? `${partnerStr} UPI` : 'UPI App • Instant Discount')
+        : (isBank
+            ? `${bankCleanName} ${cardKindStr}`
+            : `Special Voucher ${o.minOrder ? '• Min ₹' + o.minOrder : ''}`);
 
       const cardObj = {
         badge: o.badge || 'Best value for you',
         amountOff: amountStr,
         partnerName: partnerStr,
+        cardType: cardKindRaw,
         footer: footerStr,
         code: o.code || '',
         logoSrc: logo,
@@ -30354,7 +33362,7 @@ function initPageRouter() {
                   </div>
                   <div>
                     <strong>Fast Delivery</strong>
-                    <small>Prime Express in 2 Days</small>
+                    <small>${platformSettings.deliveryLeadTime ? platformSettings.deliveryLeadTime : 'Prime Express in 2 Days'}</small>
                   </div>
                 </div>
                 <div class="prod-trust-item">
@@ -30371,8 +33379,8 @@ function initPageRouter() {
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   </div>
                   <div>
-                    <strong>7 Days Return</strong>
-                    <small>Hassle-Free Replacement</small>
+                    <strong>${platformSettings.returnWindowDays !== undefined ? platformSettings.returnWindowDays : 7} Days Return</strong>
+                    <small>${platformSettings.replacementWindowDays !== undefined ? platformSettings.replacementWindowDays : 7} Days Replacement</small>
                   </div>
                 </div>
                 <div class="prod-trust-item">
@@ -30507,7 +33515,7 @@ function initPageRouter() {
                   <select id="detail-qty-select" class="buybox-qty-select" ${isUnavailable ? 'disabled' : ''}>
                     ${isUnavailable
         ? `<option value="0">0 units (Currently Unavailable)</option>`
-        : Array.from({ length: maxQty }, (_, i) => i + 1).map(q => `<option value="${q}" ${q === 1 ? 'selected' : ''}>${q} unit${q > 1 ? 's' : ''}</option>`).join('')
+        : Array.from({ length: Math.max(0, maxQty - minOrderQty + 1) }, (_, i) => i + minOrderQty).map(q => `<option value="${q}" ${q === minOrderQty ? 'selected' : ''}>${q} unit${q > 1 ? 's' : ''}</option>`).join('')
       }
                   </select>
                 </div>
@@ -30522,7 +33530,7 @@ function initPageRouter() {
                   <p class="buybox-delivery-promise" id="detail-delivery-promise">
                     ${isUnavailable
         ? `<span style="color:#dc2626;font-weight:700;">Delivery check unavailable for this item</span>`
-        : `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${savedPin}</span> — <strong>Free Delivery</strong> Guaranteed by Tomorrow`}
+        : `<span style="color:#16a34a;font-weight:800;">✓ Deliver to ${savedPin}</span> — <strong>Delivery</strong> in ${platformSettings.deliveryLeadTime || '2 to 4 Business Days'}`}
                   </p>
                 </div>
 
@@ -30999,27 +34007,73 @@ function initPageRouter() {
 
       const applyBtn = cardItem.querySelector('.offer-card-apply-btn');
 
-      // 1. Direct Apply button click
+      // 1. Direct Apply / Unapply button click
       if (applyBtn) {
         applyBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           const code = applyBtn.dataset.code;
-          if (!code || code === 'NO_COST_EMI') {
+          if (code === 'NO_COST_EMI') {
             showToast('No Cost EMI options available during checkout payment step.', 'info', 3500);
             return;
           }
 
-          try {
-            navigator.clipboard.writeText(code);
-          } catch {}
+          const isCurrentlyApplied = applyBtn.textContent.trim() === 'Applied';
 
-          window._preselectedCouponCode = code;
+          if (isCurrentlyApplied) {
+            // Unapply offer (vice-versa)
+            applyBtn.textContent = 'Apply';
+            applyBtn.classList.remove('is-applied');
+            window._appliedPaymentOffer = null;
+            window._preselectedCouponCode = null;
+            showToast('Offer unapplied', 'info', 3000);
+          } else {
+            // Reset any other offer buttons on this page
+            pageContainer.querySelectorAll('.offer-card-apply-btn').forEach(btn => {
+              btn.textContent = 'Apply';
+              btn.classList.remove('is-applied');
+            });
 
-          applyBtn.textContent = 'Applied ✓';
-          applyBtn.style.color = '#16a34a';
-          applyBtn.disabled = true;
+            // Write 'Applied' in the exact same font colour (no style.color change, no disabled)
+            applyBtn.textContent = 'Applied';
+            applyBtn.classList.add('is-applied');
 
-          showToast(`Offer "${code}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+            const isUpi = offerData?.footer?.toLowerCase().includes('upi') ||
+                          offerData?.partnerName?.toLowerCase().includes('upi') ||
+                          offerData?.partnerName?.toLowerCase().includes('bhim') ||
+                          offerData?.partnerName?.toLowerCase().includes('phonepe') ||
+                          offerData?.partnerName?.toLowerCase().includes('gpay');
+            const isBank = !isUpi;
+
+            let discountValue = 0;
+            let discountType = 'flat';
+            const amtStr = offerData?.amountOff || '';
+            const flatMatch = amtStr.match(/₹\s*([\d,]+)/);
+            const pctMatch = amtStr.match(/(\d+)\s*%/);
+            if (pctMatch) {
+              discountType = 'percent';
+              discountValue = parseInt(pctMatch[1], 10);
+            } else if (flatMatch) {
+              discountType = 'flat';
+              discountValue = parseInt(flatMatch[1].replace(/,/g, ''), 10);
+            }
+
+            window._appliedPaymentOffer = {
+              ...(offerData || {}),
+              method: isBank ? 'Card' : 'UPI',
+              partnerName: offerData?.partnerName || 'Bank',
+              discountValue: discountValue,
+              discountType: discountType,
+              amountOff: offerData?.amountOff || '',
+              code: offerData?.code || code || ''
+            };
+            window._preselectedCouponCode = offerData?.code || code || '';
+
+            try {
+              if (code) navigator.clipboard.writeText(code);
+            } catch {}
+
+            showToast(`Offer "${offerData?.partnerName || code || 'Discount'}" applied! It will be automatically activated at checkout.`, 'success', 4000);
+          }
         });
       }
 
@@ -31502,7 +34556,13 @@ function initPageRouter() {
     isNavigatingHistory = true;
     try {
       const state = event.state;
-      const hash = window.location.hash || '';
+      let hash = window.location.hash || '';
+      if (!hash && window.location.pathname && window.location.pathname !== '/') {
+        const cleanP = window.location.pathname.replace(/^\/+/, '');
+        if (cleanP.startsWith('track/') || cleanP.startsWith('order/') || cleanP.startsWith('product/') || cleanP.startsWith('category/') || cleanP.startsWith('seller') || cleanP.startsWith('orders')) {
+          hash = '#' + cleanP;
+        }
+      }
 
       if (!hash || hash === '#' || hash === '#home' || hash === '#top' || (state && state.type === 'home')) {
         window._showHomeView(false);
@@ -31540,11 +34600,59 @@ function initPageRouter() {
         window._openDedicatedPage('', targetType, '', false);
       } else if (hash.startsWith('#order/') || (state && state.type === 'order-detail')) {
         const ordId = state?.orderId || hash.replace('#order/', '').trim();
-        const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        let ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        if ((!ord.orderItems || ord.orderItems.length === 0) && ordId) {
+          try {
+            const res = await fetch(`${API_BASE}/orders/track/${encodeURIComponent(ordId)}`);
+            const d = await res.json();
+            if (d.success && d.data) {
+              ord = {
+                ...ord,
+                orderId: d.data.orderId || ordId,
+                status: d.data.status,
+                totalPrice: d.data.totalPrice,
+                carrier: d.data.carrier,
+                trackingNo: d.data.awb,
+                shippingAddress: {
+                  name: d.data.customerName,
+                  street: d.data.destinationAddress,
+                  city: d.data.recipientCity,
+                  state: d.data.recipientState,
+                  pincode: ''
+                },
+                orderItems: d.data.items || []
+              };
+            }
+          } catch (e) { }
+        }
         window._openDedicatedOrderInvoicePage(ord, state?.tab || 'details', false);
       } else if (hash.startsWith('#track/') || (state && state.type === 'order-track')) {
         const ordId = state?.orderId || hash.replace('#track/', '').trim();
-        const ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        let ord = (state && state.order) || (window._allUserOrders || []).find(o => o.orderId === ordId || `XM-${o._id.slice(-8).toUpperCase()}` === ordId) || { orderId: ordId };
+        if ((!ord.orderItems || ord.orderItems.length === 0) && ordId) {
+          try {
+            const res = await fetch(`${API_BASE}/orders/track/${encodeURIComponent(ordId)}`);
+            const d = await res.json();
+            if (d.success && d.data) {
+              ord = {
+                ...ord,
+                orderId: d.data.orderId || ordId,
+                status: d.data.status,
+                totalPrice: d.data.totalPrice,
+                carrier: d.data.carrier,
+                trackingNo: d.data.awb,
+                shippingAddress: {
+                  name: d.data.customerName,
+                  street: d.data.destinationAddress,
+                  city: d.data.recipientCity,
+                  state: d.data.recipientState,
+                  pincode: ''
+                },
+                orderItems: d.data.items || []
+              };
+            }
+          } catch (e) { }
+        }
         window._openDedicatedOrderInvoicePage(ord, 'track', false);
       } else if (hash.startsWith('#return/') || hash.startsWith('#replace/') || (state && state.type === 'return-replace')) {
         const ordId = state?.orderId || hash.replace('#return/', '').replace('#replace/', '').trim();
@@ -31571,8 +34679,15 @@ function initPageRouter() {
   });
 
   // Set initial home state if no hash on first page load
+  const hasPathRoute = window.location.pathname && /^\/(track|order|product|category|seller|orders)/i.test(window.location.pathname);
   if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#top') {
-    history.replaceState({ route: 'home', type: 'home' }, '', window.location.pathname);
+    if (hasPathRoute) {
+      setTimeout(() => {
+        window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+      }, 150);
+    } else {
+      history.replaceState({ route: 'home', type: 'home' }, '', window.location.pathname);
+    }
   } else {
     // If user loaded or refreshed on a specific hash, route directly
     setTimeout(() => {
@@ -32431,8 +35546,14 @@ function renderCartPanel() {
     btn.addEventListener('click', () => {
       const item = Store.cart.find(c => c.id === btn.dataset.id);
       if (!item) return;
-      if (btn.dataset.action === 'inc') item.qty = (item.qty || 1) + 1;
-      else {
+      if (btn.dataset.action === 'inc') {
+        const maxQ = (Store.platformSettings && Store.platformSettings.maxOrderQtyPerItem) || 10;
+        if ((item.qty || 1) >= maxQ) {
+          showToast(`Maximum purchase limit is ${maxQ} unit(s) per order.`, 'warning');
+          return;
+        }
+        item.qty = (item.qty || 1) + 1;
+      } else {
         item.qty = (item.qty || 1) - 1;
         if (item.qty <= 0) Store.removeFromCart(btn.dataset.id);
       }
@@ -32450,7 +35571,17 @@ function renderCartPanel() {
   });
 
   const total = Store.cartTotal();
+  const settings = Store.platformSettings || {};
+  const freeThresh = settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 499;
+  const qualifiesFree = total >= freeThresh;
+  const awayAmount = Math.max(0, freeThresh - total);
+
   footer.innerHTML = `
+    <div style="background:${qualifiesFree ? '#f0fdf4' : '#eff6ff'};border:1px solid ${qualifiesFree ? '#bbf7d0' : '#bfdbfe'};padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:12.5px;color:${qualifiesFree ? '#166534' : '#1e40af'};line-height:1.4;">
+      ${qualifiesFree
+        ? `🎉 <strong>Congratulations!</strong> You unlocked <strong>FREE Delivery</strong>.`
+        : `Add <strong>${Currency.format(awayAmount)}</strong> more to get <strong>FREE Express Delivery</strong> (Orders ₹${freeThresh}+)!`}
+    </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:14px;font-size:15px;">
       <span style="font-weight:700;color:#475569;">Subtotal (${Store.cartCount()} items)</span>
       <strong style="color:#0f172a;font-size:17px;font-weight:900;">${Currency.format(total)}</strong>
@@ -32461,6 +35592,16 @@ function renderCartPanel() {
   `;
 
   footer.querySelector('#cart-proceed-checkout-btn')?.addEventListener('click', () => {
+    if (Store.platformSettings && Store.platformSettings.maintenanceMode) {
+      showToast(Store.platformSettings.maintenanceNotice || 'Store checkouts are temporarily paused for system maintenance. Please try again shortly.', 'error', 6000);
+      return;
+    }
+    const minQ = (Store.platformSettings && Store.platformSettings.minOrderQty) || 1;
+    const underMin = Store.cart.find(i => (i.qty || 1) < minQ);
+    if (underMin) {
+      showToast(`Minimum order requirement is ${minQ} unit(s) per item.`, 'warning');
+      return;
+    }
     if (typeof isSellerProductDeactivated === 'function') {
       const deact = Store.cart.find(i => isSellerProductDeactivated(i));
       if (deact) {
@@ -32581,15 +35722,42 @@ function buildLocationModal() {
     return list;
   }
 
+  function updateSelectedAddressCard() {
+    const previewEl = modal.querySelector('#pin-modal-fetched-preview');
+    const titleEl = modal.querySelector('#fetched-location-title');
+    const subTitleEl = modal.querySelector('#fetched-location-subtitle');
+
+    if (previewEl && titleEl && subTitleEl) {
+      const city = currentSelection.city || 'Patna';
+      const state = currentSelection.state || 'Bihar';
+      const pin = currentSelection.pincode || '800001';
+      const title = currentSelection.address && !currentSelection.address.includes(pin)
+        ? currentSelection.address
+        : `${city}, ${state}`;
+      titleEl.textContent = title;
+      subTitleEl.textContent = `PIN: ${pin} • Express Delivery Available`;
+      previewEl.style.display = 'flex';
+    }
+  }
+
   function renderSavedAddresses() {
     if (!addressesList) return;
     const allAddresses = getModalSavedAddresses();
 
-    const displayedAddresses = isExpanded ? allAddresses : allAddresses.slice(0, 1);
+    // When collapsed (!isExpanded), show ONLY the selected address card above.
+    // The second/extra address card is NOT shown.
+    // When expanded (isExpanded), show other saved addresses so the user can switch if desired.
+    const otherAddresses = allAddresses.filter((addr) => {
+      const isSelected = (currentSelection.pincode === addr.pincode) ||
+        (currentSelection.city && currentSelection.city.toLowerCase() === (addr.city || '').toLowerCase());
+      return !isSelected;
+    });
+
+    const displayedAddresses = isExpanded ? otherAddresses : [];
 
     // Toggle button visibility & label
     if (seeAllWrap) {
-      if (allAddresses.length <= 1) {
+      if (otherAddresses.length === 0) {
         seeAllWrap.style.display = 'none';
       } else {
         seeAllWrap.style.display = 'flex';
@@ -32603,15 +35771,18 @@ function buildLocationModal() {
       }
     }
 
+    if (displayedAddresses.length === 0) {
+      addressesList.innerHTML = '';
+      return;
+    }
+
     addressesList.innerHTML = displayedAddresses.map((addr) => {
-      const isSelected = (currentSelection.pincode === addr.pincode) ||
-        (currentSelection.city && currentSelection.city.toLowerCase() === (addr.city || '').toLowerCase());
       const displayTitle = addr.address || `${addr.city}, ${addr.state}`;
 
       return `
-        <div class="pin-modal-addr-card ${isSelected ? 'is-selected' : ''}" data-pin="${addr.pincode}" data-city="${addr.city}" data-state="${addr.state}" data-address="${addr.address || ''}" style="background:${isSelected ? '#f0f9ff' : '#f8fafc'};border:1.5px solid ${isSelected ? '#0284c7' : '#e2e8f0'};border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:all 0.16s ease;animation:pinModalFadeIn 0.2s ease;">
+        <div class="pin-modal-addr-card" data-pin="${addr.pincode}" data-city="${addr.city}" data-state="${addr.state}" data-address="${addr.address || ''}" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:all 0.16s ease;animation:pinModalFadeIn 0.2s ease;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:42px;height:42px;background:${isSelected ? '#dbeafe' : '#e0f2fe'};color:#000000;border-radius:10px;display:grid;place-items:center;flex-shrink:0;">
+            <div style="width:42px;height:42px;background:#e0f2fe;color:#000000;border-radius:10px;display:grid;place-items:center;flex-shrink:0;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             </div>
             <div>
@@ -32620,13 +35791,7 @@ function buildLocationModal() {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            ${isSelected ? `
-              <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 9px;border-radius:20px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Selected
-              </span>
-            ` : `
-              <span style="font-size:12px;font-weight:600;color:#64748b;">Select</span>
-            `}
+            <span style="font-size:12px;font-weight:600;color:#64748b;">Select</span>
           </div>
         </div>
       `;
@@ -32647,6 +35812,8 @@ function buildLocationModal() {
         };
 
         if (pinInput) pinInput.value = pin;
+        isExpanded = false;
+        updateSelectedAddressCard();
         renderSavedAddresses();
 
         if (isMobileOrTablet()) {
@@ -32718,16 +35885,8 @@ function buildLocationModal() {
       el.textContent = displayText;
     });
 
-    const previewEl = modal.querySelector('#pin-modal-fetched-preview');
-    const titleEl = modal.querySelector('#fetched-location-title');
-    const subTitleEl = modal.querySelector('#fetched-location-subtitle');
-
-    if (previewEl && titleEl && subTitleEl) {
-      titleEl.textContent = `${city}, ${state}`;
-      subTitleEl.textContent = `PIN: ${pin} • Express Delivery Available`;
-      previewEl.style.display = 'flex';
-    }
-
+    updateSelectedAddressCard();
+    isExpanded = false;
     renderSavedAddresses();
     showToast(`PIN verified: ${city}, ${state}`, 'success');
   }
@@ -33033,10 +36192,14 @@ function buildLocationModal() {
   window._openLocation = () => {
     if (pinInput) pinInput.value = '';
     isExpanded = false;
+    updateSelectedAddressCard();
     renderSavedAddresses();
     modal._open();
     setTimeout(() => pinInput?.focus(), 120);
   };
+
+  updateSelectedAddressCard();
+  renderSavedAddresses();
 }
 
 /* ============================================================
@@ -33293,13 +36456,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window._refreshHeroSlider = function(keepIndex = false) {
+  window._refreshHeroSlider = function(keepIndex = false, specificSlideIndex = null) {
     heroSlides = Array.from(document.querySelectorAll('#hero-slider-track .hero-slide'));
+    const targetIdx = specificSlideIndex !== null ? specificSlideIndex : (keepIndex ? currentSlide : 0);
     if (indicators) {
       if (heroSlides.length > 1) {
         indicators.style.display = 'flex';
         indicators.innerHTML = heroSlides.map((_, i) =>
-          `<button class="hero-slider-dot${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-label="Go to slide ${i + 1}"></button>`
+          `<button class="hero-slider-dot${i === targetIdx ? ' is-active' : ''}" data-slide="${i}" aria-label="Go to slide ${i + 1}"></button>`
         ).join('');
       } else {
         indicators.style.display = 'none';
@@ -33310,7 +36474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextBtn) nextBtn.style.display = heroSlides.length > 1 ? 'flex' : 'none';
 
     attachSlideClickHandlers();
-    showSlide(keepIndex ? currentSlide : 0);
+    showSlide(targetIdx);
     startSlideShow();
   };
 
@@ -33652,10 +36816,11 @@ document.addEventListener('DOMContentLoaded', () => {
     item.style.cursor = 'pointer';
     item.addEventListener('click', () => {
       const text = item.querySelector('strong')?.textContent?.trim() || '';
+      const tMap = (window._trustData && Object.keys(window._trustData).length) ? window._trustData : trustData;
       if (text.includes('Dedicated Support')) {
         window._openCustomerServicePage?.();
-      } else if (trustData[text]) {
-        const d = trustData[text];
+      } else if (tMap[text] || trustData[text]) {
+        const d = tMap[text] || trustData[text];
         showInfoModal(d.title, d.body);
       } else {
         showInfoModal(text, `<p>Experience premium service with ${text}. Backed by 100% genuine quality assurance.</p>`);
@@ -33833,8 +36998,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window._openLocation?.();
       }
       // Info Modals
-      else if (footerContentMap[href]) {
-        const item = footerContentMap[href];
+      else if ((window._footerContentMap && window._footerContentMap[href]) || footerContentMap[href]) {
+        const item = (window._footerContentMap && window._footerContentMap[href]) || footerContentMap[href];
         showInfoModal(item.title, item.body);
       } else {
         const title = link.textContent.trim();
@@ -34203,19 +37368,30 @@ document.addEventListener('DOMContentLoaded', () => {
   let appliedCoupon = null;
 
   window._fetchStorefrontCMS = fetchStorefrontCMS;
-  async function fetchStorefrontCMS() {
+  async function fetchStorefrontCMS(targetOrder = null) {
     try {
-      const res = await fetch('/api/cms');
+      const res = await fetch(`${API_BASE}/cms?_t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       if (!json.success || !json.data) return;
       cmsData = json.data;
       window._storefrontCMS = cmsData;
+      try { localStorage.setItem('xmart_admin_cms', JSON.stringify(cmsData)); } catch (_) {}
 
       updateTopNavbarOffers();
-      updateHeroSliderFromCMS();
+      updateHeroSliderFromCMS(targetOrder);
       updateHomepageCardsFromCMS(cmsData);
     } catch (err) {
       console.warn('[Storefront CMS]: Could not fetch CMS data:', err.message);
+      try {
+        const local = localStorage.getItem('xmart_admin_cms');
+        if (local) {
+          cmsData = JSON.parse(local);
+          window._storefrontCMS = cmsData;
+          updateTopNavbarOffers();
+          updateHeroSliderFromCMS(targetOrder);
+          updateHomepageCardsFromCMS(cmsData);
+        }
+      } catch (e) { }
     }
   }
 
@@ -34271,7 +37447,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticker = document.getElementById('utility-ticker');
     if (ticker) {
       const slides = [];
-      if (cmsData && cmsData.announcementText && cmsData.announcementActive !== false) {
+      const annList = (cmsData && Array.isArray(cmsData.activeAnnouncements) && cmsData.activeAnnouncements.length > 0)
+        ? cmsData.activeAnnouncements
+        : (cmsData && Array.isArray(cmsData.announcements)
+            ? cmsData.announcements.filter(a => {
+                if (a.active === false) return false;
+                if (a.validUntil && new Date(a.validUntil) < now) return false;
+                if (a.validFrom && new Date(a.validFrom) > now) return false;
+                return true;
+              })
+            : []
+          );
+
+      if (annList.length > 0) {
+        annList.forEach((a) => {
+          const clean = (a.text || '').replace(/^🔥\s*/, '').replace(/🔥/g, '').trim();
+          if (clean) {
+            slides.push(`<div class="ticker-slide ${slides.length === 0 ? 'is-active' : ''}">${clean}</div>`);
+          }
+        });
+      } else if (cmsData && cmsData.announcementText && cmsData.announcementActive !== false) {
         const cleanAnnounce = cmsData.announcementText.replace(/^🔥\s*/, '').replace(/🔥/g, '').trim();
         slides.push(`<div class="ticker-slide is-active">${cleanAnnounce}</div>`);
       }
@@ -34483,10 +37678,17 @@ document.addEventListener('DOMContentLoaded', () => {
   window.openOffersModal = openOffersModal;
   window._openAllOffersModal = openOffersModal;
 
-  function updateHeroSliderFromCMS() {
+  function updateHeroSliderFromCMS(targetOrder = null) {
     if (!cmsData) return;
     const banners = (cmsData.heroBanners || []).filter(b => b.active !== false);
     if (!banners.length) return;
+
+    // Sanitize any malformed image URLs
+    banners.forEach(b => {
+      if (b.image && typeof sanitizeBannerImageUrl === 'function') {
+        b.image = sanitizeBannerImageUrl(b.image);
+      }
+    });
 
     // Sort active banners by sequence order
     banners.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
@@ -34500,6 +37702,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Render ALL dynamic active hero slides showcasing every feature: Tag Badge, Headline, Subtitle, Destination Link & Image
+    let targetSlideIdx = 0;
+    if (typeof targetOrder === 'number') {
+      const fIdx = banners.findIndex(b => Number(b.order) === targetOrder);
+      if (fIdx !== -1) targetSlideIdx = fIdx;
+    }
     track.innerHTML = banners.map((b, i) => {
       const destinationLink = b.link || '#deals';
       const linkLow = destinationLink.toLowerCase();
@@ -34512,8 +37719,8 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'Explore Collection';
 
       return `
-        <div class="hero-slide${i === 0 ? ' is-active' : ''}" data-slide="${i}" data-link="${esc(destinationLink)}" style="display:${i === 0 ? 'block' : 'none'}; cursor:pointer;">
-          <img class="hero-slide-img" src="${esc(b.image)}" alt="${esc(b.title)}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';" />
+        <div class="hero-slide${i === targetSlideIdx ? ' is-active' : ''}" data-slide="${i}" data-link="${esc(destinationLink)}" style="display:${i === targetSlideIdx ? 'block' : 'none'}; cursor:pointer;">
+          <img class="hero-slide-img" src="${esc(b.image)}" alt="${esc(b.title)}" loading="${i === targetSlideIdx ? 'eager' : 'lazy'}" onerror="if(!this.dataset.errored){this.dataset.errored='1';this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';}" />
           <div class="hero-slide-overlay">
             <div class="hero-slide-content">
               <div class="hero-slide-tag" style="background:#090d16 !important; color:#38bdf8 !important; border:1.5px solid rgba(56,189,248,0.55) !important;">
@@ -34760,11 +37967,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Recalculate Step 1 grand total
         const subtotalEl = document.getElementById('chk-step1-subtotal');
         const taxEl = document.getElementById('chk-step1-tax');
+        const shipEl = document.getElementById('chk-step1-shipping');
         const grandTotalEl = document.getElementById('chk-step1-grand-total');
         if (subtotalEl && grandTotalEl) {
           const subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9.]/g, '')) || 0;
-          const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * 0.18);
-          const newTotal = subtotal + tax;
+          const setTaxRate = (Store.platformSettings && Store.platformSettings.standardTaxRate !== undefined) ? Number(Store.platformSettings.standardTaxRate) : 18;
+          const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * (setTaxRate / 100));
+          const freeShip = (Store.platformSettings && Store.platformSettings.freeShippingThreshold !== undefined) ? Number(Store.platformSettings.freeShippingThreshold) : 499;
+          const stdShip = (Store.platformSettings && Store.platformSettings.standardShippingFee !== undefined) ? Number(Store.platformSettings.standardShippingFee) : 49;
+          const shipping = shipEl ? (shipEl.textContent.includes('FREE') ? 0 : (parseFloat(shipEl.textContent.replace(/[^0-9.]/g, '')) || 0)) : (subtotal >= freeShip ? 0 : stdShip);
+          const newTotal = subtotal + tax + shipping;
           grandTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
         }
 
@@ -34893,10 +38105,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update Step 1 grand total display
       const taxEl = document.getElementById('chk-step1-tax');
-      const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * 0.18);
+      const shipEl = document.getElementById('chk-step1-shipping');
+      const setTaxRate = (Store.platformSettings && Store.platformSettings.standardTaxRate !== undefined) ? Number(Store.platformSettings.standardTaxRate) : 18;
+      const tax = taxEl ? (parseFloat(taxEl.textContent.replace(/[^0-9.]/g, '')) || 0) : Math.round(subtotal * (setTaxRate / 100));
+      const freeShip = (Store.platformSettings && Store.platformSettings.freeShippingThreshold !== undefined) ? Number(Store.platformSettings.freeShippingThreshold) : 499;
+      const stdShip = (Store.platformSettings && Store.platformSettings.standardShippingFee !== undefined) ? Number(Store.platformSettings.standardShippingFee) : 49;
+      const shipping = shipEl ? (shipEl.textContent.includes('FREE') ? 0 : (parseFloat(shipEl.textContent.replace(/[^0-9.]/g, '')) || 0)) : (subtotal >= freeShip ? 0 : stdShip);
       const grandTotalEl = document.getElementById('chk-step1-grand-total');
       if (grandTotalEl) {
-        const newTotal = Math.max(0, subtotal + tax - discountAmount);
+        const newTotal = Math.max(0, subtotal + tax + shipping - discountAmount);
         grandTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
       }
 
@@ -34945,6 +38162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('topbar-offers-btn')?.addEventListener('click', openOffersModal);
     fetchStorefrontCMS();
+    fetchStorefrontPlatformSettings();
     initCheckoutCouponHandler();
   }
 

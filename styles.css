@@ -97,6 +97,15 @@ svg {
   stroke-width: 1.75;
 }
 
+svg text,
+.ap-hero-revenue-card svg text {
+  stroke: none !important;
+  stroke-width: 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 #site-header,
 .site-header {
   position: sticky !important;
@@ -579,7 +588,7 @@ svg {
   width: auto;
   max-width: 180px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: none;
   object-fit: contain;
@@ -598,7 +607,7 @@ svg {
   width: auto;
   max-width: 230px;
   border: none;
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: none;
 }
@@ -610,7 +619,7 @@ svg {
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   background: #000000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -621,8 +630,8 @@ svg {
 .brand-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
+  object-fit: contain;
+  border-radius: 0;
   display: block;
 }
 
@@ -1570,7 +1579,7 @@ svg {
     width: auto !important;
     max-width: 130px !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
     box-shadow: none !important;
     object-fit: contain !important;
@@ -1975,7 +1984,7 @@ svg {
     width: auto !important;
     max-width: 180px !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
     box-shadow: none !important;
     object-fit: contain !important;
@@ -2577,7 +2586,7 @@ html.category-dropdown-locked {
     width: auto !important;
     max-width: 130px !important;
     border: none !important;
-    border-radius: 9px !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
     box-shadow: none !important;
   }
@@ -4980,12 +4989,12 @@ body:has(.cart-drawer.is-open) {
 
 .xmodal-header {
   padding: 18px 24px;
-  background: #19324c;
+  background: #022F43;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: none !important;
   flex-shrink: 0;
 }
 
@@ -5008,7 +5017,7 @@ body:has(.cart-drawer.is-open) {
 [class*="modal-close"] {
   background: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border: none !important;
   width: 32px !important;
   height: 32px !important;
   border-radius: 8px !important;
@@ -8594,17 +8603,18 @@ body:has(.cart-drawer.is-open) {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   position: sticky;
   top: 0;
-  background: #fff;
+  background: #022F43 !important;
+  color: #ffffff !important;
   z-index: 2;
 }
 .xmodal-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: #ffffff !important;
   white-space: normal;
   word-break: break-word;
   line-height: 1.35;
@@ -14671,7 +14681,7 @@ body:has(.cart-drawer.is-open) {
   align-items: center;
   gap: 6px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: none !important;
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -15009,9 +15019,9 @@ body:has(.cart-drawer.is-open) {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: #ffffff !important;
-  padding: 18px 24px !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  background: #022F43 !important;
+  padding: 16px 22px !important;
+  border-bottom: none !important;
   position: sticky !important;
   top: 0 !important;
   z-index: 20 !important;
@@ -15019,9 +15029,9 @@ body:has(.cart-drawer.is-open) {
 
 #checkout-interactive-modal .xmodal-header h3 {
   margin: 0 !important;
-  font-size: 18px !important;
+  font-size: 17px !important;
   font-weight: 800 !important;
-  color: #0f172a !important;
+  color: #ffffff !important;
   line-height: 1.3 !important;
   flex: 1 !important;
 }
@@ -15035,9 +15045,9 @@ body:has(.cart-drawer.is-open) {
   height: 34px !important;
   min-width: 34px !important;
   min-height: 34px !important;
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border: 1.5px solid #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 8px !important;
   cursor: pointer !important;
   opacity: 1 !important;
@@ -15045,17 +15055,23 @@ body:has(.cart-drawer.is-open) {
   flex-shrink: 0 !important;
   margin-left: auto !important;
   padding: 0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.18s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  transition: none !important;
   transform: none !important;
 }
 
 #checkout-interactive-modal .xmodal-close-btn:hover,
-#checkout-interactive-modal [class*="close-btn"]:hover {
-  background: #fee2e2 !important;
-  color: #dc2626 !important;
-  border-color: #fca5a5 !important;
-  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+#checkout-interactive-modal [class*="close-btn"]:hover,
+#checkout-interactive-modal .xmodal-close-btn:focus,
+#checkout-interactive-modal [class*="close-btn"]:focus,
+#checkout-interactive-modal .xmodal-close-btn:active,
+#checkout-interactive-modal [class*="close-btn"]:active {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  transform: none !important;
+  outline: none !important;
 }
 
 #checkout-interactive-modal .xmodal-close-btn svg,
@@ -15084,6 +15100,31 @@ body:has(.cart-drawer.is-open) {
   box-shadow: 0 2px 8px rgba(0,0,0,0.03);
   box-sizing: border-box;
   width: 100%;
+}
+
+#chk-place-order-final-btn {
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 12px 10px !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+}
+
+#chk-place-order-final-btn span {
+  white-space: nowrap !important;
+  display: inline-block !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+
+#chk-place-order-final-btn svg {
+  flex-shrink: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .chk-price-row {
@@ -15347,8 +15388,7 @@ body:has(.cart-drawer.is-open) {
     flex-shrink: 0 !important;
   }
 
-  #chk-goto-step2-btn,
-  #chk-place-order-final-btn {
+  #chk-goto-step2-btn {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -15360,10 +15400,29 @@ body:has(.cart-drawer.is-open) {
     padding: 12px 14px !important;
   }
 
-  #chk-goto-step2-btn span,
-  #chk-place-order-final-btn span {
+  #chk-goto-step2-btn span {
     white-space: normal !important;
     text-align: center !important;
+  }
+
+  #chk-place-order-final-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 6px !important;
+    font-size: clamp(11.5px, 2.7vw, 13px) !important;
+    gap: 6px !important;
+  }
+
+  #chk-place-order-final-btn span {
+    white-space: nowrap !important;
+    text-align: center !important;
+    display: inline-block !important;
   }
 }
 
@@ -18028,10 +18087,12 @@ html.admin-mode-preload #admin-panel-overlay {
 /* ── Shell Layout ────────────────────────────────────────────────────────── */
 .ap-shell {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   overflow: hidden;
   background: var(--ap-content-bg);
+  position: relative;
   animation: apShellIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes apShellIn {
@@ -18043,18 +18104,27 @@ html.admin-mode-preload #admin-panel-overlay {
    SIDEBAR — High-Contrast Deep Slate Navigation
    ═══════════════════════════════════════════════════════════════════════════ */
 .ap-sidebar {
-  width: 236px;
-  flex-shrink: 0;
+  width: 260px;
+  position: fixed;
+  top: 0;
+  left: -260px;
+  height: 100%;
+  z-index: 100010;
   background: #090e1a !important;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
-  position: relative;
-  z-index: 20;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 8px 0 40px rgba(0, 0, 0, 0.5);
+  transition: left 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Sidebar open state — slides in over content */
+.ap-shell.ap-sidebar-open .ap-sidebar,
+.ap-sidebar.ap-sidebar-open,
+.ap-sidebar.ap-sidebar-mobile-open {
+  left: 0 !important;
 }
 .ap-sidebar::-webkit-scrollbar { display: none; }
 
@@ -18069,6 +18139,9 @@ html.admin-mode-preload #admin-panel-overlay {
   background: #0f1f3d !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+}
+.ap-sidebar-brand-img {
+  border-radius: 0 !important;
 }
 .ap-logo-icon {
   width: 34px;
@@ -18231,30 +18304,83 @@ html.admin-mode-preload #admin-panel-overlay {
   align-items: center;
   gap: 4px;
 }
-.ap-close-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: rgba(239, 68, 68, 0.15) !important;
-  border: 1px solid rgba(239, 68, 68, 0.35) !important;
-  color: #fca5a5 !important;
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 12.5px; font-weight: 700;
-  cursor: pointer; width: 100%;
-  transition: all 160ms ease;
-  font-family: inherit;
+.ap-close-btn,
+.ap-sidebar .ap-close-btn,
+.ap-sidebar-signout-btn,
+#ap-close-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  box-sizing: border-box !important;
+  background: #ef4444 !important;
+  border: 1px solid #dc2626 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 160ms ease !important;
+  font-family: inherit !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35) !important;
 }
-.ap-close-btn span {
-  color: inherit !important;
+.ap-close-btn span,
+.ap-sidebar .ap-close-btn span,
+.ap-sidebar-signout-btn span,
+#ap-close-btn span {
+  display: inline-block !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  white-space: nowrap !important;
 }
-.ap-close-btn svg { width: 15px; height: 15px; stroke: currentColor !important; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.ap-close-btn:hover {
+.ap-close-btn svg,
+.ap-sidebar .ap-close-btn svg,
+.ap-sidebar-signout-btn svg,
+#ap-close-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+  stroke-width: 2.2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  flex-shrink: 0 !important;
+}
+.ap-close-btn:hover,
+.ap-sidebar .ap-close-btn:hover,
+.ap-sidebar-signout-btn:hover,
+#ap-close-btn:hover {
   background: #dc2626 !important;
+  border-color: #b91c1c !important;
   color: #ffffff !important;
-  border-color: #dc2626 !important;
-  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.5) !important;
+  transform: translateY(-1px) !important;
 }
-.ap-close-btn:hover span {
+.ap-close-btn:hover span,
+.ap-sidebar .ap-close-btn:hover span,
+.ap-sidebar-signout-btn:hover span,
+#ap-close-btn:hover span {
   color: #ffffff !important;
+}
+.ap-close-btn:hover svg,
+.ap-sidebar .ap-close-btn:hover svg,
+.ap-sidebar-signout-btn:hover svg,
+#ap-close-btn:hover svg {
+  stroke: #ffffff !important;
+}
+.ap-close-btn:active,
+.ap-sidebar .ap-close-btn:active,
+.ap-sidebar-signout-btn:active,
+#ap-close-btn:active {
+  background: #b91c1c !important;
+  transform: translateY(0) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -18265,6 +18391,7 @@ html.admin-mode-preload #admin-panel-overlay {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
   min-width: 0;
   background: var(--ap-content-bg);
 }
@@ -18273,8 +18400,8 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-topnav {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 22px;
+  gap: 14px;
+  padding: 0 18px;
   height: 56px;
   background: #0f1f3d;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
@@ -18286,15 +18413,47 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 .ap-topnav * { color: #ffffff; }
 
+/* Topnav Logo — between hamburger and searchbar */
+.ap-topnav-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 38px;
+  width: auto;
+  min-width: 125px;
+  max-width: 135px;
+  background: #000000;
+  border-radius: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 2px 8px;
+}
+.ap-topnav-logo-img {
+  height: 100%;
+  max-height: 32px;
+  width: 100%;
+  max-width: 125px;
+  object-fit: contain;
+  display: block;
+  border-radius: 0 !important;
+  transition: opacity 160ms ease;
+  transform: none;
+}
+.ap-topnav-logo:hover .ap-topnav-logo-img {
+  opacity: 0.88;
+}
+
 .ap-topnav-search {
-  flex: 1;
-  max-width: 420px;
+  flex: 1 1 auto;
+  min-width: 200px;
   position: relative;
 }
 .ap-topnav-search input {
   width: 100%;
+  box-sizing: border-box;
   background: #ffffff !important;
-  border: 1.5px solid #cbd5e1 !important;
+  border: 2.4px solid #FF9400 !important;
   border-radius: 10px;
   padding: 8px 14px 8px 36px;
   font-size: 13px;
@@ -18310,10 +18469,10 @@ html.admin-mode-preload #admin-panel-overlay {
   font-weight: 500;
 }
 .ap-topnav-search input:focus {
-  border-color: #2563eb !important;
+  border-color: #FF9400 !important;
   background: #ffffff !important;
   color: #000000 !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(255, 148, 0, 0.25) !important;
 }
 .ap-topnav-search-icon {
   position: absolute;
@@ -18338,6 +18497,7 @@ html.admin-mode-preload #admin-panel-overlay {
   font-weight: 700;
   color: #34d399 !important;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .ap-topnav-status-dot {
   width: 7.5px; height: 7.5px;
@@ -18352,8 +18512,9 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-topnav-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-left: auto;
+  gap: 14px;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 
 /* TOPNAV PROFILE BUTTON AT TOP RIGHT */
@@ -18491,6 +18652,7 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden !important;
   background: var(--ap-content-bg);
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
@@ -18865,6 +19027,37 @@ html.admin-mode-preload #admin-panel-overlay {
   width: 100%;
   overflow-x: auto;
 }
+
+/* Customer Service Returns & Refunds table — fixed layout so no horizontal scroll */
+.ap-cs-returns-table-wrap {
+  overflow-x: hidden;
+}
+
+.ap-cs-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ap-cs-table th,
+.ap-cs-table td {
+  padding: 10px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Column widths for 6-column RMA table: Order ID, Customer, Items, Settlement, Status, Actions */
+.ap-cs-table th:nth-child(1),
+.ap-cs-table td:nth-child(1) { width: 17%; }
+.ap-cs-table th:nth-child(2),
+.ap-cs-table td:nth-child(2) { width: 16%; }
+.ap-cs-table th:nth-child(3),
+.ap-cs-table td:nth-child(3) { width: 26%; }
+.ap-cs-table th:nth-child(4),
+.ap-cs-table td:nth-child(4) { width: 13%; }
+.ap-cs-table th:nth-child(5),
+.ap-cs-table td:nth-child(5) { width: 14%; }
+.ap-cs-table th:nth-child(6),
+.ap-cs-table td:nth-child(6) { width: 14%; min-width: 120px; }
 .ap-table {
   width: 100%;
   border-collapse: collapse;
@@ -19201,10 +19394,15 @@ html.admin-mode-preload #admin-panel-overlay {
   font-weight: 700 !important;
   padding: 7px 16px !important;
   border-radius: 8px !important;
-  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: none !important;
+  background: transparent !important;
+  color: #ffffff !important;
 }
 .ap-main-dir-tag:hover {
-  background: #f1f5f9;
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 .ap-main-dir-tag.active {
   background: #2563eb !important;
@@ -19226,28 +19424,102 @@ html.admin-mode-preload #admin-panel-overlay {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 7px 14px; border-radius: 8px;
   font-size: 12px; font-weight: 700; font-family: inherit;
-  border: 1px solid var(--ap-card-border);
+  border: 1.5px solid #022F43;
   cursor: pointer; transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
-  background: #ffffff; color: var(--ap-t2);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  background: #022F43 !important; color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2);
 }
+.ap-btn svg { width: 13px; height: 13px; stroke: #ffffff !important; color: #ffffff !important; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ap-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: var(--ap-t1);
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 47, 67, 0.35);
+  transform: translateY(-1px);
+}
+.ap-btn:hover svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+.ap-btn:active,
+.ap-btn.active,
+.ap-btn.clicked,
+.ap-btn.is-active,
+.ap-btn.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+}
+.ap-btn:active svg,
+.ap-btn.active svg,
+.ap-btn.clicked svg,
+.ap-btn.is-active svg,
+.ap-btn.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
 }
 .ap-btn.danger  { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
 .ap-btn.danger:hover { background: #dc2626; color: #ffffff; border-color: #dc2626; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3); }
 .ap-btn.warn    { background: #fffbeb; color: #b45309; border-color: #fde68a; }
 .ap-btn.warn:hover { background: #f59e0b; color: #ffffff; border-color: #f59e0b; }
-.ap-btn.primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; border-color: #1d4ed8; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3); }
-.ap-btn.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.ap-btn.primary { background: #022F43 !important; color: #ffffff !important; border-color: #022F43 !important; box-shadow: 0 2px 6px rgba(2, 47, 67, 0.25); }
+.ap-btn.primary:hover { background: #04435e !important; border-color: #04435e !important; color: #ffffff !important; }
+.ap-btn.primary:active,
+.ap-btn.primary.active,
+.ap-btn.primary.clicked,
+.ap-btn.primary.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+.ap-btn.primary:active svg,
+.ap-btn.primary.active svg,
+.ap-btn.primary.clicked svg,
+.ap-btn.primary.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+#ap-cms-add-announcement-btn,
+#ap-ann-m-save,
+#ap-cms-add-promo-btn,
+#ap-top-add-promo-btn {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+#ap-cms-add-announcement-btn:hover,
+#ap-ann-m-save:hover,
+#ap-cms-add-promo-btn:hover,
+#ap-top-add-promo-btn:hover {
+  background: #e08300 !important;
+  border-color: #e08300 !important;
+  color: #000000 !important;
+}
 .ap-btn.success { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
 .ap-btn.success:hover { background: #059669; color: #ffffff; border-color: #059669; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); }
-.ap-btn.ghost   { background: #ffffff; color: var(--ap-t3); border-color: var(--ap-card-border); }
-.ap-btn.ghost:hover { background: #f8fafc; color: var(--ap-t1); }
+.ap-btn.ghost   { background: #022F43 !important; color: #ffffff !important; border-color: #022F43 !important; box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2); }
+.ap-btn.ghost:hover { background: #04435e !important; border-color: #04435e !important; color: #ffffff !important; }
+.ap-btn.ghost:active,
+.ap-btn.ghost.active,
+.ap-btn.ghost.clicked,
+.ap-btn.ghost.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+.ap-btn.ghost:active svg,
+.ap-btn.ghost.active svg,
+.ap-btn.ghost.clicked svg,
+.ap-btn.ghost.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
 .ap-btn:active  { transform: scale(0.98); }
-.ap-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ap-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ── Modern Modal & Dialogs ──────────────────────────────────────────────── */
@@ -19271,11 +19543,24 @@ html.admin-mode-preload #admin-panel-overlay {
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  width: 100%;
-  max-width: 600px;
+  width: 95% !important;
+  max-width: 880px !important;
   box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 1px 1px rgba(15, 23, 42, 0.08);
   overflow: hidden;
   animation: apModalPop 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Widen Admin popup window dialogs */
+.ap-modal-backdrop .ap-modal-dialog {
+  width: 95% !important;
+  max-width: 880px !important;
+}
+
+/* Maintain compact sizing specifically for confirmation popups */
+.ap-modal-backdrop .ap-modal-dialog.ap-modal-sm,
+.ap-modal-backdrop .ap-modal-dialog[style*="max-width:440px"],
+.ap-modal-backdrop .ap-modal-dialog[style*="max-width: 440px"] {
+  max-width: 440px !important;
 }
 @keyframes apModalPop {
   from { opacity: 0; transform: scale(0.96) translateY(12px); }
@@ -19283,34 +19568,84 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 .ap-modal-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f8fafc;
+  background: #022F43 !important;
+  color: #ffffff !important;
 }
 .ap-modal-title {
   font-size: 16px;
   font-weight: 800;
-  color: #0f172a;
+  color: #ffffff !important;
   margin: 0;
   letter-spacing: -0.01em;
 }
-.ap-modal-close-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  font-size: 16px;
-  cursor: pointer;
-  color: #64748b;
-  border-radius: 8px;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 140ms ease;
+/* Universal Admin Modal Header Theme & Sizing */
+.ap-modal-header,
+.ap-modal-dialog > .ap-modal-header,
+.ap-modal-backdrop .ap-modal-header {
+  background: #022F43 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
-.ap-modal-close-btn:hover { background: #ffffff; color: #64748b; border-color: #cbd5e1; }
+
+.ap-modal-header h3,
+.ap-modal-header .ap-modal-title,
+.ap-modal-title {
+  color: #ffffff !important;
+}
+
+.ap-modal-header p,
+.ap-modal-header div > div {
+  color: #cbd5e1 !important;
+}
+
+/* Universal Admin Modal Close Buttons */
+.ap-modal-close-btn,
+.ap-modal-header button,
+#ap-quad-modal-close,
+#ap-hero-m-close,
+#ap-quick-m-close,
+#ap-banner-modal-close,
+#ap-promo-modal-close,
+#ap-credit-note-close-btn,
+#ap-advice-close-btn,
+#ap-disburse-close-btn,
+#ap-modal-close-btn {
+  background: #022F43 !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  transition: all 140ms ease !important;
+  opacity: 1 !important;
+}
+
+.ap-modal-close-btn:hover,
+.ap-modal-header button:hover,
+#ap-quad-modal-close:hover,
+#ap-hero-m-close:hover,
+#ap-quick-m-close:hover,
+#ap-banner-modal-close:hover,
+#ap-promo-modal-close:hover,
+#ap-credit-note-close-btn:hover,
+#ap-advice-close-btn:hover,
+#ap-disburse-close-btn:hover,
+#ap-modal-close-btn:hover {
+  background: #04435e !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
 .ap-modal-content {
   padding: 22px;
   max-height: 74vh;
@@ -19340,6 +19675,15 @@ html.admin-mode-preload #admin-panel-overlay {
   border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 .ap-form-group input::placeholder, .ap-form-group textarea::placeholder { color: #94a3b8; }
+.promo-store-picker-box input,
+.promo-store-picker-box input:focus,
+#promo-store-search-field,
+#promo-store-search-field:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 .ap-form-submit {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; border: none;
   border-radius: 9px; padding: 10px 22px;
@@ -20098,9 +20442,9 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 
 .ap-preset-pill {
-  background: #f1f5f9 !important;
-  border: 1.5px solid #cbd5e1 !important;
-  color: #000000 !important;
+  background: #022F43 !important;
+  border: 1.5px solid #022F43 !important;
+  color: #ffffff !important;
   font-size: 11.5px;
   font-weight: 700 !important;
   padding: 4px 10px;
@@ -20130,32 +20474,18 @@ html.admin-mode-preload #admin-panel-overlay {
 
 .chk-method-offer-badge {
   font-size: 11px;
-  font-weight: 800;
-  color: #15803d;
-  background: #dcfce7;
-  padding: 3px 8px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid #86efac;
+  font-weight: 700;
+  color: #2563eb;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  display: block;
+  border: none;
+  margin: 2px 0 1px 0;
 }
 
-.chk-method-offer-badge.is-selected {
-  background: #15803d !important;
-  color: #ffffff !important;
-  border-color: #166534 !important;
-}
-
-/* ── Checkout Payment Options Cyclic Offers Ticker ── */
-.chk-payment-ticker-container {
-  position: relative;
-  overflow: hidden;
-  margin-top: 5px;
-  min-height: 44px;
-}
-
-.chk-payment-ticker-slide {
+/* ── Checkout Payment Options Cyclic Offer Ticker ── */
+.chk-pay-ticker-slide {
   position: absolute;
   top: 0;
   left: 0;
@@ -20164,19 +20494,48 @@ html.admin-mode-preload #admin-panel-overlay {
   transform: translateY(10px);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
   pointer-events: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.chk-payment-ticker-slide.is-active {
+.chk-pay-ticker-slide.is-active {
   position: relative;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
 
-.chk-payment-ticker-slide.is-exiting {
+.chk-pay-ticker-slide.is-exiting {
   position: absolute;
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.chk-pay-ticker-slide.is-selected-offer {
+  color: #16a34a !important;
+  font-weight: 800;
+}
+
+.chk-pay-ticker-slide:hover {
+  text-decoration: underline;
+}
+
+/* Savings row in checkout price card */
+.chk-savings-row {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 4px 0 !important;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #15803d;
 }
 
 .chk-method-offer-desc {
@@ -21441,7 +21800,7 @@ html.admin-mode-preload #admin-panel-overlay {
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
   width: 100%;
   overflow: hidden;
-  border: 1px solid #cbd5e1;
+  border: none !important;
   animation: apModalScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -21896,17 +22255,17 @@ html.admin-mode-preload #admin-panel-overlay {
   gap: 2px;
 }
 .ap-hero-summary-lbl {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #64748b;
 }
 .ap-hero-summary-val {
-  font-size: 15px;
+  font-size: 16.5px;
   font-weight: 800;
   color: #0f172a;
 }
 .ap-hero-summary-sub {
-  font-size: 10.5px;
+  font-size: 12px;
   color: #94a3b8;
 }
 
@@ -21991,20 +22350,41 @@ html.admin-mode-preload #admin-panel-overlay {
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1.5px solid #022F43;
+  background: #022F43 !important;
+  color: #ffffff !important;
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 140ms ease;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2);
+}
+.ap-ops-btn svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
 }
 .ap-ops-btn:hover {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
+  background: #04435e !important;
+  color: #ffffff !important;
+  border-color: #04435e !important;
+}
+.ap-ops-btn:active,
+.ap-ops-btn.active,
+.ap-ops-btn.clicked,
+.ap-ops-btn.ap-btn-clicked {
+  background: #FF9400 !important;
+  color: #000000 !important;
+  border-color: #FF9400 !important;
+  font-weight: 800 !important;
+}
+.ap-ops-btn:active svg,
+.ap-ops-btn.active svg,
+.ap-ops-btn.clicked svg,
+.ap-ops-btn.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
 }
 
 /* Modern 4-Metric Grid */
@@ -22049,14 +22429,14 @@ html.admin-mode-preload #admin-panel-overlay {
   stroke-width: 2.2;
 }
 .ap-metric-tile-lbl {
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .ap-metric-tile-val {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.1;
@@ -22067,7 +22447,7 @@ html.admin-mode-preload #admin-panel-overlay {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #64748b;
 }
 
@@ -22372,18 +22752,129 @@ html.admin-mode-preload #admin-panel-overlay {
    MOBILE NAVIGATION DRAWER & UNIVERSAL RESPONSIVE CARD ENGINE
    ═════════════════════════════════════════════════════════════ */
 
-/* Desktop defaults: mobile hamburger and drawer elements hidden */
+/* -- Desktop hamburger: always visible, toggles sidebar -------- */
 .ap-mobile-menu-btn {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 160ms ease, transform 160ms ease;
+  outline: none;
 }
-.ap-mobile-brand {
-  display: none;
+.ap-mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.ap-mobile-menu-btn:active {
+  transform: scale(0.93);
+}
+.ap-mobile-menu-btn svg {
+  width: 19px;
+  height: 19px;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  fill: none;
+}
+/* Topnav brand logo: visible on both desktop & mobile */
+.ap-topnav-brand,
+.ap-mobile-brand,
+.ap-topnav-logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  height: 38px !important;
+  width: auto !important;
+  min-width: 125px !important;
+  max-width: 135px !important;
+  background: #000000 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 2px 8px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), border-color 160ms ease !important;
+}
+.ap-topnav-brand:hover,
+.ap-mobile-brand:hover,
+.ap-topnav-logo:hover {
+  transform: scale(1.02) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+.ap-brand-logo-img,
+.ap-topnav-logo-img {
+  height: 100% !important;
+  max-height: 32px !important;
+  width: 100% !important;
+  max-width: 125px !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
 }
 .ap-mobile-sidebar-close {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 160ms ease;
 }
+.ap-mobile-sidebar-close:hover,
+.ap-mobile-sidebar-close:active,
+.ap-mobile-sidebar-close:focus {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.ap-mobile-sidebar-close svg {
+  width: 15px;
+  height: 15px;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+  fill: none;
+}
+/* -- Sidebar backdrop: works on both desktop and mobile ------ */
 .ap-sidebar-backdrop {
   display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 20, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100009;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+.ap-shell.ap-sidebar-open .ap-sidebar-backdrop,
+.ap-sidebar-backdrop.ap-backdrop-active {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* -- Topnav: always 100% wide, never shifts ------------------- */
+.ap-topnav {
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 /* ── Tablet & Mobile Master Media Query (<= 900px) ──────────────── */
@@ -22402,29 +22893,7 @@ html.admin-mode-preload #admin-panel-overlay {
     display: flex !important;
   }
 
-  /* Off-Canvas Slide-In Navigation Drawer */
-  .ap-sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 290px !important;
-    max-width: 86vw !important;
-    height: 100% !important;
-    z-index: 999999 !important;
-    transform: translateX(-100%) !important;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    box-shadow: 16px 0 40px rgba(0, 0, 0, 0.6) !important;
-    background: #090e1a !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  .ap-sidebar.ap-sidebar-mobile-open {
-    transform: translateX(0) !important;
-  }
+  /* Mobile sidebar: uses same left:-260px->0 overlay as desktop */
 
   /* Make all text labels and sections fully visible inside the mobile drawer */
   .ap-sidebar .ap-nav-item span {
@@ -22459,24 +22928,7 @@ html.admin-mode-preload #admin-panel-overlay {
     width: 100% !important;
   }
 
-  /* Mobile Drawer Backdrop */
-  .ap-sidebar-backdrop {
-    display: none;
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(15, 23, 42, 0.7) !important;
-    backdrop-filter: blur(5px) !important;
-    -webkit-backdrop-filter: blur(5px) !important;
-    z-index: 999998 !important;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease !important;
-  }
-  .ap-sidebar-backdrop.ap-backdrop-active {
-    display: block !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
+  /* Mobile Drawer Backdrop: handled globally */
 
   /* Mobile Drawer Close Button */
   .ap-mobile-sidebar-close {
@@ -22493,9 +22945,13 @@ html.admin-mode-preload #admin-panel-overlay {
     margin-left: auto;
     transition: all 160ms ease;
   }
-  .ap-mobile-sidebar-close:hover {
-    background: rgba(239, 68, 68, 0.3) !important;
-    border-color: #ef4444 !important;
+  .ap-mobile-sidebar-close:hover,
+  .ap-mobile-sidebar-close:active,
+  .ap-mobile-sidebar-close:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
   .ap-mobile-sidebar-close svg {
     width: 16px;
@@ -22571,7 +23027,7 @@ html.admin-mode-preload #admin-panel-overlay {
     text-decoration: none !important;
     background: #000000 !important;
     border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
-    border-radius: 12px !important;
+    border-radius: 0 !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
@@ -22591,7 +23047,7 @@ html.admin-mode-preload #admin-panel-overlay {
     max-width: 100% !important;
     object-fit: contain !important;
     display: block !important;
-    border-radius: 9px !important;
+    border-radius: 0 !important;
     cursor: pointer !important;
   }
   .ap-sidebar-brand-img {
@@ -22600,7 +23056,7 @@ html.admin-mode-preload #admin-panel-overlay {
     max-width: 150px !important;
     object-fit: contain !important;
     display: block !important;
-    border-radius: 10px !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
     cursor: pointer !important;
     transition: transform 160ms ease !important;
@@ -24074,12 +24530,16 @@ button[type="submit"],
 #card-pay-btn,
 .addr-select-btn,
 #wallet-add-btn,
-#addr-toggle-add-btn {
-  background-color: #FF9700 !important;
-  background: #FF9700 !important;
+#addr-toggle-add-btn,
+#chk-goto-step2-btn,
+#chk-goto-step3-btn,
+#chk-use-selected-addr-btn,
+#chk-place-order-final-btn {
+  background-color: #FF9400 !important;
+  background: #FF9400 !important;
   color: #000000 !important;
-  border-color: #FF9700 !important;
-  box-shadow: 0 4px 12px rgba(255, 151, 0, 0.28) !important;
+  border-color: #FF9400 !important;
+  box-shadow: 0 4px 12px rgba(255, 148, 0, 0.28) !important;
 }
 
 .add-to-cart-btn *,
@@ -24106,35 +24566,53 @@ button[type="submit"] *,
 #card-pay-btn *,
 .addr-select-btn *,
 #wallet-add-btn *,
-#addr-toggle-add-btn * {
+#addr-toggle-add-btn *,
+#chk-goto-step2-btn *,
+#chk-goto-step3-btn *,
+#chk-use-selected-addr-btn *,
+#chk-place-order-final-btn * {
   color: #000000 !important;
   stroke: #000000 !important;
 }
 
-/* Offer Card Apply button clean styling (No orange background) */
+/* Offer Card Apply button clean styling (No blue background, no border, no hover underline) */
 .offer-card-apply-btn {
-  background-color: #eff6ff !important;
-  background: #eff6ff !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #1d4ed8 !important;
-  border: 1px solid #bfdbfe !important;
+  border: none !important;
+  outline: none !important;
   font-weight: 800 !important;
-  padding: 5px 14px !important;
-  border-radius: 6px !important;
-  font-size: 12.5px !important;
+  padding: 4px 6px !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
   box-shadow: none !important;
   cursor: pointer !important;
+  text-decoration: none !important;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 .offer-card-apply-btn:hover {
-  background-color: #dbeafe !important;
-  background: #dbeafe !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #1e40af !important;
-  border-color: #93c5fd !important;
+  border: none !important;
+  text-decoration: none !important;
+  opacity: 0.85;
+}
+
+.offer-card-apply-btn.is-applied {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #1d4ed8 !important;
+  border: none !important;
+  text-decoration: none !important;
 }
 
 .offer-card-apply-btn * {
-  color: #1d4ed8 !important;
-  stroke: #1d4ed8 !important;
+  color: inherit !important;
+  stroke: currentColor !important;
+  text-decoration: none !important;
 }
 
 /* Restore clean white background for View Details button */
@@ -24410,17 +24888,17 @@ button[type="submit"] *,
   position: absolute !important;
   top: 6px !important;
   left: 6px !important;
-  background: #fee2e2 !important;
-  color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
   font-size: 10px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.6px !important;
-  padding: 3px 8px !important;
-  border-radius: 3px !important;
+  padding: 3px 9px !important;
+  border-radius: 9999px !important;
   line-height: 1.2 !important;
-  border: 1.5px solid #ef4444 !important;
-  box-shadow: none !important;
+  border: 1px solid #b91c1c !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
   z-index: 4 !important;
   pointer-events: none !important;
   user-select: none !important;
@@ -24608,14 +25086,14 @@ button[type="submit"] *,
 }
 
 .fk-assured-tag {
-  background: #eef6ff !important;
-  color: #0878f9 !important;
-  border: 1px solid #bfdbfe !important;
+  background: #0878f9 !important;
+  color: #ffffff !important;
+  border: 1px solid #0878f9 !important;
   font-size: 11px !important;
   font-weight: 800 !important;
   font-style: italic !important;
-  padding: 2px 7px !important;
-  border-radius: 3px !important;
+  padding: 2px 9px !important;
+  border-radius: 9999px !important;
   letter-spacing: 0.4px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -24783,9 +25261,11 @@ button[type="submit"] *,
     top: 5px !important;
     left: 4px !important;
     font-size: 8.5px !important;
-    padding: 2px 6px !important;
+    padding: 2px 7px !important;
     letter-spacing: 0.4px !important;
-    border-radius: 2px !important;
+    border-radius: 9999px !important;
+    color: #ffffff !important;
+    background: #dc2626 !important;
   }
 
   .fk-wishlist-heart-btn {
@@ -24859,6 +25339,10 @@ button[type="submit"] *,
 
   .fk-rating-pop-score {
     font-size: 26px !important;
+  }
+
+  .fk-rating-pop-score .fk-star-icon {
+    font-size: 21px !important;
   }
 
   .fk-rating-pop-counts {
@@ -25042,6 +25526,19 @@ button[type="submit"] *,
   align-items: center !important;
   justify-content: center !important;
   gap: 4px !important;
+}
+
+.fk-rating-pop-score .fk-star-icon {
+  color: #f59e0b !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
+  display: inline-block !important;
+}
+
+.fk-pop-star-label .fk-star-icon {
+  color: #f59e0b !important;
+  font-size: 11.5px !important;
+  display: inline-block !important;
 }
 
 .fk-rating-pop-counts {
@@ -25978,12 +26475,1842 @@ button[type="submit"] *,
   }
 }
 
+/* ── Card Apply Button & Order Detail Card Badge ── */
+.apply-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none;
+}
+
+.apply-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.apply-btn:active {
+  transform: translateY(0);
+}
+
+.apply-btn.applied {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
+}
+
+.card-applied-badge {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1.5px solid #93c5fd !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 1px 4px rgba(29, 78, 216, 0.1) !important;
+}
+
+/* Hero Slider fallback: ensure first slide is visible immediately */
+.hero-slider-track .hero-slide.is-active,
+.hero-slider-track .hero-slide:first-child:not([style*="display: none"]) {
+  display: block;
+}
+
+/* ── Checkout Step 1 Item Quantity Controls ── */
+.checkout-item-card .chk-item-content {
+  text-align: left !important;
+  flex: 1 1 auto !important;
+}
+
+.chk-qty-btn {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.chk-qty-btn:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+}
+
+.chk-qty-btn:active:not(:disabled) {
+  background: #e2e8f0 !important;
+  transform: scale(0.92) !important;
+}
+
+.chk-qty-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.btn-chk-remove-item:hover {
+  text-decoration: underline !important;
+  opacity: 0.8 !important;
+}
+
+/* ──────────────────────────────────────────────────────────
+   ADMIN DASHBOARD: DAYWISE / MONTHWISE / YEARWISE TIMEFRAME
+   ────────────────────────────────────────────────────────── */
+.ap-timeframe-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.ap-timeframe-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ap-timeframe-modes {
+  display: inline-flex;
+  background: #022F43;
+  padding: 4px;
+  border-radius: 9px;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.25);
+}
+
+.ap-timeframe-mode-btn {
+  border: 1.5px solid transparent;
+  background: #022F43 !important;
+  color: #ffffff !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+
+.ap-timeframe-mode-btn svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  flex-shrink: 0;
+  stroke-width: 2.2px;
+  transition: transform 0.15s ease;
+}
+
+.ap-timeframe-mode-btn:hover:not(.active):not(.ap-btn-clicked) {
+  background: #04435e !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-mode-btn:hover svg {
+  transform: scale(1.08);
+}
+
+.ap-timeframe-mode-btn.active,
+.ap-timeframe-mode-btn:active,
+.ap-timeframe-mode-btn.clicked,
+.ap-timeframe-mode-btn.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(255, 148, 0, 0.35) !important;
+}
+
+.ap-timeframe-mode-btn.active svg,
+.ap-timeframe-mode-btn:active svg,
+.ap-timeframe-mode-btn.clicked svg,
+.ap-timeframe-mode-btn.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+.ap-timeframe-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ap-timeframe-pill {
+  border: 1.5px solid #022F43;
+  background: #022F43 !important;
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.16s ease;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2);
+}
+
+.ap-timeframe-pill svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: none;
+}
+
+.ap-timeframe-pill:hover:not(.active):not(.ap-btn-clicked) {
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-pill:hover:not(.active):not(.ap-btn-clicked) svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-pill.active,
+.ap-timeframe-pill:active,
+.ap-timeframe-pill.clicked,
+.ap-timeframe-pill.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+}
+
+.ap-timeframe-pill.active svg,
+.ap-timeframe-pill:active svg,
+.ap-timeframe-pill.clicked svg,
+.ap-timeframe-pill.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+.ap-timeframe-pill.highlight-prev {
+  border-color: #022F43;
+  background: #022F43 !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-pill.highlight-prev svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-pill.highlight-prev:hover:not(.active):not(.ap-btn-clicked) {
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
+}
+
+.ap-timeframe-pill.highlight-prev.active,
+.ap-timeframe-pill.highlight-prev:active,
+.ap-timeframe-pill.highlight-prev.clicked,
+.ap-timeframe-pill.highlight-prev.ap-btn-clicked {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+}
+
+.ap-timeframe-pill.highlight-prev.active svg,
+.ap-timeframe-pill.highlight-prev:active svg,
+.ap-timeframe-pill.highlight-prev.clicked svg,
+.ap-timeframe-pill.highlight-prev.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+/* Dashboard Header Quick Actions, Controls & Table Buttons: #022F43 default, #FF9400 active */
+.ap-modern-quick-actions .ap-btn,
+.ap-modern-quick-actions button,
+#ap-custom-date-apply,
+#ap-dash-view-all-orders,
+#ap-timeframe-reset-btn,
+#ap-toggle-breakdown-btn,
+.ap-dash-inspect-order,
+.ap-ops-btn,
+.ap-inspect-period-btn,
+.ap-dash-btn,
+.ap-export-btn,
+.ap-dash-inner button {
+  background: #022F43 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #022F43 !important;
+  transition: all 0.16s ease !important;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2) !important;
+}
+
+.ap-modern-quick-actions .ap-btn svg,
+.ap-modern-quick-actions button svg,
+#ap-custom-date-apply svg,
+#ap-dash-view-all-orders svg,
+#ap-timeframe-reset-btn svg,
+#ap-toggle-breakdown-btn svg,
+.ap-dash-inspect-order svg,
+.ap-ops-btn svg,
+.ap-inspect-period-btn svg,
+.ap-dash-btn svg,
+.ap-export-btn svg,
+.ap-dash-inner button svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: none;
+}
+
+.ap-modern-quick-actions .ap-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-modern-quick-actions button:hover:not(.active):not(.ap-btn-clicked),
+#ap-custom-date-apply:hover:not(.active):not(.ap-btn-clicked),
+#ap-dash-view-all-orders:hover:not(.active):not(.ap-btn-clicked),
+#ap-timeframe-reset-btn:hover:not(.active):not(.ap-btn-clicked),
+#ap-toggle-breakdown-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-dash-inspect-order:hover:not(.active):not(.ap-btn-clicked),
+.ap-ops-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-inspect-period-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-dash-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-export-btn:hover:not(.active):not(.ap-btn-clicked),
+.ap-dash-inner button:hover:not(.active):not(.ap-btn-clicked) {
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
+}
+
+.ap-modern-quick-actions .ap-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-modern-quick-actions button:hover:not(.active):not(.ap-btn-clicked) svg,
+#ap-custom-date-apply:hover:not(.active):not(.ap-btn-clicked) svg,
+#ap-dash-view-all-orders:hover:not(.active):not(.ap-btn-clicked) svg,
+#ap-timeframe-reset-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+#ap-toggle-breakdown-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-dash-inspect-order:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-ops-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-inspect-period-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-dash-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-export-btn:hover:not(.active):not(.ap-btn-clicked) svg,
+.ap-dash-inner button:hover:not(.active):not(.ap-btn-clicked) svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.ap-modern-quick-actions .ap-btn.active,
+.ap-modern-quick-actions .ap-btn:active,
+.ap-modern-quick-actions .ap-btn.clicked,
+.ap-modern-quick-actions .ap-btn.ap-btn-clicked,
+.ap-modern-quick-actions button.active,
+.ap-modern-quick-actions button:active,
+.ap-modern-quick-actions button.ap-btn-clicked,
+#ap-custom-date-apply.active,
+#ap-custom-date-apply:active,
+#ap-custom-date-apply.ap-btn-clicked,
+#ap-dash-view-all-orders.active,
+#ap-dash-view-all-orders:active,
+#ap-dash-view-all-orders.ap-btn-clicked,
+#ap-timeframe-reset-btn.active,
+#ap-timeframe-reset-btn:active,
+#ap-timeframe-reset-btn.ap-btn-clicked,
+#ap-toggle-breakdown-btn.active,
+#ap-toggle-breakdown-btn:active,
+#ap-toggle-breakdown-btn.ap-btn-clicked,
+.ap-dash-inspect-order.active,
+.ap-dash-inspect-order:active,
+.ap-dash-inspect-order.ap-btn-clicked,
+.ap-ops-btn.active,
+.ap-ops-btn:active,
+.ap-ops-btn.clicked,
+.ap-ops-btn.ap-btn-clicked,
+.ap-inspect-period-btn.active,
+.ap-inspect-period-btn:active,
+.ap-inspect-period-btn.ap-btn-clicked,
+.ap-dash-btn.active,
+.ap-dash-btn:active,
+.ap-dash-btn.ap-btn-clicked,
+.ap-export-btn.active,
+.ap-export-btn:active,
+.ap-export-btn.ap-btn-clicked,
+.ap-dash-inner button.active,
+.ap-dash-inner button:active,
+.ap-dash-inner button.clicked,
+.ap-dash-inner button.ap-btn-clicked {
+  background: #FF9400 !important;
+  color: #000000 !important;
+  border-color: #FF9400 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+}
+
+.ap-modern-quick-actions .ap-btn.active svg,
+.ap-modern-quick-actions .ap-btn:active svg,
+.ap-modern-quick-actions .ap-btn.clicked svg,
+.ap-modern-quick-actions .ap-btn.ap-btn-clicked svg,
+.ap-modern-quick-actions button.active svg,
+.ap-modern-quick-actions button:active svg,
+.ap-modern-quick-actions button.ap-btn-clicked svg,
+#ap-custom-date-apply.active svg,
+#ap-custom-date-apply:active svg,
+#ap-custom-date-apply.ap-btn-clicked svg,
+#ap-dash-view-all-orders.active svg,
+#ap-dash-view-all-orders:active svg,
+#ap-dash-view-all-orders.ap-btn-clicked svg,
+#ap-timeframe-reset-btn.active svg,
+#ap-timeframe-reset-btn:active svg,
+#ap-timeframe-reset-btn.ap-btn-clicked svg,
+#ap-toggle-breakdown-btn.active svg,
+#ap-toggle-breakdown-btn:active svg,
+#ap-toggle-breakdown-btn.ap-btn-clicked svg,
+.ap-dash-inspect-order.active svg,
+.ap-dash-inspect-order:active svg,
+.ap-dash-inspect-order.ap-btn-clicked svg,
+.ap-ops-btn.active svg,
+.ap-ops-btn:active svg,
+.ap-ops-btn.clicked svg,
+.ap-ops-btn.ap-btn-clicked svg,
+.ap-inspect-period-btn.active svg,
+.ap-inspect-period-btn:active svg,
+.ap-inspect-period-btn.ap-btn-clicked svg,
+.ap-dash-btn.active svg,
+.ap-dash-btn:active svg,
+.ap-dash-btn.ap-btn-clicked svg,
+.ap-export-btn.active svg,
+.ap-export-btn:active svg,
+.ap-export-btn.ap-btn-clicked svg,
+.ap-dash-inner button.active svg,
+.ap-dash-inner button:active svg,
+.ap-dash-inner button.clicked svg,
+.ap-dash-inner button.ap-btn-clicked svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+.ap-timeframe-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.ap-timeframe-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.ap-timeframe-banner-badge {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.ap-custom-date-box {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+
+.ap-custom-date-box.is-open {
+  display: flex;
+}
+
+.ap-custom-date-input {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #0f172a;
+  outline: none;
+}
+
+.ap-growth-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ap-growth-badge.positive {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.ap-growth-badge.negative {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.ap-growth-badge.neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Breakdown Ledger Card & Table */
+.ap-breakdown-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin-top: 18px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.ap-breakdown-header {
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ap-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.ap-breakdown-table th {
+  background: #ffffff;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ap-breakdown-table td {
+  padding: 10px 16px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.ap-breakdown-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* ── RMA DOSSIER & REVERSE LOGISTICS MODAL ──────────────────────── */
+.ap-rma-dossier-dialog {
+  max-width: 960px !important;
+  width: 95vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: apModalFadeIn 0.2s ease-out;
+}
+
+.ap-rma-dossier-body {
+  padding: 24px;
+  overflow-y: auto;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Stepper */
+.ap-rma-stepper-wrap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.ap-rma-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.ap-rma-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  flex: 1;
+}
+
+.ap-rma-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+}
+
+.ap-rma-step-item.is-done .ap-rma-step-circle {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.ap-rma-step-item.is-active .ap-rma-step-circle {
+  background: #004ac6;
+  border-color: #004ac6;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 74, 198, 0.2);
+}
+
+.ap-rma-step-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.ap-rma-step-item.is-active .ap-rma-step-lbl,
+.ap-rma-step-item.is-done .ap-rma-step-lbl {
+  color: #0f172a;
+}
+
+.ap-rma-step-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.ap-rma-step-line {
+  position: absolute;
+  top: 16px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 1;
+}
+
+/* Two-column layout */
+.ap-rma-dossier-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ap-rma-dossier-grid > div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1080px) {
+  .ap-rma-dossier-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ap-rma-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.ap-rma-card-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ap-rma-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.ap-rma-photo-card {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #cbd5e1;
+  background: #000000;
+  aspect-ratio: 1;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ap-rma-photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  border-color: #004ac6;
+}
+
+.ap-rma-photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ap-rma-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 4px;
+}
+
+.ap-rma-photo-card:hover .ap-rma-photo-overlay {
+  opacity: 1;
+}
+
+/* Photo Lightbox Modal */
+.ap-photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: apModalFadeIn 0.15s ease-out;
+}
+
+.ap-photo-lightbox-inner {
+  position: relative;
+  max-width: 90vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ap-photo-lightbox-inner img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ap-photo-lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.ap-photo-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ── FULL DEDICATED RMA DOSSIER WINDOW (NOT A POPUP) ─────────────── */
+.ap-rma-full-window {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: apFadeIn 0.2s ease-out;
+  padding-bottom: 40px;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+.ap-rma-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ap-rma-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-weight: 800;
+  font-size: 13px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+.ap-rma-back-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #004ac6;
+  transform: translateX(-2px);
+}
+
+.ap-rma-hero-banner {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ap-rma-info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.ap-rma-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* ── RMA OPERATIONS WORKFLOW CONSOLE TABS & CONTROLS ── */
+.ap-console-tabs-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.ap-console-tab-btn {
+  padding: 7px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ap-console-tab-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ap-console-tab-btn:hover {
+  color: #0f172a;
+}
+
+.ap-console-tab-btn.is-active {
+  background: #ffffff;
+  color: #004ac6;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ap-console-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: apFadeIn 0.15s ease-out;
+}
+
+.ap-calc-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.ap-timeline-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 14px;
+}
+
+.ap-timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 22px;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.ap-timeline-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+/* ── Standardized Action Buttons in Returns & Refunds Table (Image 3) ── */
+.ap-table-actions-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+  box-sizing: border-box !important;
+}
+
+.ap-table-actions-stack .ap-btn {
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+  box-sizing: border-box !important;
+  height: 29px !important;
+  padding: 0 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  border-radius: 6px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+/* -- Clickable Table Rows ------------------------------------------------- */
+.ap-table tbody tr.ap-tr-clickable {
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.ap-table tbody tr.ap-tr-clickable:hover {
+  background: #fff8ee !important;
+  box-shadow: inset 3px 0 0 #FF9400;
+}
+.ap-table tbody tr.ap-tr-clickable:active {
+  background: #fff0d6 !important;
+}
+
+/* -- Product Catalog Table Cell Layout ------------------------------------ */
+.ap-cell-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ap-prod-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+.ap-prod-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ap-cell-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  line-height: 1.3;
+}
+.ap-cell-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CMS & Storefront Control Buttons (#FF9400 bg, black font)
+   ══════════════════════════════════════════════════════════════════════ */
+#ap-cms-refresh-btn,
+#ap-top-add-quad-btn,
+#ap-top-add-banner-btn,
+#ap-top-add-promo-btn,
+#ap-save-cms-announcement-btn,
+#ap-cms-reset-quad-btn,
+#ap-cms-add-quad-btn,
+#ap-add-hero-promo-btn,
+#ap-add-quick-browse-btn,
+#ap-cms-add-banner-btn,
+.ap-edit-quad-btn,
+.ap-delete-quad-btn,
+.ap-edit-hero-btn,
+.ap-del-hero-btn,
+.ap-edit-quick-btn,
+.ap-del-quick-btn,
+.ap-edit-banner-btn,
+.ap-delete-banner-btn,
+.ap-edit-promo-btn,
+.ap-delete-promo-btn,
+#ap-quad-cards-section .ap-btn,
+#ap-quad-cards-section td button.ap-btn,
+.ap-view-actions #ap-cms-refresh-btn,
+.ap-view-actions #ap-top-add-quad-btn,
+.ap-view-actions #ap-top-add-banner-btn,
+.ap-view-actions #ap-top-add-promo-btn {
+  background: #FF9400 !important;
+  color: #000000 !important;
+  border: 1px solid #FF9400 !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
+  transition: all 140ms ease !important;
+}
+
+#ap-cms-refresh-btn svg,
+#ap-top-add-quad-btn svg,
+#ap-top-add-banner-btn svg,
+#ap-top-add-promo-btn svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+#ap-cms-refresh-btn span,
+#ap-top-add-quad-btn span,
+#ap-top-add-banner-btn span,
+#ap-top-add-promo-btn span,
+#ap-cms-add-quad-btn span,
+#ap-cms-add-banner-btn span {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+#ap-cms-refresh-btn:hover,
+#ap-top-add-quad-btn:hover,
+#ap-top-add-banner-btn:hover,
+#ap-top-add-promo-btn:hover,
+#ap-save-cms-announcement-btn:hover,
+#ap-cms-reset-quad-btn:hover,
+#ap-cms-add-quad-btn:hover,
+#ap-add-hero-promo-btn:hover,
+#ap-add-quick-browse-btn:hover,
+#ap-cms-add-banner-btn:hover,
+.ap-edit-quad-btn:hover,
+.ap-delete-quad-btn:hover,
+.ap-edit-hero-btn:hover,
+.ap-del-hero-btn:hover,
+.ap-edit-quick-btn:hover,
+.ap-del-quick-btn:hover,
+.ap-edit-banner-btn:hover,
+.ap-delete-banner-btn:hover,
+.ap-edit-promo-btn:hover,
+.ap-delete-promo-btn:hover,
+#ap-quad-cards-section .ap-btn:hover,
+#ap-quad-cards-section td button.ap-btn:hover {
+  background: #e08300 !important;
+  border-color: #e08300 !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(224, 131, 0, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+#ap-cms-refresh-btn:active,
+#ap-top-add-quad-btn:active,
+#ap-top-add-banner-btn:active,
+#ap-top-add-promo-btn:active,
+#ap-save-cms-announcement-btn:active,
+#ap-cms-reset-quad-btn:active,
+#ap-cms-add-quad-btn:active,
+.ap-edit-quad-btn:active,
+.ap-delete-quad-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BANNER MODAL - UPLOAD LOCAL IMAGE BUTTON (#022F43 BG + WHITE FONT)
+   ══════════════════════════════════════════════════════════════════ */
+#banner-modal-upload-btn,
+.banner-upload-local-btn,
+.ap-modal-content label#banner-modal-upload-btn,
+.ap-modal-content label.banner-upload-local-btn,
+.ap-modal-content label[for="banner-modal-file-upload"],
+label[for="banner-modal-file-upload"] {
+  background: #022F43 !important;
+  background-color: #022F43 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #022F43 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  padding: 7px 15px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  box-shadow: 0 2px 5px rgba(2, 47, 67, 0.25) !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  letter-spacing: 0.02em !important;
+  margin-top: 4px !important;
+  user-select: none !important;
+}
+
+#banner-modal-upload-btn:hover,
+.banner-upload-local-btn:hover,
+.ap-modal-content label#banner-modal-upload-btn:hover,
+.ap-modal-content label.banner-upload-local-btn:hover,
+.ap-modal-content label[for="banner-modal-file-upload"]:hover,
+label[for="banner-modal-file-upload"]:hover {
+  background: #044360 !important;
+  background-color: #044360 !important;
+  color: #ffffff !important;
+  border-color: #044360 !important;
+  box-shadow: 0 4px 8px rgba(2, 47, 67, 0.35) !important;
+}
+
+#banner-modal-upload-btn *,
+.banner-upload-local-btn *,
+.ap-modal-content label#banner-modal-upload-btn *,
+.ap-modal-content label.banner-upload-local-btn *,
+.ap-modal-content label[for="banner-modal-file-upload"] *,
+label[for="banner-modal-file-upload"] * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: none;
+}
 
 
+/* ── Universal Popup Window Rules (Remove white border & FF9400 buttons) ── */
+.ap-modal-dialog,
+.ap-modal-backdrop .ap-modal-dialog,
+.ap-modal-backdrop .ap-modal-dialog.ap-modal-sm,
+.ap-modal-backdrop .ap-modal-dialog[style*="max-width:440px"],
+.ap-modal-backdrop .ap-modal-dialog[style*="max-width: 440px"] {
+  border: none !important;
+  outline: none !important;
+}
 
+.ap-modal-header,
+.ap-modal-dialog > .ap-modal-header,
+.ap-modal-backdrop .ap-modal-header {
+  border-bottom: none !important;
+}
 
+/* Modal close button: rounded framed box matching other close buttons */
+.ap-modal-close-btn,
+.ap-modal-header button.ap-modal-close-btn,
+#ap-ann-m-close,
+#ap-quick-m-close,
+#ap-hero-m-close,
+#ap-quad-modal-close,
+#ap-banner-modal-close,
+#ap-promo-modal-close {
+  background: #022F43 !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  outline: none !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  transition: all 0.15s ease !important;
+}
 
+.ap-modal-close-btn:hover,
+#ap-ann-m-close:hover,
+#ap-quick-m-close:hover,
+#ap-hero-m-close:hover,
+#ap-quad-modal-close:hover,
+#ap-banner-modal-close:hover,
+#ap-promo-modal-close:hover {
+  background: #04435e !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+}
 
+/* All action buttons in popup windows: FF9400 background & black font */
+#ann-m-clear-time,
+#ap-ann-m-cancel,
+#ap-ann-m-save,
+#ap-del-ann-cancel,
+#ap-del-promo-cancel,
+#ap-del-card-cancel,
+#ap-del-hero-cancel,
+#ap-del-quick-cancel,
+#ap-del-cancel-btn,
+#ap-quick-m-cancel,
+#ap-quick-m-save,
+#ap-hero-m-cancel,
+#ap-hero-m-save,
+#ap-quad-modal-cancel,
+#ap-quad-modal-save,
+#ap-banner-modal-cancel,
+#ap-banner-modal-save,
+#ap-promo-modal-cancel,
+#ap-promo-modal-save,
+.ap-modal-dialog button.ap-btn:not(.danger):not(.ann-preset-btn),
+.ap-modal-dialog .ap-btn:not(.danger):not(.ann-preset-btn),
+.ap-modal-dialog .ap-btn.ghost:not(.ann-preset-btn),
+.ap-modal-dialog .ap-btn.primary {
+  background: #FF9400 !important;
+  border-color: #FF9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
+}
+
+#ann-m-clear-time:hover,
+#ap-ann-m-cancel:hover,
+#ap-ann-m-save:hover,
+#ap-del-ann-cancel:hover,
+#ap-del-promo-cancel:hover,
+#ap-del-card-cancel:hover,
+#ap-del-hero-cancel:hover,
+#ap-del-quick-cancel:hover,
+#ap-del-cancel-btn:hover,
+#ap-quick-m-cancel:hover,
+#ap-quick-m-save:hover,
+#ap-hero-m-cancel:hover,
+#ap-hero-m-save:hover,
+#ap-quad-modal-cancel:hover,
+#ap-quad-modal-save:hover,
+#ap-banner-modal-cancel:hover,
+#ap-banner-modal-save:hover,
+#ap-promo-modal-cancel:hover,
+#ap-promo-modal-save:hover,
+.ap-modal-dialog button.ap-btn:not(.danger):not(.ann-preset-btn):hover,
+.ap-modal-dialog .ap-btn:not(.danger):not(.ann-preset-btn):hover,
+.ap-modal-dialog .ap-btn.ghost:not(.ann-preset-btn):hover,
+.ap-modal-dialog .ap-btn.primary:hover {
+  background: #e08300 !important;
+  border-color: #e08300 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* Preset Buttons (Tags, Image presets, Expiry presets, Discount presets): 022F43 background & white font */
+.ann-preset-btn,
+.ap-preset-pill,
+.ap-preset-pills .ap-preset-pill,
+.ap-preset-pills button,
+.ap-discount-preset,
+.ap-duration-preset-btn,
+#promo-duration-presets .ap-preset-pill,
+#promo-duration-presets .ap-duration-preset-btn,
+#promo-discount-presets .ap-preset-pill,
+#promo-discount-presets .ap-discount-preset {
+  background: #022F43 !important;
+  border-color: #022F43 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  padding: 5px 12px !important;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.ann-preset-btn:hover,
+.ap-preset-pill:hover,
+.ap-preset-pills .ap-preset-pill:hover,
+.ap-preset-pills button:hover,
+.ap-discount-preset:hover,
+.ap-duration-preset-btn:hover,
+#promo-duration-presets .ap-preset-pill:hover,
+#promo-duration-presets .ap-duration-preset-btn:hover,
+#promo-discount-presets .ap-preset-pill:hover,
+#promo-discount-presets .ap-discount-preset:hover {
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
+}
+
+.ann-preset-btn.active,
+.ap-preset-pill.active,
+.ap-preset-pill.is-selected,
+#promo-duration-presets .ap-preset-pill.active {
+  background: #04435e !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1.5px #38bdf8 !important;
+}
+
+/* Delete Confirmation Buttons: Red background (#dc2626) with white font */
+.ap-modal-dialog button.ap-btn.danger,
+.ap-modal-dialog .ap-btn.danger,
+#ap-del-promo-confirm,
+#ap-del-ann-confirm,
+#ap-del-card-confirm,
+#ap-del-hero-confirm,
+#ap-del-quick-confirm,
+#ap-del-confirm-btn {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35) !important;
+}
+
+.ap-modal-dialog button.ap-btn.danger:hover,
+.ap-modal-dialog .ap-btn.danger:hover,
+#ap-del-promo-confirm:hover,
+#ap-del-ann-confirm:hover,
+#ap-del-card-confirm:hover,
+#ap-del-hero-confirm:hover,
+#ap-del-quick-confirm:hover,
+#ap-del-confirm-btn:hover {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+/* Placeholders in CMS inputs */
+.ap-input::placeholder, textarea.ap-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+
+/* Universal Admin Modal Footer Close & Action Buttons (proper sizing, prevent 32x32 shrink) */
+.ap-modal-footer .ap-modal-close-btn,
+.ap-modal-footer button,
+.ap-modal-footer-close-btn,
+#ap-modal-close-btn2 {
+  width: auto !important;
+  min-width: 90px !important;
+  height: auto !important;
+  min-height: 36px !important;
+  padding: 8px 22px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+.ap-modal-footer-close-btn:hover,
+#ap-modal-close-btn2:hover {
+  filter: brightness(1.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Ensure View Reviews button text and icon are always white across all states (clicked/active/focused) */
+.ap-view-prod-modal-btn,
+.ap-view-prod-modal-btn:hover,
+.ap-view-prod-modal-btn:focus,
+.ap-view-prod-modal-btn:focus-visible,
+.ap-view-prod-modal-btn:active,
+.ap-view-prod-modal-btn.active,
+.ap-view-prod-modal-btn.clicked,
+.ap-view-prod-modal-btn.ap-btn-clicked {
+  background: #022F43 !important;
+  border-color: #022F43 !important;
+  color: #ffffff !important;
+}
+.ap-view-prod-modal-btn svg,
+.ap-view-prod-modal-btn:hover svg,
+.ap-view-prod-modal-btn:focus svg,
+.ap-view-prod-modal-btn:focus-visible svg,
+.ap-view-prod-modal-btn:active svg,
+.ap-view-prod-modal-btn.active svg,
+.ap-view-prod-modal-btn.clicked svg,
+.ap-view-prod-modal-btn.ap-btn-clicked svg,
+.ap-view-prod-modal-btn svg path,
+.ap-view-prod-modal-btn svg circle {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Support & Customer Disputes Suite (Image 1 & Image 2)
+   - Table header with #ff9400 background & black font
+   - overflow-y scrollable container
+   ───────────────────────────────────────────────────────────── */
+#ap-support-table thead,
+.ap-support-table thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+}
+
+#ap-support-table thead tr,
+.ap-support-table thead tr {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+}
+
+#ap-support-table thead tr th,
+.ap-support-table thead tr th,
+.ap-table-wrap table.ap-support-table thead tr th {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  padding: 12px 16px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid #e08300 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+/* Resolved Button & Badge in Support & Customer Disputes Suite */
+.ap-support-table .ap-badge.resolved,
+.ap-support-table .ap-badge-resolved,
+.ap-support-table .ap-badge.green {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 1px solid #e08300 !important;
+}
+
+/* Dispute Details Drawer Header: #022f43 background and white text */
+.ap-crm-drawer-header,
+#ap-dispute-drawer-container .ap-crm-drawer-header {
+  background-color: #022f43 !important;
+  background: #022f43 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.ap-crm-drawer-header h3,
+#ap-dispute-drawer-container .ap-crm-drawer-header h3 {
+  color: #ffffff !important;
+}
+
+#ap-drawer-close-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+#ap-drawer-close-btn:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+
+/* Eliminate horizontal scrollbar completely from support table container */
+.ap-table-card .ap-table-wrap,
+.ap-view-inner .ap-table-card .ap-table-wrap {
+  overflow-x: hidden !important;
+}
+
+/* Support Table Fixed Header Part: Full width orange header, strictly no scrollbar */
+.ap-table-header-part {
+  background: #ff9400 !important;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  overflow: hidden !important;
+}
+
+.ap-table-header-part table.ap-support-table thead tr th {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  padding: 12px 16px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: none !important;
+  text-align: left !important;
+}
+
+/* Marketing & Promotions: Active Campaigns Table Header: #ff9400 */
+.ap-offers-window .ap-table thead tr,
+.ap-offers-window .ap-table thead tr th,
+.ap-offers-window table.ap-table thead tr th {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  padding: 12px 16px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid #e08300 !important;
+}
+
+/* Marketing & Promotions: Revoke Deal Red Button */
+.ap-offers-window button.ap-remove-offer,
+.ap-offers-window .ap-btn.ap-remove-offer {
+  background-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+.ap-offers-window button.ap-remove-offer:hover,
+.ap-offers-window .ap-btn.ap-remove-offer:hover {
+  background-color: #b91c1c !important;
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.45) !important;
+}
+
+.ap-offers-window button.ap-remove-offer:active,
+.ap-offers-window .ap-btn.ap-remove-offer:active {
+  background-color: #991b1b !important;
+  background: #991b1b !important;
+  border-color: #7f1d1d !important;
+}
+
+.ap-offers-window button.ap-remove-offer svg,
+.ap-offers-window .ap-btn.ap-remove-offer svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Staff & RBAC: All Buttons #ff9400 background and black font colour */
+.ap-staff-window button:not(.ap-toggle-status-btn):not(#ap-edit-modal-close):not(#ap-role-sim-close):not(.ap-sim-select-btn),
+.ap-staff-window .ap-btn:not(.ap-toggle-status-btn),
+.ap-staff-window input[type="button"],
+.ap-staff-window input[type="submit"] {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #e08300 !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease-in-out !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.28) !important;
+  cursor: pointer !important;
+}
+
+.ap-staff-window button:not(.ap-toggle-status-btn):hover,
+.ap-staff-window .ap-btn:not(.ap-toggle-status-btn):hover {
+  background-color: #e68500 !important;
+  background: #e68500 !important;
+  color: #000000 !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 3px 8px rgba(255, 148, 0, 0.42) !important;
+}
+
+.ap-staff-window button svg,
+.ap-staff-window .ap-btn svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+/* Staff Directory Table Card Header:
+   Row 1: #022f43 bg and white font
+   Row 2: #ff9400 bg and black font as in Image 2 */
+.ap-staff-window .ap-table-card > div:first-child {
+  background: #022f43 !important;
+  color: #ffffff !important;
+}
+
+.ap-staff-window .ap-table thead tr,
+.ap-staff-window .ap-table thead tr th {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  padding: 12px 16px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid #e08300 !important;
+}
+
+/* Spinner Animation for Refresh feedback */
+@keyframes ap-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ap-spin {
+  animation: ap-spin 0.8s linear infinite !important;
+  display: inline-block !important;
+  transform-origin: center center !important;
+}
+
+/* ==========================================================================
+   CUSTOMER DIRECTORY / CRM USERS & ADMINS VIEW STYLES
+   ========================================================================== */
+
+/* 1. First Row of Header: #022f43 background and white font color (Image 1) */
+.ap-crm-main-tags-bar {
+  background-color: #022f43 !important;
+  background: #022f43 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.ap-crm-main-tags-bar span,
+.ap-crm-main-tags-bar div,
+.ap-crm-main-tags-bar strong {
+  color: #ffffff !important;
+}
+
+.ap-crm-main-tags-bar svg {
+  stroke: #ffffff !important;
+}
+
+.ap-crm-main-tags-bar .ap-crm-main-tab-pill {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 700 !important;
+}
+
+.ap-crm-main-tags-bar .ap-crm-main-tab-pill.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* 2. Second Row of Header: #ff9400 background and black font color (Image 1) */
+.ap-crm-segment-sub-bar {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border-bottom: 1.5px solid #e08300 !important;
+}
+
+.ap-crm-segment-sub-bar span,
+.ap-crm-segment-sub-bar div,
+.ap-crm-segment-sub-bar strong {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+.ap-crm-segment-sub-bar .ap-tab-pill {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+.ap-crm-segment-sub-bar .ap-tab-pill.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 3. Action Buttons in Table: #ff9400 background and black font colour (Image 2) */
+.ap-crm-table button.ap-open-360,
+.ap-crm-table button.ap-receipt-btn,
+.ap-crm-table button.ap-ban-btn,
+.ap-table button.ap-open-360,
+.ap-table button.ap-receipt-btn,
+.ap-table button.ap-ban-btn,
+button.ap-open-360,
+button.ap-receipt-btn,
+button.ap-ban-btn {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #e08300 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 2px rgba(255, 148, 0, 0.22) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.ap-crm-table button.ap-open-360 svg,
+.ap-crm-table button.ap-receipt-btn svg,
+.ap-crm-table button.ap-ban-btn svg,
+button.ap-open-360 svg,
+button.ap-receipt-btn svg,
+button.ap-ban-btn svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+  stroke-width: 2.2 !important;
+  fill: none !important;
+}
+
+.ap-crm-table button.ap-open-360:hover,
+.ap-crm-table button.ap-receipt-btn:hover,
+.ap-crm-table button.ap-ban-btn:hover,
+button.ap-open-360:hover,
+button.ap-receipt-btn:hover,
+button.ap-ban-btn:hover {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  border-color: #e08300 !important;
+  box-shadow: 0 1px 2px rgba(255, 148, 0, 0.22) !important;
+  transform: none !important;
+}
+
+/* 4. Customer Profile / 360 Drawer Modal Tag: Dark background with readable light text (Image 3) */
+.ap-crm-tier-pill,
+.ap-crm-modal-dark-tag {
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 5. Customer Profile / 360 Drawer Modal Bottom Buttons: #ff9400 background and black font colour (Image 3) */
+.ap-crm-drawer-footer .ap-btn,
+#ap-crm-drawer-block-btn,
+#ap-crm-drawer-save-btn {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #e08300 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.ap-crm-drawer-footer .ap-btn:hover,
+#ap-crm-drawer-block-btn:hover,
+#ap-crm-drawer-save-btn:hover {
+  background-color: #ff9400 !important;
+  background: #ff9400 !important;
+  color: #000000 !important;
+  border-color: #e08300 !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
+  transform: none !important;
+}
 
 
 
