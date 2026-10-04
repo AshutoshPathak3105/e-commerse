@@ -8858,7 +8858,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
               </div>
               <div style="min-width: 240px;">
-                <input class="ap-search" id="ap-order-search-input" value="${search}" style="width:100%;">
+                <input class="ap-search" id="ap-order-search-input" value="${search}" placeholder="Search orders by ID, customer, email..." style="width:100%;">
               </div>
             </div>
 
@@ -8881,9 +8881,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </tbody>
                 </table>
               </div>
-              <div class="ap-table-footer">
-                <span>Showing <strong>${orders.length}</strong> of <strong>${total}</strong> total orders</span>
-                <span style="font-size:11px; color:#94a3b8;">X-Mart 3PL Automated Fulfillment Engine</span>
+              <div class="ap-table-footer" style="padding:12px 18px; border-top:2px solid #011d2a; background:#022f43; color:#ffffff; display:flex; justify-content:space-between; align-items:center; border-radius:0 0 12px 12px;">
+                <span style="color:#ffffff;">Showing <strong style="color:#ffffff;">${orders.length}</strong> of <strong style="color:#ffffff;">${total}</strong> total orders</span>
+                <span style="font-size:11px; color:#ffffff;">X-Mart 3PL Automated Fulfillment Engine</span>
               </div>
             </div>
           </div>

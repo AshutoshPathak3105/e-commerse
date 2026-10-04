@@ -19116,13 +19116,18 @@ html.admin-mode-preload #admin-panel-overlay {
 }
 .ap-table-footer {
   padding: 12px 18px;
-  border-top: 1px solid var(--ap-card-border);
-  background: #f8fafc;
+  border-top: 2px solid #011d2a;
+  background: #022f43;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: #64748b;
+  color: #ffffff;
+  border-radius: 0 0 var(--ap-card-radius, 12px) var(--ap-card-radius, 12px);
+}
+.ap-table-footer span,
+.ap-table-footer strong {
+  color: #ffffff !important;
 }
 
 /* Cell Elements */
