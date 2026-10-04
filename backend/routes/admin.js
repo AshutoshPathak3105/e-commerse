@@ -18,6 +18,17 @@ const { sendSellerPayoutEmail, sendReturnStatusEmail, sendRefundConfirmationEmai
 // Apply adminAuth to ALL routes in this file
 router.use(adminAuth);
 
+// Prevent browser, proxy, and memory caching on all admin routes for real-time live data
+router.use((req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  });
+  next();
+});
+
 /* ─────────────────────────────────────────────────────
    DASHBOARD — GET /api/admin/dashboard
    Returns KPI stats + recent orders
@@ -484,10 +495,13 @@ router.put('/users/:id/ban', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    if (user.role === 'admin') return res.status(403).json({ success: false, message: 'Cannot ban an admin.' });
+    if (user.email === 'admin@xmart.com' || (req.user && String(req.user._id) === String(user._id))) {
+      return res.status(403).json({ success: false, message: 'Cannot restrict the primary root admin or your own active session.' });
+    }
     user.isActive = !user.isActive;
     await user.save();
-    res.json({ success: true, data: { isActive: user.isActive }, message: `User ${user.isActive ? 'unbanned' : 'banned'} successfully.` });
+    const roleLabel = user.role === 'admin' ? 'Admin account' : 'User account';
+    res.json({ success: true, data: { isActive: user.isActive }, message: `${roleLabel} ${user.isActive ? 'activated' : 'restricted'} successfully.` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -2300,13 +2314,28 @@ router.post('/cms/promotions', async (req, res) => {
 router.put('/cms/promotions/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    const promo = config.promotions.id(req.params.id);
+    let promo = config.promotions.id(req.params.id);
+    if (!promo) {
+      promo = config.promotions.find(p => String(p._id || p.id) === String(req.params.id) || p.code === String(req.params.id).toUpperCase());
+    }
     if (!promo) return res.status(404).json({ success: false, message: 'Promotion not found.' });
 
-    const fields = ['title', 'type', 'discountType', 'discountValue', 'minOrder', 'maxDiscount', 'scope', 'storeId', 'storeName', 'bankPartner', 'cardType', 'upiProvider', 'description', 'active'];
+    const fields = ['title', 'type', 'discountType', 'minOrder', 'maxDiscount', 'scope', 'storeName', 'bankPartner', 'cardType', 'upiProvider', 'description', 'active'];
     fields.forEach(f => {
       if (req.body[f] !== undefined) promo[f] = req.body[f];
     });
+
+    if (req.body.discountValue !== undefined) {
+      promo.discountValue = Number(req.body.discountValue) || 1;
+    }
+    if (req.body.storeId !== undefined) {
+      promo.storeId = (req.body.storeId && mongoose.Types.ObjectId.isValid(req.body.storeId)) ? req.body.storeId : null;
+    }
+    if (req.body.scope === 'storewide') {
+      promo.storeId = null;
+      promo.storeName = 'Storewide (All Stores)';
+    }
+
     if (req.body.bankRules !== undefined && Array.isArray(req.body.bankRules)) {
       promo.bankRules = req.body.bankRules.map(r => ({
         bank: (r.bank || '').trim(),
@@ -2355,7 +2384,13 @@ router.put('/cms/promotions/:id', async (req, res) => {
 router.delete('/cms/promotions/:id', async (req, res) => {
   try {
     const config = await CmsConfig.getOrCreate();
-    config.promotions.pull(req.params.id);
+    let promo = config.promotions.id(req.params.id);
+    if (promo) {
+      config.promotions.pull(req.params.id);
+    } else {
+      const idx = config.promotions.findIndex(p => String(p._id || p.id) === String(req.params.id) || p.code === String(req.params.id).toUpperCase());
+      if (idx !== -1) config.promotions.splice(idx, 1);
+    }
     await config.save();
     res.json({ success: true, message: 'Promotion removed.', data: config });
   } catch (err) {
@@ -3240,19 +3275,23 @@ router.put('/support/:id', async (req, res) => {
 
 router.post('/support/:id/reply', async (req, res) => {
   try {
-    const { replyText, newStatus } = req.body;
+    const { replyText, newStatus, priority, newPriority } = req.body;
     const tkt = await SupportTicket.findOne({
       $or: [{ ticketId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }]
     });
     if (!tkt) return res.status(404).json({ success: false, message: 'Support ticket not found.' });
-    if (!replyText || !replyText.trim()) return res.status(400).json({ success: false, message: 'Reply text is required.' });
 
+    const pri = priority || newPriority;
     const adminUser = req.user || { name: 'Support Administrator' };
+    const textContent = (replyText && replyText.trim()) 
+      ? replyText.trim() 
+      : `Case updated to ${newStatus || tkt.status}${pri ? ` with ${pri} priority` : ''} by Support Desk.`;
+
     const newMsg = {
       sender: 'admin',
       senderName: `${adminUser.name || 'Support Desk'} (Official)`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: replyText.trim(),
+      text: textContent,
     };
 
     tkt.messages = tkt.messages || [];
@@ -3263,9 +3302,12 @@ router.post('/support/:id/reply', async (req, res) => {
     } else if (tkt.status === 'Open') {
       tkt.status = 'In Progress';
     }
+    if (pri) {
+      tkt.priority = pri;
+    }
 
     await tkt.save();
-    res.json({ success: true, message: 'Official response sent and logged.', data: formatTicket(tkt) });
+    res.json({ success: true, message: 'Official response sent and case updated.', data: formatTicket(tkt) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

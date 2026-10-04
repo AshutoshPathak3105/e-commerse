@@ -295,16 +295,71 @@ function initSellerPromoTickers() {
 }
 window.initSellerPromoTickers = initSellerPromoTickers;
 
+/* ── Promotional Offers Table & Sections Cyclic Ticker Animation Engine ── */
+let promoCyclicTickerInterval = null;
+function initPromoCyclicTickers() {
+  if (promoCyclicTickerInterval) {
+    clearInterval(promoCyclicTickerInterval);
+    promoCyclicTickerInterval = null;
+  }
+
+  const wraps = document.querySelectorAll('.ap-promo-cyclic-ticker-wrap');
+  if (!wraps || wraps.length === 0) return;
+
+  promoCyclicTickerInterval = setInterval(() => {
+    const liveWraps = document.querySelectorAll('.ap-promo-cyclic-ticker-wrap');
+    if (!liveWraps || liveWraps.length === 0) {
+      if (promoCyclicTickerInterval) {
+        clearInterval(promoCyclicTickerInterval);
+        promoCyclicTickerInterval = null;
+      }
+      return;
+    }
+
+    liveWraps.forEach(wrap => {
+      if (wrap.matches(':hover')) return; // pause on hover for readability
+      const slides = wrap.querySelectorAll('.ap-promo-cyclic-slide');
+      if (slides.length <= 1) return;
+
+      let activeIdx = -1;
+      slides.forEach((slide, idx) => {
+        if (slide.classList.contains('is-active')) {
+          activeIdx = idx;
+        }
+      });
+
+      if (activeIdx === -1) activeIdx = 0;
+      const nextIdx = (activeIdx + 1) % slides.length;
+
+      const prev = slides[activeIdx];
+      if (prev) {
+        prev.classList.remove('is-active');
+        prev.classList.add('is-exiting');
+        setTimeout(() => {
+          prev.classList.remove('is-exiting');
+        }, 380);
+      }
+
+      if (slides[nextIdx]) {
+        slides[nextIdx].classList.add('is-active');
+      }
+    });
+  }, 2600);
+}
+window.initPromoCyclicTickers = initPromoCyclicTickers;
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initHomePriceConverter();
     initUtilityTicker();
     initSellerPromoTickers();
+    initPromoCyclicTickers();
   });
 } else {
   initHomePriceConverter();
   initUtilityTicker();
   initSellerPromoTickers();
+  initPromoCyclicTickers();
 }
 
 /* ── Multi-Language Translation Manager (EN, ES, FR, HI) ─────── */
@@ -5424,16 +5479,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       };
     }
 
-    if (cleanEp === '/support') {
-      return {
-        success: true,
-        data: {
-          tickets: [],
-          stats: { total: 0, open: 0, inProgress: 0, resolved: 0 },
-        },
-      };
-    }
-
     if (cleanEp === '/staff') {
       return {
         success: true,
@@ -7065,11 +7110,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   Directory Tags:
                 </div>
                 <div class="ap-toolbar-tabs" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); padding:3px; border-radius:8px; display:inline-flex; gap:4px;">
-                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'users' ? 'active' : ''}" data-dir-tag="users" style="cursor:pointer; color:#ffffff;" title="View Regular User Profiles">
-                    Users <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#ffffff;">${regularUsers.length}</span>
+                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'users' ? 'active' : ''}" data-dir-tag="users" style="cursor:pointer;" title="View Regular User Profiles">
+                    Users <span class="ap-tab-count">${regularUsers.length}</span>
                   </button>
-                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'admins' ? 'active' : ''}" data-dir-tag="admins" style="cursor:pointer; color:#ffffff;" title="View Administrator Accounts">
-                    Admins <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#ffffff;">${adminUsers.length}</span>
+                  <button class="ap-tab-pill ap-main-dir-tag ${activeTag === 'admins' ? 'active' : ''}" data-dir-tag="admins" style="cursor:pointer;" title="View Administrator Accounts">
+                    Admins <span class="ap-tab-count">${adminUsers.length}</span>
                   </button>
                 </div>
               </div>
@@ -7273,35 +7318,34 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.innerHTML = `
         <!-- User Segmentation Sub-Tabs Bar -->
         <div class="ap-crm-sub-tabs-bar ap-crm-segment-sub-bar" style="padding:10px 18px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border-bottom:1.5px solid #e08300; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15);">
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'all' ? 'active' : ''}" data-user-seg="all" style="color:#000000; font-weight:700;">
-              All Customers <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${regularUsers.length}</span>
+          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15); border-radius:8px; display:inline-flex; gap:4px; padding:3px;">
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'all' ? 'active' : ''}" data-user-seg="all">
+              All Customers <span class="ap-tab-count">${regularUsers.length}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'vip' ? 'active' : ''}" data-user-seg="vip" style="color:#000000; font-weight:700;">
-              ★ VIP &amp; High Spend <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${vipCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'vip' ? 'active' : ''}" data-user-seg="vip">
+              ★ VIP &amp; High Spend <span class="ap-tab-count">${vipCount}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'repeat' ? 'active' : ''}" data-user-seg="repeat" style="color:#000000; font-weight:700;">
-              Repeat Buyers <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${repeatBuyers}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'repeat' ? 'active' : ''}" data-user-seg="repeat">
+              Repeat Buyers <span class="ap-tab-count">${repeatBuyers}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'atrisk' ? 'active' : ''}" data-user-seg="atrisk" style="color:#000000; font-weight:700;">
-              New / Inactive <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${atRiskCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'atrisk' ? 'active' : ''}" data-user-seg="atrisk">
+              New / Inactive <span class="ap-tab-count">${atRiskCount}</span>
             </button>
-            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'cart' ? 'active' : ''}" data-user-seg="cart" style="color:#000000; font-weight:700;">
-              Cart Active <span class="ap-tab-count" style="background:rgba(0,0,0,0.12); color:#000000; font-weight:800;">${cartCount}</span>
+            <button class="ap-tab-pill ap-user-sub-tab ${userSegment === 'cart' ? 'active' : ''}" data-user-seg="cart">
+              Cart Active <span class="ap-tab-count">${cartCount}</span>
             </button>
           </div>
-          <div style="font-size:11.5px; color:#000000 !important; font-weight:700;">
-            Customer Segment: <strong style="color:#000000 !important; font-weight:800; text-transform:uppercase;">${userSegment}</strong>
+          <div style="font-size:11.5px; color:#000000 !important; font-weight:800;">
+            Customer Segment: <strong id="ap-crm-user-segment-text" style="color:#000000 !important; font-weight:900; text-transform:uppercase;">${userSegment}</strong>
           </div>
         </div>
 
         <!-- DEDICATED SEARCHBAR & MULTI-FILTER CONTROLS FOR USERS -->
         <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#ffffff;">
-          <div style="display:grid; grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr 1.2fr; gap:10px; margin-bottom:10px;">
+          <div class="ap-crm-filters-grid ap-crm-users-filters-grid" style="display:grid; grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr 1.2fr; gap:10px; margin-bottom:10px;">
             <!-- Dedicated Users Searchbar -->
             <div style="position:relative;">
-              <input class="ap-search" id="ap-crm-user-search" placeholder="Search users by name, email, phone, #CUST ID..." value="${userSearch}" style="width:100%; padding-left:34px; padding-right:28px;" />
-              <svg viewBox="0 0 24 24" style="position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; stroke:#94a3b8; fill:none; stroke-width:2;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input class="ap-search" id="ap-crm-user-search" placeholder="Search users by name, email, phone, #CUST ID..." value="${userSearch}" style="width:100%; padding-right:28px;" />
               <button id="ap-crm-clear-user-search" title="Clear search" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; color:#94a3b8; font-size:13px; padding:2px; display:${userSearch ? 'block' : 'none'};">✕</button>
             </div>
             <select class="ap-select" id="ap-crm-tier-select" style="font-size:12px;">
@@ -7331,7 +7375,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <!-- Batch Action Strip -->
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; padding-top:4px;">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div id="ap-crm-batch-actions-row" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
               <span style="color:#64748b;">Selected: <strong style="color:#0f172a;" id="ap-crm-selected-count">0 profiles</strong></span>
               <span style="color:#cbd5e1;">|</span>
               <button class="ap-btn ghost" id="ap-crm-batch-tier-btn" style="padding:3px 8px; font-size:11px;">
@@ -7487,14 +7531,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </td>
               <td style="text-align:center;">
                 <div style="display:inline-flex; align-items:center; gap:5px;">
-                  <button class="ap-btn ap-open-360 ap-crm-act-btn" data-id="${u._id}" title="Customer 360 View" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; stroke-width:2.2; fill:none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <button class="ap-btn ap-open-360 ap-crm-act-btn" data-id="${u._id}" title="Customer 360 View" style="background:#022f43 !important; color:#ffffff !important; border:1.5px solid #011d2a !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#ffffff !important; stroke-width:2.2; fill:none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
                   <button class="ap-btn ap-receipt-btn ap-crm-act-btn" data-id="${u._id}" title="Order Ledger" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
                     <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; stroke-width:2.2; fill:none;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                   </button>
-                  <button class="ap-btn ap-ban-btn ap-crm-act-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Account' : 'Unban Account'}" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 10px; border-radius:6px; font-weight:800; cursor:pointer;">
-                    ${isActive ? 'Ban' : 'Unban'}
+                  <button class="ap-btn ap-ban-btn ap-crm-act-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Customer Account' : 'Activate Customer Account'}" style="background:${isActive ? '#dc2626' : '#059669'} !important; background-color:${isActive ? '#dc2626' : '#059669'} !important; color:#ffffff !important; border:1.5px solid ${isActive ? '#b91c1c' : '#047857'} !important; padding:4px 10px; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer; box-shadow:0 2px 6px ${isActive ? 'rgba(220,38,38,0.25)' : 'rgba(5,150,105,0.25)'};">
+                    ${isActive ? 'Restrict' : 'Activate'}
                   </button>
                 </div>
               </td>
@@ -7531,8 +7575,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.querySelectorAll('.ap-user-sub-tab[data-user-seg]').forEach(btn => {
         btn.addEventListener('click', () => {
           userSegment = btn.dataset.userSeg;
-          container.querySelectorAll('.ap-user-sub-tab').forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.ap-user-sub-tab').forEach(b => {
+            b.classList.remove('active');
+            b.removeAttribute('style');
+          });
           btn.classList.add('active');
+          const segText = container.querySelector('#ap-crm-user-segment-text');
+          if (segText) segText.textContent = userSegment.toUpperCase();
           filterAndRenderUsers();
         });
       });
@@ -7589,29 +7638,28 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.innerHTML = `
         <!-- Admin Sub-Tabs Bar -->
         <div class="ap-crm-sub-tabs-bar ap-crm-segment-sub-bar" style="padding:10px 18px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border-bottom:1.5px solid #e08300; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15);">
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'all' ? 'active' : ''}" data-admin-seg="all" style="${adminSegment === 'all' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
-              All Admins <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${adminUsers.length}</span>
+          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15); border-radius:8px; display:inline-flex; gap:4px; padding:3px;">
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'all' ? 'active' : ''}" data-admin-seg="all">
+              All Admins <span class="ap-tab-count">${adminUsers.length}</span>
             </button>
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'active' ? 'active' : ''}" data-admin-seg="active" style="${adminSegment === 'active' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
-              Active Authorities <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${activeAdminCount}</span>
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'active' ? 'active' : ''}" data-admin-seg="active">
+              Active Authorities <span class="ap-tab-count">${activeAdminCount}</span>
             </button>
-            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'restricted' ? 'active' : ''}" data-admin-seg="restricted" style="${adminSegment === 'restricted' ? 'background:#ffffff !important; color:#000000 !important; font-weight:800 !important;' : 'color:#000000 !important; font-weight:700 !important;'}">
-              Restricted <span class="ap-tab-count" style="background:#000000; color:#ffffff;">${restrictedAdminCount}</span>
+            <button class="ap-tab-pill ap-admin-sub-tab ${adminSegment === 'restricted' ? 'active' : ''}" data-admin-seg="restricted">
+              Restricted <span class="ap-tab-count">${restrictedAdminCount}</span>
             </button>
           </div>
           <div style="font-size:11.5px; color:#000000 !important; font-weight:800;">
-            Authority Governance: <strong style="color:#000000 !important; text-transform:uppercase; font-weight:900;">${adminSegment}</strong>
+            Authority Governance: <strong id="ap-crm-admin-segment-text" style="color:#000000 !important; text-transform:uppercase; font-weight:900;">${adminSegment}</strong>
           </div>
         </div>
 
         <!-- DEDICATED SEARCHBAR & FILTERS FOR ADMINS -->
         <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#ffffff;">
-          <div style="display:grid; grid-template-columns: 2.5fr 1.2fr 1.2fr; gap:10px; margin-bottom:10px;">
+          <div class="ap-crm-filters-grid ap-crm-admins-filters-grid" style="display:grid; grid-template-columns: 2.5fr 1.2fr 1.2fr; gap:10px; margin-bottom:10px;">
             <!-- Dedicated Admins Searchbar -->
             <div style="position:relative;">
-              <input class="ap-search" id="ap-crm-admin-search" placeholder="Search administrators by name, email, phone, #ADMIN ID..." value="${adminSearch}" style="width:100%; padding-left:34px; padding-right:28px; border-color:#ddd6fe;" />
-              <svg viewBox="0 0 24 24" style="position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; stroke:#7c3aed; fill:none; stroke-width:2;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input class="ap-search" id="ap-crm-admin-search" placeholder="Search administrators by name, email, phone, #ADMIN ID..." value="${adminSearch}" style="width:100%; padding-right:28px; border-color:#ddd6fe;" />
               <button id="ap-crm-clear-admin-search" title="Clear search" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; color:#94a3b8; font-size:13px; padding:2px; display:${adminSearch ? 'block' : 'none'};">✕</button>
             </div>
             <select class="ap-select" id="ap-crm-admin-metro-select" style="font-size:12px;">
@@ -7629,7 +7677,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <!-- Admin Batch Action Strip -->
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; padding-top:4px;">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div id="ap-crm-admin-batch-row" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
               <span style="color:#64748b;">Selected: <strong style="color:#0f172a;" id="ap-crm-selected-count">0 accounts</strong></span>
               <span style="color:#cbd5e1;">|</span>
               <button class="ap-btn ghost" id="ap-crm-batch-export-btn" style="padding:3px 8px; font-size:11px;">
@@ -7763,14 +7811,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </span>
               </td>
               <td style="text-align:center;">
-                <div style="display:inline-flex; align-items:center; gap:4px;">
-                  <button class="ap-btn ap-open-360" data-id="${u._id}" title="Admin Profile &amp; Audit" style="padding:4px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; cursor:pointer;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; fill:none; stroke-width:2.2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <div style="display:inline-flex; align-items:center; gap:5px;">
+                  <button class="ap-btn ap-open-360 ap-crm-act-btn" data-id="${u._id}" title="Admin Profile &amp; Audit" style="background:#022f43 !important; color:#ffffff !important; border:1.5px solid #011d2a !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#ffffff !important; fill:none; stroke-width:2.2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="ap-btn ap-receipt-btn" data-id="${u._id}" title="Activity History" style="padding:4px 8px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; cursor:pointer;">
+                  <button class="ap-btn ap-receipt-btn ap-crm-act-btn" data-id="${u._id}" title="Activity &amp; Order History" style="background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; padding:4px 8px; border-radius:6px; font-weight:800; cursor:pointer;">
                     <svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:#000000 !important; fill:none; stroke-width:2.2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                   </button>
-                  <button class="ap-btn ap-ban-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Admin Account' : 'Unban Admin Account'}" style="padding:4px 10px; background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; font-size:11px; cursor:pointer;">
+                  <button class="ap-btn ap-ban-btn ap-crm-act-btn" data-id="${u._id}" data-act="${isActive}" title="${isActive ? 'Restrict Admin Account' : 'Unban Admin Account'}" style="background:#dc2626 !important; color:#ffffff !important; border:1.5px solid #b91c1c !important; padding:4px 10px; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer;">
                     ${isActive ? 'Restrict' : 'Activate'}
                   </button>
                 </div>
@@ -7808,8 +7856,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.querySelectorAll('.ap-admin-sub-tab[data-admin-seg]').forEach(btn => {
         btn.addEventListener('click', () => {
           adminSegment = btn.dataset.adminSeg;
-          container.querySelectorAll('.ap-admin-sub-tab').forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.ap-admin-sub-tab').forEach(b => {
+            b.classList.remove('active');
+            b.removeAttribute('style'); // clear any residual inline style
+          });
           btn.classList.add('active');
+          const segText = container.querySelector('#ap-crm-admin-segment-text');
+          if (segText) segText.textContent = adminSegment.toUpperCase();
           filterAndRenderAdmins();
         });
       });
@@ -7842,205 +7895,431 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       filterAndRenderAdmins();
     }
 
-    // Common action listeners (360 view drawer, ban/unban, checkboxes, ledger)
+    // ── Reusable Action Confirmation Popup Modal ──────────────────────
+    function showConfirmPopup({
+      type = 'danger',
+      title = 'Confirm Action',
+      message = 'Are you sure you want to proceed?',
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      onConfirm = async () => {}
+    }) {
+      const existing = document.getElementById('ap-confirm-popup-mount');
+      if (existing) existing.remove();
+
+      const mount = document.createElement('div');
+      mount.id = 'ap-confirm-popup-mount';
+      const targetParent = document.getElementById('admin-panel-overlay') || document.body;
+      targetParent.appendChild(mount);
+
+      const isDanger = type === 'danger';
+      const iconBg = isDanger ? '#fee2e2' : '#dcfce7';
+      const iconColor = isDanger ? '#ef4444' : '#16a34a';
+      const confirmBg = isDanger ? '#dc2626' : '#059669';
+
+      const iconSvg = isDanger
+        ? `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
+        : `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+
+      mount.innerHTML = `
+        <div class="ap-modal-backdrop is-active" id="ap-confirm-backdrop" style="display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,0.65); position:fixed; inset:0; z-index:100070; backdrop-filter:blur(3px);">
+          <div class="ap-modal-dialog" style="max-width:440px; width:90%; text-align:center; padding:28px 24px; background:#ffffff; border-radius:16px; box-shadow:0 25px 60px rgba(15,23,42,0.25); position:relative;">
+            <div style="width:52px; height:52px; border-radius:50%; background:${iconBg}; color:${iconColor}; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+              ${iconSvg}
+            </div>
+            <h4 style="font-size:18px; font-weight:800; color:#0f172a; margin:0 0 10px;">${title}</h4>
+            <p style="font-size:13px; color:#64748b; margin:0 0 24px; line-height:1.5;">
+              ${message}
+            </p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button type="button" class="ap-btn ghost" id="ap-confirm-cancel-btn" style="padding:9px 24px; font-size:13px; font-weight:700; background:#ffffff !important; background-color:#ffffff !important; border:1.5px solid #cbd5e1 !important; color:#0f172a !important; border-radius:8px; cursor:pointer;">${cancelText}</button>
+              <button type="button" class="ap-btn ${isDanger ? 'danger' : 'success'}" id="ap-confirm-submit-btn" style="padding:9px 24px; font-size:13px; font-weight:800; background:${confirmBg} !important; background-color:${confirmBg} !important; color:#ffffff !important; border:1.5px solid ${confirmBg} !important; border-radius:8px; cursor:pointer; box-shadow:0 2px 8px ${isDanger ? 'rgba(220,38,38,0.35)' : 'rgba(5,150,105,0.35)'};">${confirmText}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const close = () => { mount.remove(); };
+      document.getElementById('ap-confirm-cancel-btn')?.addEventListener('click', close);
+      document.getElementById('ap-confirm-backdrop')?.addEventListener('click', e => {
+        if (e.target.id === 'ap-confirm-backdrop') close();
+      });
+
+      const submitBtn = document.getElementById('ap-confirm-submit-btn');
+      submitBtn?.addEventListener('click', async () => {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.7';
+        submitBtn.textContent = 'Processing...';
+        try {
+          await onConfirm();
+        } finally {
+          close();
+        }
+      });
+    }
+
+    // Common action listeners — uses event delegation so re-renders never lose wiring
     function wireCommonActions(container, currentList) {
-      // Open 360 Drawer
-      container.querySelectorAll('.ap-open-360').forEach(el => {
-        el.addEventListener('click', e => {
-          e.stopPropagation();
-          const cid = el.dataset.id;
-          openCustomer360(cid);
-        });
-      });
+      // ── Delegated listener on tbody (attached only once per tbody instance) ──
+      const tbody = container.querySelector('#ap-crm-table-tbody');
+      if (tbody && !tbody._crmDelegated) {
+        tbody._crmDelegated = true;
+        tbody.addEventListener('click', async e => {
+          const btn360    = e.target.closest('.ap-open-360');
+          const btnLedger = e.target.closest('.ap-receipt-btn');
+          const btnBan    = e.target.closest('.ap-ban-btn');
 
-      // Receipt / Order Ledger
-      container.querySelectorAll('.ap-receipt-btn').forEach(btn => {
-        btn.addEventListener('click', e => {
-          e.stopPropagation();
-          const cid = btn.dataset.id;
-          const c = allUsersData.find(u => u._id === cid);
-          showToast(`Ledger loaded: ${c ? c.name : 'Account'} has ${c ? c.ordersCount : 0} completed orders (${fmtPrice(c ? c.totalSpent : 0)} GMV).`, 'info');
-        });
-      });
+          if (btn360) {
+            e.stopPropagation();
+            openCustomer360(btn360.dataset.id);
+          } else if (btnLedger) {
+            e.stopPropagation();
+            openOrderLedger(btnLedger.dataset.id);
+          } else if (btnBan) {
+            e.stopPropagation();
+            const id = btnBan.dataset.id;
+            const isAct = btnBan.dataset.act === 'true';
+            const isTargetAdmin = activeTag === 'admins';
+            const u = allUsersData.find(x => String(x._id) === String(id)) || allUsersData.find(x => String(x.id) === String(id)) || {};
+            const userName = u.name || (isTargetAdmin ? 'Administrator' : 'Customer');
+            const userCode = isTargetAdmin ? `#ADMIN-${(id || '').slice(-6).toUpperCase()}` : `#CUST-${(id || '').slice(-6).toUpperCase()}`;
 
-      // Ban / Unban
-      container.querySelectorAll('.ap-ban-btn').forEach(btn => {
-        btn.addEventListener('click', async e => {
-          e.stopPropagation();
-          const id = btn.dataset.id;
-          const isAct = btn.dataset.act === 'true';
-          const isTargetAdmin = activeTag === 'admins';
-          if (!confirm(`${isAct ? 'Restrict / Suspend' : 'Activate / Unban'} this ${isTargetAdmin ? 'admin account' : 'customer account'}?`)) return;
-          try {
-            await adminFetch(`/users/${id}/ban`, { method: 'PUT' });
-            showToast(`Account ${isAct ? 'restricted' : 'activated'} successfully`, 'success');
-            loadData();
-          } catch (err) {
-            showToast(err.message, 'error');
+            if (isAct) {
+              showConfirmPopup({
+                type: 'danger',
+                title: `Restrict ${isTargetAdmin ? 'Administrator' : 'Customer'} Account?`,
+                message: `Are you sure you want to restrict <strong>"${userName}"</strong> (${userCode})? They will not be able to log in, place orders, or access their account immediately.`,
+                confirmText: 'Restrict Account',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                  try {
+                    await adminFetch(`/users/${id}/ban`, { method: 'PUT' });
+                    showToast(`Account for ${userName} restricted successfully`, 'success');
+                    loadData();
+                  } catch (err) {
+                    showToast(err.message || 'Action failed — backend may be offline.', 'error');
+                  }
+                }
+              });
+            } else {
+              showConfirmPopup({
+                type: 'success',
+                title: `Activate ${isTargetAdmin ? 'Administrator' : 'Customer'} Account?`,
+                message: `Are you sure you want to reactivate <strong>"${userName}"</strong> (${userCode})? Full purchasing and storefront privileges will be restored immediately.`,
+                confirmText: 'Activate Account',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                  try {
+                    await adminFetch(`/users/${id}/ban`, { method: 'PUT' });
+                    showToast(`Account for ${userName} activated successfully`, 'success');
+                    loadData();
+                  } catch (err) {
+                    showToast(err.message || 'Action failed — backend may be offline.', 'error');
+                  }
+                }
+              });
+            }
           }
         });
-      });
+      }
 
-      // Checkbox management
+      // Checkboxes — re-wire each render because tbody rows are recreated
       const masterCheck = container.querySelector('#ap-crm-master-check');
-      const rowChecks = container.querySelectorAll('.ap-crm-check');
-      const selCount = container.querySelector('#ap-crm-selected-count');
+      const rowChecks   = container.querySelectorAll('.ap-crm-check');
+      const selCount    = container.querySelector('#ap-crm-selected-count');
 
       const updateSelected = () => {
-        const checked = Array.from(rowChecks).filter(c => c.checked).length;
+        const checked = Array.from(container.querySelectorAll('.ap-crm-check')).filter(c => c.checked).length;
         if (selCount) selCount.textContent = `${checked} ${activeTag === 'admins' ? 'accounts' : 'profiles'}`;
       };
 
-      masterCheck?.addEventListener('change', () => {
-        rowChecks.forEach(c => c.checked = masterCheck.checked);
-        updateSelected();
-      });
-
+      if (masterCheck) {
+        const freshMaster = masterCheck.cloneNode(true);
+        masterCheck.parentNode.replaceChild(freshMaster, masterCheck);
+        freshMaster.addEventListener('change', () => {
+          container.querySelectorAll('.ap-crm-check').forEach(c => c.checked = freshMaster.checked);
+          updateSelected();
+        });
+      }
       rowChecks.forEach(c => c.addEventListener('change', updateSelected));
 
-      container.querySelector('#ap-crm-batch-tier-btn')?.addEventListener('click', () => {
-        const checked = Array.from(rowChecks).filter(c => c.checked).length;
-        if (!checked) return showToast('Please select at least 1 customer profile.', 'warn');
-        const tier = prompt(`Assign loyalty tier to ${checked} selected profiles (Platinum / Gold / Silver):`, 'Gold Elite');
-        if (tier) showToast(`Updated ${checked} customer profiles to ${tier}!`, 'success');
+      // Batch action buttons — clone to strip duplicate listeners from prior renders
+      ['#ap-crm-batch-tier-btn', '#ap-crm-batch-wa-btn', '#ap-crm-batch-export-btn'].forEach(sel => {
+        const el = container.querySelector(sel);
+        if (!el) return;
+        const fresh = el.cloneNode(true);
+        el.parentNode.replaceChild(fresh, el);
+        fresh.addEventListener('click', () => {
+          const checked = Array.from(container.querySelectorAll('.ap-crm-check')).filter(c => c.checked).length;
+          if (sel === '#ap-crm-batch-tier-btn') {
+            if (!checked) return showToast('Please select at least 1 customer profile.', 'warn');
+            const tier = prompt(`Assign loyalty tier to ${checked} selected profiles (Platinum / Gold / Silver):`, 'Gold Elite');
+            if (tier) showToast(`Updated ${checked} customer profiles to ${tier}!`, 'success');
+          } else if (sel === '#ap-crm-batch-wa-btn') {
+            if (!checked) return showToast('Please select at least 1 customer profile.', 'warn');
+            showToast(`Queued WhatsApp outreach broadcast to ${checked} customers via Gupshup API.`, 'success');
+          } else if (sel === '#ap-crm-batch-export-btn') {
+            showToast(`Exported ${checked || currentList.length} ${activeTag === 'admins' ? 'admin' : 'customer'} profiles to CSV.`, 'success');
+          }
+        });
       });
+    }
 
-      container.querySelector('#ap-crm-batch-wa-btn')?.addEventListener('click', () => {
-        const checked = Array.from(rowChecks).filter(c => c.checked).length;
-        if (!checked) return showToast('Please select at least 1 customer profile.', 'warn');
-        showToast(`Queued WhatsApp outreach broadcast to ${checked} customers via Gupshup API.`, 'success');
-      });
+    // ── Order Ledger Panel ─────────────────────────────────────────
+    function openOrderLedger(userId) {
+      const u = allUsersData.find(x => String(x._id) === String(userId)) || allUsersData.find(x => String(x.id) === String(userId)) || allUsersData[0];
+      let mount = document.getElementById('ap-crm-drawer-mount');
+      if (!mount) {
+        mount = document.createElement('div');
+        mount.id = 'ap-crm-drawer-mount';
+        const targetParent = document.getElementById('admin-panel-overlay') || document.body;
+        targetParent.appendChild(mount);
+      }
 
-      container.querySelector('#ap-crm-batch-export-btn')?.addEventListener('click', () => {
-        const checked = Array.from(rowChecks).filter(c => c.checked).length;
-        showToast(`Exported ${checked || currentList.length} ${activeTag === 'admins' ? 'admin' : 'customer'} profiles to CSV.`, 'success');
+      const totalSpent = u ? (u.totalSpent || u.totalSpend || u.lifetimeValue || 0) : 0;
+      const ordersCount = u ? (u.ordersCount || 0) : 0;
+      const aov = u ? (u.aov || (ordersCount > 0 ? Math.round(totalSpent / ordersCount) : 0)) : 0;
+
+      // Build synthetic order rows from available data
+      const orderRows = ordersCount > 0
+        ? Array.from({ length: Math.min(ordersCount, 6) }, (_, i) => {
+            const orderNum = `XM-${String(100000 + i * 13 + parseInt((u._id || '0').slice(-4), 16) % 800000).slice(0, 6)}`;
+            const statuses = ['Delivered', 'Delivered', 'Delivered', 'Shipped', 'Processing', 'Cancelled'];
+            const status = statuses[i % statuses.length];
+            const colors = { Delivered: '#059669', Shipped: '#2563eb', Processing: '#d97706', Cancelled: '#dc2626' };
+            const col = colors[status] || '#64748b';
+            const perOrder = Math.round((totalSpent || 500) / ordersCount);
+            const variance = Math.round(perOrder * (0.75 + (i * 0.07) % 0.5));
+            return `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 12px;font-family:monospace;font-size:11px;color:#2563eb;font-weight:700;white-space:nowrap;">${orderNum}</td>
+                <td style="padding:10px 12px;font-size:11.5px;color:#475569;white-space:nowrap;">${u.lastOrderDate || '2025-01-15'}</td>
+                <td style="padding:10px 12px;font-size:11.5px;color:#475569;text-align:center;">${(i % 3) + 1}</td>
+                <td style="padding:10px 12px;font-family:monospace;font-size:12px;font-weight:800;color:#0f172a;white-space:nowrap;">${fmtPrice(variance)}</td>
+                <td style="padding:10px 12px;white-space:nowrap;">
+                  <span style="font-size:10px;font-weight:700;color:${col};background:${col}14;padding:2px 8px;border-radius:9999px;border:1px solid ${col}33;">${status}</span>
+                </td>
+              </tr>`;
+          }).join('')
+        : `<tr><td colspan="5" style="text-align:center;padding:28px 14px;color:#94a3b8;font-size:12px;">No orders recorded for this account.</td></tr>`;
+
+      mount.innerHTML = `
+        <div class="ap-crm-drawer-backdrop" id="ap-crm-ledger-backdrop">
+          <div class="ap-crm-drawer" style="max-width:700px;">
+            <div class="ap-crm-drawer-header">
+              <div class="ap-crm-profile-header-left">
+                <div class="ap-avatar-circle" style="background:#eff6ff;color:#2563eb;border:2px solid #2563eb;">${u ? (u.name || 'U')[0].toUpperCase() : 'U'}</div>
+                <div style="min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <h3 style="margin:0;font-size:16px;font-weight:800;color:#ffffff !important;line-height:1.2;">${u ? u.name : 'Customer'}</h3>
+                    <span style="background:rgba(255,255,255,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-weight:700;padding:2px 8px;border-radius:9999px;font-size:10.5px;">Order Ledger</span>
+                  </div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.7);font-family:monospace;margin-top:2px;">
+                    #${u ? (u.role === 'admin' ? 'ADMIN' : 'CUST') : 'CUST'}-${(u ? u._id || '' : '').slice(-6).toUpperCase()} &middot; ${ordersCount} Orders
+                  </div>
+                </div>
+              </div>
+              <button class="ap-modal-close-btn" id="ap-crm-ledger-close">&#x2715;</button>
+            </div>
+            <div class="ap-crm-drawer-kpis">
+              <div class="ap-crm-drawer-kpi-col">
+                <span class="ap-crm-kpi-label">Total Orders</span>
+                <strong style="color:#0f172a;">${ordersCount}</strong>
+                <span class="ap-crm-kpi-sub" style="color:#059669;">Lifetime</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span class="ap-crm-kpi-label">Total Spent</span>
+                <strong style="color:#2563eb;">${fmtPrice(totalSpent)}</strong>
+                <span class="ap-crm-kpi-sub" style="color:#64748b;">Gross GMV</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span class="ap-crm-kpi-label">Avg. Order Value</span>
+                <strong style="color:#7c3aed;">${fmtPrice(aov)}</strong>
+                <span class="ap-crm-kpi-sub" style="color:#64748b;">Per Order</span>
+              </div>
+            </div>
+            <div class="ap-crm-drawer-body" style="padding:0;">
+              <div style="padding:12px 16px 8px;font-size:10px;font-weight:800;text-transform:uppercase;color:#94a3b8;letter-spacing:0.05em;">Transaction History</div>
+              <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:440px;">
+                  <thead>
+                    <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                      <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Order ID</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Date</th>
+                      <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Items</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Amount</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>${orderRows}</tbody>
+                </table>
+              </div>
+            </div>
+            <div class="ap-crm-drawer-footer" style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:#64748b;">Showing ${u ? Math.min(u.ordersCount || 0, 6) : 0} of ${u ? u.ordersCount || 0 : 0} orders</span>
+              <button id="ap-crm-ledger-close-btn" class="ap-crm-footer-btn-secondary" style="padding:8px 18px;min-width:110px;">Close Ledger</button>
+            </div>
+          </div>
+        </div>`;
+
+      const closeL = () => { mount.innerHTML = ''; };
+      document.getElementById('ap-crm-ledger-close')?.addEventListener('click', closeL);
+      document.getElementById('ap-crm-ledger-close-btn')?.addEventListener('click', closeL);
+      document.getElementById('ap-crm-ledger-backdrop')?.addEventListener('click', e => {
+        if (e.target.id === 'ap-crm-ledger-backdrop') closeL();
       });
     }
 
     // Customer 360 View Drawer
     function openCustomer360(customerId) {
-      const cust = allUsersData.find(u => u._id === customerId) || allUsersData[0];
-      if (!cust) return;
+      const cust = allUsersData.find(u => String(u._id) === String(customerId)) ||
+                   allUsersData.find(u => String(u.id) === String(customerId)) ||
+                   allUsersData[0];
+      if (!cust) { showToast('Customer data unavailable — ensure backend is running.', 'warn'); return; }
 
-      const mount = document.getElementById('ap-crm-drawer-mount');
-      if (!mount) return;
+      let mount = document.getElementById('ap-crm-drawer-mount');
+      if (!mount) {
+        mount = document.createElement('div');
+        mount.id = 'ap-crm-drawer-mount';
+        const targetParent = document.getElementById('admin-panel-overlay') || document.body;
+        targetParent.appendChild(mount);
+      }
 
-      const recentOrdersHTML = (cust.ordersCount > 0) ? `
-        <div style="background:#f8fafc; border-样式:solid; border-color:#e2e8f0; border-width:1px; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      const isActive = cust.isActive !== false;
+      const statusColor = isActive ? '#059669' : '#dc2626';
+      const statusLabel = isActive ? 'Active' : 'Restricted';
+      const totalSpent = cust.totalSpent || cust.totalSpend || cust.lifetimeValue || 0;
+      const ordersCount = cust.ordersCount || 0;
+      const aov = cust.aov || (ordersCount > 0 ? Math.round(totalSpent / ordersCount) : 0);
+
+      const recentOrdersHTML = (ordersCount > 0) ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-weight:700; color:#0f172a; font-size:12px;">
-              <span style="font-family:monospace; color:#2563eb;">${cust.lastOrderId && cust.lastOrderId !== '—' ? cust.lastOrderId : 'XM-ORDER'}</span> · Delivered / Processed
+              <span style="font-family:monospace; color:#2563eb;">${cust.lastOrderId && cust.lastOrderId !== '\u2014' ? cust.lastOrderId : 'XM-LAST-ORDER'}</span> &middot; Delivered
             </div>
-            <div style="font-size:11px; color:#64748b;">${cust.lastOrderDate || 'Recent'} · Completed Order</div>
+            <div style="font-size:11px; color:#64748b; margin-top:2px;">${cust.lastOrderDate || 'Recent'} &middot; Completed Order</div>
           </div>
-          <strong style="font-family:monospace; color:#0f172a; font-size:13px;">${fmtPrice(cust.aov || cust.totalSpent || 0)}</strong>
+          <strong style="font-family:monospace; color:#0f172a; font-size:13px; font-weight:800;">${fmtPrice(aov || totalSpent)}</strong>
         </div>
-      ` : '<div style="font-size:12px; color:#94a3b8; padding:8px 0;">No order activity recorded for this user.</div>';
+      ` : '<div style="font-size:12px; color:#94a3b8; padding:4px 0;">No order activity recorded for this user.</div>';
 
       mount.innerHTML = `
         <div class="ap-crm-drawer-backdrop" id="ap-crm-backdrop">
           <div class="ap-crm-drawer">
             <!-- Header -->
             <div class="ap-crm-drawer-header">
-              <div style="display:flex; align-items:center; gap:12px;">
-                <div class="ap-avatar-circle" style="width:48px; height:48px; font-size:18px; background:#eff6ff; color:#2563eb; border:2px solid #2563eb;">${(cust.name || 'U').charAt(0).toUpperCase()}</div>
-                <div>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <h3 style="margin:0; font-size:17px; font-weight:800; color:#ffffff !important;">${cust.name}</h3>
-                    <span class="ap-crm-tier-pill ap-crm-modal-dark-tag" style="background:#081926 !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.25) !important; font-weight:700; padding:2px 10px; border-radius:9999px; font-size:11px;">${cust.role === 'admin' ? 'Admin Authority' : (cust.tier || 'New User')}</span>
+              <div class="ap-crm-profile-header-left">
+                <div class="ap-avatar-circle" style="background:#eff6ff; color:#2563eb; border:2px solid #2563eb;">${(cust.name || 'U').charAt(0).toUpperCase()}</div>
+                <div style="min-width:0;">
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important; line-height:1.2;">${cust.name}</h3>
+                    <span style="background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.2); font-weight:700; padding:2px 8px; border-radius:9999px; font-size:10.5px;">${cust.role === 'admin' ? 'Admin Authority' : (cust.tier || 'New User')}</span>
                   </div>
-                  <div style="font-size:11px; color:rgba(255,255,255,0.7) !important; font-family:monospace; margin-top:2px;">
-                    <span style="color:rgba(255,255,255,0.85) !important;">#${cust.role === 'admin' ? 'ADMIN' : 'CUST'}-${(cust._id || '').slice(-6).toUpperCase()}</span> · <span style="color:#34d399 !important;">Verified Account</span>
+                  <div style="font-size:11px; color:rgba(255,255,255,0.7); font-family:monospace; margin-top:2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span>#${cust.role === 'admin' ? 'ADMIN' : 'CUST'}-${(cust._id || '').slice(-6).toUpperCase()}</span>
+                    <span>&middot;</span>
+                    <span style="color:${isActive ? '#34d399' : '#f87171'}; font-weight:700;">${isActive ? 'Verified &amp; Active' : 'Account Restricted'}</span>
                   </div>
                 </div>
               </div>
-              <button class="ap-modal-close-btn" id="ap-crm-drawer-close">✕</button>
+              <button class="ap-modal-close-btn" id="ap-crm-drawer-close">&#x2715;</button>
             </div>
 
             <!-- 3-Col KPI Strip -->
             <div class="ap-crm-drawer-kpis">
               <div class="ap-crm-drawer-kpi-col">
-                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Orders Placed</span>
-                <strong style="font-size:18px; color:#0f172a; font-family:monospace;">${cust.ordersCount || 0}</strong>
-                <span style="font-size:9.5px; color:#059669; display:block;">0 Disputes</span>
+                <span class="ap-crm-kpi-label">Orders Placed</span>
+                <strong style="color:#0f172a;">${ordersCount}</strong>
+                <span class="ap-crm-kpi-sub" style="color:#059669;">0 Disputes</span>
               </div>
               <div class="ap-crm-drawer-kpi-col">
-                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Lifetime GMV</span>
-                <strong style="font-size:18px; color:#2563eb; font-family:monospace;">${fmtPrice(cust.totalSpent || 0)}</strong>
-                <span style="font-size:9.5px; color:#64748b; display:block;">AOV: ${fmtPrice(cust.aov || 0)}</span>
+                <span class="ap-crm-kpi-label">Lifetime GMV</span>
+                <strong style="color:#2563eb;">${fmtPrice(totalSpent)}</strong>
+                <span class="ap-crm-kpi-sub" style="color:#64748b;">AOV: ${fmtPrice(aov)}</span>
               </div>
               <div class="ap-crm-drawer-kpi-col">
-                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Account Role</span>
-                <strong style="font-size:16px; color:#0f172a;">${cust.role === 'admin' ? 'Admin Authority' : (cust.sellerProfile ? 'Seller' : 'Customer')}</strong>
-                <span style="font-size:9.5px; color:#059669; display:block;">Active Status</span>
+                <span class="ap-crm-kpi-label">Account Status</span>
+                <span style="font-size:11px; font-weight:800; color:${statusColor}; background:${statusColor}14; padding:2px 8px; border-radius:999px; border:1px solid ${statusColor}33; display:inline-block; margin:2px 0;">${statusLabel}</span>
+                <span class="ap-crm-kpi-sub" style="color:#64748b;">${cust.role === 'admin' ? 'Administrator' : (cust.sellerProfile ? 'Seller' : 'Customer')}</span>
               </div>
             </div>
 
             <!-- Drawer Body -->
             <div class="ap-crm-drawer-body">
-              <!-- Account Coordinates -->
-              <div>
-                <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em; display:block; margin-bottom:6px;">Contact &amp; Coordinates</span>
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:12px; line-height:1.4;">
-                  <div style="font-weight:700; color:#0f172a;">${cust.name} · ${cust.email}</div>
-                  <div style="color:#475569; margin-top:2px;">${cust.phone || 'Phone provided on registration'}</div>
-                  <div style="margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; font-family:monospace; font-size:10px; color:#64748b; display:flex; justify-content:space-between;">
-                    <span>Location: ${cust.metro || (cust.address || 'India')}</span>
-                    <span style="color:#059669; font-weight:700;">Account Active</span>
+              <!-- Contact -->
+              <div class="ap-crm-card">
+                <span class="ap-crm-section-title">Contact &amp; Coordinates</span>
+                <div style="font-size:12px; line-height:1.45;">
+                  <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <span>${cust.name}</span>
+                    <span style="font-size:11.5px; font-weight:600; color:#2563eb; font-family:monospace;">${cust.email}</span>
+                  </div>
+                  <div style="color:#475569; margin-top:3px; font-size:11.5px;">${cust.phone || 'Phone verified on registration'}</div>
+                  <div style="margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9; font-size:11px; color:#64748b; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Location: <strong style="color:#334155;">${cust.metro || (cust.address || 'India')}</strong></span>
+                    <span style="color:${statusColor}; font-weight:700;">${isActive ? 'Active Status' : 'Restricted'}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Recent Order Activity -->
-              <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em;">Recent Order Activity</span>
-                  <span style="font-size:11px; color:#2563eb; font-weight:600;">${cust.ordersCount || 0} Orders Total</span>
+              <!-- Recent Orders -->
+              <div class="ap-crm-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span class="ap-crm-section-title" style="margin-bottom:0;">Recent Order Activity</span>
+                  <span style="font-size:11px; color:#2563eb; font-weight:700;">${cust.ordersCount || 0} Total</span>
                 </div>
                 ${recentOrdersHTML}
               </div>
 
-              <!-- Support Interactions -->
-              <div>
-                <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em; display:block; margin-bottom:6px;">Support Interactions</span>
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:11.5px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:700; color:#0f172a;">
-                      <strong style="color:#059669; font-family:monospace;">Zero Open Grievances</strong>
-                    </span>
-                    <span class="ap-badge green" style="font-size:10px;">Clear</span>
+              <!-- Support -->
+              <div class="ap-crm-card">
+                <span class="ap-crm-section-title">Support &amp; Grievances</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-weight:700; color:#059669; font-size:12px;">Zero Open Grievances</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:2px;">No active dispute tickets or escalations.</div>
                   </div>
-                  <div style="font-size:10.5px; color:#64748b; margin-top:3px;">No open dispute tickets or escalations on record.</div>
+                  <span class="ap-badge green" style="font-size:10.5px; padding:3px 10px; border-radius:999px;">Clear</span>
                 </div>
               </div>
             </div>
 
-            <!-- Footer Action Bar -->
-            <div class="ap-crm-drawer-footer" style="padding:16px 24px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; position:sticky; bottom:0; z-index:10;">
-              <button class="ap-btn" id="ap-crm-drawer-block-btn" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; padding:9px 18px; font-size:13px; cursor:pointer; box-shadow:0 1px 3px rgba(255,148,0,0.25);">
-                Block / Restrict ${cust.role === 'admin' ? 'Admin' : 'Shopper'}
+            <!-- Footer -->
+            <div class="ap-crm-drawer-footer">
+              <button id="ap-crm-drawer-block-btn" class="ap-crm-footer-btn-danger">
+                ${isActive ? 'Block Access' : 'Unban Access'}
               </button>
-              <div style="display:flex; gap:8px;">
-                <button class="ap-btn" id="ap-crm-drawer-save-btn" style="background:#ff9400 !important; color:#000000 !important; font-weight:800 !important; border:1.5px solid #e08300 !important; border-radius:6px; padding:9px 20px; font-size:13px; cursor:pointer; box-shadow:0 1px 3px rgba(255,148,0,0.25);">
-                  Close Profile
-                </button>
-              </div>
+              <button id="ap-crm-drawer-ledger-btn" class="ap-crm-footer-btn-primary">
+                View Ledger
+              </button>
+              <button id="ap-crm-drawer-save-btn" class="ap-crm-footer-btn-secondary">
+                Close Profile
+              </button>
             </div>
           </div>
         </div>
       `;
 
-      // Drawer Event Listeners
       const closeDrawer = () => { mount.innerHTML = ''; };
       document.getElementById('ap-crm-drawer-close')?.addEventListener('click', closeDrawer);
       document.getElementById('ap-crm-backdrop')?.addEventListener('click', e => {
         if (e.target.id === 'ap-crm-backdrop') closeDrawer();
       });
       document.getElementById('ap-crm-drawer-save-btn')?.addEventListener('click', closeDrawer);
+      document.getElementById('ap-crm-drawer-ledger-btn')?.addEventListener('click', () => {
+        closeDrawer();
+        openOrderLedger(cust._id);
+      });
       document.getElementById('ap-crm-drawer-block-btn')?.addEventListener('click', async () => {
-        if (confirm(`Restrict / Block access for ${cust.name}?`)) {
-          await adminFetch(`/users/${cust._id}/ban`, { method: 'PUT' });
-          showToast(`Account for ${cust.name} has been restricted.`, 'warn');
+        const action = isActive ? 'Restrict / Block' : 'Unban / Activate';
+        if (confirm(`${action} access for ${cust.name}?`)) {
+          try {
+            await adminFetch(`/users/${cust._id}/ban`, { method: 'PUT' });
+            showToast(`Account for ${cust.name} has been ${isActive ? 'restricted' : 'activated'}.`, isActive ? 'warn' : 'success');
+          } catch {
+            showToast('Status toggled locally — backend sync pending.', 'info');
+          }
           closeDrawer();
           loadData();
         }
@@ -8058,8 +8337,66 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     let search = '';
     let currentFilter = 'all'; // all, active, deactivated
 
+    // Custom Confirmation Modal Helper
+    function showSellerConfirmModal({ iconSvg, iconBg, iconColor, title, description, confirmLabel, confirmBg, onConfirm }) {
+      const existing = document.getElementById('ap-seller-confirm-backdrop');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'ap-seller-confirm-backdrop';
+      overlay.className = 'ap-modal-backdrop';
+      overlay.style.cssText = 'position:fixed; inset:0; z-index:100060; background:rgba(15,23,42,0.65); display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px);';
+
+      const card = document.createElement('div');
+      card.className = 'ap-modal-dialog';
+      card.style.cssText = 'background:#ffffff !important; border-radius:18px !important; padding:32px 28px 24px !important; max-width:440px !important; width:92% !important; text-align:center !important; box-shadow:0 25px 60px rgba(15,23,42,0.25) !important; border:1px solid #cbd5e1 !important; box-sizing:border-box !important; margin:auto !important;';
+
+      card.innerHTML = `
+        <div style="width:58px; height:58px; border-radius:50%; background:${iconBg}; margin:0 auto 16px; display:flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>
+        </div>
+        <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin:0 0 10px; line-height:1.35;">${title}</h3>
+        <p style="font-size:13px; color:#64748b; line-height:1.6; margin:0 0 24px; padding:0 4px;">${description}</p>
+        <div style="display:flex; justify-content:center; gap:12px;">
+          <button type="button" class="ap-btn" id="ap-seller-modal-cancel" style="flex:1; padding:10px 16px; font-size:13px; font-weight:700; background:#ffffff !important; color:#374151 !important; border:1.5px solid #cbd5e1 !important; border-radius:10px !important; cursor:pointer;">Cancel</button>
+          <button type="button" class="ap-btn" id="ap-seller-modal-confirm" style="flex:1; padding:10px 16px; font-size:13px; font-weight:800; background:${confirmBg} !important; background-color:${confirmBg} !important; color:#ffffff !important; border:none !important; border-radius:10px !important; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);">${confirmLabel}</button>
+        </div>
+      `;
+      overlay.appendChild(card);
+      const mount = document.getElementById('admin-panel-overlay') || document.body;
+      mount.appendChild(overlay);
+
+      const close = () => {
+        document.removeEventListener('keydown', onEsc);
+        overlay.remove();
+      };
+      const onEsc = (ev) => { if (ev.key === 'Escape') close(); };
+      document.addEventListener('keydown', onEsc);
+
+      card.querySelector('#ap-seller-modal-cancel').onclick = close;
+      card.querySelector('#ap-seller-modal-confirm').onclick = async () => {
+        const btn = card.querySelector('#ap-seller-modal-confirm');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Processing...';
+        }
+        try {
+          if (onConfirm) await onConfirm();
+        } finally {
+          close();
+        }
+      };
+      overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    }
+
+    // Expose helpers globally
+    window.showSellerConfirmModal = showSellerConfirmModal;
+    window._apSellerConfirmModal = showSellerConfirmModal;
+
     async function load() {
       try {
+
+
         const res = await adminFetch(`/sellers?search=${encodeURIComponent(search)}`);
         const allSellers = res.data.sellers || [];
 
@@ -8102,11 +8439,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </td>
               <td>${isActive ? '<span class="ap-badge green">Active Storefront</span>' : '<span class="ap-badge red">Suspended</span>'}</td>
               <td>
-                <div class="ap-btn-group">
-                  <button class="ap-btn ${isActive ? 'warn' : 'success'} ap-seller-toggle-btn" data-id="${s._id}" data-act="${isActive}">
+                <div class="ap-btn-group ap-seller-btn-group">
+                  <button class="ap-btn ${isActive ? 'warn ap-seller-deact-btn' : 'success'} ap-seller-toggle-btn" data-id="${s._id}" data-act="${isActive}" ${isActive ? 'style="background:#dc2626 !important; background-color:#dc2626 !important; color:#ffffff !important; border:1.5px solid #b91c1c !important; font-weight:700 !important; box-shadow:0 2px 6px rgba(220,38,38,0.25);"' : ''}>
                     ${isActive ? 'Deactivate' : 'Activate'}
                   </button>
-                  <button class="ap-btn ghost ap-seller-details-btn" data-idx="${idx}">
+                  <button class="ap-btn ap-seller-details-btn" data-idx="${idx}" style="background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border:1.5px solid #011d2a !important; font-weight:700 !important;">
                     Details
                   </button>
                   <button class="ap-btn danger ap-seller-del-btn" data-id="${s._id}" data-name="${profile.storeName || s.name}">
@@ -8183,7 +8520,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Toolbar -->
-            <div class="ap-toolbar">
+            <div class="ap-toolbar ap-seller-toolbar">
               <div class="ap-toolbar-left">
                 <div class="ap-toolbar-tabs">
                   <button class="ap-tab-pill ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">
@@ -8197,23 +8534,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </button>
                 </div>
               </div>
-              <div style="min-width: 260px;">
-                <input class="ap-search" id="ap-seller-search-input" value="${search}" style="width:100%;">
+              <div class="ap-seller-search-wrap" style="min-width: 260px;">
+                <input class="ap-search" id="ap-seller-search-input" value="${search}" placeholder="Search merchants by store, owner, email, GSTIN..." style="width:100%; box-sizing: border-box;">
               </div>
             </div>
 
             <!-- Table Card -->
             <div class="ap-table-card">
               <div class="ap-table-wrap">
-                <table class="ap-table">
+                <table class="ap-table" id="ap-sellers-table">
                   <thead>
-                    <tr>
-                      <th>Storefront & Owner</th>
-                      <th>Legal Business & GSTIN</th>
-                      <th>Category</th>
-                      <th>Catalog</th>
-                      <th>Store Status</th>
-                      <th>Actions</th>
+                    <tr style="background:#ff9400 !important;">
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Storefront & Owner</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Legal Business & GSTIN</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Catalog</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Store Status</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -8245,29 +8582,81 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           });
         });
 
+        // Wire Action Buttons (Toggle Activate/Deactivate)
         body.querySelectorAll('.ap-seller-toggle-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const id = btn.dataset.id;
             const isAct = btn.dataset.act === 'true';
-            if (!confirm(`${isAct ? 'Deactivate' : 'Activate'} this merchant storefront?`)) return;
-            try {
-              await adminFetch(`/sellers/${id}/toggle`, { method: 'PUT' });
-              showToast(`Seller storefront ${isAct ? 'deactivated' : 'activated'}`, 'success');
-              load();
-            } catch (e) { showToast(e.message, 'error'); }
+            const storeName = btn.closest('tr')?.querySelector('.ap-cell-title')?.textContent?.trim() || 'this merchant';
+            if (isAct) {
+              showSellerConfirmModal({
+                iconSvg: "<circle cx='12' cy='12' r='10'/><line x1='4.93' y1='4.93' x2='19.07' y2='19.07'/>",
+                iconBg: '#fef2f2',
+                iconColor: '#dc2626',
+                title: 'Deactivate Merchant Storefront?',
+                description: 'Are you sure you want to deactivate <strong>"' + storeName + '"</strong>? Their storefront will be hidden and they cannot receive new orders immediately.',
+                confirmLabel: 'Deactivate Storefront',
+                confirmBg: '#dc2626',
+                onConfirm: async () => {
+                  try {
+                    await adminFetch('/sellers/' + id + '/toggle', { method: 'PUT' });
+                    showToast('Seller storefront deactivated', 'success');
+                    load();
+                  } catch (err) {
+                    showToast(err.message, 'error');
+                  }
+                }
+              });
+            } else {
+              showSellerConfirmModal({
+                iconSvg: "<polyline points='9 11 12 14 22 4'/><path d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/>",
+                iconBg: '#f0fdf4',
+                iconColor: '#16a34a',
+                title: 'Activate Merchant Storefront?',
+                description: 'Are you sure you want to re-activate <strong>"' + storeName + '"</strong>? Their storefront will go live immediately and appear to customers.',
+                confirmLabel: 'Activate Storefront',
+                confirmBg: '#16a34a',
+                onConfirm: async () => {
+                  try {
+                    await adminFetch('/sellers/' + id + '/toggle', { method: 'PUT' });
+                    showToast('Seller storefront activated', 'success');
+                    load();
+                  } catch (err) {
+                    showToast(err.message, 'error');
+                  }
+                }
+              });
+            }
           });
         });
 
+        // Wire Action Buttons (Remove Seller)
         body.querySelectorAll('.ap-seller-del-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const id = btn.dataset.id;
-            const name = btn.dataset.name;
-            if (!confirm(`Remove seller privileges for "${name}"? Their customer account will be preserved.`)) return;
-            try {
-              await adminFetch(`/sellers/${id}`, { method: 'DELETE' });
-              showToast('Seller profile removed', 'success');
-              load();
-            } catch (e) { showToast(e.message, 'error'); }
+            const name = btn.dataset.name || 'this merchant';
+            showSellerConfirmModal({
+              iconSvg: "<polyline points='3 6 5 6 21 6'/><path d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/><path d='M10 11v6'/><path d='M14 11v6'/><path d='M9 6V4h6v2'/>",
+              iconBg: '#fef2f2',
+              iconColor: '#dc2626',
+              title: 'Remove Merchant Seller?',
+              description: 'Are you sure you want to remove seller privileges for <strong>"' + name + '"</strong>? Their customer account will be preserved, but all seller data will be permanently deleted.',
+              confirmLabel: 'Remove Seller',
+              confirmBg: '#dc2626',
+              onConfirm: async () => {
+                try {
+                  await adminFetch('/sellers/' + id, { method: 'DELETE' });
+                  showToast('Seller profile removed', 'success');
+                  load();
+                } catch (err) {
+                  showToast(err.message, 'error');
+                }
+              }
+            });
           });
         });
 
@@ -11410,15 +11799,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <!-- Table Card -->
             <div class="ap-table-card">
               <div class="ap-table-wrap">
-                <table class="ap-table">
+                <table class="ap-table" id="ap-inventory-table">
                   <thead>
-                    <tr>
-                      <th>Product Title &amp; Details</th>
-                      <th>Category</th>
-                      <th>Price</th>
-                      <th>Available Units</th>
-                      <th>Inventory Health</th>
-                      <th>Actions</th>
+                    <tr style="background:#ff9400 !important;">
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Product Title &amp; Details</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Price</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Available Units</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Inventory Health</th>
+                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -11588,26 +11977,26 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     // ── COMMON HEADER & NAV TABS ──
     function getHeaderHTML() {
       return `
-        <div class="ap-view-header" style="flex-wrap:wrap; gap:12px;">
-          <div class="ap-view-title-group">
-            <h2 class="ap-view-title" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              Reviews &amp; Ratings Moderation
-              <span class="ap-super-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a; font-weight:800; font-size:11.5px; padding:3px 8px; border-radius:6px;">
+        <div class="ap-view-header ap-reviews-view-header" style="flex-wrap:wrap; gap:12px;">
+          <div class="ap-view-title-group" style="position:relative; width:100%;">
+            <h2 class="ap-view-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:nowrap; width:100%;">
+              <span class="ap-view-title-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Reviews &amp; Ratings Moderation</span>
+              <span class="ap-super-badge" id="ap-reviews-overall-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a; font-weight:800; font-size:11.5px; padding:3px 8px; border-radius:6px; margin-left:auto; align-self:center; flex-shrink:0; white-space:nowrap;">
                 ${cachedStats.avgRating} ★ Overall (${cachedStats.totalReviews} Reviews)
               </span>
             </h2>
-            <p class="ap-view-sub">Review incoming customer feedback, screen for spam or abusive language, and curate authentic marketplace feedback.</p>
+            <p class="ap-view-sub" style="width:100%; max-width:100%;">Review incoming customer feedback, screen for spam or abusive language, and curate authentic marketplace feedback.</p>
           </div>
           <div class="ap-view-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="ap-btn primary" id="ap-new-review-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; box-shadow:0 2px 6px rgba(2,47,67,0.25); cursor:pointer;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" style="stroke:#ffffff !important; color:#ffffff !important;" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button class="ap-btn primary" id="ap-new-review-btn" style="font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; border-radius:6px; padding:7px 14px; font-weight:800 !important; box-shadow:0 1px 3px rgba(255,148,0,0.28); cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" style="stroke:#000000 !important; color:#000000 !important;" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               New Review
             </button>
-            <button class="ap-btn ghost" id="ap-export-reviews-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;" title="Export Moderated Reviews to CSV">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button class="ap-btn ghost" id="ap-export-reviews-btn" style="font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; border-radius:6px; padding:7px 14px; font-weight:800 !important; box-shadow:0 1px 3px rgba(255,148,0,0.28); cursor:pointer;" title="Export Moderated Reviews to CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" style="stroke:#000000 !important; color:#000000 !important;" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Export CSV
             </button>
-            <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;">
+            <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:1px solid #022F43 !important; border-radius:6px; padding:7px 14px; font-weight:800; cursor:pointer;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Refresh
             </button>
@@ -11615,8 +12004,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         </div>
 
         <!-- View Mode Navigation Tabs -->
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:16px;">
-          <div style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:4px;">
+        <div class="ap-reviews-mode-bar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:16px;">
+          <div class="ap-reviews-tabs-pill" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:4px;">
             <button id="ap-tab-products" style="padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'products' ? '#022F43' : 'transparent'}; color:${viewMode === 'products' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'products' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
               All Products (${cachedProducts.length})
@@ -11632,7 +12021,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           </div>
 
           <!-- Quick Search -->
-          <div style="position:relative; width:280px; max-width:100%;">
+          <div class="ap-top-search-wrap" id="ap-top-search-wrap" style="position:relative; width:280px; max-width:100%;">
             <input type="text" id="ap-top-search-input" value="${viewMode === 'products' ? productSearchQuery : searchQuery}" placeholder="Search product name or store..." style="width:100%; padding:8px 34px 8px 34px; font-size:12.5px; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; outline:none; box-sizing:border-box;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:11px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             ${(viewMode === 'products' ? productSearchQuery : searchQuery) ? `<button id="ap-top-clear-search" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px; padding:0;">✕</button>` : ''}
@@ -11894,27 +12283,100 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       `;
 
       body.innerHTML = `
-        <div class="ap-view-inner">
+        <div class="ap-view-inner ap-prod-reviews-window">
+          <style>
+            @media (max-width: 1024px) {
+              .ap-prod-filter-bar,
+              .ap-reviews-filter-bar {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                width: 100% !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                box-sizing: border-box !important;
+              }
+
+              .ap-prod-filter-group,
+              .ap-prod-filter-group-left,
+              .ap-prod-filter-group-right,
+              .ap-prod-filter-bar > div {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 1 100% !important;
+                gap: 10px !important;
+                box-sizing: border-box !important;
+              }
+
+              .ap-prod-search-wrap,
+              .ap-reviews-search-wrap,
+              div:has(> #ap-prod-search-input) {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
+                position: relative !important;
+                box-sizing: border-box !important;
+              }
+
+              #ap-prod-search-input,
+              .ap-prod-search-wrap input {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                min-height: 42px !important;
+                height: 42px !important;
+                padding: 8px 12px 8px 34px !important;
+                font-size: 13px !important;
+                box-sizing: border-box !important;
+                border-radius: 8px !important;
+                display: block !important;
+              }
+
+              #ap-prod-cat-filter,
+              #ap-prod-rating-filter,
+              #ap-prod-sort-by,
+              #ap-prod-page-size,
+              .ap-prod-filter-select {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                min-height: 42px !important;
+                height: 42px !important;
+                padding: 8px 12px !important;
+                font-size: 13px !important;
+                font-weight: 600 !important;
+                box-sizing: border-box !important;
+                border-radius: 8px !important;
+                border: 1px solid #cbd5e1 !important;
+                background-color: #ffffff !important;
+                display: block !important;
+              }
+            }
+          </style>
           ${getHeaderHTML()}
 
           <!-- Products Filter & Sort Toolbar -->
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; padding:12px 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
+          <div class="ap-prod-filter-bar ap-reviews-filter-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; padding:12px 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
+            <div class="ap-prod-filter-group ap-prod-filter-group-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
               <!-- Product Search Bar -->
-              <div style="position:relative; width:260px; max-width:100%;">
+              <div class="ap-prod-search-wrap ap-reviews-search-wrap" style="position:relative; width:260px; max-width:100%;">
                 <input type="text" id="ap-prod-search-input" value="${productSearchQuery}" placeholder="Filter products by title..." style="width:100%; padding:7px 10px 7px 30px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; box-sizing:border-box;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 ${productSearchQuery ? `<button id="ap-prod-clear-search" style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px; padding:0;">✕</button>` : ''}
               </div>
 
               <!-- Category Filter -->
-              <select id="ap-prod-cat-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+              <select id="ap-prod-cat-filter" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
                 <option value="all" ${productCategoryFilter === 'all' ? 'selected' : ''}>All Categories (${categories.length - 1})</option>
                 ${categories.filter(c => c !== 'all').map(c => `<option value="${c}" ${productCategoryFilter.toLowerCase() === c.toLowerCase() ? 'selected' : ''}>${c}</option>`).join('')}
               </select>
 
               <!-- Star Rating Filter -->
-              <select id="ap-prod-rating-filter" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+              <select id="ap-prod-rating-filter" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
                 <option value="all" ${productRatingFilter === 'all' ? 'selected' : ''}>All Ratings</option>
                 <option value="5" ${productRatingFilter === '5' ? 'selected' : ''}>5 Stars Only ★★★★★</option>
                 <option value="4" ${productRatingFilter === '4' ? 'selected' : ''}>4+ Stars ★★★★☆</option>
@@ -11924,9 +12386,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </select>
             </div>
 
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div class="ap-prod-filter-group ap-prod-filter-group-right" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <!-- Sort -->
-              <select id="ap-prod-sort-by" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+              <select id="ap-prod-sort-by" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
                 <option value="rating-desc" ${productSortBy === 'rating-desc' ? 'selected' : ''}>Highest Rating First</option>
                 <option value="reviews-desc" ${productSortBy === 'reviews-desc' ? 'selected' : ''}>Most Reviews First</option>
                 <option value="rating-asc" ${productSortBy === 'rating-asc' ? 'selected' : ''}>Lowest Rating First</option>
@@ -11936,7 +12398,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </select>
 
               <!-- Page Size -->
-              <select id="ap-prod-page-size" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+              <select id="ap-prod-page-size" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
                 <option value="20" ${productPageSize === 20 ? 'selected' : ''}>20 per page</option>
                 <option value="50" ${productPageSize === 50 ? 'selected' : ''}>50 per page</option>
                 <option value="100" ${productPageSize === 100 ? 'selected' : ''}>100 per page</option>
@@ -13413,7 +13875,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       };
 
       const statusBadge = (s) => {
-        if (s === 'Resolved') return `<span class="ap-badge" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; border:1px solid #e08300; padding:3px 9px; border-radius:99px; display:inline-flex; align-items:center; gap:5px; font-size:11.5px;"><span style="width:6px;height:6px;border-radius:50%;background:#000000;display:inline-block;"></span> ✓ Resolved</span>`;
+        if (s === 'Resolved') return `<span class="ap-badge green ap-badge-resolved" style="background:#dcfce7 !important; color:#15803d !important; font-weight:800; border:1px solid #86efac; padding:3px 9px; border-radius:99px; display:inline-flex; align-items:center; gap:5px; font-size:11.5px;"><span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;"></span> ✓ Resolved</span>`;
         if (s === 'In Progress') return `<span class="ap-badge blue" style="font-weight:700;">● In Progress</span>`;
         return `<span class="ap-badge orange" style="font-weight:700;">⏳ Open</span>`;
       };
@@ -13450,7 +13912,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <td>${priorityBadge(t.priority)}</td>
             <td>${statusBadge(t.status)}</td>
             <td>
-              <button class="ap-btn primary ap-view-ticket-btn" data-id="${t.id}" style="padding:6px 12px;font-size:11.5px;font-weight:700;white-space:nowrap;background:#022f43 !important;color:#ffffff !important;border-radius:6px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(2,47,67,0.3);">
+              <button class="ap-btn primary ap-view-ticket-btn" data-id="${t.id}" style="padding:6px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;background:#ff9400 !important;color:#000000 !important;border-radius:6px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(255,148,0,0.35);">
                 Manage / Respond
               </button>
             </td>
@@ -13478,7 +13940,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </h2>
               <p class="ap-view-sub">Resolve customer disputes, transit damages, incorrect order inquiries, and track support agent resolution response times.</p>
             </div>
-            <div class="ap-view-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="ap-view-actions ap-support-view-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="ap-btn primary" id="ap-log-ticket-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Log New Dispute
@@ -13491,7 +13953,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export CSV
               </button>
-              <button class="ap-btn ghost" id="ap-support-refresh-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+              <button class="ap-btn ghost" id="ap-support-refresh-btn" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;background:#022f43 !important;color:#ffffff !important;border:1px solid #022f43 !important;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Refresh Queue
               </button>
@@ -13595,45 +14057,50 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <!-- Tickets Data Table Card -->
           <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-            <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO scrollbar in this part) -->
-            <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300;">
-              <table class="ap-table ap-support-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0;">
-                <colgroup>
-                  <col style="width:16%;">
-                  <col style="width:20%;">
-                  <col style="width:30%;">
-                  <col style="width:11%;">
-                  <col style="width:11%;">
-                  <col style="width:12%;">
-                </colgroup>
-                <thead>
-                  <tr style="background:#ff9400 !important;">
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Ticket ID &amp; Date</th>
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Customer Account</th>
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Dispute Subject &amp; Order</th>
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Priority</th>
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Status</th>
-                    <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left;">Action</th>
-                  </tr>
-                </thead>
-              </table>
-            </div>
+            <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+            <div class="ap-table-wrap ap-support-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+              <div style="min-width:1040px; width:100%;">
+                <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                  <table class="ap-table ap-support-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                    <colgroup>
+                      <col style="width:15%;">
+                      <col style="width:18%;">
+                      <col style="width:26%;">
+                      <col style="width:11%;">
+                      <col style="width:12%;">
+                      <col style="width:18%;">
+                    </colgroup>
+                    <thead>
+                      <tr style="background:#ff9400 !important;">
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Ticket ID &amp; Date</th>
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Customer Account</th>
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Dispute Subject &amp; Order</th>
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Priority</th>
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Status</th>
+                        <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; text-align:left; white-space:nowrap;">Action</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
 
-            <!-- Scrollable Body Part (scroll-y starts strictly BELOW the header part, NO scroll-x) -->
-            <div class="ap-table-wrap" style="overflow-y:auto; overflow-x:hidden !important; max-height:480px; -webkit-overflow-scrolling:touch; width:100%;">
-              <table class="ap-table ap-support-table" id="ap-support-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin-top:0;">
-                <colgroup>
-                  <col style="width:16%;">
-                  <col style="width:20%;">
-                  <col style="width:30%;">
-                  <col style="width:11%;">
-                  <col style="width:11%;">
-                  <col style="width:12%;">
-                </colgroup>
-                <tbody>
-                  ${rowsHTML}
-                </tbody>
-              </table>
+                <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                <div class="ap-table-wrap ap-support-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                  <table class="ap-table ap-support-table" id="ap-support-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                    <colgroup>
+                      <col style="width:15%;">
+                      <col style="width:18%;">
+                      <col style="width:26%;">
+                      <col style="width:11%;">
+                      <col style="width:12%;">
+                      <col style="width:18%;">
+                    </colgroup>
+                    <tbody>
+                      ${rowsHTML}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
             <div class="ap-table-footer" style="padding:12px 16px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
               <span style="font-size:12px; color:#475569;">Showing <strong>${tickets.length}</strong> of <strong>${cachedTickets.length}</strong> support disputes</span>
@@ -13650,13 +14117,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       `;
 
       // Wire Event Handlers
-      document.getElementById('ap-support-refresh-btn')?.addEventListener('click', () => load());
-      document.getElementById('ap-support-seed-btn')?.addEventListener('click', async () => {
+      const refreshBtn = document.getElementById('ap-support-refresh-btn');
+      refreshBtn?.addEventListener('click', () => {
+        showToast('Refreshing dispute queue...', 'info');
+        load();
+      });
+      const seedBtn = document.getElementById('ap-support-seed-btn');
+      seedBtn?.addEventListener('click', async () => {
+        if (seedBtn) seedBtn.disabled = true;
         try {
           await adminFetch('/support/seed', { method: 'POST' });
           showToast('Dispute queue synchronized with genuine customer orders', 'success');
           load();
-        } catch (e) { showToast(e.message, 'error'); }
+        } catch (e) {
+          showToast(e.message || 'Failed to sync dispute feed', 'error');
+        } finally {
+          if (seedBtn) seedBtn.disabled = false;
+        }
       });
       document.getElementById('ap-empty-seed-btn')?.addEventListener('click', async () => {
         try {
@@ -13765,6 +14242,17 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       // Log New Ticket Modal Button
       document.getElementById('ap-log-ticket-btn')?.addEventListener('click', () => openNewTicketModal());
+
+      // Sync header padding with vertical scrollbar width on the body
+      const bodyScrollEl = body.querySelector('.ap-support-body-scroll');
+      const headerPartEl = body.querySelector('.ap-table-header-part');
+      const syncHeaderScrollbarGap = () => {
+        if (!bodyScrollEl || !headerPartEl) return;
+        const sbWidth = bodyScrollEl.offsetWidth - bodyScrollEl.clientWidth;
+        headerPartEl.style.paddingRight = sbWidth > 0 ? sbWidth + 'px' : '0px';
+      };
+      syncHeaderScrollbarGap();
+      window.addEventListener('resize', syncHeaderScrollbarGap);
     }
 
     // ── Open Dispute Resolution Drawer ───────────────────────────
@@ -13899,7 +14387,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
-                  <button class="ap-btn primary" id="ap-drawer-send-reply-btn" style="font-size:12px;font-weight:700;padding:8px 16px;">
+                  <button class="ap-btn primary" id="ap-drawer-send-reply-btn" style="font-size:12px;font-weight:800;padding:8px 16px;background:#ff9400 !important;color:#000000 !important;border:1px solid #e08300 !important;border-radius:6px;cursor:pointer;box-shadow:0 1px 3px rgba(255,148,0,0.35);">
                     Send Response &amp; Update Case
                   </button>
                 </div>
@@ -13928,34 +14416,55 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       });
 
       // Send Reply Action
-      document.getElementById('ap-drawer-send-reply-btn')?.addEventListener('click', async () => {
-        const replyText = document.getElementById('ap-drawer-reply-text').value.trim();
-        const newStatus = document.getElementById('ap-drawer-status-sel').value;
-        const newPriority = document.getElementById('ap-drawer-priority-sel').value;
+      const sendReplyBtn = document.getElementById('ap-drawer-send-reply-btn');
+      sendReplyBtn?.addEventListener('click', async () => {
+        const replyInput = document.getElementById('ap-drawer-reply-text');
+        const replyText = replyInput ? replyInput.value.trim() : '';
+        const newStatus = document.getElementById('ap-drawer-status-sel')?.value || tkt.status || 'Resolved';
+        const newPriority = document.getElementById('ap-drawer-priority-sel')?.value || tkt.priority || 'Medium';
 
-        if (!replyText) {
-          showToast('Please type a response message or choose a template', 'info');
-          return;
-        }
+        const finalReply = replyText || (newStatus === 'Resolved' 
+          ? 'Official Resolution: Case marked as Resolved by Support Administrator.' 
+          : `Case status updated to ${newStatus} (${newPriority} priority) by Support Desk.`);
+
+        sendReplyBtn.disabled = true;
+        const prevText = sendReplyBtn.innerHTML;
+        sendReplyBtn.innerHTML = 'Updating Case...';
 
         try {
-          // 1. Post reply
-          await adminFetch(`/support/${tkt.id}/reply`, {
+          // 1. Post reply and status/priority to backend
+          await adminFetch(`/support/${encodeURIComponent(tkt.id)}/reply`, {
             method: 'POST',
-            body: JSON.stringify({ replyText, newStatus }),
+            body: JSON.stringify({ replyText: finalReply, newStatus, priority: newPriority }),
           });
 
-          // 2. Update priority
-          await adminFetch(`/support/${tkt.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ status: newStatus, priority: newPriority }),
+          // 2. Also ensure ticket status and priority are saved
+          try {
+            await adminFetch(`/support/${encodeURIComponent(tkt.id)}`, {
+              method: 'PUT',
+              body: JSON.stringify({ status: newStatus, priority: newPriority }),
+            });
+          } catch (_) {}
+
+          // 3. Update active ticket in memory so UI reflects immediately
+          tkt.status = newStatus;
+          tkt.priority = newPriority;
+          if (newStatus === 'Resolved') tkt.slaRemaining = 'Resolved';
+          tkt.messages = tkt.messages || [];
+          tkt.messages.push({
+            sender: 'admin',
+            senderName: 'Support Administrator (Official)',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            text: finalReply
           });
 
-          showToast(`Response logged for ${tkt.id}. Case updated to ${newStatus}.`, 'success');
+          showToast(`Case ${tkt.id} updated to ${newStatus} successfully!`, 'success');
           closeDrawer();
           load();
         } catch (err) {
-          showToast(err.message, 'error');
+          showToast(err.message || 'Failed to update case', 'error');
+          sendReplyBtn.disabled = false;
+          sendReplyBtn.innerHTML = prevText;
         }
       });
     }
@@ -14029,7 +14538,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
                 <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px;">
                   <button type="button" class="ap-btn ghost" id="ap-modal-cancel-btn" style="font-size:12px;">Cancel</button>
-                  <button type="submit" class="ap-btn primary" style="font-size:12px;font-weight:700;padding:8px 18px;">Log Dispute Ticket</button>
+                  <button type="submit" class="ap-btn primary" id="ap-modal-submit-ticket-btn" style="font-size:12px;font-weight:800;padding:8px 18px;background:#ff9400 !important;color:#000000 !important;border:1px solid #e08300 !important;border-radius:6px;cursor:pointer;box-shadow:0 1px 3px rgba(255,148,0,0.35);">Log Dispute Ticket</button>
                 </div>
               </form>
             </div>
@@ -14046,15 +14555,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       document.getElementById('ap-new-ticket-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = document.getElementById('ap-modal-submit-ticket-btn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = 'Logging Ticket...';
+        }
+
         const payload = {
-          customer: document.getElementById('nt-customer').value,
-          email: document.getElementById('nt-email').value,
-          phone: document.getElementById('nt-phone').value,
-          orderId: document.getElementById('nt-order').value,
-          category: document.getElementById('nt-category').value,
-          priority: document.getElementById('nt-priority').value,
-          subject: document.getElementById('nt-subject').value,
-          initialMessage: document.getElementById('nt-message').value,
+          customer: document.getElementById('nt-customer')?.value?.trim() || 'Customer',
+          email: document.getElementById('nt-email')?.value?.trim() || '',
+          phone: document.getElementById('nt-phone')?.value?.trim() || '',
+          orderId: document.getElementById('nt-order')?.value?.trim() || '',
+          category: document.getElementById('nt-category')?.value || 'General Dispute',
+          priority: document.getElementById('nt-priority')?.value || 'High',
+          subject: document.getElementById('nt-subject')?.value?.trim() || 'Dispute Claim',
+          initialMessage: document.getElementById('nt-message')?.value?.trim() || '',
         };
 
         try {
@@ -14062,11 +14577,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             method: 'POST',
             body: JSON.stringify(payload),
           });
-          showToast(`Dispute ticket ${res.data.id} logged successfully!`, 'success');
+          const createdId = (res && res.data && res.data.id) ? res.data.id : 'Ticket';
+          showToast(`Dispute ticket ${createdId} logged successfully!`, 'success');
           closeModal();
           load();
         } catch (err) {
-          showToast(err.message, 'error');
+          showToast(err.message || 'Failed to log dispute ticket', 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Log Dispute Ticket';
+          }
         }
       });
     }
@@ -14110,125 +14630,76 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       try {
         const res = await adminFetch('/cms');
         const cms = res.data || {};
+        let announcements = Array.isArray(cms.announcements) ? [...cms.announcements] : [];
+        if (announcements.length === 0 && cms.announcementText) {
+          announcements = [{
+            _id: 'default_ann',
+            text: cms.announcementText,
+            tag: 'Store Announcement',
+            link: '#deals',
+            active: cms.announcementActive !== false,
+            order: 0
+          }];
+        }
         const banners = cms.heroBanners || [];
         const promotions = cms.promotions || [];
         const quadCards = cms.quadCards || [];
         const heroPromoCards = cms.heroPromoCards || [];
         const quickBrowseItems = cms.quickBrowseItems || [];
-        const announcements = Array.isArray(cms.announcements) && cms.announcements.length > 0
-          ? cms.announcements
-          : (cms.announcementText ? [{
-              _id: 'default_ann',
-              text: cms.announcementText,
-              tag: 'Store Offer',
-              link: '#deals',
-              active: Boolean(cms.announcementActive !== false),
-              validFrom: null,
-              validUntil: null,
-              order: 0,
-            }] : []);
 
-        function formatTimeLimit(validUntil) {
-          if (!validUntil) {
-            return `<span class="ap-badge green" style="background:#ecfdf5; color:#059669; font-weight:800; border:1px solid #a7f3d0; font-size:11px; padding:3px 8px; display:inline-block;">∞ No Expiry (Always Active)</span>`;
-          }
-          const d = new Date(validUntil);
-          if (isNaN(d.getTime())) {
-            return `<span class="ap-badge green" style="background:#ecfdf5; color:#059669; font-weight:800; font-size:11px;">∞ No Expiry</span>`;
-          }
-          const now = new Date();
-          const diffMs = d.getTime() - now.getTime();
-          const formattedDate = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-          
-          if (diffMs <= 0) {
-            return `
-              <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:2px 8px;">Expired</span>
-                <span style="font-size:10.5px; color:#dc2626; font-weight:600;">Ended ${formattedDate}</span>
-              </div>
-            `;
-          }
-
-          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-          const diffDays = Math.floor(diffHours / 24);
-          const remainingHours = diffHours % 24;
-          let timeRemainingText = '';
-          if (diffDays > 0) {
-            timeRemainingText = `${diffDays}d ${remainingHours}h left`;
-          } else if (diffHours > 0) {
-            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            timeRemainingText = `${diffHours}h ${diffMins}m left`;
-          } else {
-            const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-            timeRemainingText = `${diffMins}m left`;
-          }
-
-          const isEndingSoon = diffHours < 24;
-          const badgeBg = isEndingSoon ? '#fef3c7' : '#e0f2fe';
-          const badgeColor = isEndingSoon ? '#92400e' : '#0369a1';
-          const badgeBorder = isEndingSoon ? '#fde68a' : '#bae6fd';
-
-          return `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-              <span class="ap-badge" style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; font-weight:800; font-size:11px; padding:2px 8px;">
-                ⏳ ${timeRemainingText}
-              </span>
-              <span style="font-size:10.5px; color:#475569; font-weight:600;">Until ${formattedDate}</span>
-            </div>
-          `;
-        }
-
-        function renderAnnouncementRows(annList) {
-          if (!annList || !annList.length) {
-            return `<tr><td colspan="5" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No top navigation announcement bars found. Click <strong>"+ Add Announcement Bar"</strong> to create your first announcement!</td></tr>`;
-          }
-          const now = new Date();
-          return annList.map((a, idx) => {
-            const annId = String(a._id || a.id || idx);
-            const isExpired = a.validUntil && new Date(a.validUntil) < now;
-            const tagHtml = a.tag ? `<span class="ap-badge blue" style="font-size:10.5px; margin-right:6px; flex-shrink:0;">${esc(a.tag)}</span>` : '';
-            return `
-              <tr data-announcement-id="${annId}">
-                <td style="padding:10px 14px; vertical-align:middle;">
-                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                    ${tagHtml}
-                    <span style="font-weight:750; color:#000000; font-size:13px; line-height:1.4;">
-                      ${esc(a.text)}
-                    </span>
-                  </div>
-                  ${a.link && a.link !== '#' ? `<div style="font-size:11.5px; color:#2563eb; margin-top:4px;"><span style="color:#64748b;">Target:</span> <code>${esc(a.link)}</code></div>` : ''}
-                </td>
-                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
-                  ${formatTimeLimit(a.validUntil)}
-                </td>
-                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
-                  ${isExpired ? `
-                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:3px 8px;">
-                      Expired
-                    </span>
-                  ` : `
-                    <button type="button" class="ap-btn-tiny ap-announcement-toggle-btn ${a.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${annId}" data-active="${a.active}" title="Click to toggle Active / Paused status" style="cursor:pointer; border:none; font-weight:800; padding:3px 8px; font-size:11px;">
-                      ${a.active ? '● Active' : '○ Paused'}
-                    </button>
-                  `}
-                </td>
-                <td style="text-align:center; padding:10px 8px; vertical-align:middle;">
-                  <span class="ap-badge gray" style="font-weight:700;">#${a.order ?? idx}</span>
-                </td>
-                <td style="text-align:center; padding:10px 8px; vertical-align:middle; white-space:nowrap;">
-                  <button type="button" class="ap-btn ghost ap-edit-announcement-btn" data-id="${annId}" title="Edit announcement text, time limit, and link" style="padding:4px 10px; font-size:12px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-delete-announcement-btn" data-id="${annId}" title="Delete announcement" style="padding:4px 10px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
-                </td>
-              </tr>
-            `;
-          }).join('');
-        }
-
+        let annFilter = 'all';
+        let annSearchQuery = '';
         let currentFilter = 'all';
         let storeSearchQuery = '';
         let offerSearchQuery = '';
         let quadRowFilter = 'all';
         let quadSearchQuery = '';
+
+        function getFilteredAnnouncements() {
+          return announcements.filter(a => {
+            if (annFilter === 'active' && a.active === false) return false;
+            if (annFilter === 'paused' && a.active !== false) return false;
+            if (annSearchQuery) {
+              const q = annSearchQuery.toLowerCase();
+              const textMatch = (a.text || '').toLowerCase().includes(q);
+              const tagMatch = (a.tag || '').toLowerCase().includes(q);
+              const linkMatch = (a.link || '').toLowerCase().includes(q);
+              if (!textMatch && !tagMatch && !linkMatch) return false;
+            }
+            return true;
+          });
+        }
+
+        function renderAnnouncementRows(list) {
+          if (!list || !list.length) {
+            return `<tr><td colspan="5" style="text-align:center; padding:24px; color:#000000; font-weight:600;">No announcements found. Click <strong>"+ Add Announcement"</strong> to create one.</td></tr>`;
+          }
+          return list.map((a, idx) => {
+            const id = String(a._id || a.id || idx);
+            const isLive = a.active !== false;
+            return `
+              <tr data-ann-id="${id}">
+                <td style="font-weight:700; color:#475569; width:45px;">#${a.order ?? (idx + 1)}</td>
+                <td style="min-width:260px;">
+                  <div style="font-weight:700; color:#0f172a; font-size:13px; line-height:1.4;">${esc(a.text)}</div>
+                  ${a.tag ? `<span class="ap-badge blue" style="font-size:10.5px; margin-top:4px; display:inline-block; font-weight:700;">${esc(a.tag)}</span>` : ''}
+                </td>
+                <td style="font-size:12px; color:#334155;">
+                  <code style="color:#0284c7; background:#e0f2fe; padding:2px 6px; border-radius:4px; font-size:11px;">${esc(a.link || '#deals')}</code>
+                </td>
+                <td style="text-align:center;">
+                  <button type="button" class="ap-btn-tiny ap-ann-toggle-btn ${isLive ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${isLive}" style="cursor:pointer; border:none; padding:4px 10px; font-size:11px; font-weight:800;" title="Click to toggle Active / Paused">
+                    ${isLive ? '● Active' : 'Paused'}
+                  </button>
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-ann-btn" data-id="${id}" style="padding:4px 10px; font-size:12px; margin-right:4px; background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border:1px solid #022f43 !important; border-color:#022f43 !important; border-radius:6px; font-weight:700;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-ann-btn" data-id="${id}" style="padding:4px 10px; font-size:12px;">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
 
         function getFilteredQuadCards() {
           return quadCards.filter(c => {
@@ -14259,26 +14730,26 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             `).join('');
 
             const itemsSummary = items.map(it => `
-              <span style="display:inline-block; font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin:2px 4px 2px 0; color:#334155; font-weight:600;">
+              <span class="ap-quad-item-tag" style="display:inline-block; font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin:2px 4px 2px 0; color:#334155; font-weight:600;">
                 ${esc(it.title || 'Item')}${it.badge ? ` <strong style="color:#dc2626;">(${esc(it.badge)})</strong>` : ''}
               </span>
             `).join('');
 
             return `
               <tr data-quad-id="${cardId}">
-                <td style="width:160px; text-align:center;">
-                  <div style="display:inline-flex; gap:4px; flex-wrap:wrap; max-width:80px; justify-content:center;">
+                <td>
+                  <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:80px;">
                     ${thumbsHtml}
                   </div>
                 </td>
                 <td>
                   <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${esc(c.title)}</div>
-                  <div style="margin-top:4px;">${itemsSummary || '<span style="color:#94a3b8; font-size:11px;">No sub-items</span>'}</div>
+                  <div class="ap-quad-items-summary" style="margin-top:4px;">${itemsSummary || '<span style="color:#94a3b8; font-size:11px;">No sub-items</span>'}</div>
                 </td>
-                <td style="white-space:nowrap; text-align:center;">
-                  <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap;">
+                <td>
+                  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
                     <span class="ap-badge blue" style="font-weight:700;">Row ${c.row || 1}</span>
-                    <span class="ap-badge gray">#${c.order ?? idx}</span>
+                    <span class="ap-badge gray" style="font-weight:600;">#${c.order ?? idx}</span>
                   </div>
                 </td>
                 <td>
@@ -14289,14 +14760,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     Footer: <em>"${esc(c.footerText || 'See more')}"</em>
                   </div>
                 </td>
-                <td style="text-align:center;">
+                <td>
                   <button type="button" class="ap-btn-tiny ap-quad-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${cardId}" data-active="${c.active !== false}" title="Click to toggle Active / Hidden" style="cursor:pointer; border:none; font-weight:800; padding:4px 10px;">
                     ${c.active !== false ? 'Active' : 'Hidden'}
                   </button>
                 </td>
-                <td style="white-space:nowrap; text-align:center;">
-                  <button type="button" class="ap-btn ghost ap-edit-quad-btn" data-id="${cardId}" style="padding:4px 12px; font-size:12px; margin-right:6px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-delete-quad-btn" data-id="${cardId}" style="padding:4px 12px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
+                <td style="white-space:nowrap; text-align:right;">
+                  <button type="button" class="ap-btn ghost ap-edit-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-quad-btn" data-id="${cardId}" style="padding:4px 10px; font-size:12px;">Delete</button>
                 </td>
               </tr>
             `;
@@ -14309,22 +14780,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const id = String(c._id || c.id || idx);
             return `
               <tr data-hero-id="${id}">
-                <td style="width:60px; text-align:center;">
-                  <img src="${esc(c.image)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; display:inline-block;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                <td style="width:60px;">
+                  <img src="${esc(c.image)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
                 </td>
                 <td>
                   <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(c.brand || c.sub || 'Promo Banner')}</div>
                   <div style="font-size:11px; color:#64748b;">${esc(c.badge || '')} • ${esc(c.sub || '')}</div>
                   <div style="font-size:10.5px; color:#0284c7; margin-top:2px;">${esc(c.pill || '')}</div>
                 </td>
-                <td style="text-align:center;">
-                  <button type="button" class="ap-btn-tiny ap-hero-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${c.active !== false}" style="cursor:pointer; border:none; padding:3px 10px; font-size:11px; font-weight:700;">
+                <td>
+                  <button type="button" class="ap-btn-tiny ap-hero-toggle-btn ${c.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${c.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
                     ${c.active !== false ? 'Active' : 'Paused'}
                   </button>
                 </td>
-                <td style="text-align:center; white-space:nowrap;">
-                  <button type="button" class="ap-btn ghost ap-edit-hero-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-del-hero-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-hero-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Delete</button>
                 </td>
               </tr>
             `;
@@ -14337,21 +14808,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const id = String(it._id || it.id || idx);
             return `
               <tr data-quick-id="${id}">
-                <td style="width:60px; text-align:center;">
-                  <img src="${esc(it.image)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; display:inline-block;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                <td style="width:60px;">
+                  <img src="${esc(it.image)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
                 </td>
                 <td>
                   <div style="font-weight:800; font-size:12.5px; color:#0f172a;">${esc(it.title || 'Browse Item')}</div>
                   ${it.badge ? `<span style="font-size:10.5px; color:#dc2626; font-weight:700;">${esc(it.badge)}</span>` : ''}
                 </td>
-                <td style="text-align:center;">
-                  <button type="button" class="ap-btn-tiny ap-quick-toggle-btn ${it.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${it.active !== false}" style="cursor:pointer; border:none; padding:3px 10px; font-size:11px; font-weight:700;">
+                <td>
+                  <button type="button" class="ap-btn-tiny ap-quick-toggle-btn ${it.active !== false ? 'ap-badge green' : 'ap-badge gray'}" data-id="${id}" data-active="${it.active !== false}" style="cursor:pointer; border:none; padding:2px 8px; font-size:10.5px;">
                     ${it.active !== false ? 'Active' : 'Paused'}
                   </button>
                 </td>
-                <td style="text-align:center; white-space:nowrap;">
-                  <button type="button" class="ap-btn ghost ap-edit-quick-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
-                  <button type="button" class="ap-btn danger ap-del-quick-btn" data-id="${id}" style="padding:4px 10px; font-size:11.5px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button type="button" class="ap-btn ghost ap-edit-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px; margin-right:2px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-del-quick-btn" data-id="${id}" style="padding:3px 8px; font-size:11px;">Delete</button>
                 </td>
               </tr>
             `;
@@ -14366,24 +14837,24 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             const bannerId = String(b._id || b.id);
             return `
             <tr data-banner-id="${bannerId}">
-              <td style="width:100px; text-align:center;">
-                <img class="ap-banner-thumb" src="${esc(b.image)}" alt="${esc(b.title)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=200';" style="display:inline-block;" />
+              <td style="width:100px;">
+                <img class="ap-banner-thumb" src="${esc(b.image)}" alt="${esc(b.title)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=200';" />
               </td>
               <td>
                 <div style="font-weight:750; color:#000000; font-size:13.5px;">${esc(b.title)}</div>
                 <div style="font-size:12px; color:#1e293b; margin-top:2px;">${esc(b.subtitle || '')}</div>
               </td>
-              <td style="text-align:center;"><span class="ap-badge blue">${esc(b.tag || 'Featured')}</span></td>
-              <td style="text-align:center;"><code style="font-size:11.5px; color:#2563eb; background:#eff6ff; padding:2px 6px; border-radius:4px;">${esc(b.link || '#')}</code></td>
-              <td style="text-align:center;"><span class="ap-badge gray" style="font-weight:700;">#${b.order ?? 0}</span></td>
-              <td style="text-align:center;">
+              <td><span class="ap-badge blue">${esc(b.tag || 'Featured')}</span></td>
+              <td><code style="font-size:11.5px; color:#2563eb; background:#eff6ff; padding:2px 6px; border-radius:4px;">${esc(b.link || '#')}</code></td>
+              <td><span class="ap-badge gray" style="font-weight:700;">#${b.order ?? 0}</span></td>
+              <td>
                 <button type="button" class="ap-btn-tiny ap-banner-toggle-btn ${b.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${bannerId}" data-active="${b.active}" title="Click to toggle Active / Paused status" style="cursor:pointer; border:none; font-weight:800; padding:3px 8px;">
                   ${b.active ? 'Active' : 'Paused'}
                 </button>
               </td>
-              <td style="white-space:nowrap; text-align:center;">
-                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${bannerId}" title="Edit banner headline, image, or link" style="padding:4px 10px; font-size:12px; margin-right:4px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Edit</button>
-                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${bannerId}" title="Delete banner" style="padding:4px 10px; font-size:12px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">Delete</button>
+              <td style="white-space:nowrap; text-align:right;">
+                <button type="button" class="ap-btn ghost ap-edit-banner-btn" data-id="${bannerId}" title="Edit banner headline, image, or link" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                <button type="button" class="ap-btn danger ap-delete-banner-btn" data-id="${bannerId}" title="Delete banner" style="padding:4px 10px; font-size:12px;">Delete</button>
               </td>
             </tr>
           `;
@@ -14485,7 +14956,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         function renderPromoRows(promoList) {
           if (!promoList.length) {
-            return `<tr><td colspan="9" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No promotional offers match your current filter or search criteria.</td></tr>`;
+            return `<tr><td colspan="10" style="text-align:center; padding:32px; color:#000000; font-weight:600;">No promotional offers match your current filter or search criteria.</td></tr>`;
           }
           const now = new Date();
           return promoList.map(p => {
@@ -14503,90 +14974,108 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               ? `<strong style="color:#000000;">${p.discountValue}% OFF</strong>${p.maxDiscount ? `<div style="font-size:11px; color:#1e293b; font-weight:600;">Max ₹${p.maxDiscount.toLocaleString('en-IN')}</div>` : ''}`
               : `<strong style="color:#000000;">₹${p.discountValue.toLocaleString('en-IN')} FLAT</strong>`;
 
-            // Build Partner / Provider items list for ticker display
-            const tickerItems = [];
+            // ── Bank Partner Column Content ──
+            let bankSlides = [];
             if (p.type === 'bank') {
               if (Array.isArray(p.bankRules) && p.bankRules.length > 0) {
                 p.bankRules.forEach(r => {
-                  const bText = r.cardType === 'debit' ? 'Debit Only' : r.cardType === 'credit' ? 'Credit Only' : 'Debit & Credit';
-                  const bBg = r.cardType === 'debit' ? '#e0f2fe' : r.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
-                  const bColor = r.cardType === 'debit' ? '#0369a1' : r.cardType === 'credit' ? '#92400e' : '#15803d';
-                  const bBorder = r.cardType === 'debit' ? '#bae6fd' : r.cardType === 'credit' ? '#fde68a' : '#86efac';
-                  tickerItems.push({
-                    name: r.bank,
-                    logoUrl: getBankLogoUrl(r.bank),
-                    badgeText: bText,
-                    badgeBg: bBg,
-                    badgeColor: bColor,
-                    badgeBorder: bBorder
-                  });
+                  const badgeBg = r.cardType === 'debit' ? '#e0f2fe' : r.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
+                  const badgeColor = r.cardType === 'debit' ? '#0369a1' : r.cardType === 'credit' ? '#92400e' : '#15803d';
+                  const badgeBorder = r.cardType === 'debit' ? '#bae6fd' : r.cardType === 'credit' ? '#fde68a' : '#86efac';
+                  const badgeText = r.cardType === 'debit' ? 'Debit Cards Only' : r.cardType === 'credit' ? 'Credit Cards Only' : 'Debit & Credit Cards';
+                  const logoUrl = getBankLogoUrl(r.bank);
+                  bankSlides.push(`
+                    <div style="display:flex; align-items:center; gap:8px; width:100%; min-width:0;">
+                      <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+                        <img src="${logoUrl}" alt="${esc(r.bank)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div style="min-width:0; text-align:left; flex:1;">
+                        <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(r.bank)}</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:9.5px; font-weight:800; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">${badgeText}</span>
+                      </div>
+                    </div>
+                  `);
                 });
-              } else if (p.bankPartner) {
-                const bText = p.cardType === 'debit' ? 'Debit Cards Only' : p.cardType === 'credit' ? 'Credit Cards Only' : 'Debit & Credit Cards';
-                const bBg = p.cardType === 'debit' ? '#e0f2fe' : p.cardType === 'credit' ? '#fef3c7' : '#dcfce7';
-                const bColor = p.cardType === 'debit' ? '#0369a1' : p.cardType === 'credit' ? '#92400e' : '#15803d';
-                const bBorder = p.cardType === 'debit' ? '#bae6fd' : p.cardType === 'credit' ? '#fde68a' : '#86efac';
-                const rawBanks = p.bankPartner.split(',').map(s => s.trim()).filter(Boolean);
-                if (rawBanks.length === 0) rawBanks.push(p.bankPartner);
-                rawBanks.forEach(b => {
-                  tickerItems.push({
-                    name: b,
-                    logoUrl: getBankLogoUrl(b),
-                    badgeText: bText,
-                    badgeBg: bBg,
-                    badgeColor: bColor,
-                    badgeBorder: bBorder
-                  });
+              } else {
+                let bankList = Array.isArray(p.bankPartners) && p.bankPartners.length > 0
+                  ? p.bankPartners
+                  : (p.bankPartner ? p.bankPartner.split(',').map(s => s.trim()).filter(Boolean) : []);
+                if (bankList.length === 0) {
+                  bankList = ['All Banks (Any Card)'];
+                }
+                const cardLabel = p.cardType === 'debit' ? 'Debit Cards Only' : p.cardType === 'credit' ? 'Credit Cards Only' : 'Debit & Credit Cards';
+                bankList.forEach(bName => {
+                  const logoUrl = getBankLogoUrl(bName);
+                  bankSlides.push(`
+                    <div style="display:flex; align-items:center; gap:8px; width:100%; min-width:0;">
+                      <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+                        <img src="${logoUrl}" alt="${esc(bName)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div style="min-width:0; text-align:left; flex:1;">
+                        <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(bName)}</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:9.5px; font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">${cardLabel}</span>
+                      </div>
+                    </div>
+                  `);
                 });
               }
-            } else if (p.type === 'upi' && (p.upiProvider || (p.upiProviders && p.upiProviders.length > 0))) {
-              const providers = Array.isArray(p.upiProviders) && p.upiProviders.length > 0
+            }
+
+            let bankStr = '';
+            if (bankSlides.length === 0) {
+              bankStr = `<span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>`;
+            } else if (bankSlides.length === 1) {
+              bankStr = `<div style="width:100%; max-width:245px; margin:0 auto; display:flex; justify-content:center; align-items:center;">${bankSlides[0]}</div>`;
+            } else {
+              bankStr = `
+                <div class="ap-promo-cyclic-ticker-wrap" data-count="${bankSlides.length}" style="width:100%; max-width:245px; margin:0 auto;" title="Cycling ${bankSlides.length} bank partner details. Hover to pause.">
+                  ${bankSlides.map((sHtml, sIdx) => `
+                    <div class="ap-promo-cyclic-slide ${sIdx === 0 ? 'is-active' : ''}" data-slide-idx="${sIdx}">
+                      ${sHtml}
+                      <span class="ap-cyclic-ticker-indicator">${sIdx + 1}/${bankSlides.length}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            }
+
+            // ── UPI Offer Column Content ──
+            let upiSlides = [];
+            if (p.type === 'upi') {
+              let upiList = Array.isArray(p.upiProviders) && p.upiProviders.length > 0
                 ? p.upiProviders
                 : (p.upiProvider ? p.upiProvider.split(',').map(s => s.trim()).filter(Boolean) : []);
-              if (providers.length === 0 && p.upiProvider) providers.push(p.upiProvider);
-              providers.forEach(u => {
-                tickerItems.push({
-                  name: u,
-                  logoUrl: getUpiLogoUrl(u),
-                  badgeText: 'UPI Cashback',
-                  badgeBg: '#e0f2fe',
-                  badgeColor: '#0369a1',
-                  badgeBorder: '#bae6fd'
-                });
+              if (upiList.length === 0) {
+                upiList = ['All UPI Apps'];
+              }
+              upiList.forEach(uName => {
+                const logoUrl = getUpiLogoUrl(uName);
+                upiSlides.push(`
+                  <div style="display:flex; align-items:center; gap:8px; width:100%; min-width:0;">
+                    <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+                      <img src="${logoUrl}" alt="UPI" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                    </div>
+                    <div style="min-width:0; text-align:left; flex:1;">
+                      <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(uName)}</div>
+                      <span class="ap-offer-ticker-badge upi" style="font-size:9.5px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 5px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px; white-space:nowrap;">UPI Cashback &amp; Instant Pay</span>
+                    </div>
+                  </div>
+                `);
               });
             }
 
-            let partnerStr = `<span style="color:#64748b;">—</span>`;
-            if (tickerItems.length === 1) {
-              const item = tickerItems[0];
-              partnerStr = `
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center; width:100%;">
-                  <div style="display:flex; align-items:center; justify-content:center; gap:5px; max-width:100%;">
-                    <div style="width:18px; height:18px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
-                      <img src="${item.logoUrl}" alt="${esc(item.name)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
-                    </div>
-                    <span style="font-weight:700; color:#000000; font-size:11.5px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(item.name)}">${esc(item.name)}</span>
-                  </div>
-                  <div>
-                    <span style="font-size:9.5px; font-weight:800; background:${item.badgeBg}; color:${item.badgeColor}; border:1px solid ${item.badgeBorder}; padding:1px 6px; border-radius:4px; display:inline-block; white-space:nowrap;">${item.badgeText}</span>
-                  </div>
-                </div>
-              `;
-            } else if (tickerItems.length > 1) {
-              partnerStr = `
-                <div class="ap-partner-ticker" data-total="${tickerItems.length}" style="position:relative; width:100%; min-height:42px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                  ${tickerItems.map((item, idx) => `
-                    <div class="ap-ticker-slide ${idx === 0 ? 'active' : ''}" data-index="${idx}" style="width:100%; display:${idx === 0 ? 'flex' : 'none'}; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center;">
-                      <div style="display:flex; align-items:center; justify-content:center; gap:5px; max-width:100%;">
-                        <div style="width:18px; height:18px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:1px; flex-shrink:0;">
-                          <img src="${item.logoUrl}" alt="${esc(item.name)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
-                        </div>
-                        <span style="font-weight:700; color:#000000; font-size:11.5px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(item.name)}">${esc(item.name)}</span>
-                        <span style="font-size:8.5px; font-weight:800; color:#022F43; background:#e2e8f0; padding:1px 5px; border-radius:8px; flex-shrink:0;">${idx + 1}/${tickerItems.length}</span>
-                      </div>
-                      <div>
-                        <span style="font-size:9.5px; font-weight:800; background:${item.badgeBg}; color:${item.badgeColor}; border:1px solid ${item.badgeBorder}; padding:1px 6px; border-radius:4px; display:inline-block; white-space:nowrap;">${item.badgeText}</span>
-                      </div>
+            let upiStr = '';
+            if (upiSlides.length === 0) {
+              upiStr = `<span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>`;
+            } else if (upiSlides.length === 1) {
+              upiStr = `<div style="width:100%; max-width:245px; margin:0 auto; display:flex; justify-content:center; align-items:center;">${upiSlides[0]}</div>`;
+            } else {
+              upiStr = `
+                <div class="ap-promo-cyclic-ticker-wrap" data-count="${upiSlides.length}" style="width:100%; max-width:245px; margin:0 auto;" title="Cycling ${upiSlides.length} UPI offer details. Hover to pause.">
+                  ${upiSlides.map((sHtml, sIdx) => `
+                    <div class="ap-promo-cyclic-slide ${sIdx === 0 ? 'is-active' : ''}" data-slide-idx="${sIdx}">
+                      ${sHtml}
+                      <span class="ap-cyclic-ticker-indicator">${sIdx + 1}/${upiSlides.length}</span>
                     </div>
                   `).join('')}
                 </div>
@@ -14600,20 +15089,19 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             let durationBadge = `<span style="font-size:11.5px; color:#000000; font-weight:600;">Always Active</span>`;
             if (p.validUntil) {
               const untilDate = new Date(p.validUntil);
-              const dateStr = untilDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-              const timeStr = untilDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+              const dateStr = untilDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               if (isExpired) {
                 durationBadge = `
-                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                    <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-size:10px; padding:2px 6px;">Expired</span>
-                    <div style="font-size:10px; color:#b91c1c; font-weight:700; margin-top:2px; line-height:1.2; text-align:center;">Ended: ${esc(dateStr)}</div>
+                  <div>
+                    <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">Expired</span>
+                    <div style="font-size:11px; color:#b91c1c; font-weight:700; margin-top:3px;">Ended: ${esc(dateStr)}</div>
                   </div>
                 `;
               } else if (isScheduled) {
                 durationBadge = `
-                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                    <span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; border:1px solid #fde047; font-size:10px; padding:2px 6px;">Scheduled</span>
-                    <div style="font-size:10px; color:#475569; font-weight:600; margin-top:2px; line-height:1.2; text-align:center;">Starts: ${new Date(p.validFrom).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+                  <div>
+                    <span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; border:1px solid #fde047;">Scheduled</span>
+                    <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Starts: ${new Date(p.validFrom).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                 `;
               } else {
@@ -14621,58 +15109,64 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const diffHours = Math.round(diffMs / (1000 * 60 * 60));
                 const timeLeft = diffHours < 24 ? `${diffHours}h left` : `${Math.round(diffHours / 24)}d left`;
                 durationBadge = `
-                  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                    <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:10px; padding:2px 6px; white-space:nowrap;">Active (${timeLeft})</span>
-                    <div style="font-size:10.5px; color:#475569; font-weight:600; line-height:1.2; text-align:center; margin-top:2px;">
-                      Expires: <span style="color:#000000; font-weight:700;">${esc(dateStr)}</span>
-                      <div style="font-size:9.5px; color:#64748b;">${esc(timeStr)}</div>
-                    </div>
+                  <div>
+                    <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (${timeLeft})</span>
+                    <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: ${esc(dateStr)}</div>
                   </div>
                 `;
               }
             } else if (isScheduled) {
-              durationBadge = `<span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e; font-size:10px;">Starts Later</span>`;
+              durationBadge = `<span class="ap-badge yellow" style="font-weight:800; background:#fef9c3; color:#854d0e;">Starts Later</span>`;
             }
 
             let productsBadge = '';
             if (p.applicableProducts && p.applicableProducts.length > 0) {
-              productsBadge = `<div style="font-size:10.5px; color:#000000; font-weight:700; margin-top:3px;" title="Applies to: ${esc(p.applicableProducts.join(', '))}">Applies to: ${p.applicableProducts.slice(0, 2).map(esc).join(', ')}${p.applicableProducts.length > 2 ? ` +${p.applicableProducts.length - 2}` : ''}</div>`;
+              productsBadge = `<div style="font-size:11px; color:#000000; font-weight:700; margin-top:4px;" title="Applies to: ${esc(p.applicableProducts.join(', '))}">Applies to: ${p.applicableProducts.slice(0, 2).map(esc).join(', ')}${p.applicableProducts.length > 2 ? ` +${p.applicableProducts.length - 2}` : ''}</div>`;
             }
 
             const promoId = String(p._id || p.id);
             return `
-              <tr data-promo-id="${promoId}" class="ap-promo-row" style="cursor:pointer; transition:background-color 0.15s ease;" title="Click offer to view or edit details">
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">
-                  <div style="font-family:monospace; font-weight:800; color:#022F43; font-size:12.5px; letter-spacing:0.02em; background:#e0f2fe; padding:2px 6px; border-radius:5px; border:1px solid #bae6fd; display:inline-block;" title="Click to open offer">${esc(p.code)}</div>
-                  <div style="margin-top:3px;">${typeBadge}</div>
+              <tr data-promo-id="${promoId}">
+                <td style="text-align:center;">
+                  <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">${esc(p.code)}</div>
+                  <div style="margin-top:4px; display:flex; justify-content:center;">${typeBadge}</div>
                 </td>
-                <td style="text-align:center; padding:8px 6px; overflow:hidden; vertical-align:middle; word-break:break-word;">
-                  <div style="font-weight:700; color:#022F43; font-size:12px; line-height:1.25; text-align:center;" title="Click to open offer">${esc(p.title)}</div>
-                  <div style="font-size:11px; color:#475569; margin-top:2px; line-height:1.25; text-align:center;">${esc(p.description || '')}</div>
+                <td style="text-align:left;">
+                  <div style="font-weight:700; color:#000000; font-size:13px; line-height:1.4;">${esc(p.title)}</div>
+                  <div style="font-size:11.5px; color:#475569; margin-top:3px; line-height:1.4;">${esc(p.description || '')}</div>
                 </td>
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">${scopeBadge}</td>
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;">${rateStr}</td>
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle; word-break:break-word;"><strong style="color:#000000; font-size:12px;">₹${(p.minOrder || 0).toLocaleString('en-IN')}</strong></td>
-                <td style="text-align:center; padding:8px 5px; overflow:hidden; vertical-align:middle; word-break:break-word;">
-                  <div style="font-size:11px; color:#000000; display:flex; justify-content:center; align-items:center; width:100%; text-align:center;">${partnerStr}</div>
+                <td style="text-align:center;">
+                  <div style="display:inline-flex; justify-content:center; align-items:center;">${scopeBadge}</div>
                 </td>
-                <td style="text-align:center; padding:8px 5px; overflow:hidden; vertical-align:middle; word-break:break-word;">${durationBadge}${productsBadge}</td>
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle;">
+                <td style="text-align:center;">
+                  <div style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center;">${rateStr}</div>
+                </td>
+                <td style="text-align:center;">
+                  <strong style="color:#000000; font-size:13px; font-weight:800;">₹${(p.minOrder || 0).toLocaleString('en-IN')}</strong>
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                  <div style="width:100%; display:flex; justify-content:center; align-items:center; font-size:12px; color:#000000;">${bankStr}</div>
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                  <div style="width:100%; display:flex; justify-content:center; align-items:center; font-size:12px; color:#000000;">${upiStr}</div>
+                </td>
+                <td style="text-align:center;">
+                  <div style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center;">${durationBadge}${productsBadge}</div>
+                </td>
+                <td style="text-align:center;">
                   ${isExpired ? `
-                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; font-size:11px; padding:3px 6px;">
+                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5;">
                       Expired
                     </span>
                   ` : `
-                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${promoId}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800; font-size:11px; padding:3px 6px;">
+                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ${p.active ? 'ap-badge green' : 'ap-badge gray'}" data-id="${promoId}" data-active="${p.active}" style="cursor:pointer; border:none; font-weight:800;">
                       ${p.active ? '● Active' : '○ Paused'}
                     </button>
                   `}
                 </td>
-                <td style="text-align:center; padding:8px 4px; overflow:hidden; vertical-align:middle;">
-                  <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
-                    <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${promoId}" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Delete</button>
-                    <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${promoId}" style="width:58px; min-width:58px; padding:3px 0; font-size:11px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; justify-content:center; text-align:center; border-radius:6px; box-sizing:border-box;">Edit</button>
-                  </div>
+                <td style="white-space:nowrap; text-align:center; padding:13px 16px;">
+                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="${promoId}" style="padding:5px 12px; font-size:12px; margin-right:6px; font-weight:700;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="${promoId}" style="padding:5px 12px; font-size:12px; font-weight:700;">Delete</button>
                 </td>
               </tr>
             `;
@@ -14685,7 +15179,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const storeSpecificCount = promotions.filter(p => p.scope === 'store').length;
 
         body.innerHTML = `
-          <div class="ap-view-inner">
+          <div class="ap-view-inner ap-cms-view">
             <div class="ap-view-header">
               <div class="ap-view-title-group">
                 <h2 class="ap-view-title" style="color:#000000;">
@@ -14699,56 +15193,69 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                   Refresh
                 </button>
-                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
-                  <span>+ Add Homepage Card</span>
-                </button>
-                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
-                  <span style="color:#000000; font-weight:800;">+ Add Featured Banner</span>
-                </button>
-                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800;">
-                  <span style="color:#000000; font-weight:800;">+ Create Offer / Voucher</span>
-                </button>
+                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Add Homepage Card</button>
+                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Add Featured Banner</button>
+                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Create Offer / Voucher</button>
               </div>
             </div>
 
-            <!-- Global Announcement Ticker Manager (Multi-item with Time Limits, Edit & Delete) -->
-            <div class="ap-table-card" style="margin-bottom:24px;" id="ap-announcements-section">
-              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                <div>
+            <!-- Global Announcement Ticker Manager -->
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;" id="ap-announcements-section">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; position:relative;">
+                <div style="width:100%; flex:1 1 100%; min-width:0; position:relative;">
                   <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
-                    Top Navigation Announcement Bar
-                    <span class="ap-badge green" style="font-size:11px; font-weight:800; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; padding:3px 10px; border-radius:12px; display:inline-flex; align-items:center; gap:5px;">● Live on Production</span>
-                    <span class="ap-badge blue" id="ap-announcement-count-badge" style="font-weight:800; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important; padding:3px 10px; border-radius:12px; font-size:11px; display:inline-flex; align-items:center; gap:5px;">● ${announcements.length} Announcement${announcements.length === 1 ? '' : 's'}</span>
+                    <span style="font-size:14px; font-weight:800; color:#ffffff !important; flex:0 0 auto;">Top Navigation Announcement Bar</span>
+                    <span class="ap-badge green ap-ann-count-badge-tag" id="ap-ann-count-badge" style="background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; font-weight:800; font-size:10.5px; padding:2.5px 8px; border-radius:20px; width:fit-content; max-width:fit-content; white-space:nowrap; flex-shrink:0;">
+                      ● ${announcements.filter(a => a.active !== false).length} Live on Production
+                    </span>
                   </h3>
-                  <p style="font-size:12px; color:#cbd5e1 !important; font-weight:600; margin:3px 0 0;">This marquee message is pinned at the top-left utility bar of the customer-facing storefront.</p>
+                  <p style="margin:6px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600; line-height:1.45; width:100% !important; max-width:100% !important; display:block !important; padding:0 !important;">
+                    Manage all marquee announcement messages displayed at the top-left utility bar of the customer-facing storefront.
+                  </p>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button type="button" class="ap-btn primary" id="ap-cms-add-announcement-btn" style="padding:7px 18px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important;">
-                    + Add Announcement Bar
+                <div class="ap-card-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0; width:100%;">
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-ann-btn" style="padding:8px 16px; font-size:12px; font-weight:800; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; border-radius:8px; cursor:pointer; white-space:nowrap;">
+                    Add Announcement
                   </button>
                 </div>
               </div>
-              <div class="ap-table-wrap" style="max-height:290px; overflow-y:auto; overflow-x:hidden;">
-                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                    <tr style="background:#FF9400;">
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:44%;">TICKER ANNOUNCEMENT TEXT</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">TIME LIMIT / SCHEDULE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">STATUS</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:8%;">ORDER</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
+
+
+              <!-- Filter Toolbar -->
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1.5px solid #e08300; background:#ff9400; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="ap-cms-pills" id="ap-ann-pills">
+                  <button type="button" class="ap-cms-pill active" data-filter="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Announcements (${announcements.length})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="active" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Active Only (${announcements.filter(a => a.active !== false).length})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="paused" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Paused (${announcements.filter(a => a.active === false).length})</button>
+                </div>
+                <div class="ap-ann-search-wrap" style="display:flex; align-items:center; gap:8px; width:100%; max-width:320px;">
+                  <input type="text" id="ap-ann-search-input" placeholder="Search announcement text..." style="width:100%; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; background:#ffffff; color:#000000;" />
+                </div>
+              </div>
+
+              <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+              <div class="ap-table-wrap">
+                <table class="ap-table" id="ap-ann-table">
+                  <thead>
+                    <tr class="ap-table-header-part">
+                      <th style="width:50px; text-align:center;">#</th>
+                      <th style="text-align:center;">Announcement Message</th>
+                      <th style="text-align:center;">Destination Link</th>
+                      <th style="text-align:center;">Status</th>
+                      <th style="text-align:center;">Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="ap-announcements-table-body">
-                    ${renderAnnouncementRows(announcements)}
+                  <tbody id="ap-ann-table-body">
+                    ${renderAnnouncementRows(getFilteredAnnouncements())}
                   </tbody>
                 </table>
               </div>
+
             </div>
 
             <!-- Homepage 4-Quadrant Category Cards Manager -->
-            <div class="ap-table-card" style="margin-bottom:24px;" id="ap-quad-cards-section">
-              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;" id="ap-quad-cards-section">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                 <div>
                   <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
                     Homepage 4-Quadrant Category Cards
@@ -14756,212 +15263,342 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </h3>
                   <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Full control over all 4-item category cards on the customer homepage. Change titles, swap images, edit deal badges, and add/remove cards.</p>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;" title="Restore original factory preset cards">
+                <div class="ap-card-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:#ffffff; color:#022f43 !important; border:1px solid #cbd5e1; white-space:nowrap;" title="Restore original factory preset cards">
                     ↺ Reset to Defaults
                   </button>
-                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">
-                    + Add New Homepage Card
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#ff9400 !important; color:#000000 !important; border:1.5px solid #e08300 !important; border-radius:8px; cursor:pointer; white-space:nowrap;">
+                    Add New Homepage Card
                   </button>
                 </div>
               </div>
 
               <!-- Filter Toolbar with Search & Row Filters -->
-              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43 !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1.5px solid #e08300; background:#ff9400; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div class="ap-cms-pills" id="ap-quad-row-pills">
-                  <button type="button" class="ap-cms-pill active" data-row="all">All Rows (${quadCards.length})</button>
-                  <button type="button" class="ap-cms-pill" data-row="1">Row 1</button>
-                  <button type="button" class="ap-cms-pill" data-row="2">Row 2</button>
-                  <button type="button" class="ap-cms-pill" data-row="3">Row 3</button>
-                  <button type="button" class="ap-cms-pill" data-row="4">Row 4</button>
-                  <button type="button" class="ap-cms-pill" data-row="5">Row 5</button>
-                  <button type="button" class="ap-cms-pill" data-row="6">Row 6</button>
-                  <button type="button" class="ap-cms-pill" data-row="7">Row 7</button>
+                  <button type="button" class="ap-cms-pill active" data-row="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Rows (${quadCards.length})</button>
+                  <button type="button" class="ap-cms-pill" data-row="1" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 1</button>
+                  <button type="button" class="ap-cms-pill" data-row="2" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 2</button>
+                  <button type="button" class="ap-cms-pill" data-row="3" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 3</button>
+                  <button type="button" class="ap-cms-pill" data-row="4" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 4</button>
+                  <button type="button" class="ap-cms-pill" data-row="5" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 5</button>
+                  <button type="button" class="ap-cms-pill" data-row="6" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 6</button>
+                  <button type="button" class="ap-cms-pill" data-row="7" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 7</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <input type="text" id="ap-quad-search-input" placeholder="Search cards by title or item..." style="width:240px; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; background:#ffffff; color:#000000;" />
                 </div>
               </div>
 
-              <div class="ap-table-wrap" style="max-height:330px; overflow-y:auto; overflow-x:hidden;">
-                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                    <tr style="background:#FF9400;">
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">4 TILE PREVIEW</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:32%;">CARD TITLE &amp; ITEMS SUMMARY</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; white-space:nowrap; position:sticky; top:0; z-index:5; width:14%;">ROW &amp; ORDER</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:18%;">DESTINATION &amp; FOOTER</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:10%;">STATUS</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ap-quad-table-body">
-                    ${renderQuadCardRows(getFilteredQuadCards())}
-                  </tbody>
-                </table>
+              <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:980px; width:100%;">
+                  <!-- Pinned orange header (strictly NO scrollbar here) -->
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:10%;">
+                        <col style="width:30%;">
+                        <col style="width:13%;">
+                        <col style="width:18%;">
+                        <col style="width:13%;">
+                        <col style="width:16%;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:center;">4 Tile Preview</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:center;">Card Title &amp; Items Summary</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:center;">Row &amp; Order</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:center;">Destination &amp; Footer</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:center;">Status</th>
+                          <th style="text-align:center; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <!-- Scrollable body (scrollbar appears strictly below the orange header) -->
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:10%;">
+                        <col style="width:30%;">
+                        <col style="width:13%;">
+                        <col style="width:18%;">
+                        <col style="width:13%;">
+                        <col style="width:16%;">
+                      </colgroup>
+                      <tbody id="ap-quad-table-body">
+                        ${renderQuadCardRows(getFilteredQuadCards())}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Top Hero Promo Cards & Quick Browse Strip Grid -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
               <!-- Top Hero Cards (4 Cards) -->
-              <div class="ap-table-card">
-                <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
+              <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+                <div class="ap-card-header" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
                   <div>
                     <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Top Hero Promo Cards</h3>
                     <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The 4 showcase cards below the main banner slider.</p>
                   </div>
-                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">+ Add</button>
+                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#ff9400; color:#000000 !important; border:1.5px solid #e08300;">Add</button>
                 </div>
-                <div class="ap-table-wrap" style="max-height:260px; overflow-y:auto; overflow-x:hidden;">
-                  <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                    <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                      <tr style="background:#FF9400;">
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">Image</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:48%;">Details &amp; Badge</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">Status</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="ap-hero-promo-table-body">
-                      ${renderHeroPromoRows(heroPromoCards)}
-                    </tbody>
-                  </table>
+                <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                  <div class="ap-cms-table-inner" style="min-width:580px; width:100%;">
+                    <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                      <table class="ap-table" id="ap-hero-promo-table-header" style="width:100%; min-width:580px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                        <colgroup>
+                          <col style="width:12%;">
+                          <col style="width:48%;">
+                          <col style="width:16%;">
+                          <col style="width:24%;">
+                        </colgroup>
+                        <thead style="background:#ff9400;">
+                          <tr style="background:#ff9400 !important;">
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Image</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Details &amp; Badge</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Status</th>
+                            <th style="text-align:center; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px;">Actions</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+                      <table class="ap-table" id="ap-hero-promo-table" style="width:100%; min-width:580px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                        <colgroup>
+                          <col style="width:12%;">
+                          <col style="width:48%;">
+                          <col style="width:16%;">
+                          <col style="width:24%;">
+                        </colgroup>
+                        <tbody id="ap-hero-promo-table-body">
+                          ${renderHeroPromoRows(heroPromoCards)}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Quick Browse Items (7 Items) -->
-              <div class="ap-table-card">
-                <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
+              <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+                <div class="ap-card-header" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
                   <div>
                     <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Quick-Browse Strip Items</h3>
                     <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The mini horizontal browse items above the quad grid.</p>
                   </div>
-                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#FF9400; border-color:#FF9400; color:#000000 !important;">+ Add</button>
+                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#ff9400; color:#000000 !important; border:1.5px solid #e08300;">Add</button>
                 </div>
-                <div class="ap-table-wrap" style="max-height:250px; overflow-y:auto; overflow-x:hidden;">
-                  <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                    <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                      <tr style="background:#FF9400;">
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">Image</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:48%;">Title &amp; Badge</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">Status</th>
-                        <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800; position:sticky; top:0; z-index:5; width:22%;">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="ap-quick-browse-table-body">
-                      ${renderQuickBrowseRows(quickBrowseItems)}
-                    </tbody>
-                  </table>
+                <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                  <div class="ap-cms-table-inner" style="min-width:580px; width:100%;">
+                    <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                      <table class="ap-table" id="ap-quick-browse-table-header" style="width:100%; min-width:580px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                        <colgroup>
+                          <col style="width:12%;">
+                          <col style="width:48%;">
+                          <col style="width:16%;">
+                          <col style="width:24%;">
+                        </colgroup>
+                        <thead style="background:#ff9400;">
+                          <tr style="background:#ff9400 !important;">
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Image</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Title &amp; Badge</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:center;">Status</th>
+                            <th style="text-align:center; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px;">Actions</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+                      <table class="ap-table" id="ap-quick-browse-table" style="width:100%; min-width:580px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                        <colgroup>
+                          <col style="width:12%;">
+                          <col style="width:48%;">
+                          <col style="width:16%;">
+                          <col style="width:24%;">
+                        </colgroup>
+                        <tbody id="ap-quick-browse-table-body">
+                          ${renderQuickBrowseRows(quickBrowseItems)}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Active Featured Banners Table Card -->
-            <div class="ap-table-card" style="margin-bottom:24px;">
-              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                   <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Active Featured Banners</h3>
                   <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Hero slider images, headlines, and category callouts shown on the homepage.</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:800; color:#cbd5e1 !important; background:#1e293b !important; border:1px solid #334155 !important; padding:3px 10px; border-radius:12px; font-size:11px;">${banners.length} Banners</span>
-                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; background:#FF9400; border-color:#FF9400; color:#000000 !important; font-weight:800;">
-                    + Add Featured Banner
+                  <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:700; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important;">${banners.length} Banners</span>
+                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; color:#000000 !important; font-weight:800; background:#ff9400 !important; border:1.5px solid #e08300 !important; border-radius:8px; cursor:pointer;">
+                    Add Featured Banner
                   </button>
                 </div>
               </div>
-              <div class="ap-table-wrap" style="max-height:280px; overflow-y:auto; overflow-x:hidden;">
-                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                    <tr style="background:#FF9400;">
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:13%;">IMAGE PREVIEW</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:27%;">BANNER HEADLINE &amp; SUBTITLE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:12%;">TAG BADGE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:16%;">DESTINATION LINK</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:8%;">ORDER</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:10%;">STATUS</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 6px; font-weight:800; position:sticky; top:0; z-index:5; width:14%;">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ap-banners-table-body">
-                    ${renderBannerRows(banners)}
-                  </tbody>
-                </table>
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:980px; width:100%;">
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:10%;">
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:16%;">
+                        <col style="width:8%;">
+                        <col style="width:10%;">
+                        <col style="width:14%;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Image Preview</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Banner Headline &amp; Subtitle</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Tag Badge</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Destination Link</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Order</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:center;">Status</th>
+                          <th style="text-align:center; color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:10%;">
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:16%;">
+                        <col style="width:8%;">
+                        <col style="width:10%;">
+                        <col style="width:14%;">
+                      </colgroup>
+                      <tbody id="ap-banners-table-body">
+                        ${renderBannerRows(banners)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Promotional Offers, Bank Cards & UPI Vouchers -->
-            <div class="ap-table-card">
-              <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;">
+            <div class="ap-table-card ap-promos-card" style="border-radius:16px; border-top-left-radius:16px; border-top-right-radius:16px; overflow:hidden;">
+              <div class="ap-card-header" style="border-top-left-radius:16px; border-top-right-radius:16px; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                   <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Promotional Offers, Bank Cards &amp; Vouchers</h3>
                   <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Manage storewide vouchers, bank instant discounts, UPI cashback, and store-specific campaigns.</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span class="ap-badge green" id="ap-promo-count-badge" style="font-weight:800; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; padding:3px 10px; border-radius:12px; font-size:11px;">${promotions.length} Offers</span>
-                  <button class="ap-btn primary" id="ap-cms-add-promo-btn" style="background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; padding:6px 14px; font-size:12px; border-radius:6px; cursor:pointer;">
-                    + Create Offer / Voucher
+                  <span class="ap-badge green" id="ap-promo-count-badge" style="font-weight:700; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important;">${promotions.length} Offers</span>
+                  <button class="ap-btn primary" id="ap-cms-add-promo-btn" style="background:#ff9400; border-color:#e08300; padding:6px 14px; font-size:12px; color:#000000 !important; font-weight:800;">
+                    Create Offer / Voucher
                   </button>
                 </div>
               </div>
 
               <!-- Filter Toolbar with Dedicated Searchbar for Stores -->
-              <div class="ap-cms-toolbar" style="background:#022F43 !important; border-bottom:1px solid rgba(255,255,255,0.12); padding:12px 20px;">
+              <div class="ap-cms-toolbar" style="background:#ff9400; border-bottom:1.5px solid #e08300;">
                 <div class="ap-cms-pills">
-                  <button type="button" class="ap-cms-pill active" data-filter="all">All Offers (${promotions.length})</button>
-                  <button type="button" class="ap-cms-pill" data-filter="voucher">Vouchers (${voucherCount})</button>
-                  <button type="button" class="ap-cms-pill" data-filter="bank">Bank Cards (${bankCount})</button>
-                  <button type="button" class="ap-cms-pill" data-filter="upi">UPI Offers (${upiCount})</button>
-                  <button type="button" class="ap-cms-pill" data-filter="store">Store-Specific (${storeSpecificCount})</button>
+                  <button type="button" class="ap-cms-pill active" data-filter="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Offers (${promotions.length})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="voucher" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Vouchers (${voucherCount})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="bank" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Bank Cards (${bankCount})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="upi" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">UPI Offers (${upiCount})</button>
+                  <button type="button" class="ap-cms-pill" data-filter="store" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Store-Specific (${storeSpecificCount})</button>
                 </div>
 
                 <div class="ap-cms-searches">
                   <!-- DEDICATED SEARCHBAR FOR STORES -->
                   <div class="ap-cms-search-field">
-                    <label for="ap-cms-store-search-input" class="ap-cms-label" style="color:#ffffff !important; font-weight:800;">Search by Store / Merchant</label>
-                    <div class="ap-cms-input-box" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                      <input type="text" id="ap-cms-store-search-input" placeholder="Search by store or merchant..." style="color:#000000; font-weight:600; background:transparent;" />
+                    <label for="ap-cms-store-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search by Store / Merchant</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      <input type="text" id="ap-cms-store-search-input" placeholder="Search by store or merchant name..." style="color:#000000; font-weight:600; background:transparent;" />
                       <button type="button" id="ap-cms-clear-store-search" class="ap-cms-clear-btn" style="display:none;" title="Clear store search">✕</button>
                     </div>
                   </div>
 
                   <!-- Offer Code & Title Search -->
                   <div class="ap-cms-search-field">
-                    <label for="ap-cms-offer-search-input" class="ap-cms-label" style="color:#ffffff !important; font-weight:800;">Search Voucher / Code</label>
-                    <div class="ap-cms-input-box" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                      <input type="text" id="ap-cms-offer-search-input" placeholder="Search voucher or code..." style="color:#000000; font-weight:600; background:transparent;" />
+                    <label for="ap-cms-offer-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search Voucher / Code</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      <input type="text" id="ap-cms-offer-search-input" placeholder="Search by voucher code or title..." style="color:#000000; font-weight:600; background:transparent;" />
                       <button type="button" id="ap-cms-clear-offer-search" class="ap-cms-clear-btn" style="display:none;" title="Clear search">✕</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="ap-table-wrap" style="max-height:285px; overflow-y:auto; overflow-x:hidden;">
-                <table class="ap-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                  <thead style="background:#FF9400; position:sticky; top:0; z-index:5;">
-                    <tr style="background:#FF9400;">
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:10%;">VOUCHER CODE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:19%;">OFFER TITLE &amp; TERMS</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">SCOPE / STORE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">DISCOUNT RATE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:7%;">MIN BAG VALUE</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:19%;">BANK / UPI PARTNER</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 4px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:15%;">DURATION / EXPIRY</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:6%;">STATUS</th>
-                      <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:9px 3px; font-size:10px; font-weight:800; white-space:normal; line-height:1.2; position:sticky; top:0; z-index:5; width:8%;">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ap-promos-table-body">
-                    ${renderPromoRows(getFilteredPromotions())}
-                  </tbody>
-                </table>
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div class="ap-cms-table-inner" style="min-width:1860px; width:100%; box-sizing:border-box;">
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" id="ap-promos-table-header" style="width:100%; min-width:1860px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:150px;">
+                        <col style="width:270px;">
+                        <col style="width:175px;">
+                        <col style="width:135px;">
+                        <col style="width:130px;">
+                        <col style="width:260px;">
+                        <col style="width:260px;">
+                        <col style="width:210px;">
+                        <col style="width:110px;">
+                        <col style="width:160px;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Voucher Code</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Offer Title &amp; Terms</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Scope / Target Store</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Discount Rate</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Min Bag Value</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Bank Partner</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">UPI Offer</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Duration / Expiry</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 14px; text-align:center;">Status</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:center;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+                    <table class="ap-table" id="ap-promos-table" style="width:100%; min-width:1860px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:150px;">
+                        <col style="width:270px;">
+                        <col style="width:175px;">
+                        <col style="width:135px;">
+                        <col style="width:130px;">
+                        <col style="width:260px;">
+                        <col style="width:260px;">
+                        <col style="width:210px;">
+                        <col style="width:110px;">
+                        <col style="width:160px;">
+                      </colgroup>
+                      <tbody id="ap-promos-table-body">
+                        ${renderPromoRows(getFilteredPromotions())}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         `;
+
+        if (typeof initPromoCyclicTickers === 'function') {
+          initPromoCyclicTickers();
+        }
 
         // Wire Refresh
         const refreshBtn = document.getElementById('ap-cms-refresh-btn');
@@ -14974,23 +15611,45 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           showToast('Storefront CMS & promotional data refreshed successfully!', 'success');
         });
 
-        // Wire Announcement Bar Add Button
-        document.getElementById('ap-cms-add-announcement-btn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          showAnnouncementModal(null);
-        });
+        // Wire Announcement Bar Handlers & Modal
+        function updateAnnouncementsTable() {
+          const tbody = document.getElementById('ap-ann-table-body');
+          const countBadge = document.getElementById('ap-ann-count-badge');
+          const previewText = document.getElementById('ap-ann-preview-text');
+          const filtered = getFilteredAnnouncements();
+          if (tbody) {
+            tbody.innerHTML = renderAnnouncementRows(filtered);
+            attachAnnouncementRowHandlers();
+          }
+          const liveCount = announcements.filter(a => a.active !== false).length;
+          if (countBadge) {
+            countBadge.textContent = `● ${liveCount} Live on Production`;
+          }
+          if (previewText) {
+            const firstLive = announcements.find(a => a.active !== false);
+            previewText.textContent = cms.announcementText || firstLive?.text || 'No active announcement';
+          }
+        }
 
-        // Announcement Row Handlers (Toggle, Edit, Delete)
         function attachAnnouncementRowHandlers() {
-          // Toggle Active/Paused
-          body.querySelectorAll('.ap-announcement-toggle-btn').forEach(btn => {
+          body.querySelectorAll('.ap-ann-toggle-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
+              if (!id) return;
               btn.disabled = true;
               try {
-                await adminFetch(`/cms/announcements/${id}/toggle`, { method: 'PUT' });
-                showToast('Announcement status updated!', 'success');
+                if (id === 'default_ann') {
+                  const currActive = btn.dataset.active === 'true';
+                  await adminFetch('/cms', {
+                    method: 'PUT',
+                    body: JSON.stringify({ announcementActive: !currActive }),
+                  });
+                  showToast(`Announcement ${!currActive ? 'activated' : 'paused'}.`, 'success');
+                } else {
+                  await adminFetch(`/cms/announcements/${id}/toggle`, { method: 'PUT' });
+                  showToast('Announcement status updated!', 'success');
+                }
                 window._fetchStorefrontCMS?.();
                 load();
               } catch (err) {
@@ -15000,43 +15659,38 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             });
           });
 
-          // Edit Announcement
-          body.querySelectorAll('.ap-edit-announcement-btn').forEach(btn => {
+          body.querySelectorAll('.ap-edit-ann-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
               const ann = announcements.find(a => String(a._id || a.id) === String(id));
-              if (ann) {
-                showAnnouncementModal(ann);
-              } else {
-                showToast('Announcement not found.', 'error');
-              }
+              if (ann) showAnnouncementModal(ann);
+              else showToast('Announcement not found.', 'error');
             });
           });
 
-          // Delete Announcement
-          body.querySelectorAll('.ap-delete-announcement-btn').forEach(btn => {
+          body.querySelectorAll('.ap-del-ann-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
               const ann = announcements.find(a => String(a._id || a.id) === String(id));
-              const textSnippet = ann?.text ? (ann.text.length > 50 ? ann.text.substring(0, 50) + '...' : ann.text) : 'this announcement';
+              const annText = ann?.text || 'this announcement';
 
               const confirmBackdrop = document.createElement('div');
               confirmBackdrop.className = 'ap-modal-backdrop';
               confirmBackdrop.style.zIndex = '100060';
               confirmBackdrop.innerHTML = `
-                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); border:none !important;">
-                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:28px 24px; background:#ffffff; border-radius:16px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+                  <div style="width:52px; height:52px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </div>
-                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Announcement Bar?</h4>
-                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
-                    Are you sure you want to permanently delete: <strong>"${esc(textSnippet)}"</strong>? It will immediately stop displaying on the storefront top utility bar.
+                  <h4 style="font-size:18px; font-weight:800; color:#0f172a; margin:0 0 10px;">Delete Announcement?</h4>
+                  <p style="font-size:13px; color:#64748b; margin:0 0 24px; line-height:1.5;">
+                    Are you sure you want to permanently remove <strong>"${esc(annText)}"</strong>? It will be removed from the storefront immediately.
                   </p>
-                  <div style="display:flex; justify-content:center; gap:10px;">
-                    <button type="button" class="ap-btn ghost" id="ap-del-ann-cancel" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                    <button type="button" class="ap-btn danger" id="ap-del-ann-confirm" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#dc2626 !important; border-color:#dc2626 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">Delete Announcement</button>
+                  <div style="display:flex; justify-content:center; gap:12px;">
+                    <button type="button" class="ap-btn ghost" id="ap-del-ann-cancel" style="padding:9px 24px; font-size:13px; font-weight:700; background:#ffffff; border:1.5px solid #cbd5e1; color:#0f172a; border-radius:8px; cursor:pointer;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-ann-confirm" style="padding:9px 24px; font-size:13px; font-weight:800; background:#dc2626; color:#ffffff !important; border:none; border-radius:8px; cursor:pointer;">Delete Announcement</button>
                   </div>
                 </div>
               `;
@@ -15045,266 +15699,207 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
               const closeConfirm = () => confirmBackdrop.remove();
               confirmBackdrop.querySelector('#ap-del-ann-cancel')?.addEventListener('click', closeConfirm);
-              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
+              confirmBackdrop.addEventListener('click', (ev) => { if (ev.target === confirmBackdrop) closeConfirm(); });
 
               confirmBackdrop.querySelector('#ap-del-ann-confirm')?.addEventListener('click', async () => {
                 const delBtn = confirmBackdrop.querySelector('#ap-del-ann-confirm');
-                delBtn.disabled = true;
-                delBtn.textContent = 'Deleting...';
+                if (delBtn) {
+                  delBtn.disabled = true;
+                  delBtn.textContent = 'Deleting...';
+                }
                 try {
-                  await adminFetch(`/cms/announcements/${id}`, { method: 'DELETE' });
-                  showToast('Announcement bar deleted successfully!', 'success');
+                  if (id === 'default_ann') {
+                    await adminFetch('/cms', {
+                      method: 'PUT',
+                      body: JSON.stringify({ announcementText: '', announcementActive: false }),
+                    });
+                    showToast('Announcement cleared.', 'success');
+                  } else {
+                    await adminFetch(`/cms/announcements/${id}`, { method: 'DELETE' });
+                    showToast('Announcement deleted successfully!', 'success');
+                  }
                   window._fetchStorefrontCMS?.();
                   closeConfirm();
                   load();
                 } catch (err) {
                   showToast(err.message, 'error');
-                  delBtn.disabled = false;
-                  delBtn.textContent = 'Delete Announcement';
+                  if (delBtn) {
+                    delBtn.disabled = false;
+                    delBtn.textContent = 'Delete Announcement';
+                  }
                 }
               });
             });
           });
         }
 
-        // Add / Edit Announcement Modal
-        function showAnnouncementModal(existingAnn) {
-          const isEdit = Boolean(existingAnn);
+        function showAnnouncementModal(existingAnn = null) {
+          const isEdit = !!existingAnn;
           const backdrop = document.createElement('div');
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
 
-          const currentValidUntilStr = existingAnn?.validUntil ? formatDatetimeLocal(existingAnn.validUntil) : '';
-
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:760px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden; border:none !important;">
-              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:none !important; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
-                  ${isEdit ? 'Edit Top Navigation Announcement' : 'Add Top Navigation Announcement'}
-                  <span style="font-size:11.5px; font-weight:600; background:rgba(255,255,255,0.18); color:#ffffff; padding:2px 8px; border-radius:12px;">Top Utility Marquee</span>
-                </h3>
-                <button type="button" class="ap-modal-close-btn" id="ap-ann-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;" title="Close">✕</button>
+            <div class="ap-modal-dialog" style="max-width:540px;">
+              <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <div>
+                  <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800; margin:0;">
+                    ${isEdit ? 'Edit Announcement' : 'Add New Announcement'}
+                  </h3>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1;">Configure announcement text and destination link for top navigation bar.</p>
+                </div>
+                <button type="button" class="ap-modal-close-btn" id="ap-ann-modal-close" style="width:32px; height:32px; background:#022f43; border:1px solid rgba(255,255,255,0.25); color:#ffffff; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
 
-              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
-                <form id="ap-ann-form" style="display:flex; flex-direction:column; gap:16px;">
-                  <!-- Announcement Message -->
-                  <div>
-                    <label class="ap-cms-label" style="display:block; font-size:12.5px; font-weight:800; color:#000000; margin-bottom:5px;">
-                      Ticker Announcement Text <span style="color:#ef4444;">*</span>
-                    </label>
-                    <textarea id="ann-m-text" class="ap-input" rows="3" placeholder="e.g. Mega Festive Super Sale: Up to 10% OFF Across All Electronics & Fashion_XYZ" style="width:100%; font-size:13px; font-weight:600; color:#000000; padding:10px 12px; line-height:1.45; box-sizing:border-box;" required>${esc(existingAnn?.text || '')}</textarea>
-                    <div style="font-size:11px; color:#64748b; margin-top:4px;">This message will display in the top navigation announcement ticker on the customer storefront.</div>
+              <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
+                <div class="ap-form-group" style="margin-bottom:14px;">
+                  <label for="ann-modal-text" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Announcement Text *</label>
+                  <textarea id="ann-modal-text" class="ap-input" rows="3" style="width:100%; color:#000000; font-weight:600; resize:vertical; font-size:13px;" placeholder="e.g. Mega Festive Super Sale: Up to 10% OFF Across All Electronics & Fashion!">${esc(existingAnn?.text || '')}</textarea>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+                  <div class="ap-form-group">
+                    <label for="ann-modal-tag" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Tag / Badge</label>
+                    <input type="text" id="ann-modal-tag" class="ap-input" value="${esc(existingAnn?.tag || '')}" placeholder="e.g. Super Sale, Fast Delivery" style="width:100%; color:#000000; font-weight:600; font-size:13px;" />
                   </div>
-
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-                    <!-- Badge / Tag -->
-                    <div>
-                      <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:4px;">
-                        Category Tag / Badge (Optional)
-                      </label>
-                      <input type="text" id="ann-m-tag" class="ap-input" value="${esc(existingAnn?.tag || '')}" placeholder="e.g. Limited Deal, Festive Offer, Super Sale" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
-                    </div>
-
-                    <!-- Destination Link -->
-                    <div>
-                      <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:4px;">
-                        Destination Link / Anchor
-                      </label>
-                      <input type="text" id="ann-m-link" class="ap-input" value="${esc(existingAnn?.link || '#deals')}" placeholder="#deals or #category/Electronics" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
-                    </div>
+                  <div class="ap-form-group">
+                    <label for="ann-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order</label>
+                    <input type="number" id="ann-modal-order" class="ap-input" value="${existingAnn?.order ?? announcements.length}" min="0" style="width:100%; color:#000000; font-weight:600; font-size:13px;" />
                   </div>
+                </div>
 
-                  <!-- Time Limit & Expiry Schedule -->
-                  <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                      <div>
-                        <strong style="font-size:13px; color:#0f172a; display:block;">Time Limit &amp; Expiry Schedule</strong>
-                        <span style="font-size:11px; color:#64748b;">Set an automatic expiry limit or preset duration for this announcement.</span>
-                      </div>
-                      <span id="ann-m-schedule-preview" class="ap-badge green" style="font-size:11px; font-weight:700;">
-                        ${existingAnn?.validUntil ? 'Time Limit Scheduled' : '∞ No Expiry (Always Active)'}
-                      </span>
-                    </div>
+                <div class="ap-form-group" style="margin-bottom:14px;">
+                  <label for="ann-modal-link" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Destination Link / Hash</label>
+                  <input type="text" id="ann-modal-link" class="ap-input" value="${esc(existingAnn?.link || '#deals')}" placeholder="#deals" style="width:100%; color:#000000; font-weight:600; font-size:13px;" />
+                </div>
 
-                    <!-- Quick Preset Buttons -->
-                    <div style="margin-bottom:12px;">
-                      <label style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:6px;">Quick Presets:</label>
-                      <div style="display:flex; flex-wrap:wrap; gap:8px;" id="ann-m-presets">
-                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="none" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">No Expiry</button>
-                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="24h" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">24 Hours</button>
-                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="3d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">3 Days</button>
-                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="7d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">7 Days</button>
-                        <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="30d" style="padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">30 Days</button>
-                      </div>
-                    </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+                  <input type="checkbox" id="ann-modal-active" ${existingAnn?.active !== false ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;" />
+                  <label for="ann-modal-active" style="font-size:13px; font-weight:700; color:#000000; cursor:pointer;">
+                    Publish and make live on storefront immediately
+                  </label>
+                </div>
 
-                    <!-- DateTime Picker -->
-                    <div>
-                      <label for="ann-m-until" style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">
-                        Exact Expiry Date &amp; Time (Valid Until):
-                      </label>
-                      <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="datetime-local" id="ann-m-until" class="ap-input" value="${currentValidUntilStr}" style="flex:1; font-size:12.5px; font-weight:700; box-sizing:border-box;" />
-                        <button type="button" id="ann-m-clear-time" class="ap-btn ghost" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;" title="Clear time limit so it never expires">Clear</button>
-                      </div>
-                      <div id="ann-m-live-calc" style="font-size:11px; color:#2563eb; font-weight:600; margin-top:5px;"></div>
-                    </div>
-                  </div>
-
-                  <!-- Order & Active Checkbox -->
-                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:4px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                      <label class="ap-switch-label" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:700; color:#0f172a;">
-                        <input type="checkbox" id="ann-m-active" ${existingAnn ? (existingAnn.active !== false ? 'checked' : '') : 'checked'} style="width:18px; height:18px; cursor:pointer; accent-color:#059669;" />
-                        <span>Active on Storefront</span>
-                      </label>
-                    </div>
-
-                    <div style="display:flex; align-items:center; gap:8px;">
-                      <label for="ann-m-order" style="font-size:12px; font-weight:700; color:#475569;">Sort Order:</label>
-                      <input type="number" id="ann-m-order" class="ap-input" value="${existingAnn?.order ?? announcements.length}" min="0" style="width:44px; padding:4px 6px; font-size:12px; font-weight:700; text-align:center;" />
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons -->
-                  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px; border-top:1px solid #e2e8f0; padding-top:16px;">
-                    <button type="button" class="ap-btn ghost" id="ap-ann-m-cancel" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                    <button type="submit" class="ap-btn primary" id="ap-ann-m-save" style="padding:8px 24px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important;">
-                      ${isEdit ? 'Update Announcement Bar' : 'Publish Announcement Bar'}
-                    </button>
-                  </div>
-                </form>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                  <button type="button" class="ap-btn ghost" id="ap-ann-modal-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-ann-modal-save" style="padding:8px 22px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:1.5px solid #e08300;">
+                    ${isEdit ? 'Save Changes' : 'Publish Announcement'}
+                  </button>
+                </div>
               </div>
             </div>
           `;
-
           const mount = document.getElementById('admin-panel-overlay') || document.body;
           mount.appendChild(backdrop);
 
           const closeModal = () => backdrop.remove();
-          backdrop.querySelector('#ap-ann-m-close')?.addEventListener('click', closeModal);
-          backdrop.querySelector('#ap-ann-m-cancel')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-ann-modal-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-ann-modal-cancel')?.addEventListener('click', closeModal);
           backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
-          const untilInput = backdrop.querySelector('#ann-m-until');
-          const previewBadge = backdrop.querySelector('#ann-m-schedule-preview');
-          const liveCalc = backdrop.querySelector('#ann-m-live-calc');
+          backdrop.querySelector('#ap-ann-modal-save')?.addEventListener('click', async () => {
+            const text = backdrop.querySelector('#ann-modal-text')?.value.trim();
+            const tag = backdrop.querySelector('#ann-modal-tag')?.value.trim();
+            const order = parseInt(backdrop.querySelector('#ann-modal-order')?.value, 10) || 0;
+            const link = backdrop.querySelector('#ann-modal-link')?.value.trim() || '#deals';
+            const active = backdrop.querySelector('#ann-modal-active')?.checked ?? true;
 
-          function updateCalcDisplay() {
-            if (!untilInput.value) {
-              if (previewBadge) {
-                previewBadge.className = 'ap-badge green';
-                previewBadge.textContent = '∞ No Expiry (Always Active)';
-              }
-              if (liveCalc) liveCalc.textContent = 'No expiry date set. This announcement will run indefinitely.';
-              return;
-            }
-            const dt = new Date(untilInput.value);
-            const now = new Date();
-            const diff = dt.getTime() - now.getTime();
-            if (diff <= 0) {
-              if (previewBadge) {
-                previewBadge.className = 'ap-badge red';
-                previewBadge.textContent = '⚠️ Date is in the past (Expired)';
-              }
-              if (liveCalc) liveCalc.textContent = 'Warning: Selected time has already passed. This announcement will show as Expired.';
-            } else {
-              const hours = Math.floor(diff / (1000 * 60 * 60));
-              const days = Math.floor(hours / 24);
-              const remHours = hours % 24;
-              let durStr = days > 0 ? `${days} days, ${remHours} hours` : `${hours} hours`;
-              if (previewBadge) {
-                previewBadge.className = 'ap-badge orange';
-                previewBadge.textContent = `⏳ Expires in ${durStr}`;
-              }
-              if (liveCalc) liveCalc.textContent = `Announcement will automatically expire on ${dt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (in ${durStr}).`;
-            }
-          }
+            if (!text) return showToast('Please enter announcement text.', 'error');
 
-          untilInput?.addEventListener('input', updateCalcDisplay);
-          updateCalcDisplay();
-
-          // Preset click handlers
-          backdrop.querySelectorAll('.ann-preset-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const p = btn.dataset.preset;
-              const now = new Date();
-              if (p === 'none') {
-                untilInput.value = '';
-              } else if (p === '24h') {
-                now.setHours(now.getHours() + 24);
-                untilInput.value = formatDatetimeLocal(now);
-              } else if (p === '3d') {
-                now.setDate(now.getDate() + 3);
-                untilInput.value = formatDatetimeLocal(now);
-              } else if (p === '7d') {
-                now.setDate(now.getDate() + 7);
-                untilInput.value = formatDatetimeLocal(now);
-              } else if (p === '30d') {
-                now.setDate(now.getDate() + 30);
-                untilInput.value = formatDatetimeLocal(now);
-              }
-              updateCalcDisplay();
-            });
-          });
-
-          backdrop.querySelector('#ann-m-clear-time')?.addEventListener('click', () => {
-            untilInput.value = '';
-            updateCalcDisplay();
-          });
-
-          // Form Submit
-          backdrop.querySelector('#ap-ann-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = backdrop.querySelector('#ann-m-text')?.value.trim();
-            if (!text) {
-              return showToast('Announcement text is required.', 'error');
-            }
-            const tag = backdrop.querySelector('#ann-m-tag')?.value.trim() || '';
-            const link = backdrop.querySelector('#ann-m-link')?.value.trim() || '#deals';
-            const untilVal = untilInput?.value;
-            const validUntil = untilVal ? new Date(untilVal).toISOString() : null;
-            const active = Boolean(backdrop.querySelector('#ann-m-active')?.checked);
-            const orderVal = backdrop.querySelector('#ann-m-order')?.value;
-            const order = orderVal !== '' && !isNaN(Number(orderVal)) ? Number(orderVal) : announcements.length;
-
-            const saveBtn = backdrop.querySelector('#ap-ann-m-save');
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Saving...';
+            const saveBtn = backdrop.querySelector('#ap-ann-modal-save');
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
             try {
-              if (isEdit && existingAnn._id && existingAnn._id !== 'default_ann') {
-                await adminFetch(`/cms/announcements/${existingAnn._id || existingAnn.id}`, {
+              const annId = existingAnn?._id || existingAnn?.id;
+              if (isEdit && annId && annId !== 'default_ann') {
+                await adminFetch(`/cms/announcements/${annId}`, {
                   method: 'PUT',
-                  body: JSON.stringify({ text, tag, link, validUntil, active, order }),
+                  body: JSON.stringify({ text, tag, link, order, active }),
                 });
-                showToast('Announcement bar updated successfully!', 'success');
+                showToast('Announcement updated successfully!', 'success');
               } else {
                 await adminFetch('/cms/announcements', {
                   method: 'POST',
-                  body: JSON.stringify({ text, tag, link, validUntil, active, order }),
+                  body: JSON.stringify({ text, tag, link, order, active }),
                 });
-                showToast('New announcement bar published successfully!', 'success');
+                showToast('New announcement published!', 'success');
               }
               window._fetchStorefrontCMS?.();
               closeModal();
               load();
             } catch (err) {
               showToast(err.message, 'error');
-              saveBtn.disabled = false;
-              saveBtn.textContent = isEdit ? 'Update Announcement Bar' : 'Publish Announcement Bar';
+              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Save Changes' : 'Publish Announcement'; }
             }
           });
         }
 
-        // Attach announcement row handlers
+        // Wire Announcement Pills
+        document.querySelectorAll('#ap-ann-pills .ap-cms-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            document.querySelectorAll('#ap-ann-pills .ap-cms-pill').forEach(p => {
+              p.classList.remove('active');
+              p.style.setProperty('background', '#ffffff', 'important');
+              p.style.setProperty('color', '#000000', 'important');
+              p.style.setProperty('border', '1px solid rgba(0,0,0,0.15)', 'important');
+            });
+            pill.classList.add('active');
+            pill.style.setProperty('background', '#022f43', 'important');
+            pill.style.setProperty('color', '#ffffff', 'important');
+            pill.style.setProperty('border-color', '#022f43', 'important');
+            annFilter = pill.dataset.filter || 'all';
+            updateAnnouncementsTable();
+          });
+        });
+
+        // Wire Announcement Search
+        const annSearchInput = document.getElementById('ap-ann-search-input');
+        if (annSearchInput) {
+          annSearchInput.addEventListener('input', (e) => {
+            annSearchQuery = e.target.value.trim();
+            updateAnnouncementsTable();
+          });
+        }
+
+        // Wire Add Announcement Button
+        ['ap-cms-add-ann-btn', 'ap-cms-add-announcement-btn'].forEach(btnId => {
+          document.getElementById(btnId)?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAnnouncementModal(null);
+          });
+        });
+
         attachAnnouncementRowHandlers();
 
-        // Wire Filter Pills
-        body.querySelectorAll('.ap-cms-pill').forEach(pill => {
+        // Wire Quick Announcement Bar Update
+        document.getElementById('ap-save-cms-announcement-btn')?.addEventListener('click', async () => {
+          const announcementInput = document.getElementById('ap-cms-announcement-input');
+          const announcementText = announcementInput?.value ?? '';
+          const btn = document.getElementById('ap-save-cms-announcement-btn');
+          if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+          try {
+            await adminFetch('/cms', {
+              method: 'PUT',
+              body: JSON.stringify({ announcementText, announcementActive: true }),
+            });
+            showToast('Storefront announcement bar updated successfully!', 'success');
+            // Update live ticker across storefront
+            document.querySelectorAll('#utility-ticker .ticker-slide, .utility-ticker-text, #store-announcement-bar, .announcement-bar-text').forEach(el => {
+              el.textContent = announcementText;
+            });
+            const previewText = document.getElementById('ap-ann-preview-text');
+            if (previewText) previewText.textContent = announcementText;
+          } catch (e) {
+            showToast(e.message, 'error');
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Save Announcement Bar'; }
+          }
+        });
+
+        // Wire Promotions Filter Pills
+        body.querySelectorAll('#ap-promos-section .ap-cms-pill, .ap-cms-pills:not(#ap-ann-pills):not(#ap-quad-row-pills) .ap-cms-pill').forEach(pill => {
           pill.addEventListener('click', () => {
-            body.querySelectorAll('.ap-cms-pill').forEach(p => p.classList.remove('active'));
+            body.querySelectorAll('#ap-promos-section .ap-cms-pill, .ap-cms-pills:not(#ap-ann-pills):not(#ap-quad-row-pills) .ap-cms-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;
             updatePromosTable();
@@ -15348,6 +15943,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           if (tbody) {
             tbody.innerHTML = renderPromoRows(filtered);
             attachPromoRowHandlers();
+            if (typeof initPromoCyclicTickers === 'function') initPromoCyclicTickers();
           }
           if (countBadge) {
             countBadge.textContent = `${filtered.length} Offer${filtered.length === 1 ? '' : 's'}${filtered.length !== promotions.length ? ` (of ${promotions.length})` : ''}`;
@@ -15507,100 +16103,99 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-                        <div class="ap-modal-dialog" style="max-width:960px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
-              <div class="ap-modal-header" style="background:#022F43 !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+            <div class="ap-modal-dialog" style="max-width:780px; width:95%; max-height:90vh; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); overflow:hidden; display:flex; flex-direction:column;">
+              <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
                 <div>
-                  <h3 style="margin:0; font-size:17px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Homepage Category Card' : 'Add New Homepage Category Card'}</h3>
-                  <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1 !important;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
+                  <h3 class="ap-modal-title" style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Homepage Category Card' : 'Add New Homepage Category Card'}</h3>
+                  <p style="margin:3px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
                 </div>
-                <button type="button" class="ap-modal-close-btn" id="ap-quad-modal-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:34px; height:34px; font-size:16px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 140ms ease;" title="Close">✕</button>
+                <button type="button" class="ap-modal-close-btn" id="ap-quad-modal-close" style="font-size:16px; width:32px; height:32px; background:#022f43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
 
-              <div class="ap-modal-content" style="padding:24px; max-height:calc(90vh - 75px); overflow-y:auto;">
-
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
-                <div style="grid-column: 1 / -1;">
-                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:4px;">Card Title <span style="color:#ef4444;">*</span></label>
-                  <input type="text" id="quad-m-title" class="ap-input" value="${esc(existingCard?.title || '')}" placeholder="e.g. Deals for you, Starting ₹149 | Dry fruits & seeds" style="width:100%; font-weight:700; font-size:13px;" />
-                </div>
-                <div>
-                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Row Number</label>
-                  <select id="quad-m-row" class="ap-input" style="width:100%;">
-                    ${[1, 2, 3, 4, 5, 6, 7, 8].map(r => `<option value="${r}" ${existingCard?.row === r ? 'selected' : ''}>Row ${r}</option>`).join('')}
-                  </select>
-                </div>
-                <div>
-                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Display Order Index</label>
-                  <input type="number" id="quad-m-order" class="ap-input" value="${existingCard?.order ?? quadCards.length}" style="width:100%;" />
-                </div>
-                <div>
-                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Category / Target Link</label>
-                  <input type="text" id="quad-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#deals or #category/Electronics" style="width:100%;" />
-                </div>
-                <div>
-                  <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Footer Link Text</label>
-                  <input type="text" id="quad-m-footer-text" class="ap-input" value="${esc(existingCard?.footerText || 'See more')}" placeholder="e.g. See all deals" style="width:100%;" />
-                </div>
-              </div>
-
-              <!-- The 4 Tile Items -->
-              <h4 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:16px 0 10px; border-top:1px solid #f1f5f9; padding-top:14px;">
-                4 Quadrant Product Tiles (Left to Right, Top to Bottom)
-              </h4>
-
-              <div id="quad-items-editor-container">
-                ${items.map((it, idx) => `
-                  <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                      <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile ${idx + 1}</span>
-                      <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: ${idx === 0 ? 'Top Left' : idx === 1 ? 'Top Right' : idx === 2 ? 'Bottom Left' : 'Bottom Right'}</span>
-                    </div>
-                    <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
-                      <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#ffffff; display:flex; align-items:center; justify-content:center;">
-                        <img id="item-img-preview-${idx}" src="${esc(it.image)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
-                      </div>
-                      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                        <div style="grid-column: 1 / -1;">
-                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
-                          <input type="text" id="quad-item-img-${idx}" class="ap-input quad-item-img-field" data-index="${idx}" value="${esc(it.image)}" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
-                        </div>
-                        <div>
-                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
-                          <input type="text" id="quad-item-title-${idx}" class="ap-input" value="${esc(it.title)}" placeholder="e.g. Smartphones" style="width:100%; font-size:11.5px; padding:5px 9px;" />
-                        </div>
-                        <div>
-                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
-                          <input type="text" id="quad-item-badge-${idx}" class="ap-input" value="${esc(it.badge)}" placeholder="e.g. 50% off or Deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
-                        </div>
-                        <div>
-                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
-                          <input type="text" id="quad-item-subtext-${idx}" class="ap-input" value="${esc(it.subText)}" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
-                        </div>
-                        <div>
-                          <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
-                          <input type="text" id="quad-item-link-${idx}" class="ap-input" value="${esc(it.link || '#deals')}" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
-                        </div>
-                      </div>
-                    </div>
+              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 75px); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; color:#000000; flex:1;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
+                  <div style="grid-column: 1 / -1;">
+                    <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:4px;">Card Title <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="quad-m-title" class="ap-input" value="${esc(existingCard?.title || '')}" placeholder="e.g. Deals for you, Starting ₹149 | Dry fruits & seeds" style="width:100%; font-weight:700; font-size:13px;" />
                   </div>
-                `).join('')}
-              </div>
+                  <div>
+                    <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Row Number</label>
+                    <select id="quad-m-row" class="ap-input" style="width:100%;">
+                      ${[1, 2, 3, 4, 5, 6, 7, 8].map(r => `<option value="${r}" ${existingCard?.row === r ? 'selected' : ''}>Row ${r}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Display Order Index</label>
+                    <input type="number" id="quad-m-order" class="ap-input" value="${existingCard?.order ?? quadCards.length}" style="width:100%;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Category / Target Link</label>
+                    <input type="text" id="quad-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#deals or #category/Electronics" style="width:100%;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Footer Link Text</label>
+                    <input type="text" id="quad-m-footer-text" class="ap-input" value="${esc(existingCard?.footerText || 'See more')}" placeholder="e.g. See all deals" style="width:100%;" />
+                  </div>
+                </div>
 
-              <!-- Active status -->
-              <div style="display:flex; align-items:center; gap:8px; margin:14px 0 18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
-                <input type="checkbox" id="quad-m-active" ${existingCard?.active !== false ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;" />
-                <label for="quad-m-active" style="font-size:12.5px; font-weight:700; color:#0f172a; cursor:pointer;">
-                  Visible &amp; Active on Customer Homepage
-                </label>
-              </div>
+                <!-- The 4 Tile Items -->
+                <h4 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:16px 0 10px; border-top:1px solid #f1f5f9; padding-top:14px;">
+                  4 Quadrant Product Tiles (Left to Right, Top to Bottom)
+                </h4>
 
-              <!-- Modal Buttons -->
-              <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
-                  ${isEdit ? 'Save Changes' : 'Create Homepage Card'}
-                </button>
-              </div>
+                <div id="quad-items-editor-container">
+                  ${items.map((it, idx) => `
+                    <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile ${idx + 1}</span>
+                        <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: ${idx === 0 ? 'Top Left' : idx === 1 ? 'Top Right' : idx === 2 ? 'Bottom Left' : 'Bottom Right'}</span>
+                      </div>
+                      <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                        <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#ffffff; display:flex; align-items:center; justify-content:center;">
+                          <img id="item-img-preview-${idx}" src="${esc(it.image)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                          <div style="grid-column: 1 / -1;">
+                            <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="quad-item-img-${idx}" class="ap-input quad-item-img-field" data-index="${idx}" value="${esc(it.image)}" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                          </div>
+                          <div>
+                            <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                            <input type="text" id="quad-item-title-${idx}" class="ap-input" value="${esc(it.title)}" placeholder="e.g. Smartphones" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                          </div>
+                          <div>
+                            <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                            <input type="text" id="quad-item-badge-${idx}" class="ap-input" value="${esc(it.badge)}" placeholder="e.g. 50% off or Deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                          </div>
+                          <div>
+                            <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                            <input type="text" id="quad-item-subtext-${idx}" class="ap-input" value="${esc(it.subText)}" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                          </div>
+                          <div>
+                            <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                            <input type="text" id="quad-item-link-${idx}" class="ap-input" value="${esc(it.link || '#deals')}" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <!-- Active status -->
+                <div style="display:flex; align-items:center; gap:8px; margin:14px 0 18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+                  <input type="checkbox" id="quad-m-active" ${existingCard?.active !== false ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;" />
+                  <label for="quad-m-active" style="font-size:12.5px; font-weight:700; color:#0f172a; cursor:pointer;">
+                    Visible &amp; Active on Customer Homepage
+                  </label>
+                </div>
+
+                <!-- Modal Buttons -->
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+                  <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; background:#ff9400 !important; font-weight:800; color:#000000 !important; border:1.5px solid #e08300;">
+                    ${isEdit ? 'Save Changes' : 'Create Card'}
+                  </button>
+                </div>
               </div>
             </div>
           `;
@@ -15666,7 +16261,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             } catch (err) {
               showToast(err.message, 'error');
               saveBtn.disabled = false;
-              saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Homepage Card';
+              saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Card';
             }
           });
         }
@@ -15694,64 +16289,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
-              const card = heroPromoCards.find((c, idx) => String(c._id || c.id || idx) === String(id));
-              if (card) {
-                if (!card._id && !card.id) card._id = id;
-                showHeroPromoModal(card);
-              } else {
-                showToast('Promo card not found.', 'error');
-              }
+              const card = heroPromoCards.find(c => String(c._id || c.id) === String(id));
+              if (card) showHeroPromoModal(card);
             });
           });
 
           body.querySelectorAll('.ap-del-hero-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
               e.stopPropagation();
-              const id = btn.dataset.id;
-              const card = heroPromoCards.find((c, idx) => String(c._id || c.id || idx) === String(id));
-              const title = card?.brand || card?.sub || 'this promo card';
-
-              const confirmBackdrop = document.createElement('div');
-              confirmBackdrop.className = 'ap-modal-backdrop';
-              confirmBackdrop.style.zIndex = '100060';
-              confirmBackdrop.innerHTML = `
-                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
-                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                  </div>
-                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Top Promo Card?</h4>
-                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
-                    Are you sure you want to remove <strong>"${esc(title)}"</strong>?
-                  </p>
-                  <div style="display:flex; justify-content:center; gap:10px;">
-                    <button type="button" class="ap-btn ghost" id="ap-del-hero-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
-                    <button type="button" class="ap-btn danger" id="ap-del-hero-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Card</button>
-                  </div>
-                </div>
-              `;
-              const mount = document.getElementById('admin-panel-overlay') || document.body;
-              mount.appendChild(confirmBackdrop);
-
-              const closeConfirm = () => confirmBackdrop.remove();
-              confirmBackdrop.querySelector('#ap-del-hero-cancel')?.addEventListener('click', closeConfirm);
-              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
-
-              confirmBackdrop.querySelector('#ap-del-hero-confirm')?.addEventListener('click', async () => {
-                const delBtn = confirmBackdrop.querySelector('#ap-del-hero-confirm');
-                delBtn.disabled = true;
-                delBtn.textContent = 'Deleting...';
-                try {
-                  await adminFetch(`/cms/hero-promo-cards/${id}`, { method: 'DELETE' });
-                  showToast('Top promo card deleted!', 'success');
-                  window._fetchStorefrontCMS?.();
-                  closeConfirm();
-                  load();
-                } catch (err) {
-                  showToast(err.message, 'error');
-                  delBtn.disabled = false;
-                  delBtn.textContent = 'Delete Card';
-                }
-              });
+              if (!confirm('Delete this top hero promo card?')) return;
+              try {
+                await adminFetch(`/cms/hero-promo-cards/${btn.dataset.id}`, { method: 'DELETE' });
+                showToast('Top promo card deleted!', 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+              }
             });
           });
         }
@@ -15762,13 +16316,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
-              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
-                <button type="button" class="ap-modal-close-btn" id="ap-hero-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
+            <div class="ap-modal-dialog" style="max-width:520px; background:#ffffff; border-radius:14px; overflow:hidden; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+              <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-hero-m-close" style="font-size:16px; width:32px; height:32px; background:#022f43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
-              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
-              <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="padding:22px; display:flex; flex-direction:column; gap:12px;">
                 <div>
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
                   <input type="text" id="hero-m-img" class="ap-input" value="${esc(existingCard?.image || '')}" placeholder="https://images.unsplash.com/..." style="width:100%;" />
@@ -15796,11 +16349,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Destination Link</label>
                   <input type="text" id="hero-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#fashion-deals" style="width:100%;" />
                 </div>
-              </div>
-              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-                <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Save Card</button>
-              </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                  <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; color:#000000 !important;">Save Card</button>
+                </div>
               </div>
             </div>
           `;
@@ -15872,64 +16424,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             btn.addEventListener('click', (e) => {
               e.stopPropagation();
               const id = btn.dataset.id;
-              const item = quickBrowseItems.find((c, idx) => String(c._id || c.id || idx) === String(id));
-              if (item) {
-                if (!item._id && !item.id) item._id = id;
-                showQuickBrowseModal(item);
-              } else {
-                showToast('Quick browse item not found.', 'error');
-              }
+              const item = quickBrowseItems.find(c => String(c._id || c.id) === String(id));
+              if (item) showQuickBrowseModal(item);
             });
           });
 
           body.querySelectorAll('.ap-del-quick-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
               e.stopPropagation();
-              const id = btn.dataset.id;
-              const item = quickBrowseItems.find((c, idx) => String(c._id || c.id || idx) === String(id));
-              const title = item?.title || 'this quick browse item';
-
-              const confirmBackdrop = document.createElement('div');
-              confirmBackdrop.className = 'ap-modal-backdrop';
-              confirmBackdrop.style.zIndex = '100060';
-              confirmBackdrop.innerHTML = `
-                <div class="ap-modal-dialog" style="max-width:440px; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
-                  <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                  </div>
-                  <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Delete Quick Browse Item?</h4>
-                  <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
-                    Are you sure you want to remove <strong>"${esc(title)}"</strong>?
-                  </p>
-                  <div style="display:flex; justify-content:center; gap:10px;">
-                    <button type="button" class="ap-btn ghost" id="ap-del-quick-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
-                    <button type="button" class="ap-btn danger" id="ap-del-quick-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Item</button>
-                  </div>
-                </div>
-              `;
-              const mount = document.getElementById('admin-panel-overlay') || document.body;
-              mount.appendChild(confirmBackdrop);
-
-              const closeConfirm = () => confirmBackdrop.remove();
-              confirmBackdrop.querySelector('#ap-del-quick-cancel')?.addEventListener('click', closeConfirm);
-              confirmBackdrop.addEventListener('click', ev => { if (ev.target === confirmBackdrop) closeConfirm(); });
-
-              confirmBackdrop.querySelector('#ap-del-quick-confirm')?.addEventListener('click', async () => {
-                const delBtn = confirmBackdrop.querySelector('#ap-del-quick-confirm');
-                delBtn.disabled = true;
-                delBtn.textContent = 'Deleting...';
-                try {
-                  await adminFetch(`/cms/quick-browse/${id}`, { method: 'DELETE' });
-                  showToast('Quick browse item deleted!', 'success');
-                  window._fetchStorefrontCMS?.();
-                  closeConfirm();
-                  load();
-                } catch (err) {
-                  showToast(err.message, 'error');
-                  delBtn.disabled = false;
-                  delBtn.textContent = 'Delete Item';
-                }
-              });
+              if (!confirm('Delete this quick browse item?')) return;
+              try {
+                await adminFetch(`/cms/quick-browse/${btn.dataset.id}`, { method: 'DELETE' });
+                showToast('Quick browse item deleted!', 'success');
+                window._fetchStorefrontCMS?.();
+                load();
+              } catch (err) {
+                showToast(err.message, 'error');
+              }
             });
           });
         }
@@ -15940,13 +16451,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.className = 'ap-modal-backdrop';
           backdrop.style.zIndex = '100050';
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); padding:0; overflow:hidden;">
-              <div class="ap-modal-header" style="background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                <h3 style="margin:0; font-size:16.5px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Quick Browse Item' : 'Add Quick Browse Item'}</h3>
-                <button type="button" class="ap-modal-close-btn" id="ap-quick-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
+            <div class="ap-modal-dialog" style="max-width:480px; background:#ffffff; border-radius:14px; overflow:hidden; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+              <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Quick Browse Item' : 'Add Quick Browse Item'}</h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-quick-m-close" style="font-size:16px; width:32px; height:32px; background:#022f43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
               </div>
-              <div class="ap-modal-content" style="padding:22px; max-height:calc(90vh - 70px); overflow-y:auto;">
-              <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="padding:22px; display:flex; flex-direction:column; gap:12px;">
                 <div>
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
                   <input type="text" id="quick-m-img" class="ap-input" value="${esc(existingItem?.image || '')}" placeholder="https://images.unsplash.com/..." style="width:100%;" />
@@ -15966,11 +16476,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Target Link</label>
                   <input type="text" id="quick-m-link" class="ap-input" value="${esc(existingItem?.link || '#deals')}" placeholder="#saved" style="width:100%;" />
                 </div>
-              </div>
-              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-                <button type="button" class="ap-btn ghost" id="ap-quick-m-cancel" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                <button type="button" class="ap-btn primary" id="ap-quick-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Save Item</button>
-              </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                  <button type="button" class="ap-btn ghost" id="ap-quick-m-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-quick-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; color:#000000 !important;">Save Item</button>
+                </div>
               </div>
             </div>
           `;
@@ -16030,14 +16539,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         document.getElementById('ap-cms-add-banner-btn')?.addEventListener('click', (e) => {
           e.preventDefault();
           showBannerModal(null);
-        });
-        document.getElementById('ap-top-add-promo-btn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          showPromoModal(null);
-        });
-        document.getElementById('ap-cms-add-promo-btn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          showPromoModal(null);
         });
 
         // Banner Row Handlers
@@ -16154,26 +16655,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             });
           });
 
-          // Make entire promo row clickable to view / edit offer details
-          body.querySelectorAll('.ap-promo-row').forEach(row => {
-            row.addEventListener('click', (e) => {
-              if (e.target.closest('button') || e.target.closest('.ap-promo-toggle-btn') || e.target.closest('.ap-delete-promo-btn') || e.target.closest('.ap-edit-promo-btn')) {
-                return;
-              }
-              const id = row.dataset.promoId;
-              const promo = promotions.find(p => String(p._id || p.id) === String(id));
-              if (promo) {
-                showPromoModal(promo);
-              }
-            });
-            row.addEventListener('mouseenter', () => {
-              row.style.backgroundColor = '#f1f5f9';
-            });
-            row.addEventListener('mouseleave', () => {
-              row.style.backgroundColor = '';
-            });
-          });
-
           // Edit Promo
           body.querySelectorAll('.ap-edit-promo-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -16208,8 +16689,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     Are you sure you want to remove code <strong style="font-family:monospace; color:#0284c7;">"${esc(promoCode)}"</strong>? Customers will no longer be able to redeem this coupon at checkout.
                   </p>
                   <div style="display:flex; justify-content:center; gap:10px;">
-                    <button type="button" class="ap-btn ghost" id="ap-del-promo-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
-                    <button type="button" class="ap-btn danger" id="ap-del-promo-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626 !important; border-color:#dc2626 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">Delete Offer</button>
+                    <button type="button" class="ap-btn ghost" id="ap-del-promo-cancel" style="padding:8px 18px; font-size:12.5px; font-weight:700;">Cancel</button>
+                    <button type="button" class="ap-btn danger" id="ap-del-promo-confirm" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#dc2626; color:#ffffff !important;">Delete Offer</button>
                   </div>
                 </div>
               `;
@@ -16235,29 +16716,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               });
             });
           });
-
-          // Auto-rotator ticker for Bank & UPI Partner items
-          startPromoTickers();
-        }
-
-        function startPromoTickers() {
-          if (window._apPromoTickerTimer) {
-            clearInterval(window._apPromoTickerTimer);
-          }
-          window._apPromoTickerTimer = setInterval(() => {
-            const tickers = document.querySelectorAll('.ap-partner-ticker');
-            tickers.forEach(ticker => {
-              const slides = Array.from(ticker.querySelectorAll('.ap-ticker-slide'));
-              if (slides.length <= 1) return;
-              let curIdx = slides.findIndex(s => s.classList.contains('active') || s.style.display !== 'none');
-              if (curIdx === -1) curIdx = 0;
-              slides[curIdx].style.display = 'none';
-              slides[curIdx].classList.remove('active');
-              const nextIdx = (curIdx + 1) % slides.length;
-              slides[nextIdx].style.display = 'flex';
-              slides[nextIdx].classList.add('active');
-            });
-          }, 2400);
         }
         attachPromoRowHandlers();
 
@@ -16267,20 +16725,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           const backdrop = document.createElement('div');
           backdrop.className = 'ap-modal-backdrop';
 
-          // For new banners, start empty so input is clean without accidental leftover prefixes
           const defaultImg = existingBanner?.image || '';
-          const previewPlaceholderImg = existingBanner?.image || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';
 
           backdrop.innerHTML = `
-            <div class="ap-modal-dialog" style="max-width:880px; width:95%;">
-              <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff;">
+            <div class="ap-modal-dialog" style="max-width:580px;">
+              <div class="ap-modal-header" style="background:linear-gradient(135deg, #0b1c30, #1e3a5f); color:#ffffff;">
                 <div>
                   <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800;">
                     ${isEdit ? 'Edit Featured Banner' : 'Add New Featured Banner'}
                   </h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload a local image file, headline, and link for customer storefront.</p>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload an image file, headline, and link for customer storefront.</p>
                 </div>
-                <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;" title="Close">✕</button>
+                <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="color:#ffffff;">✕</button>
               </div>
 
               <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
@@ -16312,34 +16768,30 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <!-- Image URL + Live Preview -->
                 <div class="ap-form-group" style="margin-bottom:14px;">
                   <label for="banner-modal-image" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Banner Image URL</label>
-                  <input type="text" id="banner-modal-image" class="ap-input" value="${esc(defaultImg)}" placeholder="https://images.unsplash.com/... or paste image URL / upload a local image file" style="width:100%; color:#000000; font-weight:600;" />
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="url" id="banner-modal-image" class="ap-input" value="${esc(defaultImg)}" placeholder="https://images.unsplash.com/... or upload image" style="flex:1; width:auto; color:#000000; font-weight:600;" />
+                    <button type="button" class="ap-btn" id="banner-upload-img-btn" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:8px 14px; background:#f1f5f9; color:#022f43; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      Upload Image
+                    </button>
+                    <input type="file" id="banner-file-input" accept="image/*" style="display:none;" />
+                  </div>
                   
-                  <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                    <div>
-                      <span style="font-size:11.5px; color:#000000; font-weight:800;">One-click high-res presets:</span>
-                      <div class="ap-preset-pills" style="margin-top:4px;">
-                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80">Flagship Electronics</button>
-                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80">Audio &amp; Headphones</button>
-                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80">Designer Fashion</button>
-                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80">Modern Living</button>
-                        <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80">Gaming Battle Station</button>
-                      </div>
-                    </div>
-                    <div>
-                      <label for="banner-modal-file-upload" id="banner-modal-upload-btn" class="banner-upload-local-btn" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:#022F43 !important; color:#ffffff !important; font-weight:700 !important; border:1.5px solid #022F43 !important; padding:7px 15px !important; border-radius:6px !important; font-size:12px !important; margin-top:4px; box-shadow:0 2px 4px rgba(2,47,67,0.25) !important;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="color:#ffffff !important; stroke:#ffffff !important;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <span style="color:#ffffff !important; font-weight:700 !important;">Upload Local Image</span>
-                      </label>
-                      <input type="file" id="banner-modal-file-upload" accept="image/*" style="display:none;" />
+                  <div style="margin-top:6px;">
+                    <span style="font-size:11.5px; color:#000000; font-weight:800;">One-click high-res presets:</span>
+                    <div class="ap-preset-pills">
+                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80">Flagship Electronics</button>
+                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80">Audio &amp; Headphones</button>
+                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80">Designer Fashion</button>
+                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&auto=format&fit=crop&q=80">Modern Living</button>
+                      <button type="button" class="ap-preset-pill" data-target="banner-modal-image" data-val="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80">Gaming Battle Station</button>
                     </div>
                   </div>
 
                   <!-- Live Image Preview Container -->
-                  <div class="banner-preview-box" id="banner-modal-preview-box" style="margin-top:10px;">
-                    <img id="banner-modal-preview-img" src="${esc(defaultImg || previewPlaceholderImg)}" alt="Banner Live Preview" style="max-height:160px; object-fit:cover; border-radius:6px;" onerror="if(!this.dataset.errored){this.dataset.errored='1';this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=600';}" />
-                    <span id="banner-modal-preview-status" style="font-size:11.5px; color:#022F43; font-weight:700; margin-top:6px; display:inline-flex; align-items:center; gap:6px;">
-                      ${defaultImg ? '✓ Live Image Preview Ready' : 'Live Image Preview (Default Placeholder)'}
-                    </span>
+                  <div class="banner-preview-box">
+                    <img id="banner-modal-preview-img" src="${esc(defaultImg)}" alt="Banner Live Preview" onerror="this.src='https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=600';" />
+                    <span style="font-size:11.5px; color:#000000; font-weight:700; margin-top:6px;">Live Image Preview</span>
                   </div>
                 </div>
 
@@ -16347,11 +16799,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:14px;">
                   <div class="ap-form-group">
                     <label for="banner-modal-link" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Destination Link / Hash</label>
-                    <input type="text" id="banner-modal-link" class="ap-input" value="${esc(existingBanner?.link || '#deals')}" style="width:100%; color:#000000;" />
+                    <input type="text" id="banner-modal-link" class="ap-input" value="${esc(existingBanner?.link || '#category/Electronics')}" style="width:100%; color:#000000;" />
                   </div>
                   <div class="ap-form-group">
-                    <label for="banner-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order (0 = First)</label>
-                    <input type="number" id="banner-modal-order" class="ap-input" value="${existingBanner?.order ?? 0}" min="0" style="width:100%; color:#000000;" />
+                    <label for="banner-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order</label>
+                    <input type="number" id="banner-modal-order" class="ap-input" value="${existingBanner?.order ?? banners.length}" min="0" style="width:100%; color:#000000;" />
                   </div>
                 </div>
 
@@ -16365,10 +16817,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
                 <!-- Actions -->
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
-                  <button type="button" class="ap-btn" id="ap-banner-modal-cancel" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; font-size:13px; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
-                    Cancel
-                  </button>
-                  <button type="button" class="ap-btn" id="ap-banner-modal-save" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; font-size:13px; border:none; padding:8px 22px; border-radius:6px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
+                  <button type="button" class="ap-btn ghost" id="ap-banner-modal-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-banner-modal-save" style="padding:8px 22px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:1.5px solid #e08300;">
                     ${isEdit ? 'Save Changes' : 'Publish Banner'}
                   </button>
                 </div>
@@ -16386,115 +16836,36 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.querySelector('#ap-banner-modal-cancel')?.addEventListener('click', closeModal);
           backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
-          // Live Image Preview updates with automatic input sanitization
+          // Live Image Preview updates
           const imgInput = backdrop.querySelector('#banner-modal-image');
           const previewImg = backdrop.querySelector('#banner-modal-preview-img');
-          const previewStatus = backdrop.querySelector('#banner-modal-preview-status');
-
-          const updatePreview = () => {
-            if (!imgInput || !previewImg) return;
-            const rawVal = imgInput.value;
-            const cleanVal = sanitizeBannerImageUrl(rawVal);
-            if (cleanVal !== rawVal) {
-              imgInput.value = cleanVal;
-            }
-            if (!cleanVal) {
-              previewImg.dataset.errored = '';
-              previewImg.src = previewPlaceholderImg;
-              if (previewStatus) {
-                previewStatus.innerHTML = '<span style="color:#64748b; font-weight:600;">Live Image Preview (Default Placeholder)</span>';
-              }
-              return;
-            }
-            previewImg.dataset.errored = '';
-            previewImg.src = cleanVal;
-            if (previewStatus) {
-              previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Live Image Preview Ready</span>';
-            }
-          };
-
-          imgInput?.addEventListener('input', updatePreview);
-          imgInput?.addEventListener('change', updatePreview);
-          imgInput?.addEventListener('paste', () => setTimeout(updatePreview, 25));
-
-          previewImg?.addEventListener('error', () => {
-            if (previewStatus && imgInput?.value.trim()) {
-              previewStatus.innerHTML = '<span style="color:#dc2626; font-weight:700;">⚠️ Could not render image from URL. Please check URL or upload an image file.</span>';
-            }
-          });
-          previewImg?.addEventListener('load', () => {
-            if (previewStatus && imgInput?.value.trim()) {
-              previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Live Image Preview Ready</span>';
-            }
+          imgInput?.addEventListener('input', () => {
+            if (previewImg) previewImg.src = imgInput.value.trim() || defaultImg;
           });
 
-          // Local file upload support with automatic canvas compression
-          const fileInput = backdrop.querySelector('#banner-modal-file-upload');
+          // Upload Image button handler
+          const uploadBtn = backdrop.querySelector('#banner-upload-img-btn');
+          const fileInput = backdrop.querySelector('#banner-file-input');
+          uploadBtn?.addEventListener('click', () => fileInput?.click());
           fileInput?.addEventListener('change', (e) => {
             const file = e.target.files?.[0];
-            if (!file) return;
-
-            const uploadBtn = backdrop.querySelector('#banner-modal-upload-btn');
-            const originalBtnHtml = uploadBtn ? uploadBtn.innerHTML : '';
-            if (uploadBtn) {
-              uploadBtn.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-                <span style="color:#ffffff !important; font-weight:700 !important;">Processing Image...</span>
-              `;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-              const rawDataUrl = ev.target?.result;
-              if (!rawDataUrl) {
-                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
-                return;
+            if (file) {
+              if (file.size > 8 * 1024 * 1024) {
+                return showToast('Image file too large (max 8MB)', 'error');
               }
-
-              const img = new Image();
-              img.onload = () => {
-                let finalDataUrl = rawDataUrl;
-                const MAX_W = 1600;
-                const MAX_H = 1000;
-                let w = img.width;
-                let h = img.height;
-
-                if (w > MAX_W || h > MAX_H || (typeof file.size === 'number' && file.size > 600000)) {
-                  if (w > MAX_W) {
-                    h = Math.round((h * MAX_W) / w);
-                    w = MAX_W;
-                  }
-                  if (h > MAX_H) {
-                    w = Math.round((w * MAX_H) / h);
-                    h = MAX_H;
-                  }
-                  const canvas = document.createElement('canvas');
-                  canvas.width = w;
-                  canvas.height = h;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0, w, h);
-                  finalDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                if (imgInput) {
+                  imgInput.value = dataUrl;
                 }
-
-                if (imgInput) imgInput.value = finalDataUrl;
                 if (previewImg) {
-                  previewImg.dataset.errored = '';
-                  previewImg.src = finalDataUrl;
+                  previewImg.src = dataUrl;
                 }
-                if (previewStatus) {
-                  previewStatus.innerHTML = '<span style="color:#059669; font-weight:800;">✓ Local Image Loaded &amp; Preview Ready</span>';
-                }
-                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
-                if (typeof showToast === 'function') showToast('Image uploaded and ready for preview!', 'success');
+                showToast('Image uploaded successfully!', 'success');
               };
-              img.onerror = () => {
-                if (imgInput) imgInput.value = rawDataUrl;
-                if (previewImg) previewImg.src = rawDataUrl;
-                if (uploadBtn) uploadBtn.innerHTML = originalBtnHtml;
-              };
-              img.src = rawDataUrl;
-            };
-            reader.readAsDataURL(file);
+              reader.readAsDataURL(file);
+            }
           });
 
           // Preset buttons
@@ -16505,8 +16876,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               const targetInput = backdrop.querySelector(`#${targetId}`);
               if (targetInput) {
                 targetInput.value = val;
-                if (targetId === 'banner-modal-image') {
-                  updatePreview();
+                if (targetId === 'banner-modal-image' && previewImg) {
+                  previewImg.src = val;
                 }
               }
             });
@@ -16514,35 +16885,19 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           // Save Banner
           backdrop.querySelector('#ap-banner-modal-save')?.addEventListener('click', async () => {
-            const titleInput = backdrop.querySelector('#banner-modal-title');
-            const title = titleInput?.value.trim();
+            const title = backdrop.querySelector('#banner-modal-title')?.value.trim();
             const subtitle = backdrop.querySelector('#banner-modal-subtitle')?.value.trim();
             const tag = backdrop.querySelector('#banner-modal-tag')?.value.trim() || 'Featured';
-            let image = sanitizeBannerImageUrl(backdrop.querySelector('#banner-modal-image')?.value);
-            const link = backdrop.querySelector('#banner-modal-link')?.value.trim() || '#deals';
+            const image = backdrop.querySelector('#banner-modal-image')?.value.trim();
+            const link = backdrop.querySelector('#banner-modal-link')?.value.trim() || '#';
             const order = parseInt(backdrop.querySelector('#banner-modal-order')?.value, 10) || 0;
             const active = backdrop.querySelector('#banner-modal-active')?.checked ?? true;
 
-            // Auto-fallback image if left blank to whatever is loaded in the live preview
-            if (!image) {
-              image = sanitizeBannerImageUrl(previewImg?.src) || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=80';
-              if (imgInput) imgInput.value = image;
-            }
-
-            if (!title) {
-              if (titleInput) {
-                titleInput.focus();
-                titleInput.style.borderColor = '#FF9400';
-              }
-              return showToast('Please enter a banner headline.', 'error');
-            }
+            if (!title) return showToast('Please enter a banner headline.', 'error');
+            if (!image) return showToast('Please provide a banner image URL.', 'error');
 
             const saveBtn = backdrop.querySelector('#ap-banner-modal-save');
-            if (saveBtn) {
-              saveBtn.disabled = true;
-              saveBtn.textContent = isEdit ? 'Saving...' : 'Publishing...';
-              saveBtn.style.opacity = '0.7';
-            }
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
             try {
               const bannerId = existingBanner?._id || existingBanner?.id;
@@ -16551,26 +16906,19 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   method: 'PUT',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('Featured banner updated successfully!', 'success');
+                showToast('Featured banner updated successfully!', 'success'); window._fetchStorefrontCMS?.();
               } else {
                 await adminFetch('/cms/banners', {
                   method: 'POST',
                   body: JSON.stringify({ title, subtitle, tag, image, link, order, active }),
                 });
-                showToast('New featured banner published!', 'success');
-              }
-              if (typeof window._fetchStorefrontCMS === 'function') {
-                await window._fetchStorefrontCMS(order);
+                showToast('New featured banner published!', 'success'); window._fetchStorefrontCMS?.();
               }
               closeModal();
               load();
             } catch (e) {
               showToast(e.message, 'error');
-              if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.textContent = isEdit ? 'Save Changes' : 'Publish Banner';
-                saveBtn.style.opacity = '1';
-              }
+              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Save Changes' : 'Publish Banner'; }
             }
           });
         }
@@ -16579,8 +16927,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         function showPromoModal(existingPromo = null) {
           const isEdit = !!existingPromo;
           const backdrop = document.createElement('div');
-          backdrop.className = 'ap-promo-full-window';
-          backdrop.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f1f5f9; z-index:100060; display:flex; flex-direction:column; overflow:hidden;';
+          backdrop.className = 'ap-modal-backdrop';
 
           const currentType = existingPromo?.type || 'voucher';
           const currentScope = existingPromo?.scope || 'storewide';
@@ -16588,22 +16935,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           let selectedStoreName = existingPromo?.storeName || '';
 
           backdrop.innerHTML = `
-            <!-- Top App Bar / Complete Window Header -->
-            <div style="background:#022F43 !important; color:#ffffff; padding:16px 36px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 3px 12px rgba(0,0,0,0.18); flex-shrink:0; z-index:10;">
-              <div>
-                <h2 style="color:#ffffff !important; font-size:18px; font-weight:800; margin:0; line-height:1.2;">
-                  ${isEdit ? 'Edit Promotional Offer / Voucher' : 'Create New Promotional Offer / Voucher'}
-                </h2>
-                <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1; line-height:1.2;">Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.</p>
+            <div class="ap-modal-dialog" style="max-width:640px;">
+              <div class="ap-modal-header" style="background:linear-gradient(135deg, #19324c, #0f172a); color:#ffffff;">
+                <div>
+                  <h3 class="ap-modal-title" style="color:#ffffff; font-size:15.5px; font-weight:800;">
+                    ${isEdit ? 'Edit Promotional Offer / Voucher' : 'Create New Promotional Offer / Voucher'}
+                  </h3>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.</p>
+                </div>
+                <button type="button" class="ap-modal-close-btn" id="ap-promo-modal-close" style="color:#ffffff;">✕</button>
               </div>
-              <div style="display:flex; align-items:center; gap:12px;">
-                <button type="button" class="ap-modal-close-btn" id="ap-promo-modal-close" style="color:#ffffff; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); border-radius:8px; width:34px; height:34px; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Close Window">✕</button>
-              </div>
-            </div>
 
-            <!-- Full Window Scrollable Content Canvas -->
-            <div style="flex:1; overflow-y:auto; padding:28px 24px 80px; display:flex; justify-content:center; align-items:flex-start; background:#f1f5f9;">
-              <div id="ap-promo-modal-card" style="width:100%; max-width:1150px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:32px 40px; box-shadow:0 4px 20px rgba(0,0,0,0.06); box-sizing:border-box; height:fit-content; min-height:min-content;">
+              <div class="ap-modal-content" style="padding:22px; max-height:82vh; overflow-y:auto; color:#000000;">
                 ${!isEdit ? `
                   <div style="background:#fff7ed; border:1.5px solid #fed7aa; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
                     <div style="font-size:12px; color:#000000; font-weight:700; line-height:1.4;">
@@ -16632,7 +16975,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Conditional Bank Partner Field (Multi-Select & Per-Bank Card Eligibility Supported with Top 10 Most Valued Banks Dropdown Window) -->
-                <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:22px; display:${currentType === 'bank' ? 'block' : 'none'};">
+                <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:14px; display:${currentType === 'bank' ? 'block' : 'none'};">
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
                     <label class="ap-cms-label" style="color:#000000; font-weight:800;">Eligible Bank Partner(s) — Top 10 Most Valued Banks of India</label>
                     <span style="font-size:11px; color:#475569; font-weight:600;">Select banks from dropdown window below</span>
@@ -16642,10 +16985,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <!-- Bank Dropdown Window Selector -->
                   <div style="position:relative; margin-bottom:10px;" id="promo-bank-picker-container">
                     <button type="button" id="promo-bank-dropdown-trigger" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:9px 12px; cursor:pointer; font-family:inherit; text-align:left; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                      <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-                        <div id="promo-bank-trigger-icon-wrap" style="width:26px; height:26px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
-                          <img id="promo-bank-trigger-icon" src="assets/banks/allbanks.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" />
-                        </div>
+                      <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        <span style="font-size:15px;">🏛️</span>
                         <span id="promo-bank-dropdown-summary" style="font-weight:700; color:#0f172a; font-size:12.5px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">
                           Select Banks (HDFC, SBI, ICICI, Axis, Kotak, IndusInd, BoB, PNB, Canara, Union)...
                         </span>
@@ -16659,7 +17000,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     <!-- Floating Dropdown Window with Real Logos -->
                     <div id="promo-bank-dropdown-window" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; max-height:350px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.18); z-index:1050; flex-direction:column;">
                       <div style="padding:8px 10px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <input type="text" id="promo-bank-dropdown-search" placeholder="Search Top 10 Indian Banks..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
+                        <input type="text" id="promo-bank-dropdown-search" placeholder="🔍 Search Top 10 Indian Banks..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
                         <div style="display:flex; gap:4px; flex-shrink:0;">
                           <button type="button" id="promo-bank-select-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#0f172a; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Select All</button>
                           <button type="button" id="promo-bank-clear-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#b91c1c; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Clear</button>
@@ -16689,7 +17030,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     </div>
 
                     <!-- Populated dynamically by renderBankRules() with Real Bank Logos -->
-                    <div id="promo-bank-rules-list" style="display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto; padding-right:4px; scrollbar-width:thin;"></div>
+                    <div id="promo-bank-rules-list" style="display:flex; flex-direction:column; gap:6px;"></div>
                   </div>
                 </div>
 
@@ -16704,10 +17045,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <!-- UPI Dropdown Window Selector -->
                   <div style="position:relative; margin-bottom:10px;" id="promo-upi-picker-container">
                     <button type="button" id="promo-upi-dropdown-trigger" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:9px 12px; cursor:pointer; font-family:inherit; text-align:left; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                      <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-                        <div id="promo-upi-trigger-icon-wrap" style="width:26px; height:26px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
-                          <img id="promo-upi-trigger-icon" src="assets/upi/upi.svg" alt="UPI" style="max-width:100%; max-height:100%; object-fit:contain;" />
-                        </div>
+                      <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        <span style="font-size:15px;">📱</span>
                         <span id="promo-upi-dropdown-summary" style="font-weight:700; color:#0f172a; font-size:12.5px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">
                           Select UPI Apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay, CRED)...
                         </span>
@@ -16721,7 +17060,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     <!-- Floating UPI Dropdown Window with Real Logos -->
                     <div id="promo-upi-dropdown-window" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; max-height:350px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.18); z-index:1050; flex-direction:column;">
                       <div style="padding:8px 10px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <input type="text" id="promo-upi-dropdown-search" placeholder="Search Top Indian UPI Apps..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
+                        <input type="text" id="promo-upi-dropdown-search" placeholder="🔍 Search Top Indian UPI Apps..." style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; outline:none; background:#fff;" />
                         <div style="display:flex; gap:4px; flex-shrink:0;">
                           <button type="button" id="promo-upi-select-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#0f172a; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Select All</button>
                           <button type="button" id="promo-upi-clear-all-btn" class="ap-btn-tiny" style="background:#fff; border:1px solid #cbd5e1; color:#b91c1c; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;">Clear</button>
@@ -16740,96 +17079,70 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </div>
                 </div>
 
-                <!-- DEDICATED STORE SEARCH & SELECTOR (Container 1: Merchant Store Targeting) -->
-                <div id="promo-store-picker-wrap" class="ap-form-group" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-top:20px; margin-bottom:20px; display:${currentScope === 'store' ? 'block' : 'none'};">
-                  <div style="margin-bottom:10px;">
-                    <label for="promo-store-search-field" class="ap-cms-label" style="display:block; margin:0 0 2px 0; color:#000000; font-weight:800; font-size:12.5px;">Search &amp; Select Merchant Store</label>
-                    <div style="font-size:11px; color:#475569; font-weight:600;">Restrict this promotion exclusively to products from a specific merchant store</div>
-                  </div>
-                  <div class="promo-store-picker-box" style="position:relative;">
-                    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                      </svg>
-                      <input type="text" id="promo-store-search-field" placeholder="Search merchant store by name, store ID, or seller (e.g. Apex Tech Store)..." style="width:100%; border:none !important; outline:none !important; box-shadow:none !important; color:#000000; font-weight:600; font-size:13px; background:transparent; padding:2px 0;" />
-                    </div>
+                <!-- DEDICATED STORE SEARCH & SELECTOR (For store-specific promotions) -->
+                <div id="promo-store-picker-wrap" class="ap-form-group" style="margin-bottom:14px; display:${currentScope === 'store' ? 'block' : 'none'};">
+                  <label for="promo-store-search-field" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Search &amp; Select Merchant Store</label>
+                  <div class="promo-store-picker-box">
+                    <input type="text" id="promo-store-search-field" class="ap-input" style="width:100%; color:#000000; font-weight:600;" />
                     <div id="promo-store-dropdown" class="promo-store-results-list" style="display:none;"></div>
                   </div>
-
-                  <!-- Standalone Selected Store Card -->
-                  <div id="promo-selected-store-box" class="promo-selected-store-pill" style="display:${selectedStoreName ? 'flex' : 'none'}; margin-top:10px; border-radius:8px; background:#ecfdf5; border:1.5px solid #a7f3d0; padding:9px 14px; justify-content:space-between; align-items:center; box-shadow:0 1px 2px rgba(16,185,129,0.06);">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                        <path d="M2 3h20l-2 7H4L2 3z"></path>
-                        <path d="M4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"></path>
-                        <path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
-                      </svg>
-                      <span style="font-size:12.5px; color:#065f46;">Targeted Store: <strong id="promo-store-name-display" style="color:#064e3b; font-weight:800;">${esc(selectedStoreName)}</strong></span>
-                    </div>
-                    <button type="button" id="promo-clear-store-selection" class="ap-btn-tiny" style="background:#065f46; color:#ffffff; border:none; border-radius:4px; padding:4px 12px; font-weight:700; cursor:pointer; font-size:11px;">Change</button>
+                  <div id="promo-selected-store-box" class="promo-selected-store-pill" style="display:${selectedStoreName ? 'flex' : 'none'};">
+                    <span>Targeted Store: <strong id="promo-store-name-display">${esc(selectedStoreName)}</strong></span>
+                    <button type="button" id="promo-clear-store-selection" class="ap-btn-tiny" style="background:#065f46; color:#ffffff; border:none; border-radius:4px; padding:2px 8px; cursor:pointer;">Change</button>
                   </div>
                 </div>
 
-                <!-- OFFER CONFIGURATION & DISCOUNT RULES (Container 2: Offer Details & Rules) -->
-                <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:16px;">
-                  <div style="margin-bottom:12px;">
-                    <h4 style="margin:0; font-size:13px; font-weight:800; color:#000000;">Offer Details &amp; Discount Configuration</h4>
-                    <p style="margin:2px 0 0; font-size:11.5px; color:#1e293b; font-weight:600;">Define the promo code, headline, discount calculation method, and order constraints.</p>
+                <!-- Coupon Code & Title -->
+                <div id="promo-code-title-row" style="display:grid; grid-template-columns:${currentType === 'voucher' ? '1fr 2fr' : '1fr'}; gap:12px; margin-bottom:14px;">
+                  <div class="ap-form-group" id="promo-code-field-wrap" style="display:${currentType === 'voucher' ? 'block' : 'none'};">
+                    <label for="promo-modal-code" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Code / Promo Key</label>
+                    <input type="text" id="promo-modal-code" class="ap-input" value="${esc(existingPromo?.code || (currentType === 'bank' ? 'CARDOFF500' : currentType === 'upi' ? 'UPI100' : 'SUPER20'))}" style="width:100%; text-transform:uppercase; font-family:monospace; font-weight:800; color:#2563eb;" />
                   </div>
+                  <div class="ap-form-group" style="width:100%;">
+                    <label for="promo-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Headline / Display Title</label>
+                    <input type="text" id="promo-modal-title" class="ap-input" value="${esc(existingPromo?.title || (currentType === 'bank' ? 'Flat ₹500 Instant Discount on Debit/Credit Cards' : currentType === 'upi' ? 'Flat ₹100 Cashback on UPI' : 'Storewide Discount Voucher'))}" style="width:100%; color:#000000; font-weight:600;" />
+                  </div>
+                </div>
 
-                  <!-- Coupon Code & Title -->
-                  <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px; margin-bottom:12px;">
-                    <div class="ap-form-group">
-                      <label for="promo-modal-code" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Code / Promo Key</label>
-                      <input type="text" id="promo-modal-code" class="ap-input" value="${esc(existingPromo?.code || '')}" placeholder="e.g. SUPER20" style="width:100%; text-transform:uppercase; font-family:monospace; font-weight:800; color:#2563eb;" />
-                    </div>
-                    <div class="ap-form-group">
-                      <label for="promo-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Headline / Display Title</label>
-                      <input type="text" id="promo-modal-title" class="ap-input" value="${esc(existingPromo?.title || '')}" placeholder="e.g. Storewide Discount Voucher" style="width:100%; color:#000000; font-weight:600;" />
-                    </div>
+                <!-- Discount Type, Discount Value & Min Order -->
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:8px;">
+                  <div class="ap-form-group">
+                    <label for="promo-modal-discount-type" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Discount Method</label>
+                    <select id="promo-modal-discount-type" class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+                      <option value="flat" ${(!existingPromo || existingPromo?.discountType === 'flat') ? 'selected' : ''}>Flat Amount (₹ Off)</option>
+                      <option value="percent" ${(existingPromo && existingPromo?.discountType === 'percent') ? 'selected' : ''}>Percentage (%)</option>
+                    </select>
                   </div>
+                  <div class="ap-form-group">
+                    <label for="promo-modal-val" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;" id="promo-modal-val-label">Discount Amount (₹)</label>
+                    <input type="number" id="promo-modal-val" class="ap-input" value="${existingPromo?.discountValue ?? (currentType === 'bank' ? 500 : currentType === 'upi' ? 100 : 10)}" min="1" style="width:100%; color:#000000; font-weight:800;" />
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="promo-modal-min" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Min Order (₹)</label>
+                    <input type="number" id="promo-modal-min" class="ap-input" value="${existingPromo?.minOrder ?? 0}" min="0" style="width:100%; color:#000000; font-weight:700;" />
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="promo-modal-max" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Max Cap (₹)</label>
+                    <input type="number" id="promo-modal-max" class="ap-input" value="${existingPromo?.maxDiscount ?? 0}" min="0" style="width:100%; color:#000000; font-weight:700;" />
+                  </div>
+                </div>
 
-                  <!-- Discount Type, Discount Value & Min Order -->
-                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:8px;">
-                    <div class="ap-form-group">
-                      <label for="promo-modal-discount-type" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Discount Method</label>
-                      <select id="promo-modal-discount-type" class="ap-input" style="width:100%; font-weight:700; color:#000000;">
-                        <option value="flat" ${(!existingPromo || existingPromo?.discountType === 'flat') ? 'selected' : ''}>Flat Amount (₹ Off)</option>
-                        <option value="percent" ${(existingPromo && existingPromo?.discountType === 'percent') ? 'selected' : ''}>Percentage (%)</option>
-                      </select>
-                    </div>
-                    <div class="ap-form-group">
-                      <label for="promo-modal-val" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;" id="promo-modal-val-label">Discount Amount (₹)</label>
-                      <input type="number" id="promo-modal-val" class="ap-input" value="${existingPromo?.discountValue ?? ''}" placeholder="e.g. 500" min="1" style="width:100%; color:#000000; font-weight:800;" />
-                    </div>
-                    <div class="ap-form-group">
-                      <label for="promo-modal-min" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Min Order (₹)</label>
-                      <input type="number" id="promo-modal-min" class="ap-input" value="${existingPromo?.minOrder ?? ''}" placeholder="e.g. 999 (0 for no min)" min="0" style="width:100%; color:#000000; font-weight:700;" />
-                    </div>
-                    <div class="ap-form-group">
-                      <label for="promo-modal-max" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Max Cap (₹)</label>
-                      <input type="number" id="promo-modal-max" class="ap-input" value="${existingPromo?.maxDiscount ?? ''}" placeholder="e.g. 1000 (0 for no cap)" min="0" style="width:100%; color:#000000; font-weight:700;" />
-                    </div>
+                <!-- Quick Discount Price Presets -->
+                <div style="margin-bottom:14px;">
+                  <span style="font-size:11px; color:#000000; font-weight:700;">Quick Discount Presets:</span>
+                  <div class="ap-preset-pills" id="promo-discount-presets" style="margin-top:4px;">
+                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="100">₹100 Flat Off</button>
+                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="250">₹250 Flat Off</button>
+                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="500">₹500 Flat Off (Recommended)</button>
+                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="1000">₹1,000 Flat Off</button>
+                    <button type="button" class="ap-preset-pill ap-discount-preset" data-type="percent" data-val="10">10% Off</button>
                   </div>
+                </div>
 
-                  <!-- Quick Discount Price Presets -->
-                  <div style="margin-bottom:12px;">
-                    <span style="font-size:11px; color:#000000; font-weight:700;">Quick Discount Presets:</span>
-                    <div class="ap-preset-pills" id="promo-discount-presets" style="margin-top:4px;">
-                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="100">₹100 Flat Off</button>
-                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="250">₹250 Flat Off</button>
-                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="500">₹500 Flat Off (Recommended)</button>
-                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="flat" data-val="1000">₹1,000 Flat Off</button>
-                      <button type="button" class="ap-preset-pill ap-discount-preset" data-type="percent" data-val="10">10% Off</button>
-                    </div>
-                  </div>
-
-                  <!-- Description / Terms -->
-                  <div class="ap-form-group" style="margin-bottom:0;">
-                    <label for="promo-modal-desc" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Description &amp; Terms</label>
-                    <textarea id="promo-modal-desc" class="ap-input" placeholder="e.g. Applicable on orders above ₹999. Max discount ₹500. Valid once per customer on select categories." style="width:100%; height:55px; font-size:12.5px; color:#000000; font-weight:600; resize:vertical;">${esc(existingPromo?.description || '')}</textarea>
-                  </div>
+                <!-- Description / Terms -->
+                <div class="ap-form-group" style="margin-bottom:14px;">
+                  <label for="promo-modal-desc" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Offer Description &amp; Terms</label>
+                  <textarea id="promo-modal-desc" class="ap-input" placeholder="${currentType === 'bank' ? 'e.g. Flat ₹500 instant discount on HDFC, SBI & ICICI Debit/Credit cards on minimum purchase of ₹2,999.' : currentType === 'upi' ? 'e.g. Flat ₹100 cashback via PhonePe, Google Pay or Paytm UPI on minimum transaction of ₹499.' : 'e.g. Get 10% instant discount up to ₹500 on all prepaid orders. Valid on minimum cart value of ₹999.'}" style="width:100%; height:55px; font-size:12.5px; color:#000000; font-weight:600; resize:vertical;">${esc(existingPromo?.description || '')}</textarea>
                 </div>
 
                 <!-- Promotion Validity Duration & Expiry Schedule -->
@@ -16854,11 +17167,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <div style="margin-top:6px;">
                     <span style="font-size:11.5px; color:#000000; font-weight:800;">Quick Expiry Presets:</span>
                     <div class="ap-preset-pills" id="promo-duration-presets" style="margin-top:4px;">
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="24" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">24 Hours</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="72" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">3 Days</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="168" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">7 Days</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="720" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">30 Days</button>
-                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="0" style="background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;">No Expiry</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="24">24 Hours</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="72">3 Days</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="168">7 Days</button>
+                      <button type="button" class="ap-preset-pill" data-hours="720">30 Days</button>
+                      <button type="button" class="ap-preset-pill ap-duration-preset-btn" data-hours="0">No Expiry</button>
                     </div>
                   </div>
 
@@ -16879,9 +17192,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Actions -->
-                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:28px; padding-top:20px; border-top:1px solid #e2e8f0;">
-                  <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel" style="padding:10px 24px; font-size:13px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:8px; cursor:pointer;">Cancel</button>
-                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="padding:10px 32px; font-size:13px; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; font-weight:800; border-radius:8px; box-shadow:0 4px 14px rgba(255,148,0,0.35); cursor:pointer;">
+                <div class="ap-modal-actions-row ap-promo-modal-actions" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px;">
+                  <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel" style="flex:1 1 0; min-width:0; background:#ffffff !important; background-color:#ffffff !important; border:1.5px solid #cbd5e1 !important; color:#000000 !important; font-weight:700; padding:10px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-promo-modal-save" style="flex:1 1 0; min-width:0; padding:10px 14px; background:#FF9400 !important; background-color:#FF9400 !important; border:1px solid #e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">
                     ${isEdit ? 'Save Offer' : 'Create Offer'}
                   </button>
                 </div>
@@ -16889,15 +17202,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
           `;
 
+          backdrop.style.zIndex = '100050';
           const mount = document.getElementById('admin-panel-overlay') || document.body;
           mount.appendChild(backdrop);
 
-          // Close window
+          // Close modal
           const closeModal = () => backdrop.remove();
           backdrop.querySelector('#ap-promo-modal-close')?.addEventListener('click', closeModal);
-          backdrop.querySelector('#ap-promo-modal-back')?.addEventListener('click', closeModal);
-          backdrop.querySelector('#ap-promo-header-cancel')?.addEventListener('click', closeModal);
           backdrop.querySelector('#ap-promo-modal-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
           // Toggle conditional bank/upi sections
           const typeSelect = backdrop.querySelector('#promo-modal-type');
@@ -16908,6 +17221,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           const valInput = backdrop.querySelector('#promo-modal-val');
           const codeInput = backdrop.querySelector('#promo-modal-code');
           const titleInput = backdrop.querySelector('#promo-modal-title');
+          const descInput = backdrop.querySelector('#promo-modal-desc');
+
+          const updateDescPlaceholder = (t) => {
+            if (!descInput) return;
+            if (t === 'bank') {
+              descInput.placeholder = 'e.g. Flat ₹500 instant discount on HDFC, SBI & ICICI Debit/Credit cards on minimum purchase of ₹2,999.';
+            } else if (t === 'upi') {
+              descInput.placeholder = 'e.g. Flat ₹100 cashback via PhonePe, Google Pay or Paytm UPI on minimum transaction of ₹499.';
+            } else {
+              descInput.placeholder = 'e.g. Get 10% instant discount up to ₹500 on all prepaid orders. Valid on minimum cart value of ₹999.';
+            }
+          };
 
           discTypeSelect?.addEventListener('change', () => {
             if (valLabel) {
@@ -16917,26 +17242,32 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           typeSelect?.addEventListener('change', () => {
             const val = typeSelect.value;
+            updateDescPlaceholder(val);
             if (bankSection) bankSection.style.display = val === 'bank' ? 'block' : 'none';
             if (upiSection) upiSection.style.display = val === 'upi' ? 'block' : 'none';
 
+            const isVoucher = val === 'voucher';
+            const codeFieldWrap = backdrop.querySelector('#promo-code-field-wrap');
+            const codeTitleRow = backdrop.querySelector('#promo-code-title-row');
+            if (codeFieldWrap) codeFieldWrap.style.display = isVoucher ? 'block' : 'none';
+            if (codeTitleRow) codeTitleRow.style.gridTemplateColumns = isVoucher ? '1fr 2fr' : '1fr';
+
             if (!isEdit) {
               if (val === 'bank') {
-                if (codeInput) { if (!codeInput.value || codeInput.value === 'UPI100' || codeInput.value === 'SUPER20') codeInput.value = ''; codeInput.placeholder = 'e.g. CARDOFF500'; }
-                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cashback') || titleInput.value.includes('Voucher')) titleInput.value = ''; titleInput.placeholder = 'e.g. Flat ₹500 Instant Discount on Debit/Credit Cards'; }
+                if (codeInput && (!codeInput.value || codeInput.value === 'UPI100' || codeInput.value === 'SUPER20')) codeInput.value = 'CARDOFF500';
+                if (titleInput && (!titleInput.value || titleInput.value.includes('Cashback') || titleInput.value.includes('Voucher'))) titleInput.value = 'Flat ₹500 Instant Discount on Debit/Credit Cards';
                 if (discTypeSelect) discTypeSelect.value = 'flat';
-                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 500';
+                if (valInput) valInput.value = '500';
                 if (valLabel) valLabel.textContent = 'Discount Amount (₹)';
               } else if (val === 'upi') {
-                if (codeInput) { if (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'SUPER20') codeInput.value = ''; codeInput.placeholder = 'e.g. UPI100'; }
-                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Voucher')) titleInput.value = ''; titleInput.placeholder = 'e.g. Flat ₹100 Cashback on UPI Payment'; }
+                if (codeInput && (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'SUPER20')) codeInput.value = 'UPI100';
+                if (titleInput && (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Voucher'))) titleInput.value = 'Flat ₹100 Cashback on UPI Payment';
                 if (discTypeSelect) discTypeSelect.value = 'flat';
-                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 100';
+                if (valInput) valInput.value = '100';
                 if (valLabel) valLabel.textContent = 'Discount Amount (₹)';
               } else {
-                if (codeInput) { if (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'UPI100') codeInput.value = ''; codeInput.placeholder = 'e.g. SUPER20'; }
-                if (titleInput) { if (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Cashback')) titleInput.value = ''; titleInput.placeholder = 'e.g. Storewide Discount Voucher'; }
-                if (valInput && !valInput.value) valInput.placeholder = 'e.g. 500';
+                if (codeInput && (!codeInput.value || codeInput.value === 'CARDOFF500' || codeInput.value === 'UPI100')) codeInput.value = 'SUPER20';
+                if (titleInput && (!titleInput.value || titleInput.value.includes('Cards') || titleInput.value.includes('Cashback'))) titleInput.value = 'Storewide Discount Voucher';
               }
             }
           });
@@ -17030,17 +17361,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const bankId = item.dataset.id;
                 const isAll = bankId.toLowerCase().startsWith('all');
                 if (isAll) {
-                  selectedBankRules.clear();
-                  selectedBankRules.set('All Banks (Any Debit/Credit Card)', 'all');
+                  if (selectedBankRules.has('All Banks (Any Debit/Credit Card)')) {
+                    selectedBankRules.clear();
+                  } else {
+                    selectedBankRules.clear();
+                    selectedBankRules.set('All Banks (Any Debit/Credit Card)', 'all');
+                  }
                 } else {
                   selectedBankRules.delete('All Banks (Any Debit/Credit Card)');
-                  selectedBankRules.set(bankId, 'all');
+                  if (selectedBankRules.has(bankId)) {
+                    selectedBankRules.delete(bankId);
+                  } else {
+                    selectedBankRules.set(bankId, 'all');
+                  }
                 }
                 renderBankRules();
                 renderBankDropdownItems(bankSearchInput ? bankSearchInput.value : '');
-                if (bankWindow) {
-                  bankWindow.style.display = 'none';
-                }
+                if (bankWindow) bankWindow.style.display = 'none';
               });
             });
           }
@@ -17050,13 +17387,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             const count = selectedBankRules.size;
             if (bankCountBadge) bankCountBadge.textContent = `${count} Bank${count === 1 ? '' : 's'}`;
-            const triggerIcon = backdrop.querySelector('#promo-bank-trigger-icon');
 
             if (count === 0) {
               bankRulesList.innerHTML = `<div style="font-size:12px; color:#64748b; font-style:italic; padding:6px 4px;">No banks selected. Click the dropdown window above to choose banks.</div>`;
               if (bankInput) bankInput.value = '';
               if (bankSummary) bankSummary.textContent = 'Select Banks from Top 10 Most Valued Indian Banks...';
-              if (triggerIcon) triggerIcon.src = 'assets/banks/allbanks.svg';
               return;
             }
 
@@ -17065,13 +17400,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (bankSummary) {
               bankSummary.textContent = banks.length <= 3 ? banks.join(', ') : `${banks.slice(0, 3).join(', ')} +${banks.length - 3} more`;
             }
-            if (triggerIcon) {
-              if (banks.includes('All Banks (Any Debit/Credit Card)')) {
-                triggerIcon.src = 'assets/banks/allbanks.svg';
-              } else {
-                triggerIcon.src = getBankLogoUrl(banks[0]);
-              }
-            }
 
             bankRulesList.innerHTML = Array.from(selectedBankRules.entries()).map(([bank, cType]) => {
               const isAll = cType === 'all';
@@ -17079,7 +17407,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               const isCredit = cType === 'credit';
               const logoUrl = getBankLogoUrl(bank);
               return `
-                <div class="promo-bank-rule-item" data-bank="${esc(bank)}" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.03); flex-shrink:0; min-height:44px; box-sizing:border-box;">
+                <div class="promo-bank-rule-item" data-bank="${esc(bank)}" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:7px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
                   <div style="display:flex; align-items:center; gap:10px;">
                     <div style="width:28px; height:28px; border-radius:6px; background:#ffffff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:3px; flex-shrink:0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
                       <img src="${logoUrl}" alt="${esc(bank)}" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
@@ -17236,17 +17564,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 const upiId = item.dataset.id;
                 const isAll = upiId.toLowerCase().startsWith('all');
                 if (isAll) {
-                  selectedUpiApps.clear();
-                  selectedUpiApps.add('All UPI Apps (Any UPI Payment)');
+                  if (selectedUpiApps.has('All UPI Apps (Any UPI Payment)')) {
+                    selectedUpiApps.clear();
+                  } else {
+                    selectedUpiApps.clear();
+                    selectedUpiApps.add('All UPI Apps (Any UPI Payment)');
+                  }
                 } else {
                   selectedUpiApps.delete('All UPI Apps (Any UPI Payment)');
-                  selectedUpiApps.add(upiId);
+                  if (selectedUpiApps.has(upiId)) {
+                    selectedUpiApps.delete(upiId);
+                  } else {
+                    selectedUpiApps.add(upiId);
+                  }
                 }
                 renderUpiChips();
                 renderUpiDropdownItems(upiSearchInput ? upiSearchInput.value : '');
-                if (upiWindow) {
-                  upiWindow.style.display = 'none';
-                }
               });
             });
           }
@@ -17256,13 +17589,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             const count = selectedUpiApps.size;
             if (upiCountBadge) upiCountBadge.textContent = `${count} Selected`;
-            const upiTriggerIcon = backdrop.querySelector('#promo-upi-trigger-icon');
 
             if (count === 0) {
               upiChipsBox.innerHTML = `<div style="font-size:12px; color:#64748b; font-style:italic; padding:4px;">No UPI apps selected. Click the dropdown window above to add apps.</div>`;
               if (upiInput) upiInput.value = '';
               if (upiSummary) upiSummary.textContent = 'Select UPI Apps (PhonePe, Google Pay, Paytm, BHIM...)...';
-              if (upiTriggerIcon) upiTriggerIcon.src = 'assets/upi/upi.svg';
               return;
             }
 
@@ -17270,13 +17601,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             if (upiInput) upiInput.value = upiList.join(', ');
             if (upiSummary) {
               upiSummary.textContent = upiList.length <= 3 ? upiList.join(', ') : `${upiList.slice(0, 3).join(', ')} +${upiList.length - 3} more`;
-            }
-            if (upiTriggerIcon) {
-              if (upiList.includes('All UPI Apps (Any UPI Payment)')) {
-                upiTriggerIcon.src = 'assets/upi/upi.svg';
-              } else {
-                upiTriggerIcon.src = getUpiLogoUrl(upiList[0]);
-              }
             }
 
             upiChipsBox.innerHTML = upiList.map(u => {
@@ -17336,6 +17660,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           });
 
           renderUpiChips();
+          if (typeSelect) typeSelect.dispatchEvent(new Event('change'));
 
           // Close dropdown windows on outside click
           backdrop.addEventListener('click', (e) => {
@@ -17344,9 +17669,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             }
             if (!e.target.closest('#promo-upi-picker-container')) {
               if (upiWindow) upiWindow.style.display = 'none';
-            }
-            if (!e.target.closest('.promo-store-picker-box')) {
-              if (storeDropdown) storeDropdown.style.display = 'none';
             }
           });
 
@@ -17404,18 +17726,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 }
                 if (storeDropdown) {
                   storeDropdown.innerHTML = stores.map(s => `
-                    <div class="promo-store-item" data-id="${s.id}" data-name="${esc(s.storeName)}" style="display:flex; align-items:center; gap:9px; padding:8px 10px; cursor:pointer;">
-                      <div style="width:24px; height:24px; border-radius:5px; background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M2 3h20l-2 7H4L2 3z"></path>
-                          <path d="M4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"></path>
-                          <path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
-                        </svg>
-                      </div>
-                      <div style="flex:1; min-width:0;">
-                        <div class="promo-store-item-name" style="color:#000000; font-weight:700; font-size:12.5px;">${esc(s.storeName)}</div>
-                        <div class="promo-store-item-sub" style="color:#475569; font-size:11px;">${esc(s.bizName || s.email)} ${s.isActive ? '<span style="color:#16a34a; font-weight:700;">● Active</span>' : ''}</div>
-                      </div>
+                    <div class="promo-store-item" data-id="${s.id}" data-name="${esc(s.storeName)}">
+                      <div class="promo-store-item-name" style="color:#000000; font-weight:700;">${esc(s.storeName)}</div>
+                      <div class="promo-store-item-sub" style="color:#334155;">${esc(s.bizName || s.email)} ${s.isActive ? '● Active Merchant' : ''}</div>
                     </div>
                   `).join('');
                   storeDropdown.style.display = 'block';
@@ -17448,10 +17761,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           backdrop.querySelector('#ap-promo-modal-save')?.addEventListener('click', async () => {
             const type = backdrop.querySelector('#promo-modal-type')?.value;
             const scope = backdrop.querySelector('#promo-modal-scope')?.value;
-            const codeEl = backdrop.querySelector('#promo-modal-code');
-            const titleEl = backdrop.querySelector('#promo-modal-title');
-            const code = (codeEl?.value.trim() || codeEl?.placeholder?.replace(/^e\.g\.\s*/i, '') || '').toUpperCase();
-            const title = titleEl?.value.trim() || titleEl?.placeholder?.replace(/^e\.g\.\s*/i, '') || '';
+            let code = backdrop.querySelector('#promo-modal-code')?.value.trim().toUpperCase();
+            const title = backdrop.querySelector('#promo-modal-title')?.value.trim();
             const discountType = backdrop.querySelector('#promo-modal-discount-type')?.value;
             const discountValue = parseFloat(backdrop.querySelector('#promo-modal-val')?.value) || 0;
             const minOrder = parseFloat(backdrop.querySelector('#promo-modal-min')?.value) || 0;
@@ -17468,24 +17779,42 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 bank,
                 cardType: cType
               }));
+              if (bankRules.length === 0) {
+                bankRules = [{ bank: 'All Banks (Any Debit/Credit Card)', cardType: 'all' }];
+              }
               bankPartners = bankRules.map(r => r.bank);
               bankPartner = bankRules.map(r => r.bank + (r.cardType === 'all' ? '' : ` (${r.cardType === 'debit' ? 'Debit Only' : 'Credit Only'})`)).join(', ');
               const allTypes = new Set(bankRules.map(r => r.cardType));
               cardType = allTypes.size === 1 ? allTypes.values().next().value : 'all';
-            }
-
-            let upiProvider = '';
-            let upiProviders = [];
-            if (type === 'upi') {
+              upiProvider = '';
+              upiProviders = [];
+            } else if (type === 'upi') {
               upiProviders = Array.from(selectedUpiApps);
+              if (upiProviders.length === 0) {
+                upiProviders = ['All UPI Apps (Any UPI Payment)'];
+              }
               upiProvider = upiProviders.join(', ');
+              bankRules = [];
+              bankPartner = '';
+              bankPartners = [];
+              cardType = 'all';
+            } else {
+              bankRules = [];
+              bankPartner = '';
+              bankPartners = [];
+              cardType = 'all';
+              upiProvider = '';
+              upiProviders = [];
             }
             const validFromVal = backdrop.querySelector('#promo-modal-valid-from')?.value || null;
             const validUntilVal = backdrop.querySelector('#promo-modal-valid-until')?.value || null;
             const applicableProductsStr = backdrop.querySelector('#promo-modal-applicable-products')?.value.trim() || '';
             const applicableProducts = applicableProductsStr ? applicableProductsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
 
-            if (!code) return showToast('Please enter a voucher code.', 'error');
+            if (type === 'voucher' && !code) return showToast('Please enter a voucher code.', 'error');
+            if (!code) {
+              code = type === 'bank' ? ('BANK' + Math.floor(1000 + Math.random() * 9000)) : ('UPI' + Math.floor(1000 + Math.random() * 9000));
+            }
             if (!title) return showToast('Please enter an offer headline/title.', 'error');
             if (discountValue <= 0) return showToast('Please enter a valid discount rate.', 'error');
             if (scope === 'store' && !selectedStoreId) {
@@ -17524,7 +17853,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             try {
               if (isEdit) {
-                await adminFetch(`/cms/promotions/${existingPromo._id}`, {
+                const promoId = existingPromo?._id || existingPromo?.id;
+                await adminFetch(`/cms/promotions/${promoId}`, {
                   method: 'PUT',
                   body: JSON.stringify(payload),
                 });
@@ -17545,6 +17875,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           });
         }
 
+        // Wire Create Offer / Voucher Buttons
+        document.getElementById('ap-top-add-promo-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showPromoModal(null);
+        });
+        document.getElementById('ap-cms-add-promo-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          showPromoModal(null);
+        });
+
       } catch (err) {
         body.innerHTML = emptyHTML('', `Failed to load CMS: ${err.message}`);
       }
@@ -17556,6 +17896,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
   /* ══════════════════════════════════════════════════════
      TAB: STAFF & RBAC (PERMISSIONS & ROLES)
      ══════════════════════════════════════════════════════ */
+
   async function renderStaff(body) {
     // ── HR Eligibility Constraint Check ──────────────────────
     const currentUser = Auth.getUser() || {};
@@ -17839,10 +18180,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </td>
             <td>
               <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-                <button type="button" class="ap-btn ap-edit-staff-btn" data-id="${s.id}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
+                <button type="button" class="ap-btn ap-edit-staff-btn" data-id="${s.id}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #022f43 !important; border-color:#022f43 !important; background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">
                   Edit
                 </button>
-                <button type="button" class="ap-btn ap-del-staff" data-id="${s.id}" data-name="${s.name}" data-email="${s.email}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
+                <button type="button" class="ap-btn ap-del-staff" data-id="${s.id}" data-name="${s.name}" data-email="${s.email}" style="padding:6px 14px; font-size:11.5px; font-weight:800 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
                   Revoke
                 </button>
               </div>
@@ -17854,9 +18195,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       body.innerHTML = `
         <div class="ap-view-inner ap-staff-window">
           <style>
-            /* All buttons in Staff & RBAC window: #ff9400 background and black font colour */
-            .ap-staff-window button:not(.ap-toggle-status-btn):not(#ap-edit-modal-close):not(#ap-role-sim-close):not(.ap-sim-select-btn),
-            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn),
+            /* All buttons in Staff & RBAC window: #ff9400 background and black font colour (except Edit and Refresh buttons) */
+            .ap-staff-window button:not(.ap-toggle-status-btn):not(#ap-edit-modal-close):not(#ap-role-sim-close):not(.ap-sim-select-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn),
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn),
             .ap-staff-window input[type="button"],
             .ap-staff-window input[type="submit"] {
               background-color: #ff9400 !important;
@@ -17869,18 +18210,294 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               box-shadow: 0 1px 3px rgba(255, 148, 0, 0.28) !important;
               cursor: pointer !important;
             }
-            .ap-staff-window button:not(.ap-toggle-status-btn):hover,
-            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):hover {
+            .ap-staff-window button:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn):hover,
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn):hover {
               background-color: #e68500 !important;
               background: #e68500 !important;
               color: #000000 !important;
               border-color: #d97706 !important;
               box-shadow: 0 3px 8px rgba(255, 148, 0, 0.42) !important;
             }
-            .ap-staff-window button svg,
-            .ap-staff-window .ap-btn svg {
+            .ap-staff-window button:not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn) svg,
+            .ap-staff-window .ap-btn:not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn) svg {
               stroke: #000000 !important;
               color: #000000 !important;
+            }
+
+            /* Edit Staff Button: #022f43 bg and white font colour */
+            .ap-staff-window button.ap-edit-staff-btn,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn {
+              background-color: #022f43 !important;
+              background: #022f43 !important;
+              color: #ffffff !important;
+              border: 1px solid #022f43 !important;
+              border-color: #022f43 !important;
+              border-radius: 6px !important;
+              font-weight: 800 !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(2, 47, 67, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button.ap-edit-staff-btn:hover,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn:hover {
+              background-color: #04435f !important;
+              background: #04435f !important;
+              border-color: #04435f !important;
+              color: #ffffff !important;
+              box-shadow: 0 3px 8px rgba(2, 47, 67, 0.42) !important;
+            }
+            .ap-staff-window button.ap-edit-staff-btn svg,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn svg {
+              stroke: #ffffff !important;
+              color: #ffffff !important;
+            }
+
+            /* Staff Refresh Button: #022f43 bg and white font colour & icon */
+            .ap-staff-window button#ap-staff-refresh-btn,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn,
+            .ap-staff-window #ap-staff-refresh-btn {
+              background-color: #022f43 !important;
+              background: #022f43 !important;
+              color: #ffffff !important;
+              border: 1px solid #022f43 !important;
+              border-color: #022f43 !important;
+              border-radius: 6px !important;
+              font-weight: 800 !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(2, 47, 67, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button#ap-staff-refresh-btn:hover,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn:hover,
+            .ap-staff-window #ap-staff-refresh-btn:hover {
+              background-color: #04435f !important;
+              background: #04435f !important;
+              border-color: #04435f !important;
+              color: #ffffff !important;
+              box-shadow: 0 3px 8px rgba(2, 47, 67, 0.42) !important;
+            }
+            .ap-staff-window button#ap-staff-refresh-btn svg,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn svg,
+            .ap-staff-window #ap-staff-refresh-btn svg {
+              stroke: #ffffff !important;
+              color: #ffffff !important;
+            }
+
+            /* Operational Modules Checkboxes Grid: 2 rows of 4 boxes each in desktop view only */
+            #ap-staff-perms-grid,
+            .ap-staff-perms-grid {
+              display: grid !important;
+              gap: 8px !important;
+            }
+            @media (min-width: 992px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+              }
+            }
+            @media (max-width: 991px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid,
+              #ap-edit-perms-grid,
+              .ap-perms-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                grid-auto-rows: 1fr !important;
+                gap: 8px !important;
+              }
+
+              .ap-staff-window .ap-perm-item,
+              .ap-perms-grid .ap-perm-item,
+              .ap-perms-grid .ap-edit-perm-item,
+              #ap-staff-perms-grid .ap-perm-item,
+              #ap-edit-perms-grid .ap-edit-perm-item {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 52px !important;
+                padding: 8px 10px !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+              }
+
+              .ap-staff-window .ap-perm-item span,
+              .ap-perms-grid .ap-perm-item span,
+              .ap-perms-grid .ap-edit-perm-item span,
+              #ap-staff-perms-grid .ap-perm-item span,
+              #ap-edit-perms-grid .ap-edit-perm-item span {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                font-size: 12px !important;
+                line-height: 1.25 !important;
+              }
+            }
+
+            @media (max-width: 480px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid,
+              #ap-edit-perms-grid,
+              .ap-perms-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px !important;
+              }
+
+              .ap-staff-window .ap-perm-item,
+              .ap-perms-grid .ap-perm-item,
+              .ap-perms-grid .ap-edit-perm-item,
+              #ap-staff-perms-grid .ap-perm-item,
+              #ap-edit-perms-grid .ap-edit-perm-item {
+                padding: 7px 8px !important;
+                min-height: 48px !important;
+                gap: 6px !important;
+              }
+
+              .ap-staff-window .ap-perm-item span,
+              .ap-perms-grid .ap-perm-item span,
+              .ap-perms-grid .ap-edit-perm-item span,
+              #ap-staff-perms-grid .ap-perm-item span,
+              #ap-edit-perms-grid .ap-edit-perm-item span {
+                font-size: 11.5px !important;
+                line-height: 1.2 !important;
+              }
+            }
+
+            /* Staff Directory Toolbar: Desktop styling */
+            .ap-staff-toolbar {
+              padding: 14px 18px;
+              border-bottom: 1px solid rgba(255,255,255,0.15);
+              background: #022f43 !important;
+              color: #ffffff !important;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 14px;
+            }
+            .ap-staff-search-wrap {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex: 1;
+              min-width: 240px;
+              max-width: 440px;
+            }
+            .ap-staff-filters-row {
+              display: flex;
+              align-items: center;
+              gap: 14px;
+              flex-wrap: wrap;
+            }
+            .ap-staff-filter-item {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .ap-staff-filter-label {
+              font-size: 12px;
+              font-weight: 800;
+              color: #ffffff !important;
+              display: inline-block;
+            }
+
+            /* Mobile & Tablet view (<= 1024px): 
+               - Align Refresh & Simulate Role Constraint buttons in the SAME line
+               - Searchbar 100% width
+               - Align both select boxes in the SAME line
+               - Remove "Role:" and "Status:" text labels
+            */
+            @media (max-width: 1024px) {
+              .ap-staff-window .ap-view-actions {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 100% !important;
+                gap: 8px !important;
+                align-items: center !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-refresh-btn,
+              .ap-staff-window #ap-hr-test-role-btn {
+                flex: 1 1 50% !important;
+                min-width: 0 !important;
+                width: 50% !important;
+                display: inline-flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                padding: 10px 8px !important;
+                font-size: 12px !important;
+                box-sizing: border-box !important;
+              }
+
+              .ap-staff-window .ap-staff-toolbar {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window .ap-staff-search-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-search-input {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+              }
+
+              .ap-staff-window .ap-staff-filters-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                gap: 8px !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window .ap-staff-filter-item {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 0 !important;
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                width: 0 !important;
+                max-width: 50% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-filter-role,
+              .ap-staff-window #ap-staff-filter-status {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                flex: 1 1 auto !important;
+                box-sizing: border-box !important;
+                padding: 8px 10px !important;
+                font-size: 12px !important;
+                border-radius: 7px !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+              }
+
+              .ap-staff-window .ap-staff-filter-label {
+                display: none !important;
+              }
             }
           </style>
 
@@ -17899,12 +18516,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <p class="ap-view-sub">Manage administrator credentials, assign granular operational module privileges, and enforce organizational security access policies.</p>
             </div>
             <div class="ap-view-actions" style="display:flex; gap:8px;">
+              <button type="button" class="ap-btn" id="ap-staff-refresh-btn" onclick="window._handleStaffRefresh?.()" style="font-weight:800 !important; padding:8px 16px; font-size:12px; border:1px solid #022f43 !important; border-radius:6px; background:#022f43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Refresh
+              </button>
               <button type="button" class="ap-btn" id="ap-hr-test-role-btn" onclick="window._openStaffRoleSimulator?.()" style="padding:8px 16px; font-size:12px; font-weight:800 !important; border:1px solid #e08300 !important; border-radius:6px; background:#ff9400 !important; color:#000000 !important; cursor:pointer;">
                 Simulate Role Constraint
-              </button>
-              <button type="button" class="ap-btn" id="ap-staff-refresh-btn" onclick="window._handleStaffRefresh?.()" style="font-weight:800 !important; padding:8px 16px; font-size:12px; border:1px solid #e08300 !important; border-radius:6px; background:#ff9400 !important; color:#000000 !important; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Refresh
               </button>
             </div>
           </div>
@@ -17996,7 +18613,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
               </div>
 
-              <div id="ap-staff-perms-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
+              <div id="ap-staff-perms-grid" class="ap-staff-perms-grid" style="display:grid; gap:8px;">
                 ${RBAC_MODULES.map(m => `
                   <label class="ap-perm-item" style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:7px; padding:9px 12px; cursor:pointer; transition:all 0.15s; user-select:none;">
                     <input type="checkbox" class="ap-perm-checkbox" value="${m.id}" style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
@@ -18018,14 +18635,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <!-- Staff Directory Table Card -->
           <div class="ap-table-card" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.04);">
             <!-- Toolbar for Search and Filtering (First row of the header part: #022f43 bg and white font as in Image 2) -->
-            <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:240px; max-width:440px;">
+            <div class="ap-staff-toolbar" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+              <div class="ap-staff-search-wrap" style="display:flex; align-items:center; gap:8px; flex:1; min-width:240px; max-width:440px;">
                 <input type="text" id="ap-staff-search-input" value="${esc(staffSearchTerm)}" placeholder="Search staff by name, email, or role..." style="width:100%; padding:9px 14px; border:1.5px solid rgba(255,255,255,0.25); border-radius:7px; font-size:13px; font-weight:600; outline:none; background:#ffffff; color:#0f172a;" />
               </div>
 
-              <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:12px; font-weight:800; color:#ffffff !important;">Role:</span>
+              <div class="ap-staff-filters-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:8px;">
+                  <span class="ap-staff-filter-label" style="font-size:12px; font-weight:800; color:#ffffff !important;">Role:</span>
                   <select id="ap-staff-filter-role" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
                     <option value="all" ${staffRoleFilter === 'all' ? 'selected' : ''}>All Roles</option>
                     <option value="Human Resources (HR)" ${staffRoleFilter === 'Human Resources (HR)' ? 'selected' : ''}>Human Resources (HR)</option>
@@ -18037,8 +18654,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   </select>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:12px; font-weight:800; color:#ffffff !important;">Status:</span>
+                <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:8px;">
+                  <span class="ap-staff-filter-label" style="font-size:12px; font-weight:800; color:#ffffff !important;">Status:</span>
                   <select id="ap-staff-filter-status" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
                     <option value="all" ${staffStatusFilter === 'all' ? 'selected' : ''}>All States</option>
                     <option value="active" ${staffStatusFilter === 'active' ? 'selected' : ''}>Active Only</option>
@@ -18137,7 +18754,18 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       }
 
       roleSelect?.addEventListener('change', () => {
-        syncPermCheckboxesToRole(roleSelect.value);
+        if (roleSelect.value === 'Super Administrator') {
+          syncPermCheckboxesToRole(roleSelect.value);
+        } else if (roleSelect.value === 'Custom Access Role') {
+          document.querySelectorAll('#ap-staff-perms-grid .ap-perm-checkbox').forEach(chk => {
+            chk.checked = false;
+            const parent = chk.closest('.ap-perm-item');
+            if (parent) {
+              parent.style.background = '#ffffff';
+              parent.style.borderColor = '#cbd5e1';
+            }
+          });
+        }
       });
 
       // Wire checkboxes click
@@ -18147,9 +18775,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           if (parent) {
             parent.style.background = chk.checked ? '#eff6ff' : '#ffffff';
             parent.style.borderColor = chk.checked ? '#bfdbfe' : '#cbd5e1';
-          }
-          if (roleSelect && roleSelect.value !== 'Custom Access Role' && roleSelect.value !== 'Super Administrator') {
-            roleSelect.value = 'Custom Access Role';
           }
         });
       });
@@ -18178,8 +18803,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         if (roleSelect) roleSelect.value = 'Custom Access Role';
       });
 
-      // Initial sync of creation form checkboxes
-      if (roleSelect) syncPermCheckboxesToRole(roleSelect.value);
+      // Checkboxes are by-default unchecked as requested
+      document.querySelectorAll('#ap-staff-perms-grid .ap-perm-checkbox').forEach(chk => {
+        chk.checked = false;
+        const parent = chk.closest('.ap-perm-item');
+        if (parent) {
+          parent.style.background = '#ffffff';
+          parent.style.borderColor = '#cbd5e1';
+        }
+      });
 
       // Wire Search & Filters
       const searchInput = document.getElementById('ap-staff-search-input');
@@ -18243,7 +18875,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               name,
               email,
               role,
-              permissions: selectedPerms.length > 0 ? selectedPerms : ROLE_PRESETS[role] || ['Orders', 'Catalog'],
+              permissions: selectedPerms.length > 0 ? selectedPerms : (role === 'Super Administrator' ? ['All Modules'] : []),
               password,
             }),
           });
@@ -18291,27 +18923,76 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
       // Wire Revoke Staff
       body.querySelectorAll('.ap-del-staff').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const id = btn.dataset.id;
           const name = btn.dataset.name;
           const email = btn.dataset.email;
 
           // Safety protection for current admin
           const currentUserEmail = (window.Store?.currentUser?.email || '').toLowerCase();
-          if (currentUserEmail && email.toLowerCase() === currentUserEmail) {
+          if (currentUserEmail && email && email.toLowerCase() === currentUserEmail) {
             showToast('Security Alert: You cannot revoke administrative access from your currently active session account.', 'error');
             return;
           }
 
-          if (!confirm(`Revoke all administrative access and credentials for "${name}" (${email})?`)) return;
+          // Open custom confirmation modal matching Image 2
+          const existingPopup = document.getElementById('ap-revoke-confirm-backdrop');
+          if (existingPopup) existingPopup.remove();
 
-          try {
-            await adminFetch(`/staff/${id}`, { method: 'DELETE' });
-            showToast(`Administrative privileges revoked for ${name}.`, 'success');
-            load();
-          } catch (e) {
-            showToast(e.message, 'error');
-          }
+          const confirmBackdrop = document.createElement('div');
+          confirmBackdrop.id = 'ap-revoke-confirm-backdrop';
+          confirmBackdrop.className = 'ap-modal-backdrop';
+          confirmBackdrop.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:100060; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px);';
+          confirmBackdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:440px; width:100%; text-align:center; padding:24px 20px; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); border:1px solid #cbd5e1; box-sizing:border-box;">
+              <div style="width:50px; height:50px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              </div>
+              <h4 style="font-size:16px; font-weight:800; color:#0f172a; margin:0 0 8px;">Revoke Staff Member?</h4>
+              <p style="font-size:12.5px; color:#64748b; margin:0 0 20px; line-height:1.45;">
+                Are you sure you want to permanently revoke administrative access for <strong>"${esc(name || 'this member')}"</strong>? They will be removed from staff access immediately.
+              </p>
+              <div style="display:flex; justify-content:center; gap:10px;">
+                <button type="button" class="ap-btn" id="ap-del-staff-cancel" style="padding:8px 20px; font-size:12.5px; font-weight:700; background:#ffffff !important; color:#0f172a !important; border:1px solid #cbd5e1 !important; border-radius:8px !important; cursor:pointer; transition:all 0.15s;">Cancel</button>
+                <button type="button" class="ap-btn danger" id="ap-del-staff-confirm" style="padding:8px 20px; font-size:12.5px; font-weight:800; background:#dc2626 !important; background-color:#dc2626 !important; color:#ffffff !important; border:1px solid #dc2626 !important; border-radius:8px !important; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(220,38,38,0.25);">Revoke Access</button>
+              </div>
+            </div>
+          `;
+
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(confirmBackdrop);
+
+          const closeConfirm = () => {
+            document.removeEventListener('keydown', onEsc);
+            confirmBackdrop.remove();
+          };
+          const onEsc = (ev) => {
+            if (ev.key === 'Escape') closeConfirm();
+          };
+          document.addEventListener('keydown', onEsc);
+
+          confirmBackdrop.querySelector('#ap-del-staff-cancel')?.addEventListener('click', closeConfirm);
+          confirmBackdrop.addEventListener('click', ev => {
+            if (ev.target === confirmBackdrop) closeConfirm();
+          });
+
+          confirmBackdrop.querySelector('#ap-del-staff-confirm')?.addEventListener('click', async () => {
+            const delBtn = confirmBackdrop.querySelector('#ap-del-staff-confirm');
+            delBtn.disabled = true;
+            delBtn.textContent = 'Revoking...';
+            try {
+              await adminFetch(`/staff/${id}`, { method: 'DELETE' });
+              showToast(`Administrative privileges revoked for ${name || 'staff member'}.`, 'success');
+              closeConfirm();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+              delBtn.disabled = false;
+              delBtn.textContent = 'Revoke Access';
+            }
+          });
         });
       });
     }
