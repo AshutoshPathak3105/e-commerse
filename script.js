@@ -9700,13 +9700,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Recent Bank Disbursements & Escrow Ledger Card -->
             <div class="ap-table-card" style="margin-top:20px;">
-              <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:2px solid #011d2a; display:flex; align-items:center; justify-content:space-between; background:#022f43; border-radius:12px 12px 0 0;">
                 <div>
-                  <h3 style="font-size:14px; font-weight:700; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="#059669" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                  <h3 style="font-size:14px; font-weight:700; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ffffff" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
                     Recent Bank Disbursements &amp; Escrow Ledger
                   </h3>
-                  <p style="font-size:11.5px; color:#64748b; margin:2px 0 0;">Tamper-evident record of electronic funds transfers executed directly to verified seller bank accounts.</p>
+                  <p style="font-size:11.5px; color:#ffffff; margin:2px 0 0;">Tamper-evident record of electronic funds transfers executed directly to verified seller bank accounts.</p>
                 </div>
                 <span style="font-size:11px; font-weight:700; color:#059669; background:#ecfdf5; padding:3px 8px; border-radius:6px;">Direct Clearing Active</span>
               </div>
