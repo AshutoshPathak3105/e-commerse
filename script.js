@@ -11590,10 +11590,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Live Manifest Table -->
             <div class="ap-table-card">
-              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:2px solid #011d2a; display:flex; justify-content:space-between; align-items:center; background:#022f43; border-radius:12px 12px 0 0;">
                 <div>
-                  <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#0f172a;">Active 3PL Consignments &amp; Manifests</h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#64748b;">Live carrier GPS telemetry, transit checkpoints &amp; digital OTP confirmations.</p>
+                  <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#ffffff;">Active 3PL Consignments &amp; Manifests</h3>
+                  <p style="margin:2px 0 0; font-size:11.5px; color:#ffffff;">Live carrier GPS telemetry, transit checkpoints &amp; digital OTP confirmations.</p>
                 </div>
                 <span class="ap-badge green" style="font-size:11px;">● Telemetry Active</span>
               </div>
@@ -11606,7 +11606,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                       <th>Assigned Carrier</th>
                       <th>AWB / Tracking Number</th>
                       <th>Current Checkpoint</th>
-                      <th style="text-align:right;">Actions</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
