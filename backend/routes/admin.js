@@ -220,6 +220,9 @@ router.get('/dashboard', async (req, res) => {
             pendingOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] },
             },
+            pendingRevenue: {
+              $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, '$totalPrice', 0] },
+            },
             confirmedOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0] },
             },
@@ -277,10 +280,10 @@ router.get('/dashboard', async (req, res) => {
         },
         { $sort: { _id: 1 } },
       ]),
-      // Recent orders matching filter
+      // Recent orders matching filter (up to 50 for comprehensive dashboard view)
       Order.find(orderMatch)
         .sort({ createdAt: -1 })
-        .limit(10)
+        .limit(Math.min(parseInt(req.query.orderLimit) || 50, 100))
         .populate('user', 'name email'),
       // Top products within filter
       Order.find({ ...orderMatch, status: { $nin: ['Cancelled'] } })
@@ -396,6 +399,7 @@ router.get('/dashboard', async (req, res) => {
           aov,
           totalProducts,
           pendingOrders: stats.pendingOrders,
+          pendingRevenue: stats.pendingRevenue || 0,
           confirmedOrders: stats.confirmedOrders,
           processingOrders: stats.processingOrders,
           deliveredOrders: stats.deliveredOrders,
@@ -431,6 +435,14 @@ router.get('/dashboard', async (req, res) => {
           paymentMethod: o.paymentInfo?.method || o.paymentMethod || 'Online',
           date: o.createdAt,
           items: o.orderItems?.length || 1,
+          orderItems: (o.orderItems || []).map(it => ({
+            name: it.name || 'Item',
+            qty: it.qty || 1,
+            price: it.price || 0,
+            image: it.image || '',
+          })),
+          city: o.shippingAddress?.city || '',
+          trackingId: o.trackingId || '',
         })),
       },
     });

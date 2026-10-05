@@ -6080,6 +6080,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
      ══════════════════════════════════════════════════════ */
   let _dashFilter = { timeframe: 'day', range: 'all', startDate: '', endDate: '' };
   let _dashShowBreakdown = false;
+  let _dashOrderStatusFilter = 'all'; // 'all','Pending','Confirmed','Processing','Shipped','Delivered','Cancelled','Returned'
+  let _dashOrderSearch = '';
 
   async function renderDashboard(container) {
     container.innerHTML = `<div class="ap-dash-inner">${loadingHTML()}</div>`;
@@ -6123,10 +6125,12 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const outOfStock = kpis.outOfStock || 0;
 
       const pendingOrders = kpis.pendingOrders || 0;
+      const pendingRevenue = kpis.pendingRevenue || 0;
       const confirmedOrders = kpis.confirmedOrders || 0;
       const processingOrders = kpis.processingOrders || 0;
       const deliveredOrders = kpis.deliveredOrders || 0;
       const cancelledOrReturned = kpis.cancelledOrReturned || 0;
+      const totalSellers = kpis.totalSellers || 0;
 
       const revenueGrowth = kpis.revenueGrowth;
       const ordersGrowth = kpis.ordersGrowth;
@@ -6212,71 +6216,98 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const deliveredPct = Math.round((deliveredOrders / totSafe) * 100);
       const cancelledPct = Math.round((cancelledOrReturned / totSafe) * 100);
 
-      /* ── Authentic Recent Orders Rows ────────────────────── */
+      /* ── Authentic Recent Orders Rows (filtered by search + status) ── */
+      const _ordStat = _dashOrderStatusFilter || 'all';
+      const _ordSrch = (_dashOrderSearch || '').trim().toLowerCase();
+      const filteredOrders = recentOrders.filter(o => {
+        if (_ordStat !== 'all' && o.status !== _ordStat) return false;
+        if (_ordSrch) {
+          const ordId = (o.orderId || '').toLowerCase();
+          const nm = (o.user?.name || '').toLowerCase();
+          const em = (o.user?.email || '').toLowerCase();
+          const cy = (o.city || '').toLowerCase();
+          if (!ordId.includes(_ordSrch) && !nm.includes(_ordSrch) && !em.includes(_ordSrch) && !cy.includes(_ordSrch)) return false;
+        }
+        return true;
+      });
+      const statusOptions = ['all','Pending','Confirmed','Processing','Shipped','Delivered','Cancelled','Returned'];
       const ordersHTML = `
+        <div class="ap-dash-orders-toolbar">
+          <div class="ap-dash-orders-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="ap-dash-order-search" class="ap-dash-order-search-input" placeholder="Search by order ID, customer, city…" value="${esc(_dashOrderSearch)}" />
+          </div>
+          <select id="ap-dash-order-status-filter" class="ap-dash-order-status-select">
+            ${statusOptions.map(s => `<option value="${s}" ${_ordStat === s ? 'selected' : ''}>${s === 'all' ? 'All Statuses' : s}</option>`).join('')}
+          </select>
+          <span style="font-size:11.5px; color:#64748b; white-space:nowrap; font-weight:600;">${filteredOrders.length} of ${recentOrders.length} orders</span>
+        </div>
         <div class="ap-table-wrap">
-          <table class="ap-table ${!recentOrders.length ? 'ap-table-empty' : ''}">
+          <table class="ap-table ${!filteredOrders.length ? 'ap-table-empty' : ''}">
             <thead>
               <tr>
                 <th>Order Ref</th>
                 <th>Customer</th>
+                <th>Items Preview</th>
+                <th>City</th>
                 <th>Payment</th>
-                <th>Package Items</th>
-                <th>Net Total</th>
-                <th>Fulfillment</th>
+                <th>Total</th>
+                <th>Status</th>
                 <th style="text-align:right;">Action</th>
               </tr>
             </thead>
             <tbody>
-              ${recentOrders.length ? recentOrders.map(o => {
+              ${filteredOrders.length ? filteredOrders.map(o => {
                 const name = o.user?.name || 'Customer';
                 const initials = name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
                 const ordId = o.orderId || `XM-${(o._id||'').slice(-8).toUpperCase()}`;
                 const statusBadgeClass = o.status === 'Delivered' ? 'green' : o.status === 'Confirmed' ? 'blue' : (o.status === 'Cancelled' || o.status === 'Returned') ? 'red' : 'orange';
+                const payColor = (o.paymentMethod||'').toLowerCase().includes('cod') ? '#f59e0b' : (o.paymentMethod||'').toLowerCase().includes('upi') ? '#10b981' : (o.paymentMethod||'').toLowerCase().includes('card') ? '#2563eb' : '#7c3aed';
+                const itemChips = (o.orderItems || []).slice(0, 2).map(it => `<span class="ap-dash-item-chip" title="${esc(it.name)}"><img src="${esc(it.image||'logo-square.png')}" onerror="this.src='logo-square.png'" />${esc(it.name.slice(0,14))}${it.name.length>14?'…':''} ×${it.qty||1}</span>`).join('');
+                const moreChips = (o.orderItems||[]).length > 2 ? `<span class="ap-dash-item-chip" style="background:#f1f5f9;color:#475569;">+${(o.orderItems.length-2)} more</span>` : '';
                 return `
                   <tr>
                     <td>
-                      <span style="font-family:monospace; font-weight:800; color:#2563eb; font-size:12.5px;">${ordId}</span>
-                      <div style="font-size:11px; color:#64748b; margin-top:2px;">${fmtDate(o.date)}</div>
+                      <span style="font-family:monospace; font-weight:800; color:#2563eb; font-size:12px;">${ordId}</span>
+                      <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${fmtDate(o.date)}</div>
                     </td>
                     <td>
                       <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:28px; height:28px; border-radius:50%; background:#eff6ff; color:#2563eb; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${initials}</div>
-                        <div>
-                          <div style="font-weight:700; color:#0f172a; font-size:12.5px;">${esc(name)}</div>
-                          <div style="font-size:11px; color:#64748b;">${esc(o.user?.email || '')}</div>
+                        <div class="ap-dash-avatar">${initials}</div>
+                        <div style="min-width:0;">
+                          <div style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(name)}</div>
+                          <div style="font-size:10.5px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(o.user?.email || '')}</div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <span style="font-size:11.5px; font-weight:700; color:#475569; background:#f1f5f9; padding:2px 7px; border-radius:6px; display:inline-block;">
+                      <div class="ap-dash-item-chips">${itemChips}${moreChips}</div>
+                    </td>
+                    <td>
+                      <span style="font-size:11.5px; font-weight:600; color:#334155;">${esc(o.city||'—')}</span>
+                    </td>
+                    <td>
+                      <span style="font-size:11.5px; font-weight:700; color:${payColor}; background:${payColor}18; padding:2px 8px; border-radius:6px; display:inline-block; white-space:nowrap;">
                         ${esc(o.paymentMethod || 'Online')}
                       </span>
                     </td>
                     <td>
-                      <span class="ap-badge" style="background:#f8fafc; color:#334155; font-size:11px; border:1px solid #e2e8f0;">
-                        ${o.items || 1} Item${(o.items > 1) ? 's' : ''}
-                      </span>
+                      <div style="font-weight:800; color:#0f172a; font-size:13px;">${fmtPrice(o.total || 0)}</div>
                     </td>
                     <td>
-                      <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${fmtPrice(o.total || 0)}</div>
-                    </td>
-                    <td>
-                      <span class="ap-badge ${statusBadgeClass}">
-                        ${o.status || 'Pending'}
-                      </span>
+                      <span class="ap-badge ${statusBadgeClass}">${o.status || 'Pending'}</span>
                     </td>
                     <td style="text-align:right;">
                       <button class="ap-btn ghost ap-dash-inspect-order" data-id="${ordId}" style="padding:4px 9px; font-size:11px; font-weight:700;">
-                        Inspect &rarr;
+                        View &rarr;
                       </button>
                     </td>
                   </tr>
                 `;
               }).join('') : `
                 <tr>
-                  <td colspan="7" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
-                    No customer orders in this time window.
+                  <td colspan="8" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
+                    ${recentOrders.length ? 'No orders match the current filter.' : 'No customer orders in this time window.'}
                   </td>
                 </tr>
               `}
@@ -6475,10 +6506,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
           </div>
 
-          <!-- 3. Primary 4-Metric Grid (Authentic Live Metrics) -->
-          <div class="ap-modern-metrics">
+          <!-- 3. Primary 6-Metric Grid (Authentic Live Metrics) -->
+          <div class="ap-modern-metrics ap-modern-metrics-6">
             <!-- Tile 1: Total Revenue -->
-            <div class="ap-metric-tile">
+            <div class="ap-metric-tile ap-metric-tile--revenue">
               <div class="ap-metric-tile-top">
                 <span class="ap-metric-tile-lbl">Gross Revenue (GMV)</span>
                 <div class="ap-metric-tile-icon" style="background:#eff6ff; color:#2563eb;">
@@ -6487,7 +6518,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               </div>
               <div class="ap-metric-tile-val">${revFormatted}</div>
               <div class="ap-metric-tile-foot">
-                <span>Avg Order Value (AOV)</span>
+                <span>AOV</span>
                 <span style="color:#059669; font-weight:800;">${fmtPrice(aov)}</span>
               </div>
               ${growthHTML(revenueGrowth)}
@@ -6496,46 +6527,76 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <!-- Tile 2: Total Orders -->
             <div class="ap-metric-tile">
               <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Customer Orders</span>
+                <span class="ap-metric-tile-lbl">Total Orders</span>
                 <div class="ap-metric-tile-icon" style="background:#f0fdf4; color:#16a34a;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 </div>
               </div>
               <div class="ap-metric-tile-val">${totalOrders.toLocaleString('en-IN')}</div>
               <div class="ap-metric-tile-foot">
-                <span>${pendingOrders} Awaiting Verify</span>
+                <span>${pendingOrders} Pending</span>
                 <span style="color:#2563eb; font-weight:800;">${confirmedOrders} Confirmed</span>
               </div>
               ${growthHTML(ordersGrowth)}
             </div>
 
-            <!-- Tile 3: Catalog & Inventory -->
+            <!-- Tile 3: Delivered Orders -->
             <div class="ap-metric-tile">
               <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Cataloged Products</span>
+                <span class="ap-metric-tile-lbl">Delivered Orders</span>
+                <div class="ap-metric-tile-icon" style="background:#ecfdf5; color:#059669;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val">${deliveredOrders.toLocaleString('en-IN')}</div>
+              <div class="ap-metric-tile-foot">
+                <span>Success rate</span>
+                <span style="color:#059669; font-weight:800;">${totalOrders > 0 ? Math.round((deliveredOrders/totalOrders)*100) : 0}%</span>
+              </div>
+            </div>
+
+            <!-- Tile 4: Pending Revenue (GMV at risk) -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Pending Revenue</span>
+                <div class="ap-metric-tile-icon" style="background:#fffbeb; color:#d97706;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              </div>
+              <div class="ap-metric-tile-val" style="color:#d97706;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</div>
+              <div class="ap-metric-tile-foot">
+                <span>Awaiting verification</span>
+                <span style="color:#d97706; font-weight:800;">${pendingOrders} orders</span>
+              </div>
+            </div>
+
+            <!-- Tile 5: Cataloged Products -->
+            <div class="ap-metric-tile">
+              <div class="ap-metric-tile-top">
+                <span class="ap-metric-tile-lbl">Products</span>
                 <div class="ap-metric-tile-icon" style="background:#f5f3ff; color:#7c3aed;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                 </div>
               </div>
               <div class="ap-metric-tile-val">${totalProducts.toLocaleString('en-IN')}</div>
               <div class="ap-metric-tile-foot">
-                <span>${inStock} In-Stock Units</span>
-                <span style="color:#059669; font-weight:800;">100% Active</span>
+                <span>${lowStock} low stock</span>
+                <span style="color:${outOfStock>0?'#ef4444':'#059669'}; font-weight:800;">${outOfStock} out of stock</span>
               </div>
             </div>
 
-            <!-- Tile 4: Registered Customer Accounts -->
+            <!-- Tile 6: Registered Customers -->
             <div class="ap-metric-tile">
               <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Registered Customers</span>
-                <div class="ap-metric-tile-icon" style="background:#fffbeb; color:#d97706;">
+                <span class="ap-metric-tile-lbl">Customers</span>
+                <div class="ap-metric-tile-icon" style="background:#fdf2f8; color:#a21caf;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
               </div>
               <div class="ap-metric-tile-val">${totalUsers.toLocaleString('en-IN')}</div>
               <div class="ap-metric-tile-foot">
-                <span>Verified buyer accounts</span>
-                <span style="color:#d97706; font-weight:800;">Active Profiles</span>
+                <span>${totalSellers || 0} sellers</span>
+                <span style="color:#a21caf; font-weight:800;">Active</span>
               </div>
             </div>
           </div>
@@ -6656,7 +6717,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     </div>
                     <div>
                       <div class="ap-ops-item-title">${pendingOrders} Orders Awaiting Verification</div>
-                      <div class="ap-ops-item-sub">Ready for confirmation &amp; packing</div>
+                      <div class="ap-ops-item-sub">Revenue at risk: <strong style="color:#d97706;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</strong></div>
                     </div>
                   </div>
                   <button type="button" class="ap-ops-btn">Process &rarr;</button>
@@ -6718,41 +6779,49 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     ${esc(activeFilter.label ? `Showing orders matching ${activeFilter.label}` : 'Real chronological checkouts from MongoDB database.')}
                   </p>
                 </div>
-                <button class="ap-btn ghost" id="ap-dash-view-all-orders" style="font-size:11.5px; font-weight:700;">
-                  View All Orders &rarr;
-                </button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button class="ap-btn ghost" id="ap-dash-export-csv" style="font-size:11.5px; font-weight:700; display:flex; align-items:center; gap:5px;" title="Export filtered orders to CSV">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export CSV
+                  </button>
+                  <button class="ap-btn ghost" id="ap-dash-view-all-orders" style="font-size:11.5px; font-weight:700;">
+                    View All Orders &rarr;
+                  </button>
+                </div>
               </div>
               ${ordersHTML}
             </div>
 
             <!-- Right: Authentic Insights (Top Products, Payment Methods, Categories) -->
             <div style="display:flex; flex-direction:column; gap:16px;">
-              <!-- Top Performing Products by Revenue -->
+              <!-- Top Performing Products by Revenue with visual bars -->
               <div class="ap-card" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Top Selling Products in Window</h4>
-                  <span class="ap-badge blue" style="font-size:10.5px;">Real Order Data</span>
+                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Top Selling Products</h4>
+                  <span class="ap-badge blue" style="font-size:10.5px;">by Revenue</span>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                  ${topProducts.length ? topProducts.map((p, idx) => `
-                    <div style="display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #f8fafc;">
-                      <span style="font-size:12px; font-weight:800; color:#94a3b8; width:16px;">#${idx + 1}</span>
-                      <img src="${p.image || 'logo-square.png'}" alt="${esc(p.name)}" style="width:36px; height:36px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; background:#f8fafc;" onerror="this.src='logo-square.png'" />
-                      <div style="flex:1; min-width:0;">
-                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
-                        <div style="font-size:11px; color:#64748b;">${p.count} unit${p.count > 1 ? 's' : ''} sold</div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                  ${topProducts.length ? (() => {
+                    const maxRev2 = Math.max(...topProducts.map(p => p.revenue || 0), 1);
+                    return topProducts.map((p, idx) => `
+                      <div class="ap-dash-top-prod-row">
+                        <span class="ap-dash-rank">#${idx + 1}</span>
+                        <img src="${esc(p.image || 'logo-square.png')}" alt="${esc(p.name)}" class="ap-dash-prod-img" onerror="this.src='logo-square.png'" />
+                        <div style="flex:1; min-width:0;">
+                          <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
+                          <div style="margin-top:4px; height:4px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                            <div style="width:${Math.round((p.revenue/maxRev2)*100)}%; height:100%; background:linear-gradient(90deg,#2563eb,#7c3aed); border-radius:99px;"></div>
+                          </div>
+                          <div style="font-size:10.5px; color:#64748b; margin-top:2px;">${p.count} unit${p.count>1?'s':''} sold</div>
+                        </div>
+                        <div style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; margin-left:8px;">${fmtPrice(p.revenue)}</div>
                       </div>
-                      <div style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap;">
-                        ${fmtPrice(p.revenue)}
-                      </div>
-                    </div>
-                  `).join('') : `
-                    <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No sales data recorded in this window.</div>
-                  `}
+                    `).join('');
+                  })() : `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No sales data in this window.</div>`}
                 </div>
               </div>
 
-              <!-- Real Payment Method Breakdown -->
+              <!-- Payment Method Breakdown with colored icons -->
               <div class="ap-card" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                   <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Payment Channels Mix</h4>
@@ -6763,34 +6832,46 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     const barColor = pm.method.toLowerCase().includes('cod') ? '#f59e0b' : pm.method.toLowerCase().includes('card') ? '#2563eb' : pm.method.toLowerCase().includes('upi') ? '#10b981' : '#7c3aed';
                     return `
                       <div>
-                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                          <span>${esc(pm.method)}</span>
-                          <span>${pm.count} orders (${pm.percentage}%)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                          <div style="display:flex; align-items:center; gap:7px;">
+                            <span style="width:10px; height:10px; border-radius:50%; background:${barColor}; flex-shrink:0; display:inline-block;"></span>
+                            <span style="font-size:12px; font-weight:700; color:#334155;">${esc(pm.method)}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:11.5px; font-weight:800; color:${barColor};">${pm.percentage}%</span>
+                            <span style="font-size:11px; color:#94a3b8;">${pm.count} orders</span>
+                          </div>
                         </div>
                         <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                          <div style="width:${Math.max(pm.percentage, 3)}%; height:100%; background:${barColor}; border-radius:99px;"></div>
+                          <div style="width:${Math.max(pm.percentage, 3)}%; height:100%; background:${barColor}; border-radius:99px; transition:width 0.4s ease;"></div>
                         </div>
                       </div>
                     `;
-                  }).join('') : `
-                    <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No payment records found.</div>
-                  `}
+                  }).join('') : `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No payment records found.</div>`}
                 </div>
               </div>
 
-              <!-- Real Catalog Category Breakdown -->
+              <!-- Catalog Category Breakdown with colored bars -->
               <div class="ap-card" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Catalog Category Share</h4>
+                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Category Distribution</h4>
                   <span class="ap-badge" style="font-size:10.5px; background:#f1f5f9; color:#475569;">${totalProducts} SKUs</span>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                  ${categoryDistribution.slice(0, 5).map(cat => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fafc; border-radius:8px; border:1px solid #f1f5f9;">
-                      <div style="font-size:12px; font-weight:700; color:#0f172a;">${esc(cat.category)}</div>
-                      <div style="font-size:11.5px; font-weight:800; color:#2563eb;">${cat.count} products (${cat.percentage}%)</div>
-                    </div>
-                  `).join('')}
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                  ${(() => {
+                    const catColors = ['#2563eb','#7c3aed','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
+                    return categoryDistribution.slice(0,6).map((cat, ci) => `
+                      <div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                          <span style="font-size:12px; font-weight:700; color:#0f172a;">${esc(cat.category)}</span>
+                          <span style="font-size:11.5px; font-weight:800; color:${catColors[ci%catColors.length]};">${cat.count} (${cat.percentage}%)</span>
+                        </div>
+                        <div style="height:5px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                          <div style="width:${Math.max(cat.percentage,2)}%; height:100%; background:${catColors[ci%catColors.length]}; border-radius:99px;"></div>
+                        </div>
+                      </div>
+                    `).join('');
+                  })()}
                 </div>
               </div>
             </div>
@@ -6810,6 +6891,35 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.querySelector('#ap-dash-quick-orders')?.addEventListener('click', () => switchTab('orders'));
       container.querySelector('#ap-dash-quick-refresh')?.addEventListener('click', () => renderDashboard(container));
       container.querySelector('#ap-dash-view-all-orders')?.addEventListener('click', () => switchTab('orders'));
+
+      // Export filtered orders to CSV
+      container.querySelector('#ap-dash-export-csv')?.addEventListener('click', () => {
+        if (!filteredOrders.length) {
+          showToast('No orders available to export', 'info');
+          return;
+        }
+        const headers = ['Order ID', 'Date', 'Customer Name', 'Customer Email', 'Items', 'City', 'Payment Method', 'Total', 'Status'];
+        const rows = filteredOrders.map(o => [
+          o.orderId || o._id,
+          o.date ? new Date(o.date).toISOString().slice(0, 10) : '',
+          `"${(o.user?.name || 'Customer').replace(/"/g, '""')}"`,
+          `"${(o.user?.email || '').replace(/"/g, '""')}"`,
+          `"${(o.orderItems || []).map(it => `${it.name} (x${it.qty})`).join('; ').replace(/"/g, '""')}"`,
+          `"${(o.city || '').replace(/"/g, '""')}"`,
+          `"${(o.paymentMethod || 'Online').replace(/"/g, '""')}"`,
+          o.total || 0,
+          `"${(o.status || 'Pending').replace(/"/g, '""')}"`
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `xmart-orders-${_dashFilter.timeframe || 'day'}-${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(`Exported ${filteredOrders.length} orders to CSV`, 'success');
+      });
 
       // Timeframe Mode Switching (Day-wise / Month-wise / Year-wise)
       container.querySelectorAll('.ap-timeframe-mode-btn').forEach(btn => {
@@ -6923,6 +7033,32 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           }, 300);
         });
       });
+
+      // Inline order search in dashboard
+      const dashOrderSearch = container.querySelector('#ap-dash-order-search');
+      if (dashOrderSearch) {
+        let _searchDebounce;
+        dashOrderSearch.addEventListener('input', () => {
+          clearTimeout(_searchDebounce);
+          _searchDebounce = setTimeout(() => {
+            _dashOrderSearch = dashOrderSearch.value;
+            const statSel = container.querySelector('#ap-dash-order-status-filter');
+            if (statSel) _dashOrderStatusFilter = statSel.value;
+            renderDashboard(container);
+          }, 380);
+        });
+      }
+
+      // Status filter select in dashboard orders
+      const dashStatusSel = container.querySelector('#ap-dash-order-status-filter');
+      if (dashStatusSel) {
+        dashStatusSel.addEventListener('change', () => {
+          _dashOrderStatusFilter = dashStatusSel.value;
+          const srch = container.querySelector('#ap-dash-order-search');
+          if (srch) _dashOrderSearch = srch.value;
+          renderDashboard(container);
+        });
+      }
 
     } catch (err) {
       container.innerHTML = `<div class="ap-dash-inner">${emptyHTML('', `Failed to load dashboard: ${err.message}`)}</div>`;

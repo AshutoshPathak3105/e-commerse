@@ -27438,6 +27438,205 @@ button[type="submit"] *,
   background: #f8fafc;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MODERN DASHBOARD — MISSING COMPONENT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 6-Metric KPI Grid */
+.ap-modern-metrics-6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+.ap-modern-metrics-6 .ap-metric-tile-val {
+  font-size: 22px;
+}
+.ap-modern-metrics-6 .ap-metric-tile-lbl {
+  font-size: 11.5px;
+}
+@media (max-width: 1400px) {
+  .ap-modern-metrics-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 1080px) {
+  .ap-modern-metrics-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  .ap-modern-metrics-6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Revenue Tile Accent */
+.ap-metric-tile--revenue {
+  border-left: 3px solid #2563eb;
+  background: linear-gradient(135deg, #ffffff 60%, #eff6ff 100%);
+}
+
+/* Orders Stream Card (left column of workspace split) */
+.ap-orders-stream-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Orders Toolbar (search + status filter row) ── */
+.ap-dash-orders-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.ap-dash-orders-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: border-color 150ms ease;
+}
+
+.ap-dash-orders-search-wrap:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.ap-dash-order-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  font-size: 12.5px;
+  color: #0f172a;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.ap-dash-order-search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.ap-dash-order-status-select {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+  white-space: nowrap;
+}
+
+.ap-dash-order-status-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Customer Avatar Circle ── */
+.ap-dash-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Order Item Chips ── */
+.ap-dash-item-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.ap-dash-item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px 7px 2px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+}
+
+.ap-dash-item-chip img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ── Top Products Row ── */
+.ap-dash-top-prod-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 120ms ease;
+}
+
+.ap-dash-top-prod-row:last-child {
+  border-bottom: none;
+}
+
+.ap-dash-top-prod-row:hover {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.ap-dash-rank {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.ap-dash-prod-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  background: #f8fafc;
+}
+
 /* ── RMA DOSSIER & REVERSE LOGISTICS MODAL ──────────────────────── */
 .ap-rma-dossier-dialog {
   max-width: 960px !important;
@@ -28831,17 +29030,24 @@ button.ap-seller-details-btn:hover {
 
   #ap-sellers-table .ap-btn-group .ap-btn,
   #ap-sellers-table .ap-seller-btn-group .ap-btn,
+  #ap-sellers-table .ap-seller-toggle-btn,
+  #ap-sellers-table .ap-seller-details-btn,
+  #ap-sellers-table .ap-seller-del-btn,
   .ap-seller-toggle-btn,
   .ap-seller-details-btn,
   .ap-seller-del-btn {
-    width: 100px !important;
-    max-width: 100px !important;
-    min-width: 90px !important;
-    padding: 5px 8px !important;
-    font-size: 11.5px !important;
+    width: 74px !important;
+    max-width: 74px !important;
+    min-width: 68px !important;
+    padding: 4px 4px !important;
+    font-size: 11px !important;
+    height: 26px !important;
+    line-height: 1 !important;
     box-sizing: border-box !important;
     text-align: center !important;
     justify-content: center !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
   }
 }
 
@@ -28877,8 +29083,11 @@ button.ap-seller-details-btn:hover {
 
   #ap-sellers-table th:last-child,
   #ap-sellers-table td:last-child {
-    min-width: 120px !important;
+    min-width: 86px !important;
+    width: 86px !important;
     text-align: center !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
   }
 }
 
