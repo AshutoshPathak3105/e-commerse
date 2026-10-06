@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin: 20px; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    #admin-panel-overlay { display: block !important; visibility: visible !important; opacity: 1 !important; position: static !important; width: 1200px; margin: 0 auto; }
+    .ap-cms-view { display: block !important; }
+  </style>
+</head>
+<body>
+<div id="admin-panel-overlay">
+  <div class="ap-cms-view">
+    <div class="ap-promos-card ap-table-card" id="ap-promos-section" style="margin-bottom:24px; border-radius:12px; overflow:hidden; background:#ffffff;">
+      <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Promotional Offers, Bank Partners &amp; Vouchers</h3>
+          <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Configure voucher codes, bank cards, UPI apps, and merchant promotions.</p>
+        </div>
+      </div>
+
+      <div class="ap-cms-table-outer">
+        <div class="ap-cms-table-inner">
+          <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300;">
+            <table class="ap-table" id="ap-promos-table-header">
+              <colgroup>
+                <col style="width:150px;">
+                <col style="width:270px;">
+                <col style="width:175px;">
+                <col style="width:135px;">
+                <col style="width:130px;">
+                <col style="width:180px;">
+                <col style="width:180px;">
+                <col style="width:210px;">
+                <col style="width:110px;">
+                <col style="width:160px;">
+              </colgroup>
+              <thead style="background:#ff9400;">
+                <tr style="background:#ff9400 !important;">
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Voucher Code</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Offer Title &amp; Terms</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Scope / Target Store</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Discount Rate</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Min Bag Value</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Bank Partner</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">UPI Offer</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Duration / Expiry</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Status</th>
+                  <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none;">Actions</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+            <table class="ap-table" id="ap-promos-table">
+              <colgroup>
+                <col style="width:150px;">
+                <col style="width:270px;">
+                <col style="width:175px;">
+                <col style="width:135px;">
+                <col style="width:130px;">
+                <col style="width:180px;">
+                <col style="width:180px;">
+                <col style="width:210px;">
+                <col style="width:110px;">
+                <col style="width:160px;">
+              </colgroup>
+              <tbody id="ap-promos-table-body">
+                
+                  <tr>
+                    <td style="text-align:center;">
+                      <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">ABC10</div>
+                      <div style="margin-top:4px; display:flex; justify-content:center;">
+                        <span class="ap-badge orange">Voucher</span>
+                      </div>
+                    </td>
+                    <td style="text-align:left;">
+                      <div style="font-weight:700; color:#000000; font-size:13px; line-height:1.4;">10% Storewide Mega Discount</div>
+                      <div style="font-size:11.5px; color:#475569; margin-top:3px; line-height:1.4;">Flat 10% instant discount across all products on minimum bag value of ₹999.</div>
+                    </td>
+                    <td style="text-align:center;">
+                      <div style="display:inline-flex; justify-content:center; align-items:center;">
+                        <span class="ap-badge blue">● Apex Tech Store</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:12.5px;">10% OFF</strong>
+                      <div style="font-size:11px; color:#64748b;">Max ₹1000</div>
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:13px; font-weight:800;">₹999</strong>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        <span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        <span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge red">Expired</span>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge red">Expired</span>
+                    </td>
+                    <td style="white-space:nowrap; text-align:center; padding:13px 16px;">
+                      <button type="button" class="ap-btn ghost ap-edit-promo-btn" style="padding:5px 12px; font-size:12px; margin-right:6px;">Edit</button>
+                      <button type="button" class="ap-btn danger ap-delete-promo-btn" style="padding:5px 12px; font-size:12px;">Delete</button>
+                    </td>
+                  </tr>
+                
+                  <tr>
+                    <td style="text-align:center;">
+                      <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">UPI100</div>
+                      <div style="margin-top:4px; display:flex; justify-content:center;">
+                        <span class="ap-badge green">UPI Offer</span>
+                      </div>
+                    </td>
+                    <td style="text-align:left;">
+                      <div style="font-weight:700; color:#000000; font-size:13px; line-height:1.4;">Flat ₹100 Cashback on UPI</div>
+                      <div style="font-size:11.5px; color:#475569; margin-top:3px; line-height:1.4;">Flat ₹100 discount when paying with Google Pay, PhonePe, Paytm, or any UPI.</div>
+                    </td>
+                    <td style="text-align:center;">
+                      <div style="display:inline-flex; justify-content:center; align-items:center;">
+                        <span class="ap-badge green">● Storewide</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:12.5px;">₹100 FLAT</strong>
+                      
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:13px; font-weight:800;">₹499</strong>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        <span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        
+    <div class="ap-promo-cyclic-ticker-wrap" data-count="2" style="width:100%; max-width:170px; margin:0 auto;" title="Cycling 2 UPI apps.">
+      
+        <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+          
+      <div style="display:flex; align-items:center; gap:8px; width:100%;">
+        <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+          <img src="assets/upi/paytm.svg" alt="UPI" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+        </div>
+        <div style="min-width:0; text-align:left;">
+          <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Paytm UPI</div>
+          <span style="font-size:9.5px; font-weight:800; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">UPI Cashback</span>
+        </div>
+      </div>
+    
+          <span class="ap-cyclic-ticker-indicator">1/2</span>
+        </div>
+      
+        <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+          
+      <div style="display:flex; align-items:center; gap:8px; width:100%;">
+        <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+          <img src="assets/upi/gpay.svg" alt="UPI" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+        </div>
+        <div style="min-width:0; text-align:left;">
+          <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Google Pay</div>
+          <span style="font-size:9.5px; font-weight:800; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">UPI Cashback</span>
+        </div>
+      </div>
+    
+          <span class="ap-cyclic-ticker-indicator">2/2</span>
+        </div>
+      
+    </div>
+  
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge green">Active</span>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge green">● Active</span>
+                    </td>
+                    <td style="white-space:nowrap; text-align:center; padding:13px 16px;">
+                      <button type="button" class="ap-btn ghost ap-edit-promo-btn" style="padding:5px 12px; font-size:12px; margin-right:6px;">Edit</button>
+                      <button type="button" class="ap-btn danger ap-delete-promo-btn" style="padding:5px 12px; font-size:12px;">Delete</button>
+                    </td>
+                  </tr>
+                
+                  <tr>
+                    <td style="text-align:center;">
+                      <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">CARDOFF500</div>
+                      <div style="margin-top:4px; display:flex; justify-content:center;">
+                        <span class="ap-badge blue">Bank Card</span>
+                      </div>
+                    </td>
+                    <td style="text-align:left;">
+                      <div style="font-weight:700; color:#000000; font-size:13px; line-height:1.4;">Flat ₹500 Instant Discount on Debit/Credit Cards</div>
+                      <div style="font-size:11.5px; color:#475569; margin-top:3px; line-height:1.4;">Flat ₹500 instant discount on HDFC, SBI & ICICI Debit/Credit cards.</div>
+                    </td>
+                    <td style="text-align:center;">
+                      <div style="display:inline-flex; justify-content:center; align-items:center;">
+                        <span class="ap-badge green">● Storewide</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:12.5px;">₹500 FLAT</strong>
+                      
+                    </td>
+                    <td style="text-align:center;">
+                      <strong style="color:#000000; font-size:13px; font-weight:800;">₹0</strong>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        
+    <div class="ap-promo-cyclic-ticker-wrap" data-count="2" style="width:100%; max-width:170px; margin:0 auto;" title="Cycling 2 bank partners.">
+      
+        <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+          
+        <div style="display:flex; align-items:center; gap:8px; width:100%;">
+          <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <img src="assets/banks/hdfc.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+          </div>
+          <div style="min-width:0; text-align:left;">
+            <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">HDFC Bank</div>
+            <span style="font-size:9.5px; font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit</span>
+          </div>
+        </div>
+      
+          <span class="ap-cyclic-ticker-indicator">1/2</span>
+        </div>
+      
+        <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+          
+        <div style="display:flex; align-items:center; gap:8px; width:100%;">
+          <div style="width:24px; height:24px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <img src="assets/banks/sbi.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+          </div>
+          <div style="min-width:0; text-align:left;">
+            <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">SBI Bank</div>
+            <span style="font-size:9.5px; font-weight:800; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 5px; border-radius:4px; display:inline-block; margin-top:2px; white-space:nowrap;">Debit Cards</span>
+          </div>
+        </div>
+      
+          <span class="ap-cyclic-ticker-indicator">2/2</span>
+        </div>
+      
+    </div>
+  
+                      </div>
+                    </td>
+                    <td style="text-align:center; vertical-align:middle;">
+                      <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        <span style="color:#94a3b8; font-weight:700; font-size:13px;">—</span>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge green">Active</span>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge green">● Active</span>
+                    </td>
+                    <td style="white-space:nowrap; text-align:center; padding:13px 16px;">
+                      <button type="button" class="ap-btn ghost ap-edit-promo-btn" style="padding:5px 12px; font-size:12px; margin-right:6px;">Edit</button>
+                      <button type="button" class="ap-btn danger ap-delete-promo-btn" style="padding:5px 12px; font-size:12px;">Delete</button>
+                    </td>
+                  </tr>
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0; padding:0;">
+<iframe id="f" src="file:///C:/Users/ashut/Documents/E-Commerse/index.html" style="width:100vw; height:100vh; border:none;"></iframe>
+<script>
+  const f = document.getElementById('f');
+  f.onload = () => {
+    setTimeout(() => {
+      try {
+        const w = f.contentWindow;
+        w.localStorage.setItem('xmart_user', JSON.stringify({ name: 'Admin', role: 'admin', email: 'admin@xmart.com' }));
+        w.localStorage.setItem('xmart_token', 'mock_admin_token_123');
+        w.localStorage.setItem('xmart_admin_active', '1');
+        w.sessionStorage.setItem('xmart_admin_active', '1');
+        if (w._openAdminPanel) {
+          w._openAdminPanel('cms');
+        }
+      } catch(e) { console.error(e); }
+    }, 1200);
+  };
+</script>
+</body>
+</html>

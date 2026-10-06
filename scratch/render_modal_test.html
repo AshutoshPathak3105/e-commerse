@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcement Modal Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #0b1329;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+    .mobile-phone-frame {
+      width: 375px;
+      margin: 10px;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="mobile-phone-frame">
+    <div class="ap-modal-dialog ap-ann-modal-dialog" style="width:100%; display:flex; flex-direction:column; background:#ffffff; overflow:hidden; border:none !important;">
+      <div class="ap-modal-header ap-ann-modal-header" style="background:#022F43 !important; padding:14px 16px; border-bottom:none !important; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:10px;">
+        <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+          <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#ffffff !important; line-height:1.3; word-break:break-word;">
+            Edit Top Navigation Announcement
+          </h3>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10.5px; font-weight:700; background:rgba(255,255,255,0.18); color:#ffffff; padding:2px 8px; border-radius:12px; display:inline-block; width:fit-content;">Top Utility Marquee</span>
+          </div>
+        </div>
+        <button type="button" class="ap-modal-close-btn" id="ap-ann-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:30px; height:30px; min-width:30px; border-radius:8px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="Close">✕</button>
+      </div>
+
+      <div class="ap-modal-content" style="padding:14px 12px; overflow-y:auto;">
+        <form id="ap-ann-form" style="display:flex; flex-direction:column; gap:14px;">
+          <!-- Announcement Message -->
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:5px;">
+              Ticker Announcement Text <span style="color:#ef4444;">*</span>
+            </label>
+            <textarea id="ann-m-text" class="ap-input" rows="2" style="width:100%; font-size:13px; font-weight:600; color:#000000; padding:8px 10px; line-height:1.4; box-sizing:border-box;" required>Mega Festive Super Sale: Up to 10% OFF Across All Electronics</textarea>
+            <div style="font-size:11px; color:#64748b; margin-top:4px;">This message will display in the top navigation announcement ticker on the customer storefront.</div>
+          </div>
+
+          <div class="ap-modal-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <!-- Badge / Tag -->
+            <div>
+              <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:800; color:#000000; margin-bottom:4px;">
+                CATEGORY TAG / BADGE (OPTIONAL)
+              </label>
+              <input type="text" id="ann-m-tag" class="ap-input" value="Super Sale" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
+            </div>
+
+            <!-- Destination Link -->
+            <div>
+              <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:800; color:#000000; margin-bottom:4px;">
+                DESTINATION LINK / ANCHOR
+              </label>
+              <input type="text" id="ann-m-link" class="ap-input" value="#deals" style="width:100%; font-size:12.5px; box-sizing:border-box;" />
+            </div>
+          </div>
+
+          <!-- Time Limit & Expiry Schedule -->
+          <div class="ap-modal-schedule-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 10px;">
+            <div class="ap-modal-schedule-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+              <div style="flex:1; min-width:180px;">
+                <strong style="font-size:13px; color:#0f172a; display:block; line-height:1.3;">Time Limit &amp; Expiry Schedule</strong>
+                <span style="font-size:11px; color:#64748b; line-height:1.4; display:block; margin-top:2px;">Set an automatic expiry limit or preset duration for this announcement.</span>
+              </div>
+              <span id="ann-m-schedule-preview" class="ap-badge green" style="font-size:11px; font-weight:700; white-space:nowrap; align-self:flex-start;">
+                • ∞ No Expiry (Always Active)
+              </span>
+            </div>
+
+            <!-- Quick Preset Buttons -->
+            <div>
+              <label style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:6px;">Quick Presets:</label>
+              <div class="ap-modal-presets-row" style="display:flex; flex-wrap:wrap; gap:8px;" id="ann-m-presets">
+                <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="none" style="padding:8px 10px; font-size:11.5px; font-weight:700; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">No Expiry</button>
+                <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="24h" style="padding:8px 10px; font-size:11.5px; font-weight:700; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">24 Hours</button>
+                <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="3d" style="padding:8px 10px; font-size:11.5px; font-weight:700; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">3 Days</button>
+                <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="7d" style="padding:8px 10px; font-size:11.5px; font-weight:700; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">7 Days</button>
+                <button type="button" class="ap-btn ghost ann-preset-btn" data-preset="30d" style="padding:8px 10px; font-size:11.5px; font-weight:700; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;">30 Days</button>
+              </div>
+            </div>
+
+            <!-- DateTime Picker -->
+            <div style="margin-top:10px;">
+              <label for="ann-m-until" style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">
+                Exact Expiry Date &amp; Time (Valid Until):
+              </label>
+              <div class="ap-modal-datetime-row" style="display:flex; align-items:center; gap:8px;">
+                <input type="datetime-local" id="ann-m-until" class="ap-input" value="" style="flex:1 1 0; min-width:0; width:0; font-size:12px; font-weight:700; box-sizing:border-box; padding:7px 8px;" />
+                <button type="button" id="ann-m-clear-time" class="ap-btn ghost" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer; flex:0 0 auto;" title="Clear time limit so it never expires">Clear</button>
+              </div>
+              <div id="ann-m-live-calc" style="font-size:11px; color:#64748b; margin-top:5px;">No expiry date set. This announcement will run indefinitely.</div>
+            </div>
+          </div>
+
+          <!-- Order & Active Checkbox -->
+          <div class="ap-modal-toggle-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:4px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <label class="ap-switch-label" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:700; color:#0f172a;">
+                <input type="checkbox" id="ann-m-active" checked style="width:18px; height:18px; cursor:pointer; accent-color:#059669;" />
+                <span>Active on Storefront</span>
+              </label>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="ann-m-order" style="font-size:12px; font-weight:700; color:#475569;">Sort Order:</label>
+              <input type="number" id="ann-m-order" class="ap-input" value="0" min="0" style="width:52px; padding:4px 6px; font-size:12px; font-weight:700; text-align:center; box-sizing:border-box;" />
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="ap-modal-actions-row" style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px; border-top:1px solid #e2e8f0; padding-top:16px;">
+            <button type="button" class="ap-btn ghost ap-modal-cancel-btn" id="ap-ann-m-cancel" style="padding:10px 20px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">Cancel</button>
+            <button type="submit" class="ap-btn primary ap-modal-save-btn" id="ap-ann-m-save" style="padding:10px 24px; font-size:12.5px; font-weight:800; background:#FF9400 !important; border-color:#FF9400 !important; color:#000000 !important; border-radius:6px; cursor:pointer;">
+              Update Announcement Bar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

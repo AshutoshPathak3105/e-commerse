@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 20px; font-family: sans-serif; background: #f8fafc; }
+  .box { width: 1000px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; }
+  
+  /* Test solution */
+  .ap-table-wrap {
+    max-height: 300px;
+    overflow-y: auto;
+    position: relative;
+  }
+  
+  /* If the header is sticky, does it extend over the scrollbar? No, scrollbar is in gutter */
+  /* BUT what if we style the scrollbar? */
+  .ap-table-wrap::-webkit-scrollbar {
+    width: 8px;
+    background: #ff9400; /* Orange background in gutter */
+  }
+  .ap-table-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    margin-top: 44px; /* Starts below header */
+    border-radius: 4px;
+  }
+  .ap-table-wrap::-webkit-scrollbar-thumb {
+    background: #022f43;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="admin-panel-overlay">
+  <div class="ap-cms-view">
+    <div class="box">
+      <div style="background:#022f43; color:#fff; padding:15px; font-weight:bold;">Test Container Header</div>
+      <div class="ap-table-wrap">
+        <table class="ap-table" style="width:100%; border-collapse:collapse;">
+          <thead style="background:#ff9400;">
+            <tr style="background:#ff9400;">
+              <th style="background:#ff9400; color:#000; padding:12px; position:sticky; top:0; z-index:2;">Preview</th>
+              <th style="background:#ff9400; color:#000; padding:12px; position:sticky; top:0; z-index:2;">Title</th>
+              <th style="background:#ff9400; color:#000; padding:12px; position:sticky; top:0; z-index:2; text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 1</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 1</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 2</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 2</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 3</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 3</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 4</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 4</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 5</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 5</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 6</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 6</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 7</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 7</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 8</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 8</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 9</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 9</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 10</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 10</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 11</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 11</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 12</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 12</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 13</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 13</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 14</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 14</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+              <tr>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Box 15</td>
+                <td style="padding:12px; border-bottom:1px solid #eee;">Sample Item Title Description 15</td>
+                <td style="padding:12px; border-bottom:1px solid #eee; text-align:right;"><button>Edit</button> <button>Delete</button></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

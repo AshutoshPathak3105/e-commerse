@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modal Mobile Margin Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #1e293b;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="ap-modal-backdrop" style="display:flex;">
+    <div class="ap-modal-dialog ap-ann-modal-dialog" style="display:flex; flex-direction:column; background:#ffffff; box-shadow:0 25px 60px rgba(15,23,42,0.25); overflow:hidden;">
+      <div class="ap-modal-header ap-ann-modal-header" style="background:#022F43 !important; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+          <h3 style="margin:0; font-weight:800; color:#ffffff !important;">
+            Edit Top Navigation Announcement
+          </h3>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10.5px; font-weight:700; background:rgba(255,255,255,0.18); color:#ffffff; padding:2px 8px; border-radius:12px; display:inline-block; width:fit-content;">Top Utility Marquee</span>
+          </div>
+        </div>
+        <button type="button" class="ap-modal-close-btn" id="ap-ann-m-close" style="background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="Close">✕</button>
+      </div>
+
+      <div class="ap-modal-content">
+        <form id="ap-ann-form" style="display:flex; flex-direction:column; gap:14px;">
+          <!-- Announcement Message -->
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#000000; margin-bottom:5px;">
+              Ticker Announcement Text <span style="color:#ef4444;">*</span>
+            </label>
+            <textarea id="ann-m-text" class="ap-input" rows="2" style="width:100%; font-size:13px; font-weight:600; color:#000000; padding:8px 10px; line-height:1.4; box-sizing:border-box;" required>Mega Festive Super Sale: Up to 10% OFF Across All Electronics</textarea>
+            <div style="font-size:11px; color:#64748b; margin-top:4px;">This message will display in the top navigation announcement ticker on the customer storefront.</div>
+          </div>
+
+          <div class="ap-modal-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <!-- Badge / Tag -->
+            <div>
+              <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:800; color:#000000; margin-bottom:4px;">
+                Category Tag / Badge (Optional)
+              </label>
+              <input type="text" id="ann-m-tag" class="ap-input" value="Festival Deal" placeholder="e.g. Limited Deal" style="width:100%; font-size:12.5px; box-sizing:border-box; padding:8px 10px;" />
+            </div>
+
+            <!-- Destination Link -->
+            <div>
+              <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:800; color:#000000; margin-bottom:4px;">
+                Destination Link / Anchor
+              </label>
+              <input type="text" id="ann-m-link" class="ap-input" value="#deals" placeholder="#deals" style="width:100%; font-size:12.5px; box-sizing:border-box; padding:8px 10px;" />
+            </div>
+          </div>
+
+          <!-- Time Limit & Expiry Schedule -->
+          <div class="ap-modal-schedule-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+            <div class="ap-modal-schedule-header">
+              <div>
+                <strong style="font-size:13px; color:#0f172a; display:block; line-height:1.3;">Time Limit &amp; Expiry Schedule</strong>
+                <span style="font-size:11px; color:#64748b; line-height:1.4; display:block; margin-top:2px;">Set an automatic expiry limit or preset duration for this announcement.</span>
+              </div>
+              <span id="ann-m-schedule-preview" class="ap-badge green" style="font-size:11px; font-weight:700;">
+                ∞ No Expiry (Always Active)
+              </span>
+            </div>
+
+            <!-- Quick Preset Buttons -->
+            <div>
+              <label style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:6px;">Quick Presets:</label>
+              <div class="ap-modal-presets-row" id="ann-m-presets">
+                <button type="button" class="ap-btn ann-preset-btn">No Expiry</button>
+                <button type="button" class="ap-btn ann-preset-btn">24 Hours</button>
+                <button type="button" class="ap-btn ann-preset-btn">3 Days</button>
+                <button type="button" class="ap-btn ann-preset-btn">7 Days</button>
+                <button type="button" class="ap-btn ann-preset-btn">30 Days</button>
+              </div>
+            </div>
+
+            <!-- DateTime Picker -->
+            <div>
+              <label for="ann-m-until" style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">
+                Exact Expiry Date &amp; Time (Valid Until):
+              </label>
+              <div class="ap-modal-datetime-row">
+                <input type="datetime-local" id="ann-m-until" class="ap-input" value="2026-10-15T18:00" />
+                <button type="button" id="ann-m-clear-time" class="ap-btn ghost" title="Clear time limit">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order & Active Checkbox -->
+          <div class="ap-modal-toggle-row">
+            <div>
+              <label class="ap-switch-label" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:700; color:#0f172a;">
+                <input type="checkbox" id="ann-m-active" checked style="width:18px; height:18px; cursor:pointer; accent-color:#059669;" />
+                <span>Active on Storefront</span>
+              </label>
+            </div>
+
+            <div>
+              <label for="ann-m-order" style="font-size:12px; font-weight:700; color:#475569;">Sort Order:</label>
+              <input type="number" id="ann-m-order" class="ap-input" value="1" min="0" style="width:52px; padding:4px 6px; font-size:12px; font-weight:700; text-align:center; box-sizing:border-box;" />
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="ap-modal-actions-row">
+            <button type="button" class="ap-btn ghost ap-modal-cancel-btn" id="ap-ann-m-cancel">Cancel</button>
+            <button type="submit" class="ap-btn primary ap-modal-save-btn" id="ap-ann-m-save">
+              Update Announcement Bar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const dialog = document.querySelector('.ap-modal-dialog');
+    const backdrop = document.querySelector('.ap-modal-backdrop');
+    const header = document.querySelector('.ap-modal-header');
+    const content = document.querySelector('.ap-modal-content');
+    const saveBtn = document.querySelector('#ap-ann-m-save');
+    const cancelBtn = document.querySelector('#ap-ann-m-cancel');
+    
+    const info = {
+      windowH: window.innerHeight,
+      backdropH: backdrop?.offsetHeight,
+      dialogRect: dialog?.getBoundingClientRect(),
+      headerH: header?.offsetHeight,
+      contentRect: content?.getBoundingClientRect(),
+      contentScrollH: content?.scrollHeight,
+      contentClientH: content?.clientHeight,
+      saveRect: saveBtn?.getBoundingClientRect(),
+      cancelRect: cancelBtn?.getBoundingClientRect(),
+    };
+    console.log('MEASUREMENTS:', JSON.stringify(info, null, 2));
+    const pre = document.createElement('pre');
+    pre.id = 'measure-output';
+    pre.textContent = JSON.stringify(info, null, 2);
+    pre.style.position = 'fixed';
+    pre.style.top = '0';
+    pre.style.left = '0';
+    pre.style.background = 'rgba(0,0,0,0.8)';
+    pre.style.color = '#00ff00';
+    pre.style.zIndex = '999999';
+    pre.style.fontSize = '11px';
+    pre.style.pointerEvents = 'none';
+    document.body.appendChild(pre);
+  });
+</script>
+</body>
+</html>

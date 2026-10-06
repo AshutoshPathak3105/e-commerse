@@ -26872,17 +26872,17 @@ button[type="submit"] *,
 
 .ap-timeframe-modes {
   display: inline-flex;
-  background: #FF9400;
+  background: #022f43;
   padding: 4px;
   border-radius: 9px;
   gap: 4px;
-  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.25);
 }
 
 .ap-timeframe-mode-btn {
   border: 1.5px solid transparent;
-  background: #FF9400 !important;
-  color: #000000 !important;
+  background: #022f43 !important;
+  color: #ffffff !important;
   font-size: 12.5px;
   font-weight: 800;
   padding: 6px 14px;
@@ -26896,16 +26896,16 @@ button[type="submit"] *,
 }
 
 .ap-timeframe-mode-btn svg {
-  stroke: #000000 !important;
-  color: #000000 !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
   flex-shrink: 0;
   stroke-width: 2.2px;
   transition: transform 0.15s ease;
 }
 
 .ap-timeframe-mode-btn:hover:not(.active):not(.ap-btn-clicked) {
-  background: #e08300 !important;
-  color: #000000 !important;
+  background: #04435e !important;
+  color: #ffffff !important;
 }
 
 .ap-timeframe-mode-btn:hover svg {
@@ -26916,11 +26916,21 @@ button[type="submit"] *,
 .ap-timeframe-mode-btn:active,
 .ap-timeframe-mode-btn.clicked,
 .ap-timeframe-mode-btn.ap-btn-clicked {
-  background: #FF9400 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-color: #000000 !important;
   color: #000000 !important;
   font-weight: 800 !important;
-  box-shadow: 0 2px 6px rgba(255, 148, 0, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ap-timeframe-mode-btn.active:hover,
+.ap-timeframe-mode-btn.clicked:hover,
+.ap-timeframe-mode-btn.ap-btn-clicked:hover {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+  color: #000000 !important;
 }
 
 .ap-timeframe-mode-btn.active svg,
@@ -26939,9 +26949,9 @@ button[type="submit"] *,
 }
 
 .ap-timeframe-pill {
-  border: 1.5px solid #FF9400;
-  background: #FF9400 !important;
-  color: #000000 !important;
+  border: 1.5px solid #022f43;
+  background: #022f43 !important;
+  color: #ffffff !important;
   font-size: 12px;
   font-weight: 800;
   padding: 6px 13px;
@@ -26952,35 +26962,45 @@ button[type="submit"] *,
   gap: 5px;
   transition: all 0.16s ease;
   user-select: none;
-  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.2);
 }
 
 .ap-timeframe-pill svg {
-  stroke: #000000 !important;
-  color: #000000 !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
   fill: none;
 }
 
 .ap-timeframe-pill:hover:not(.active):not(.ap-btn-clicked) {
-  background: #e08300 !important;
-  border-color: #e08300 !important;
-  color: #000000 !important;
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
 }
 
 .ap-timeframe-pill:hover:not(.active):not(.ap-btn-clicked) svg {
-  stroke: #000000 !important;
-  color: #000000 !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
 }
 
 .ap-timeframe-pill.active,
 .ap-timeframe-pill:active,
 .ap-timeframe-pill.clicked,
 .ap-timeframe-pill.ap-btn-clicked {
-  background: #FF9400 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-color: #000000 !important;
   color: #000000 !important;
   font-weight: 800 !important;
-  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ap-timeframe-pill.active:hover,
+.ap-timeframe-pill.clicked:hover,
+.ap-timeframe-pill.ap-btn-clicked:hover {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+  color: #000000 !important;
 }
 
 .ap-timeframe-pill.active svg,
@@ -26992,32 +27012,42 @@ button[type="submit"] *,
 }
 
 .ap-timeframe-pill.highlight-prev {
-  border-color: #FF9400;
-  background: #FF9400 !important;
-  color: #000000 !important;
+  border-color: #022f43;
+  background: #022f43 !important;
+  color: #ffffff !important;
   font-weight: 800 !important;
 }
 
 .ap-timeframe-pill.highlight-prev svg {
-  stroke: #000000 !important;
-  color: #000000 !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
 }
 
 .ap-timeframe-pill.highlight-prev:hover:not(.active):not(.ap-btn-clicked) {
-  background: #e08300 !important;
-  border-color: #e08300 !important;
-  color: #000000 !important;
+  background: #04435e !important;
+  border-color: #04435e !important;
+  color: #ffffff !important;
 }
 
 .ap-timeframe-pill.highlight-prev.active,
 .ap-timeframe-pill.highlight-prev:active,
 .ap-timeframe-pill.highlight-prev.clicked,
 .ap-timeframe-pill.highlight-prev.ap-btn-clicked {
-  background: #FF9400 !important;
-  border-color: #FF9400 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
   color: #000000 !important;
   font-weight: 800 !important;
-  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ap-timeframe-pill.highlight-prev.active:hover,
+.ap-timeframe-pill.highlight-prev.clicked:hover,
+.ap-timeframe-pill.highlight-prev.ap-btn-clicked:hover {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+  color: #000000 !important;
 }
 
 .ap-timeframe-pill.highlight-prev.active svg,
@@ -27032,7 +27062,6 @@ button[type="submit"] *,
 .ap-modern-quick-actions .ap-btn,
 .ap-modern-quick-actions button,
 #ap-custom-date-apply,
-#ap-dash-view-all-orders,
 #ap-timeframe-reset-btn,
 #ap-toggle-breakdown-btn,
 .ap-dash-inspect-order,
@@ -27051,7 +27080,6 @@ button[type="submit"] *,
 .ap-modern-quick-actions .ap-btn svg,
 .ap-modern-quick-actions button svg,
 #ap-custom-date-apply svg,
-#ap-dash-view-all-orders svg,
 #ap-timeframe-reset-btn svg,
 #ap-toggle-breakdown-btn svg,
 .ap-dash-inspect-order svg,
@@ -27068,7 +27096,6 @@ button[type="submit"] *,
 .ap-modern-quick-actions .ap-btn:hover:not(.active):not(.ap-btn-clicked),
 .ap-modern-quick-actions button:hover:not(.active):not(.ap-btn-clicked),
 #ap-custom-date-apply:hover:not(.active):not(.ap-btn-clicked),
-#ap-dash-view-all-orders:hover:not(.active):not(.ap-btn-clicked),
 #ap-timeframe-reset-btn:hover:not(.active):not(.ap-btn-clicked),
 #ap-toggle-breakdown-btn:hover:not(.active):not(.ap-btn-clicked),
 .ap-dash-inspect-order:hover:not(.active):not(.ap-btn-clicked),
@@ -27205,7 +27232,6 @@ button[type="submit"] *,
 .ap-modern-quick-actions .ap-btn:hover:not(.active):not(.ap-btn-clicked) svg,
 .ap-modern-quick-actions button:hover:not(.active):not(.ap-btn-clicked) svg,
 #ap-custom-date-apply:hover:not(.active):not(.ap-btn-clicked) svg,
-#ap-dash-view-all-orders:hover:not(.active):not(.ap-btn-clicked) svg,
 #ap-timeframe-reset-btn:hover:not(.active):not(.ap-btn-clicked) svg,
 #ap-toggle-breakdown-btn:hover:not(.active):not(.ap-btn-clicked) svg,
 .ap-dash-inspect-order:hover:not(.active):not(.ap-btn-clicked) svg,
@@ -27228,9 +27254,6 @@ button[type="submit"] *,
 #ap-custom-date-apply.active,
 #ap-custom-date-apply:active,
 #ap-custom-date-apply.ap-btn-clicked,
-#ap-dash-view-all-orders.active,
-#ap-dash-view-all-orders:active,
-#ap-dash-view-all-orders.ap-btn-clicked,
 #ap-timeframe-reset-btn.active,
 #ap-timeframe-reset-btn:active,
 #ap-timeframe-reset-btn.ap-btn-clicked,
@@ -27257,11 +27280,12 @@ button[type="submit"] *,
 .ap-dash-inner button:active,
 .ap-dash-inner button.clicked,
 .ap-dash-inner button.ap-btn-clicked {
-  background: #FF9400 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
-  border-color: #FF9400 !important;
+  border-color: #000000 !important;
   font-weight: 800 !important;
-  box-shadow: 0 2px 8px rgba(255, 148, 0, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 .ap-modern-quick-actions .ap-btn.active svg,
@@ -27274,9 +27298,6 @@ button[type="submit"] *,
 #ap-custom-date-apply.active svg,
 #ap-custom-date-apply:active svg,
 #ap-custom-date-apply.ap-btn-clicked svg,
-#ap-dash-view-all-orders.active svg,
-#ap-dash-view-all-orders:active svg,
-#ap-dash-view-all-orders.ap-btn-clicked svg,
 #ap-timeframe-reset-btn.active svg,
 #ap-timeframe-reset-btn:active svg,
 #ap-timeframe-reset-btn.ap-btn-clicked svg,
@@ -27491,9 +27512,69 @@ button[type="submit"] *,
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #f1f5f9;
+  background: #022f43 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   flex-wrap: wrap;
+}
+
+#ap-dash-view-all-orders {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #ff9400 !important;
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  border: 1.5px solid #ff9400 !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.16s ease !important;
+  box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
+}
+
+#ap-dash-view-all-orders:hover {
+  background: #e08300 !important;
+  background-color: #e08300 !important;
+  border-color: #e08300 !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(255, 148, 0, 0.35) !important;
+}
+
+#ap-dash-view-all-orders * {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+#ap-dash-export-csv {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #022f43 !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.16s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+#ap-dash-export-csv:hover {
+  background: #f1f5f9 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+  color: #022f43 !important;
+}
+
+#ap-dash-export-csv * {
+  color: #022f43 !important;
+  stroke: #022f43 !important;
 }
 
 .ap-dash-orders-search-wrap {
@@ -35165,3 +35246,476 @@ button.ap-edit-staff-btn svg,
     transform: translateY(0) scale(1);
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   ENTERPRISE MODERN DASHBOARD UI (#022f43 & #ff9400)
+   ═══════════════════════════════════════════════════════ */
+
+/* Section Headers: #022f43 background + white font color */
+.dash-header-primary,
+.dash-panel-header,
+.ap-dash-card-header,
+.dash-section-bar {
+  background: #022f43 !important;
+  background-color: #022f43 !important;
+  color: #ffffff !important;
+  padding: 12px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  border-bottom: 2px solid #011b27 !important;
+}
+
+.dash-panel-header h2,
+.dash-panel-header h3,
+.dash-panel-header h4,
+.dash-header-primary h2,
+.dash-header-primary h3,
+.dash-header-primary h4,
+.ap-dash-card-header h2,
+.ap-dash-card-header h3,
+.ap-dash-card-header h4,
+.dash-section-bar h2,
+.dash-section-bar h3,
+.dash-section-bar h4 {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.dash-panel-header,
+.dash-panel-header > h2,
+.dash-panel-header > h3,
+.dash-panel-header > h4,
+.dash-header-primary,
+.dash-header-primary > h2,
+.dash-header-primary > h3,
+.dash-header-primary > h4,
+.ap-dash-card-header,
+.ap-dash-card-header > h2,
+.ap-dash-card-header > h3,
+.ap-dash-card-header > h4,
+.dash-section-bar,
+.dash-section-bar > h2,
+.dash-section-bar > h3,
+.dash-section-bar > h4 {
+  color: #ffffff !important;
+}
+
+.dash-panel-header svg,
+.dash-header-primary svg,
+.ap-dash-card-header svg,
+.dash-section-bar svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Header badge inside #022f43 header: retain clean mint/green badge with black font */
+.dash-panel-header .dash-highlight-badge,
+.dash-header-primary .dash-highlight-badge,
+.ap-dash-card-header .dash-highlight-badge,
+.dash-section-bar .dash-highlight-badge {
+  background: #dcfce7 !important;
+  background-color: #dcfce7 !important;
+  color: #000000 !important;
+  border: 1px solid #86efac !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dash-panel-header .dash-highlight-badge *,
+.dash-header-primary .dash-highlight-badge *,
+.ap-dash-card-header .dash-highlight-badge *,
+.dash-section-bar .dash-highlight-badge * {
+  color: #000000 !important;
+}
+
+/* Secondary / Highlight badges: Light tone green background + black font */
+.dash-highlight-badge,
+.dash-accent-pill,
+.dash-badge-highlight,
+.dash-callout-highlight,
+.dash-badge-pos,
+#admin-panel-overlay .dash-highlight-badge,
+#admin-panel-overlay .dash-accent-pill,
+#admin-panel-overlay .dash-badge-highlight,
+#admin-panel-overlay .dash-callout-highlight,
+#admin-panel-overlay .dash-badge-pos {
+  background: #dcfce7 !important;
+  background-color: #dcfce7 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+  padding: 3px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  letter-spacing: 0.02em !important;
+  border: 1px solid #86efac !important;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1) !important;
+}
+
+.dash-highlight-badge *,
+.dash-accent-pill *,
+.dash-badge-highlight *,
+.dash-callout-highlight *,
+.dash-badge-pos *,
+#admin-panel-overlay .dash-highlight-badge *,
+#admin-panel-overlay .dash-accent-pill *,
+#admin-panel-overlay .dash-badge-highlight *,
+#admin-panel-overlay .dash-callout-highlight *,
+#admin-panel-overlay .dash-badge-pos * {
+  color: #000000 !important;
+}
+
+button#ap-custom-date-apply {
+  background: #ff9400 !important;
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  border: 1px solid #ff9400 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 700 !important;
+}
+
+.dash-highlight-cell {
+  background: rgba(255, 148, 0, 0.15) !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Main Dashboard Wrapper */
+.dash-modern-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding-bottom: 28px;
+}
+
+/* Header Banner with #022f43 theme */
+.dash-command-banner {
+  background: linear-gradient(135deg, #022f43 0%, #03415c 100%) !important;
+  color: #ffffff !important;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(2, 47, 67, 0.18);
+  border-left: 6px solid #ff9400;
+}
+
+.dash-command-banner h2 {
+  color: #ffffff !important;
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-command-banner p {
+  color: #cbd5e1 !important;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/* Timeframe Bar Styled with #022f43 & #ff9400 */
+.dash-timeframe-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+/* Clicked / Active buttons in timeframe container: white background with black font */
+.dash-timeframe-container button.active,
+.dash-timeframe-container button:active,
+.dash-timeframe-container button.clicked,
+.dash-timeframe-container button.ap-btn-clicked,
+.ap-timeframe-modes button.active,
+.ap-timeframe-modes button:active,
+.ap-timeframe-modes button.clicked,
+.ap-timeframe-pills button.active,
+.ap-timeframe-pills button:active,
+.ap-timeframe-pills button.clicked {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1.5px solid #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dash-timeframe-container button.active *,
+.dash-timeframe-container button:active *,
+.dash-timeframe-container button.clicked *,
+.ap-timeframe-modes button.active *,
+.ap-timeframe-pills button.active * {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+
+/* Grid Layouts */
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.dash-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.dash-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .dash-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .dash-grid-2,
+  .dash-grid-3,
+  .dash-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Modern Panel Card */
+.dash-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(2, 47, 67, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Scrollable Container with overflow-y: auto */
+.dash-scrollable-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  max-height: 330px !important;
+  -webkit-overflow-scrolling: touch !important;
+  position: relative !important;
+}
+
+/* Slim Custom Scrollbars */
+.dash-scrollable-body::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+.dash-scrollable-body::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+.dash-scrollable-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+.dash-scrollable-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+/* Table Headers in dashboard tables: #ff9400 background, black font color, and centered text */
+.dash-scrollable-body table thead,
+.dash-scrollable-body table thead tr,
+.dash-panel table thead,
+.dash-panel table thead tr,
+.ap-table-header-part table thead,
+.ap-table-header-part table thead tr {
+  background: #ff9400 !important;
+}
+
+.dash-scrollable-body table thead th,
+.dash-scrollable-body table thead tr th,
+.dash-panel table thead th,
+.dash-panel table thead tr th,
+.ap-table-header-part table thead th,
+.ap-table-header-part table thead tr th,
+.ap-table thead th,
+.ap-table th {
+  background: #ff9400 !important;
+  color: #000000 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  padding: 10px 12px !important;
+  border: none !important;
+  border-bottom: 2px solid #e08300 !important;
+  letter-spacing: 0.04em !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.dash-scrollable-body table thead th *,
+.dash-scrollable-body table thead tr th *,
+.dash-panel table thead th *,
+.dash-panel table thead tr th *,
+.ap-table-header-part table thead th *,
+.ap-table-header-part table thead tr th *,
+.ap-table thead th *,
+.ap-table th * {
+  color: #000000 !important;
+  text-align: center !important;
+}
+
+.ap-table-header-part {
+  background: #ff9400 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  border-bottom: 2px solid #e08300 !important;
+  box-sizing: border-box !important;
+}
+
+/* Chart Canvas wrapper */
+.dash-chart-card-body {
+  padding: 16px 20px;
+  min-height: 270px;
+  position: relative;
+  background: #ffffff;
+}
+
+/* KPI Metric Cards in Dashboard */
+.dash-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 4px rgba(2, 47, 67, 0.04);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 3px solid #022f43;
+}
+
+.dash-kpi-card.highlight {
+  border-top: 3px solid #ff9400;
+  background: linear-gradient(180deg, rgba(255,148,0,0.03) 0%, #ffffff 100%);
+}
+
+.dash-kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dash-kpi-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dash-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #022f43;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.dash-kpi-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #022f43;
+  line-height: 1.1;
+}
+
+.dash-kpi-footer {
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+/* Mini stat breakdown bars */
+.dash-status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid #edf2f7;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UNIVERSAL: White font on ALL navy #022f43 background badges,
+   pills, headers, cards, and elements in the admin dashboard.
+   ══════════════════════════════════════════════════════════════════ */
+#admin-panel-overlay [style*="background:#022f43"],
+#admin-panel-overlay [style*="background: #022f43"],
+#admin-panel-overlay [style*="background-color:#022f43"],
+#admin-panel-overlay [style*="background-color: #022f43"],
+#admin-panel-overlay [style*="background:#022F43"],
+#admin-panel-overlay [style*="background: #022F43"],
+#admin-panel-overlay [style*="background-color:#022F43"],
+#admin-panel-overlay [style*="background-color: #022F43"] {
+  color: #ffffff !important;
+}
+
+#admin-panel-overlay [style*="background:#022f43"] *,
+#admin-panel-overlay [style*="background: #022f43"] *,
+#admin-panel-overlay [style*="background-color:#022f43"] *,
+#admin-panel-overlay [style*="background-color: #022f43"] *,
+#admin-panel-overlay [style*="background:#022F43"] *,
+#admin-panel-overlay [style*="background: #022F43"] *,
+#admin-panel-overlay [style*="background-color:#022F43"] *,
+#admin-panel-overlay [style*="background-color: #022F43"] * {
+  color: #ffffff !important;
+}
+
+/* Specific dashboard badge & avatar classes with navy bg */
+.ap-dash-avatar[style*="background:#022f43"],
+.ap-dash-avatar[style*="background: #022f43"],
+.ap-dash-avatar[style*="background:#022F43"],
+.ap-dash-avatar[style*="background: #022F43"] {
+  color: #ffffff !important;
+}
+
+/* Ensure highlight badges retain their light green background and black font across all dashboard containers */
+#admin-panel-overlay .dash-highlight-badge,
+#admin-panel-overlay .dash-highlight-badge *,
+#admin-panel-overlay [style*="background:#022f43"] .dash-highlight-badge,
+#admin-panel-overlay [style*="background:#022f43"] .dash-highlight-badge *,
+#admin-panel-overlay [style*="background:#022F43"] .dash-highlight-badge,
+#admin-panel-overlay [style*="background:#022F43"] .dash-highlight-badge * {
+  background: #dcfce7 !important;
+  background-color: #dcfce7 !important;
+  color: #000000 !important;
+  border-color: #86efac !important;
+}
+

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Width Debug</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; max-width: 100%; overflow-x: hidden; font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
+    #admin-panel-overlay.active { display: block !important; position: static !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; }
+    .ap-cms-view { width: 100% !important; max-width: 100% !important; display: block !important; padding: 12px !important; box-sizing: border-box !important; }
+    #ap-announcements-section { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+    #ap-announcements-section .ap-table-wrap {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      display: block !important;
+    }
+
+    /* Desktop View */
+    @media (min-width: 1025px) {
+      #ap-announcements-section .ap-card-header h3 {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        width: auto !important;
+      }
+      #admin-panel-overlay #ap-announcements-section #ap-ann-count-badge,
+      #ap-announcements-section #ap-ann-count-badge,
+      .ap-ann-count-badge-tag {
+        margin-left: 0 !important;
+        position: static !important;
+        display: inline-flex !important;
+        align-self: center !important;
+      }
+    }
+
+    /* Mobile & Tablet View */
+    @media (max-width: 1024px) {
+      /* 1. Announcement Bar Card */
+      #ap-announcements-section .ap-card-header {
+        position: relative !important;
+      }
+      #admin-panel-overlay #ap-announcements-section #ap-ann-count-badge,
+      #ap-announcements-section #ap-ann-count-badge,
+      .ap-ann-count-badge-tag {
+        position: absolute !important;
+        top: 14px !important;
+        right: 16px !important;
+        margin: 0 !important;
+        font-size: 10px !important;
+        padding: 2.5px 7.5px !important;
+        z-index: 5 !important;
+        max-width: fit-content !important;
+        white-space: nowrap !important;
+      }
+      #ap-announcements-section .ap-card-header h3 {
+        padding-right: 125px !important;
+        display: block !important;
+        width: 100% !important;
+      }
+      #ap-announcements-section .ap-card-header p {
+        padding-right: 0 !important;
+        width: 100% !important;
+        margin-top: 6px !important;
+      }
+
+      /* 2. CMS & Storefront Control View Header */
+      .ap-view-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .ap-view-title-group {
+        position: relative !important;
+        width: 100% !important;
+      }
+      .ap-view-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        font-size: 16px !important;
+      }
+      .ap-view-title .ap-super-badge {
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+
+      /* Pills wrap cleanly on small screen */
+      .ap-cms-toolbar {
+        gap: 10px !important;
+      }
+      .ap-cms-pills {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .ap-cms-pill {
+        white-space: nowrap !important;
+        font-size: 11px !important;
+        padding: 5px 10px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-panel-overlay" class="active">
+    <div class="ap-view-inner ap-cms-view">
+            <div class="ap-view-header">
+              <div class="ap-view-title-group">
+                <h2 class="ap-view-title" style="color:#000000;">
+                  CMS &amp; Storefront Control
+                  <span class="ap-super-badge" style="background:#ecfdf5; color:#059669; border-color:#a7f3d0;">Storefront Live</span>
+                </h2>
+                <p class="ap-view-sub" style="color:#000000; font-weight:600;">Manage featured hero carousels with custom images, storewide discount vouchers, bank card instant discounts, and UPI app offers.</p>
+              </div>
+              <div class="ap-view-actions">
+                <button class="ap-btn ghost" id="ap-cms-refresh-btn">
+                  <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  Refresh
+                </button>
+                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Add Homepage Card</button>
+                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Add Featured Banner</button>
+                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#ff9400 !important; background-color:#ff9400 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; color:#000000 !important; font-weight:800; border-radius:8px; cursor:pointer;">Create Offer / Voucher</button>
+              </div>
+            </div>
+
+            <!-- Global Announcement Ticker Manager -->
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;" id="ap-announcements-section">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; position:relative;">
+                <div style="width:100%; flex:1 1 100%; min-width:0; position:relative;">
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px;">
+                    <span style="font-size:14px; font-weight:800; color:#ffffff !important;">Top Navigation Announcement Bar</span>
+                    <span class="ap-badge green ap-ann-count-badge-tag" id="ap-ann-count-badge" style="background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; font-weight:800; font-size:10.5px; padding:2.5px 8px; border-radius:20px; width:fit-content; max-width:fit-content; white-space:nowrap; flex-shrink:0; margin-left:auto;">
+                      ● 2 Live on Production
+                    </span>
+                  </h3>
+                  <p style="margin:6px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600; line-height:1.45; width:100% !important; max-width:100% !important; display:block !important; padding:0 !important;">
+                    Manage all marquee announcement messages displayed at the top-left utility bar of the customer-facing storefront.
+                  </p>
+                </div>
+                <div class="ap-card-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0; width:100%;">
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-ann-btn" style="padding:8px 16px; font-size:12px; font-weight:800; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1px solid #e08300 !important; border-color:#e08300 !important; border-radius:8px; cursor:pointer; white-space:nowrap;">
+                    Add Announcement
+                  </button>
+                </div>
+              </div>
+
+
+              <!-- Filter Toolbar -->
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1.5px solid #e08300; background:#ff9400; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="ap-cms-pills" id="ap-ann-pills">
+                  <button type="button" class="ap-cms-pill active" data-filter="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Announcements (2)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="active" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Active Only (2)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="paused" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Paused (${announcements.filter(a => a.active === false).length})</button>
+                </div>
+                <div class="ap-ann-search-wrap" style="display:flex; align-items:center; gap:8px; width:100%; max-width:320px;">
+                  <input type="text" id="ap-ann-search-input" placeholder="Search announcement text..." style="width:100%; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; background:#ffffff; color:#000000;" />
+                </div>
+              </div>
+
+              <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+              <div class="ap-table-wrap">
+                <table class="ap-table" id="ap-ann-table">
+                  <thead>
+                    <tr class="ap-table-header-part">
+                      <th style="width:50px;">#</th>
+                      <th>Announcement Message</th>
+                      <th>Destination Link</th>
+                      <th style="text-align:center;">Status</th>
+                      <th style="text-align:right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ap-ann-table-body">
+                    
+    <tr data-ann-id="ann-1">
+      <td style="font-weight:700; color:#475569; width:45px;">#1</td>
+      <td style="min-width:260px;">
+        <div style="font-weight:700; color:#0f172a; font-size:13px; line-height:1.4;">Mega Festive Super Sale</div>
+      </td>
+    </tr>
+  
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+  </div>
+</body>
+</html>

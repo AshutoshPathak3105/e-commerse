@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Category Card Modal Sliding Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin: 0; background: rgba(15, 23, 42, 0.6); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="ap-modal-backdrop" style="position:fixed; inset:0; z-index:100050; display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,0.65);">
+    <div class="ap-modal-dialog" style="max-width:780px; width:95%; max-height:90vh; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); overflow:hidden; display:flex; flex-direction:column;">
+      <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
+        <div>
+          <h3 class="ap-modal-title" style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important;">Add New Homepage Category Card</h3>
+          <p style="margin:3px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Configure the 4 tile products, image URLs, discount tags, and destination link.</p>
+        </div>
+        <button type="button" class="ap-modal-close-btn" id="ap-quad-modal-close" style="font-size:16px; width:32px; height:32px; background:#022f43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+      </div>
+
+      <div class="ap-modal-content" id="test-modal-scroll" style="padding:22px; max-height:calc(90vh - 75px); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; color:#000000; flex:1;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
+          <div style="grid-column: 1 / -1;">
+            <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:4px;">Card Title <span style="color:#ef4444;">*</span></label>
+            <input type="text" id="quad-m-title" class="ap-input" placeholder="e.g. Deals for you, Starting ₹149 | Dry fruits & seeds" style="width:100%; font-weight:700; font-size:13px;" />
+          </div>
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Row Number</label>
+            <select id="quad-m-row" class="ap-input" style="width:100%;">
+              <option value="1">Row 1</option>
+              <option value="2">Row 2</option>
+            </select>
+          </div>
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Display Order Index</label>
+            <input type="number" id="quad-m-order" class="ap-input" value="28" style="width:100%;" />
+          </div>
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Category / Target Link</label>
+            <input type="text" id="quad-m-link" class="ap-input" value="#deals" placeholder="#deals" style="width:100%;" />
+          </div>
+          <div>
+            <label class="ap-cms-label" style="display:block; font-size:11.5px; font-weight:700; color:#334155; margin-bottom:4px;">Footer Link Text</label>
+            <input type="text" id="quad-m-footer-text" class="ap-input" value="See more" placeholder="e.g. See all deals" style="width:100%;" />
+          </div>
+        </div>
+
+        <h4 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:16px 0 10px; border-top:1px solid #f1f5f9; padding-top:14px;">
+          4 Quadrant Product Tiles (Left to Right, Top to Bottom)
+        </h4>
+
+        <div id="quad-items-editor-container">
+          
+            <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile 1</span>
+                <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: Top Left</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#e2e8f0; display:flex; align-items:center; justify-content:center;">
+                  <span style="font-size:10px; color:#64748b;">Image 1</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                  <div style="grid-column: 1 / -1;">
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                    <input type="text" class="ap-input" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Smart Watch" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                    <input type="text" class="ap-input" placeholder="e.g. 50% off" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                    <input type="text" class="ap-input" value="#deals" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+            <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile 2</span>
+                <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: Top Left</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#e2e8f0; display:flex; align-items:center; justify-content:center;">
+                  <span style="font-size:10px; color:#64748b;">Image 2</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                  <div style="grid-column: 1 / -1;">
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                    <input type="text" class="ap-input" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Smart Watch" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                    <input type="text" class="ap-input" placeholder="e.g. 50% off" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                    <input type="text" class="ap-input" value="#deals" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+            <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile 3</span>
+                <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: Top Left</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#e2e8f0; display:flex; align-items:center; justify-content:center;">
+                  <span style="font-size:10px; color:#64748b;">Image 3</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                  <div style="grid-column: 1 / -1;">
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                    <input type="text" class="ap-input" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Smart Watch" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                    <input type="text" class="ap-input" placeholder="e.g. 50% off" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                    <input type="text" class="ap-input" value="#deals" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+            <div class="quad-item-edit-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:800; color:#1e293b;">Quadrant Tile 4</span>
+                <span style="font-size:10.5px; color:#64748b; font-weight:600;">Position: Top Left</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 70px 1fr; gap:12px; align-items:start;">
+                <div style="width:70px; height:70px; border-radius:8px; border:1px solid #cbd5e1; overflow:hidden; background:#e2e8f0; display:flex; align-items:center; justify-content:center;">
+                  <span style="font-size:10px; color:#64748b;">Image 4</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                  <div style="grid-column: 1 / -1;">
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Image URL <span style="color:#ef4444;">*</span></label>
+                    <input type="text" class="ap-input" placeholder="https://images.unsplash.com/..." style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Title / Name</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Smart Watch" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Deal Badge</label>
+                    <input type="text" class="ap-input" placeholder="e.g. 50% off" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Sub-Text Badge (Optional)</label>
+                    <input type="text" class="ap-input" placeholder="e.g. Limited deal" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                  <div>
+                    <label class="ap-cms-label" style="font-size:11px; font-weight:700;">Item Click Link</label>
+                    <input type="text" class="ap-input" value="#deals" placeholder="#deals" style="width:100%; font-size:11.5px; padding:5px 9px;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; margin:14px 0 18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+          <input type="checkbox" id="quad-m-active" checked style="width:16px; height:16px; cursor:pointer;" />
+          <label for="quad-m-active" style="font-size:12.5px; font-weight:700; color:#0f172a; cursor:pointer;">
+            Visible &amp; Active on Customer Homepage
+          </label>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+          <button type="button" class="ap-btn ghost" id="ap-quad-modal-cancel">Cancel</button>
+          <button type="button" class="ap-btn primary" id="ap-quad-modal-save" style="padding:8px 24px; background:#ff9400 !important; font-weight:800; color:#000000 !important; border:1.5px solid #e08300;">
+            Create Card
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (window.location.search.includes('scroll=1')) {
+      const scrollEl = document.getElementById('test-modal-scroll');
+      if (scrollEl) {
+        scrollEl.scrollTop = 2500;
+      }
+    }
+  </script>
+</body>
+</html>

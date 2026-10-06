@@ -1,0 +1,247 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Verify Delete Button Fit</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 24px;
+    }
+    #admin-panel-overlay {
+      display: block !important;
+      position: static !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      background: transparent !important;
+    }
+    .wrapper {
+      width: 100%;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <h2>Verify Actions Column &amp; Delete Button Fit</h2>
+  <div id="admin-panel-overlay">
+    <div class="ap-cms-view">
+      <div class="wrapper">
+        <div class="ap-cms-table-outer" id="table-scroll-container" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+          <div class="ap-cms-table-inner" style="min-width:1600px; width:100%; box-sizing:border-box; padding-right:16px;">
+            <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+              <table class="ap-table" id="ap-promos-table-header" style="width:100%; min-width:1600px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                <colgroup>
+                  <col style="width:10%;">
+                  <col style="width:17.5%;">
+                  <col style="width:11%;">
+                  <col style="width:8%;">
+                  <col style="width:8%;">
+                  <col style="width:17%;">
+                  <col style="width:13%;">
+                  <col style="width:5.5%;">
+                  <col style="width:10%;">
+                </colgroup>
+                <thead style="background:#ff9400;">
+                  <tr style="background:#ff9400 !important;">
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Voucher Code &amp; Type</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Offer Title &amp; Terms</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Scope / Target Store</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Discount Rate</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Min Bag Value</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Bank / UPI Partner</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 16px; text-align:left;">Duration / Expiry</th>
+                    <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 12px; text-align:center;">Status</th>
+                    <th style="text-align:right; color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:13px 20px;">Actions</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+            <div class="ap-cms-body-scroll ap-table-body-scroll" style="width:100%; background:#ffffff;">
+              <table class="ap-table" id="ap-promos-table" style="width:100%; min-width:1600px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                <colgroup>
+                  <col style="width:10%;">
+                  <col style="width:17.5%;">
+                  <col style="width:11%;">
+                  <col style="width:8%;">
+                  <col style="width:8%;">
+                  <col style="width:17%;">
+                  <col style="width:13%;">
+                  <col style="width:5.5%;">
+                  <col style="width:10%;">
+                </colgroup>
+                <tbody id="ap-promos-table-body">
+                  <tr data-promo-id="promo_1">
+                    <td>
+                      <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">ABC10</div>
+                      <div style="margin-top:2px;"><span class="ap-badge" style="background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; font-weight:700; font-size:10.5px; padding:2px 8px; border-radius:12px;">Voucher</span></div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#000000; font-size:13px;">10% Storewide Mega Discount</div>
+                      <div style="font-size:11.5px; color:#334155; margin-top:2px; line-height:1.35;">Flat 10% instant discount across all products on minimum bag value of Γé╣999.</div>
+                    </td>
+                    <td>
+                      <span class="ap-badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-weight:700; font-size:11px; padding:3px 9px; border-radius:12px; display:inline-flex; align-items:center; gap:4px;">
+                        <span style="font-size:8px;">ΓùÅ</span> Apex Tech Store
+                      </span>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#000000; font-size:12.5px;">10% OFF</div>
+                      <div style="font-size:11px; color:#64748b;">Max Γé╣1,000</div>
+                    </td>
+                    <td>
+                      <strong style="color:#000000; font-size:12.5px;">Γé╣999</strong>
+                    </td>
+                    <td>
+                      <div class="ap-promo-cyclic-ticker-wrap" data-count="2">
+                        <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+                          <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <div style="width:22px; height:22px; border-radius:4px; background:#fff7ed; border:1px solid #fed7aa; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                            </div>
+                            <div style="min-width:0; overflow:hidden;">
+                              <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Apex Tech Store (Exclusive Store)</div>
+                              <span class="ap-offer-ticker-badge voucher-store" style="font-size:10px; font-weight:800; background:#e0e7ff; color:#3730a3; padding:1px 6px; border-radius:4px; border:1px solid #c7d2fe; display:inline-block; margin-top:2px; white-space:nowrap;">Merchant Store Voucher</span>
+                            </div>
+                          </div>
+                          <span class="ap-cyclic-ticker-indicator">1/2</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; font-size:11px;">
+                          <span style="font-size:8px;">ΓùÅ</span> Expired
+                        </span>
+                        <div style="font-size:11px; color:#b91c1c; font-weight:700; margin-top:3px; white-space:nowrap;">Ended: 30 Sept 2026, 02:52 am</div>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5; padding:3px 8px; border-radius:12px; font-size:11px;">
+                        ΓùÅ Expired
+                      </span>
+                    </td>
+                    <td style="white-space:nowrap; text-align:right; padding:13px 20px;">
+                      <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="promo_1" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                      <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="promo_1" style="padding:4px 10px; font-size:12px;">Delete</button>
+                    </td>
+                  </tr>
+
+                  <tr data-promo-id="promo_2">
+                    <td>
+                      <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">UPI100</div>
+                      <div style="margin-top:2px;"><span class="ap-badge" style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; font-weight:700; font-size:10.5px; padding:2px 8px; border-radius:12px;">UPI Offer</span></div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#000000; font-size:13px;">Flat Γé╣100 Cashback on UPI (GPay, PhonePe, Paytm)</div>
+                      <div style="font-size:11.5px; color:#334155; margin-top:2px; line-height:1.35;">Flat Γé╣100 discount when paying with Google Pay, PhonePe, Paytm, or any UPI app on orders above Γé╣499.</div>
+                    </td>
+                    <td>
+                      <span class="ap-badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-weight:700; font-size:11px; padding:3px 9px; border-radius:12px; display:inline-flex; align-items:center; gap:4px;">
+                        <span style="font-size:8px;">ΓùÅ</span> Storewide
+                      </span>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#000000; font-size:12.5px;">Γé╣100 FLAT</div>
+                    </td>
+                    <td>
+                      <strong style="color:#000000; font-size:12.5px;">Γé╣499</strong>
+                    </td>
+                    <td>
+                      <div class="ap-promo-cyclic-ticker-wrap" data-count="5">
+                        <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+                          <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                              <span style="font-size:9px; font-weight:800; color:#475569;">UPI</span>
+                            </div>
+                            <div style="min-width:0; overflow:hidden;">
+                              <div style="font-weight:700; color:#000000; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">BHIM UPI</div>
+                              <span class="ap-offer-ticker-badge upi" style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px; white-space:nowrap;">UPI Cashback &amp; Instant Pay</span>
+                            </div>
+                          </div>
+                          <span class="ap-cyclic-ticker-indicator">5/5</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; font-size:11px;">
+                          <span style="font-size:8px;">ΓùÅ</span> Active (6d left)
+                        </span>
+                        <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px; white-space:nowrap;">Expires: 10 Oct 2026, 01:49 am</div>
+                      </div>
+                    </td>
+                    <td style="text-align:center;">
+                      <button type="button" class="ap-badge green" style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-weight:800; padding:3px 8px; border-radius:12px; font-size:11px; cursor:pointer;">
+                        ΓùÅ Active
+                      </button>
+                    </td>
+                    <td style="white-space:nowrap; text-align:right; padding:13px 20px;">
+                      <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="promo_2" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                      <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="promo_2" style="padding:4px 10px; font-size:12px;">Delete</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <pre id="debug-output" style="padding:16px; background:#1e293b; color:#f8fafc; font-size:12px; margin-top:20px; border-radius:8px;">TH 9 [ACTIONS] Width: 160.0px
+TD 9 Width: 160.0px
+Delete Button Width: 60.0px (Left: 1164.0px, Right: 1224.0px)
+TD 9 Right: 1240.0px
+Margin inside TD 9 (TD9.right - Delete.right): 16.0px
+Inner Container Right: 1240.0px
+Margin from Inner Container Right: 16.0px
+Outer Scroller Right: 1240.0px
+Margin from Outer Scroller Visible Edge: 16.0px
+Γ£ô SUCCESS: Delete button is COMPLETELY fit inside TD9 and inside the container with 16.0px safety margin!</pre>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      // Auto scroll container all the way to right
+      const scroller = document.getElementById('table-scroll-container');
+      if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+
+      const delBtn1 = document.querySelector('tr[data-promo-id="promo_1"] .ap-delete-promo-btn');
+      const td9 = document.querySelector('tr[data-promo-id="promo_1"] td:nth-child(9)');
+      const th9 = document.querySelector('#ap-promos-table-header th:nth-child(9)');
+      const inner = document.querySelector('.ap-cms-table-inner');
+      const outer = document.querySelector('.ap-cms-table-outer');
+      
+      const delR = delBtn1.getBoundingClientRect();
+      const tdR = td9.getBoundingClientRect();
+      const thR = th9.getBoundingClientRect();
+      const innerR = inner.getBoundingClientRect();
+      const outerR = outer.getBoundingClientRect();
+      
+      const out = [];
+      out.push(`TH 9 [ACTIONS] Width: ${thR.width.toFixed(1)}px`);
+      out.push(`TD 9 Width: ${tdR.width.toFixed(1)}px`);
+      out.push(`Delete Button Width: ${delR.width.toFixed(1)}px (Left: ${delR.left.toFixed(1)}px, Right: ${delR.right.toFixed(1)}px)`);
+      out.push(`TD 9 Right: ${tdR.right.toFixed(1)}px`);
+      out.push(`Margin inside TD 9 (TD9.right - Delete.right): ${(tdR.right - delR.right).toFixed(1)}px`);
+      out.push(`Inner Container Right: ${innerR.right.toFixed(1)}px`);
+      out.push(`Margin from Inner Container Right: ${(innerR.right - delR.right).toFixed(1)}px`);
+      out.push(`Outer Scroller Right: ${outerR.right.toFixed(1)}px`);
+      out.push(`Margin from Outer Scroller Visible Edge: ${(outerR.right - delR.right).toFixed(1)}px`);
+      
+      if (delR.right <= tdR.right && delR.right <= outerR.right) {
+        out.push(`Γ£ô SUCCESS: Delete button is COMPLETELY fit inside TD9 and inside the container with ${(outerR.right - delR.right).toFixed(1)}px safety margin!`);
+      } else {
+        out.push(`ΓÜá∩╕Å ISSUE: Delete button overflows!`);
+      }
+      document.getElementById('debug-output').textContent = out.join('\n');
+    });
+  </script>
+
+
+</body></html>

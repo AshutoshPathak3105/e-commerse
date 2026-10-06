@@ -1,0 +1,374 @@
+[
+  {
+    "line": 4286,
+    "text": "<!-- Top Header (022F43 brand background with website logo) -->"
+  },
+  {
+    "line": 4287,
+    "text": "<div style=\"background: #022F43; color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;\">"
+  },
+  {
+    "line": 4522,
+    "text": "<div style=\"background:#022F43;color:#ffffff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;\">"
+  },
+  {
+    "line": 4640,
+    "text": "<div style=\"background:#022F43; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 4662,
+    "text": "<div style=\"background:#022F43; color:#ffffff; padding:10px 14px; border-radius:0; font-size:12px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px;\">"
+  },
+  {
+    "line": 4829,
+    "text": "color: '#022F43',"
+  },
+  {
+    "line": 4830,
+    "text": "backdrop_color: '#022F43'"
+  },
+  {
+    "line": 7262,
+    "text": "<div class=\"ap-crm-main-tags-bar\" style=\"padding:14px 18px; background:#022f43 !important; color:#ffffff !important; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;\">"
+  },
+  {
+    "line": 9453,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color: #ffffff;\">"
+  },
+  {
+    "line": 9865,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color: #ffffff;\">"
+  },
+  {
+    "line": 10056,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color:#ffffff; border-bottom:1px solid #047857;\">"
+  },
+  {
+    "line": 10275,
+    "text": "background: #022f43 !important;"
+  },
+  {
+    "line": 10277,
+    "text": "border: 1px solid #022f43 !important;"
+  },
+  {
+    "line": 10512,
+    "text": "storeScopeBtn.style.setProperty('background', '#022f43', 'important');"
+  },
+  {
+    "line": 10515,
+    "text": "storeScopeBtn.style.setProperty('border-color', '#022f43', 'important');"
+  },
+  {
+    "line": 10530,
+    "text": "prodScopeBtn.style.setProperty('background', '#022f43', 'important');"
+  },
+  {
+    "line": 10533,
+    "text": "prodScopeBtn.style.setProperty('border-color', '#022f43', 'important');"
+  },
+  {
+    "line": 12065,
+    "text": "<button class=\"ap-btn primary\" id=\"ap-new-review-btn\" style=\"font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; box-shadow:0 2px 6px rgba(2,47,67,0.25); cursor:pointer;\">"
+  },
+  {
+    "line": 12069,
+    "text": "<button class=\"ap-btn ghost\" id=\"ap-export-reviews-btn\" style=\"font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;\" title=\"Export Moderated Reviews to CSV\">"
+  },
+  {
+    "line": 12073,
+    "text": "<button class=\"ap-btn ghost\" id=\"ap-reviews-refresh-btn\" style=\"font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:7px 14px; font-weight:700; cursor:pointer;\">"
+  },
+  {
+    "line": 12083,
+    "text": "<button id=\"ap-tab-products\" style=\"padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'products' ? '#022F43' : 'transparent'}; color:${viewMode === 'products' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'products' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};\">"
+  },
+  {
+    "line": 12087,
+    "text": "<button id=\"ap-tab-reviews\" style=\"padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'reviews' ? '#022F43' : 'transparent'}; color:${viewMode === 'reviews' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'reviews' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};\">"
+  },
+  {
+    "line": 12091,
+    "text": "<button id=\"ap-tab-priority\" style=\"padding:7px 16px; font-size:12px; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; background:${viewMode === 'priority' ? '#022F43' : 'transparent'}; color:${viewMode === 'priority' ? '#ffffff' : '#475569'}; display:inline-flex; align-items:center; gap:6px; box-shadow:${viewMode === 'priority' ? '0 2px 6px rgba(2,47,67,0.3)' : 'none'};\">"
+  },
+  {
+    "line": 12347,
+    "text": "<button class=\"ap-btn primary ap-view-prod-modal-btn\" data-product-id=\"${pid}\" data-product-idx=\"${idx}\" data-product-name=\"${pName}\" style=\"background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:6px 12px; font-size:11.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(2,47,67,0.2);\" onmouseover=\"this.style.background='#04435e'; this.style.color='#ffffff';\" onmouseout=\"this.style.background='#022F43'; this.style.color='#ffffff';\" onmousedown=\"this.style.color='#ffffff';\" onfocus=\"this.style.color='#ffffff';\">"
+  },
+  {
+    "line": 12648,
+    "text": "<div style=\"width:36px; height:36px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 12695,
+    "text": "<button class=\"ap-modal-rev-action\" data-id=\"${r.id}\" data-action=\"Approved\" style=\"padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;\" title=\"Approve Review\">"
+  },
+  {
+    "line": 12707,
+    "text": "<button class=\"ap-modal-rev-action\" data-id=\"${r.id}\" data-action=\"Pending\" style=\"padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;\" title=\"Mark as Pending\">"
+  },
+  {
+    "line": 12712,
+    "text": "<button class=\"ap-modal-toggle-reply-btn\" data-id=\"${r.id}\" style=\"padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;\">"
+  },
+  {
+    "line": 12740,
+    "text": "<button type=\"button\" class=\"ap-btn primary ap-save-reply-btn\" data-id=\"${r.id}\" style=\"font-size:11px; padding:4px 12px; background:#022F43 !important; color:#ffffff !important; border:none; display:inline-flex; align-items:center; gap:4px;\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>Save Reply</button>"
+  },
+  {
+    "line": 12757,
+    "text": "<!-- Window Header (022F43 background, white text) -->"
+  },
+  {
+    "line": 12758,
+    "text": "<div class=\"ap-window-header\" style=\"background:#022F43 !important; color:#ffffff; padding:16px 28px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.12);\">"
+  },
+  {
+    "line": 12796,
+    "text": "<button id=\"ap-add-prod-review-btn\" style=\"background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; padding:9px 16px; font-size:12.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:7px; box-shadow:0 2px 6px rgba(2,47,67,0.25); transition:transform 0.1s ease;\">"
+  },
+  {
+    "line": 12851,
+    "text": "<button class=\"ap-modal-filter-btn\" data-filter=\"all\" style=\"padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'all' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'all' ? '#ffffff' : '#475569'};\">"
+  },
+  {
+    "line": 12854,
+    "text": "<button class=\"ap-modal-filter-btn\" data-filter=\"Approved\" style=\"padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Approved' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Approved' ? '#ffffff' : '#475569'};\">"
+  },
+  {
+    "line": 12857,
+    "text": "<button class=\"ap-modal-filter-btn\" data-filter=\"Pending\" style=\"padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Pending' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Pending' ? '#ffffff' : '#475569'};\">"
+  },
+  {
+    "line": 12860,
+    "text": "<button class=\"ap-modal-filter-btn\" data-filter=\"Flagged\" style=\"padding:6px 14px; font-size:12px; font-weight:700; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer; background:${modalFilter === 'Flagged' ? '#022F43' : '#ffffff'}; color:${modalFilter === 'Flagged' ? '#ffffff' : '#475569'};\">"
+  },
+  {
+    "line": 13047,
+    "text": "<input type=\"checkbox\" class=\"ap-rev-chk\" data-id=\"${r.id}\" ${isChecked ? 'checked' : ''} style=\"cursor:pointer; width:16px; height:16px; accent-color:#022F43;\">"
+  },
+  {
+    "line": 13063,
+    "text": "<div style=\"width:34px; height:34px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 13104,
+    "text": "${r.status !== 'Approved' ? `<button class=\"ap-rev-action\" data-id=\"${r.id}\" data-action=\"Approved\" title=\"Approve\" style=\"padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>Approve</button>` : ''}"
+  },
+  {
+    "line": 13106,
+    "text": "${r.status !== 'Pending' ? `<button class=\"ap-rev-action\" data-id=\"${r.id}\" data-action=\"Pending\" title=\"Mark Pending\" style=\"padding:5px 10px; font-size:11.5px; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/></svg>Re-queue</button>` : ''}"
+  },
+  {
+    "line": 13107,
+    "text": "<button class=\"ap-inspect-btn\" data-id=\"${r.id}\" title=\"Inspect Details & Reply\" style=\"padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer;\">Inspect</button>"
+  },
+  {
+    "line": 13169,
+    "text": "<div class=\"ap-bulk-bar\" style=\"background:#022F43; color:#ffffff; padding:10px 16px; border-radius:8px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 13188,
+    "text": "<input type=\"checkbox\" id=\"ap-select-all-revs\" ${allSelected ? 'checked' : ''} style=\"cursor:pointer; width:16px; height:16px; accent-color:#022F43;\">"
+  },
+  {
+    "line": 13527,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 13583,
+    "text": "<button class=\"ap-btn primary\" id=\"ap-save-reply-btn\" style=\"font-size:12px; padding:6px 14px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;\">"
+  },
+  {
+    "line": 13592,
+    "text": "<button class=\"ap-modal-approve-btn\" id=\"ap-modal-approve-btn\" style=\"font-size:12px; padding:7px 14px; background:#022F43 !important; color:#ffffff !important; border:none; border-radius:6px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>Approve Review</button>"
+  },
+  {
+    "line": 13594,
+    "text": "<button class=\"ap-modal-pending-btn\" id=\"ap-modal-pending-btn\" style=\"font-size:12px; padding:7px 14px; background:#022F43 !important; color:#ffffff !important; border:1px solid #022F43 !important; border-radius:6px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/></svg>Re-queue / Pending</button>"
+  },
+  {
+    "line": 13671,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 13922,
+    "text": "<button class=\"ap-btn primary ap-view-ticket-btn\" data-id=\"${t.id}\" style=\"padding:6px 12px;font-size:11.5px;font-weight:700;white-space:nowrap;background:#022f43 !important;color:#ffffff !important;border-radius:6px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(2,47,67,0.3);\">"
+  },
+  {
+    "line": 14272,
+    "text": "<div class=\"ap-crm-drawer-header\" style=\"background:#022f43 !important; color:#ffffff !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:space-between;\">"
+  },
+  {
+    "line": 15060,
+    "text": "<span style=\"font-size:8.5px; font-weight:800; color:#022F43; background:#e2e8f0; padding:1px 5px; border-radius:8px; flex-shrink:0;\">${idx + 1}/${tickerItems.length}</span>"
+  },
+  {
+    "line": 15121,
+    "text": "<div style=\"font-family:monospace; font-weight:800; color:#022F43; font-size:12.5px; letter-spacing:0.02em; background:#e0f2fe; padding:2px 6px; border-radius:5px; border:1px solid #bae6fd; display:inline-block;\" title=\"Click to open offer\">${esc(p.code)}</div>"
+  },
+  {
+    "line": 15125,
+    "text": "<div style=\"font-weight:700; color:#022F43; font-size:12px; line-height:1.25; text-align:center;\" title=\"Click to open offer\">${esc(p.title)}</div>"
+  },
+  {
+    "line": 15191,
+    "text": "<div style=\"padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;\">"
+  },
+  {
+    "line": 15226,
+    "text": "<div style=\"padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;\">"
+  },
+  {
+    "line": 15245,
+    "text": "<div class=\"ap-cms-toolbar\" style=\"padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43 !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;\">"
+  },
+  {
+    "line": 15284,
+    "text": "<div style=\"padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 15310,
+    "text": "<div style=\"padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 15337,
+    "text": "<div style=\"padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 15371,
+    "text": "<div style=\"padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 15385,
+    "text": "<div class=\"ap-cms-toolbar\" style=\"background:#022F43 !important; border-bottom:1px solid rgba(255,255,255,0.12); padding:12px 20px;\">"
+  },
+  {
+    "line": 15556,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; padding:16px 22px; border-bottom:none !important; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 15561,
+    "text": "<button type=\"button\" class=\"ap-modal-close-btn\" id=\"ap-ann-m-close\" style=\"background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;\" title=\"Close\">✕</button>"
+  },
+  {
+    "line": 15609,
+    "text": "<button type=\"button\" class=\"ap-btn ghost ann-preset-btn\" data-preset=\"none\" style=\"padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;\">No Expiry</button>"
+  },
+  {
+    "line": 15610,
+    "text": "<button type=\"button\" class=\"ap-btn ghost ann-preset-btn\" data-preset=\"24h\" style=\"padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;\">24 Hours</button>"
+  },
+  {
+    "line": 15611,
+    "text": "<button type=\"button\" class=\"ap-btn ghost ann-preset-btn\" data-preset=\"3d\" style=\"padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;\">3 Days</button>"
+  },
+  {
+    "line": 15612,
+    "text": "<button type=\"button\" class=\"ap-btn ghost ann-preset-btn\" data-preset=\"7d\" style=\"padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;\">7 Days</button>"
+  },
+  {
+    "line": 15613,
+    "text": "<button type=\"button\" class=\"ap-btn ghost ann-preset-btn\" data-preset=\"30d\" style=\"padding:6px 14px; font-size:11.5px; font-weight:800; background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; border-radius:6px; cursor:pointer;\">30 Days</button>"
+  },
+  {
+    "line": 15986,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 15991,
+    "text": "<button type=\"button\" class=\"ap-modal-close-btn\" id=\"ap-quad-modal-close\" style=\"background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:34px; height:34px; font-size:16px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 140ms ease;\" title=\"Close\">✕</button>"
+  },
+  {
+    "line": 16241,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 16243,
+    "text": "<button type=\"button\" class=\"ap-modal-close-btn\" id=\"ap-hero-m-close\" style=\"background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;\">✕</button>"
+  },
+  {
+    "line": 16419,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;\">"
+  },
+  {
+    "line": 16421,
+    "text": "<button type=\"button\" class=\"ap-modal-close-btn\" id=\"ap-quick-m-close\" style=\"background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;\">✕</button>"
+  },
+  {
+    "line": 16751,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color:#ffffff;\">"
+  },
+  {
+    "line": 16758,
+    "text": "<button type=\"button\" class=\"ap-modal-close-btn\" id=\"ap-banner-modal-close\" style=\"background:#022F43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;\" title=\"Close\">✕</button>"
+  },
+  {
+    "line": 16804,
+    "text": "<label for=\"banner-modal-file-upload\" id=\"banner-modal-upload-btn\" class=\"banner-upload-local-btn\" style=\"cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:#022F43 !important; color:#ffffff !important; font-weight:700 !important; border:1.5px solid #022F43 !important; padding:7px 15px !important; border-radius:6px !important; font-size:12px !important; margin-top:4px; box-shadow:0 2px 4px rgba(2,47,67,0.25) !important;\">"
+  },
+  {
+    "line": 16815,
+    "text": "<span id=\"banner-modal-preview-status\" style=\"font-size:11.5px; color:#022F43; font-weight:700; margin-top:6px; display:inline-flex; align-items:center; gap:6px;\">"
+  },
+  {
+    "line": 17067,
+    "text": "<div style=\"background:#022F43 !important; color:#ffffff; padding:16px 36px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 3px 12px rgba(0,0,0,0.18); flex-shrink:0; z-index:10;\">"
+  },
+  {
+    "line": 17332,
+    "text": "<button type=\"button\" class=\"ap-preset-pill ap-duration-preset-btn\" data-hours=\"24\" style=\"background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;\">24 Hours</button>"
+  },
+  {
+    "line": 17333,
+    "text": "<button type=\"button\" class=\"ap-preset-pill ap-duration-preset-btn\" data-hours=\"72\" style=\"background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;\">3 Days</button>"
+  },
+  {
+    "line": 17334,
+    "text": "<button type=\"button\" class=\"ap-preset-pill ap-duration-preset-btn\" data-hours=\"168\" style=\"background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;\">7 Days</button>"
+  },
+  {
+    "line": 17335,
+    "text": "<button type=\"button\" class=\"ap-preset-pill ap-duration-preset-btn\" data-hours=\"720\" style=\"background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;\">30 Days</button>"
+  },
+  {
+    "line": 17336,
+    "text": "<button type=\"button\" class=\"ap-preset-pill ap-duration-preset-btn\" data-hours=\"0\" style=\"background:#022F43 !important; border-color:#022F43 !important; color:#ffffff !important; font-weight:800 !important; border-radius:6px; cursor:pointer;\">No Expiry</button>"
+  },
+  {
+    "line": 18063,
+    "text": "<div style=\"background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 18289,
+    "text": "<div style=\"width:38px; height:38px; border-radius:50%; background:#022F43 !important; color:#ffffff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 4px rgba(0,0,0,0.08);\">"
+  },
+  {
+    "line": 18495,
+    "text": "<!-- Toolbar for Search and Filtering (First row of the header part: #022f43 bg and white font as in Image 2) -->"
+  },
+  {
+    "line": 18496,
+    "text": "<div style=\"padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;\">"
+  },
+  {
+    "line": 18794,
+    "text": "<div class=\"ap-modal-header\" style=\"background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;\">"
+  },
+  {
+    "line": 29175,
+    "text": "<button type=\"button\" class=\"seller-btn-sm btn-track-seller-order\" data-id=\"${ord.id}\" style=\"background:#022F43 !important;color:#ffffff !important;border:none;padding:7px 12px;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(2,47,67,0.25);white-space:nowrap;\" title=\"Track Live Order Courier Journey\">"
+  },
+  {
+    "line": 29588,
+    "text": ".btn-print { background: #022F43 !important; color: #ffffff !important; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 800; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(2,47,67,0.3); }"
+  },
+  {
+    "line": 34059,
+    "text": "<button id=\"detail-notify-me\" class=\"buybox-btn buybox-btn--notify ${isSubscribed ? 'is-active' : ''}\" type=\"button\" style=\"background:#022F43 !important;background-color:#022F43 !important;border:1px solid #022F43 !important;color:#ffffff !important;\" title=\"${isSubscribed ? 'Alert active for back in stock' : 'Get email notification when back in stock'}\">"
+  },
+  {
+    "line": 35948,
+    "text": "<div style=\"display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);background:#022F43;\">"
+  }
+]

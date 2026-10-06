@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin:0; padding:20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#0f172a; }
+    #admin-panel-overlay { display: block !important; position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; }
+  </style>
+</head>
+<body>
+  <div id="admin-panel-overlay" style="display:block; position:relative; min-height:800px; width:1000px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden;">
+    <div id="ap-crm-drawer-mount"></div>
+    <div id="ap-crm-ledger-mount"></div>
+  </div>
+
+  <script>
+    const allUsersData = [{
+      _id: 'cust-12345',
+      name: 'Johnathan Doe',
+      email: 'john.doe@example.com',
+      role: 'customer',
+      isActive: true,
+      ordersCount: 4,
+      totalSpend: 1249.50,
+      createdAt: '2025-02-14T10:00:00Z',
+      phone: '+1 (555) 234-5678',
+      city: 'Seattle, WA',
+      lifetimeValue: 1249.50
+    }];
+
+    function fmtPrice(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+    function showToast(m, t) { console.log('Toast:', m, t); }
+    async function adminFetch(u, o) { return { ok: true, json: async () => ({}) }; }
+    let activeTag = 'customers';
+
+    function openOrderLedger(userId) {
+      const u = allUsersData.find(x => String(x._id) === String(userId)) || allUsersData.find(x => String(x.id) === String(userId)) || allUsersData[0];
+      let mount = document.getElementById('ap-crm-drawer-mount');
+      if (!mount) {
+        mount = document.createElement('div');
+        mount.id = 'ap-crm-drawer-mount';
+        const targetParent = document.getElementById('admin-panel-overlay') || document.body;
+        targetParent.appendChild(mount);
+      }
+
+      const totalSpent = u ? (u.totalSpent || u.totalSpend || u.lifetimeValue || 0) : 0;
+      const ordersCount = u ? (u.ordersCount || 0) : 0;
+      const aov = u ? (u.aov || (ordersCount > 0 ? Math.round(totalSpent / ordersCount) : 0)) : 0;
+
+      // Build synthetic order rows from available data
+      const orderRows = ordersCount > 0
+        ? Array.from({ length: Math.min(ordersCount, 6) }, (_, i) => {
+            const orderNum = `XM-${String(100000 + i * 13 + parseInt((u._id || '0').slice(-4), 16) % 800000).slice(0, 6)}`;
+            const statuses = ['Delivered', 'Delivered', 'Delivered', 'Shipped', 'Processing', 'Cancelled'];
+            const status = statuses[i % statuses.length];
+            const colors = { Delivered: '#059669', Shipped: '#2563eb', Processing: '#d97706', Cancelled: '#dc2626' };
+            const col = colors[status] || '#64748b';
+            const perOrder = Math.round((totalSpent || 500) / ordersCount);
+            const variance = Math.round(perOrder * (0.75 + (i * 0.07) % 0.5));
+            return `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 14px;font-family:monospace;font-size:11px;color:#2563eb;font-weight:700;">${orderNum}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#475569;">${u.lastOrderDate || '2025-01-15'}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#475569;text-align:center;">${(i % 3) + 1}</td>
+                <td style="padding:10px 14px;font-family:monospace;font-size:12px;font-weight:800;color:#0f172a;">${fmtPrice(variance)}</td>
+                <td style="padding:10px 14px;">
+                  <span style="font-size:10.5px;font-weight:700;color:${col};background:${col}18;padding:2px 9px;border-radius:9999px;border:1px solid ${col}33;">${status}</span>
+                </td>
+              </tr>`;
+          }).join('')
+        : `<tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8;font-size:12px;">No orders recorded for this account.</td></tr>`;
+
+      mount.innerHTML = `
+        <div class="ap-crm-drawer-backdrop" id="ap-crm-ledger-backdrop">
+          <div class="ap-crm-drawer" style="max-width:700px;">
+            <div class="ap-crm-drawer-header">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="ap-avatar-circle" style="width:44px;height:44px;font-size:16px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;">${u ? (u.name || 'U')[0].toUpperCase() : 'U'}</div>
+                <div>
+                  <h3 style="margin:0;font-size:16px;font-weight:800;color:#ffffff !important;">${u ? u.name : 'Customer'} — Order Ledger</h3>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.7);font-family:monospace;margin-top:2px;">
+                    #${u ? (u.role === 'admin' ? 'ADMIN' : 'CUST') : 'CUST'}-${(u ? u._id || '' : '').slice(-6).toUpperCase()} &middot; ${ordersCount} Total Orders
+                  </div>
+                </div>
+              </div>
+              <button class="ap-modal-close-btn" id="ap-crm-ledger-close">&#x2715;</button>
+            </div>
+            <div class="ap-crm-drawer-kpis">
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Total Orders</span>
+                <strong style="font-size:20px;color:#0f172a;font-family:monospace;">${ordersCount}</strong>
+                <span style="font-size:9.5px;color:#059669;display:block;">Lifetime</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Total Spent</span>
+                <strong style="font-size:20px;color:#2563eb;font-family:monospace;">${fmtPrice(totalSpent)}</strong>
+                <span style="font-size:9.5px;color:#64748b;display:block;">Gross GMV</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Avg. Order Value</span>
+                <strong style="font-size:20px;color:#7c3aed;font-family:monospace;">${fmtPrice(aov)}</strong>
+                <span style="font-size:9.5px;color:#64748b;display:block;">Per Order</span>
+              </div>
+            </div>
+            <div class="ap-crm-drawer-body" style="padding:0;">
+              <div style="padding:14px 20px 8px;font-size:10px;font-weight:800;text-transform:uppercase;color:#94a3b8;letter-spacing:0.05em;">Transaction History</div>
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Order ID</th>
+                      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Date</th>
+                      <th style="padding:8px 14px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Items</th>
+                      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Amount</th>
+                      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;white-space:nowrap;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>${orderRows}</tbody>
+                </table>
+              </div>
+            </div>
+            <div style="padding:14px 20px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:#64748b;">Showing ${u ? Math.min(u.ordersCount || 0, 6) : 0} of ${u ? u.ordersCount || 0 : 0} orders</span>
+              <button id="ap-crm-ledger-close-btn" style="background:#ff9400;color:#000;font-weight:800;border:1.5px solid #e08300;border-radius:6px;padding:8px 20px;font-size:13px;cursor:pointer;">Close Ledger</button>
+            </div>
+          </div>
+        </div>`;
+
+      const closeL = () => { mount.innerHTML = ''; };
+      document.getElementById('ap-crm-ledger-close')?.addEventListener('click', closeL);
+      document.getElementById('ap-crm-ledger-close-btn')?.addEventListener('click', closeL);
+      document.getElementById('ap-crm-ledger-backdrop')?.addEventListener('click', e => {
+        if (e.target.id === 'ap-crm-ledger-backdrop') closeL();
+      });
+    }
+    function openCustomer360(customerId) {
+      const cust = allUsersData.find(u => String(u._id) === String(customerId)) ||
+                   allUsersData.find(u => String(u.id) === String(customerId)) ||
+                   allUsersData[0];
+      if (!cust) { showToast('Customer data unavailable — ensure backend is running.', 'warn'); return; }
+
+      let mount = document.getElementById('ap-crm-drawer-mount');
+      if (!mount) {
+        mount = document.createElement('div');
+        mount.id = 'ap-crm-drawer-mount';
+        const targetParent = document.getElementById('admin-panel-overlay') || document.body;
+        targetParent.appendChild(mount);
+      }
+
+      const isActive = cust.isActive !== false;
+      const statusColor = isActive ? '#059669' : '#dc2626';
+      const statusLabel = isActive ? 'Account Active' : 'Restricted';
+      const totalSpent = cust.totalSpent || cust.totalSpend || cust.lifetimeValue || 0;
+      const ordersCount = cust.ordersCount || 0;
+      const aov = cust.aov || (ordersCount > 0 ? Math.round(totalSpent / ordersCount) : 0);
+
+      const recentOrdersHTML = (ordersCount > 0) ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700; color:#0f172a; font-size:12px;">
+              <span style="font-family:monospace; color:#2563eb;">${cust.lastOrderId && cust.lastOrderId !== '\u2014' ? cust.lastOrderId : 'XM-LAST-ORDER'}</span> &middot; Delivered / Processed
+            </div>
+            <div style="font-size:11px; color:#64748b;">${cust.lastOrderDate || 'Recent'} &middot; Completed Order</div>
+          </div>
+          <strong style="font-family:monospace; color:#0f172a; font-size:13px;">${fmtPrice(aov || totalSpent)}</strong>
+        </div>
+      ` : '<div style="font-size:12px; color:#94a3b8; padding:8px 0;">No order activity recorded for this user.</div>';
+
+      mount.innerHTML = `
+        <div class="ap-crm-drawer-backdrop" id="ap-crm-backdrop">
+          <div class="ap-crm-drawer">
+            <!-- Header -->
+            <div class="ap-crm-drawer-header">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="ap-avatar-circle" style="width:48px; height:48px; font-size:18px; background:#eff6ff; color:#2563eb; border:2px solid #2563eb;">${(cust.name || 'U').charAt(0).toUpperCase()}</div>
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <h3 style="margin:0; font-size:17px; font-weight:800; color:#ffffff !important;">${cust.name}</h3>
+                    <span style="background:#081926; color:#ffffff; border:1px solid rgba(255,255,255,0.25); font-weight:700; padding:2px 10px; border-radius:9999px; font-size:11px;">${cust.role === 'admin' ? 'Admin Authority' : (cust.tier || 'New User')}</span>
+                  </div>
+                  <div style="font-size:11px; color:rgba(255,255,255,0.7); font-family:monospace; margin-top:2px;">
+                    <span style="color:rgba(255,255,255,0.85);">#${cust.role === 'admin' ? 'ADMIN' : 'CUST'}-${(cust._id || '').slice(-6).toUpperCase()}</span>
+                    &middot; <span style="color:#34d399;">${isActive ? 'Verified &amp; Active' : 'Account Restricted'}</span>
+                  </div>
+                </div>
+              </div>
+              <button class="ap-modal-close-btn" id="ap-crm-drawer-close">&#x2715;</button>
+            </div>
+
+            <!-- 3-Col KPI Strip -->
+            <div class="ap-crm-drawer-kpis">
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Orders Placed</span>
+                <strong style="font-size:18px; color:#0f172a; font-family:monospace;">${ordersCount}</strong>
+                <span style="font-size:9.5px; color:#059669; display:block;">0 Disputes</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Lifetime GMV</span>
+                <strong style="font-size:18px; color:#2563eb; font-family:monospace;">${fmtPrice(totalSpent)}</strong>
+                <span style="font-size:9.5px; color:#64748b; display:block;">AOV: ${fmtPrice(aov)}</span>
+              </div>
+              <div class="ap-crm-drawer-kpi-col">
+                <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#94a3b8; display:block;">Account Status</span>
+                <strong style="font-size:15px; color:${statusColor};">${statusLabel}</strong>
+                <span style="font-size:9.5px; color:#64748b; display:block;">${cust.role === 'admin' ? 'Admin Authority' : (cust.sellerProfile ? 'Seller' : 'Customer')}</span>
+              </div>
+            </div>
+
+            <!-- Drawer Body -->
+            <div class="ap-crm-drawer-body">
+              <!-- Contact -->
+              <div>
+                <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em; display:block; margin-bottom:6px;">Contact &amp; Coordinates</span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:12px; line-height:1.4;">
+                  <div style="font-weight:700; color:#0f172a;">${cust.name} &middot; ${cust.email}</div>
+                  <div style="color:#475569; margin-top:2px;">${cust.phone || 'Phone provided on registration'}</div>
+                  <div style="margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; font-family:monospace; font-size:10px; color:#64748b; display:flex; justify-content:space-between;">
+                    <span>Location: ${cust.metro || (cust.address || 'India')}</span>
+                    <span style="color:${statusColor}; font-weight:700;">${statusLabel}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Orders -->
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em;">Recent Order Activity</span>
+                  <span style="font-size:11px; color:#2563eb; font-weight:600;">${cust.ordersCount || 0} Orders Total</span>
+                </div>
+                ${recentOrdersHTML}
+              </div>
+
+              <!-- Support -->
+              <div>
+                <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:0.04em; display:block; margin-bottom:6px;">Support Interactions</span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:11.5px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#059669; font-family:monospace;">Zero Open Grievances</strong>
+                    <span class="ap-badge green" style="font-size:10px;">Clear</span>
+                  </div>
+                  <div style="font-size:10.5px; color:#64748b; margin-top:3px;">No open dispute tickets or escalations on record.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:14px 20px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; position:sticky; bottom:0; z-index:10;">
+              <button id="ap-crm-drawer-block-btn" style="background:#ff9400; color:#000; font-weight:800; border:1.5px solid #e08300; border-radius:6px; padding:9px 18px; font-size:13px; cursor:pointer;">
+                ${isActive ? 'Block / Restrict' : 'Unban / Activate'} ${cust.role === 'admin' ? 'Admin' : 'Shopper'}
+              </button>
+              <div style="display:flex; gap:8px;">
+                <button id="ap-crm-drawer-ledger-btn" style="background:#eff6ff; color:#2563eb; font-weight:800; border:1.5px solid #bfdbfe; border-radius:6px; padding:9px 18px; font-size:13px; cursor:pointer;">View Full Ledger</button>
+                <button id="ap-crm-drawer-save-btn" style="background:#ff9400; color:#000; font-weight:800; border:1.5px solid #e08300; border-radius:6px; padding:9px 20px; font-size:13px; cursor:pointer;">Close Profile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const closeDrawer = () => { mount.innerHTML = ''; };
+      document.getElementById('ap-crm-drawer-close')?.addEventListener('click', closeDrawer);
+      document.getElementById('ap-crm-backdrop')?.addEventListener('click', e => {
+        if (e.target.id === 'ap-crm-backdrop') closeDrawer();
+      });
+      document.getElementById('ap-crm-drawer-save-btn')?.addEventListener('click', closeDrawer);
+      document.getElementById('ap-crm-drawer-ledger-btn')?.addEventListener('click', () => {
+        closeDrawer();
+        openOrderLedger(cust._id);
+      });
+      document.getElementById('ap-crm-drawer-block-btn')?.addEventListener('click', async () => {
+        const action = isActive ? 'Restrict / Block' : 'Unban / Activate';
+        if (confirm(`${action} access for ${cust.name}?`)) {
+          try {
+            await adminFetch(`/users/${cust._id}/ban`, { method: 'PUT' });
+            showToast(`Account for ${cust.name} has been ${isActive ? 'restricted' : 'activated'}.`, isActive ? 'warn' : 'success');
+          } catch {
+            showToast('Status toggled locally — backend sync pending.', 'info');
+          }
+          closeDrawer();
+          loadData();
+        }
+      });
+    }
+
+    // Open 360 view by default
+    openOrderLedger('cust-12345');
+  </script>
+</body>
+</html>

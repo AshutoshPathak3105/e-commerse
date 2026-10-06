@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hero Promo Modal Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin:0; padding:0; background: rgba(15,23,42,0.6); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div id="admin-panel-overlay" class="ap-open"></div>
+  <script>
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function showToast(msg) { console.log(msg); }
+    const adminFetch = async () => {};
+    const heroPromoCards = [];
+    function showHeroPromoModal(existingCard) {
+          const isEdit = Boolean(existingCard);
+          const backdrop = document.createElement('div');
+          backdrop.className = 'ap-modal-backdrop';
+          backdrop.style.zIndex = '100050';
+          backdrop.innerHTML = `
+            <div class="ap-modal-dialog" style="max-width:520px; background:#ffffff; border-radius:14px; overflow:hidden; box-shadow:0 25px 60px rgba(15,23,42,0.25);">
+              <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff !important;">${isEdit ? 'Edit Top Promo Card' : 'Add Top Promo Card'}</h3>
+                <button type="button" class="ap-modal-close-btn" id="ap-hero-m-close" style="font-size:16px; width:32px; height:32px; background:#022f43 !important; border:1px solid rgba(255,255,255,0.25) !important; color:#ffffff !important; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+              </div>
+              <div style="padding:22px; display:flex; flex-direction:column; gap:12px;">
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Image URL <span style="color:#ef4444;">*</span></label>
+                  <input type="text" id="hero-m-img" class="ap-input" value="${esc(existingCard?.image || '')}" placeholder="https://images.unsplash.com/..." style="width:100%;" />
+                  <div style="margin-top:6px; width:70px; height:70px; border-radius:6px; border:1px solid #cbd5e1; overflow:hidden;">
+                    <img id="hero-m-img-preview" src="${esc(existingCard?.image || '')}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100';" />
+                  </div>
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Badge Offer Headline</label>
+                  <input type="text" id="hero-m-badge" class="ap-input" value="${esc(existingCard?.badge || '')}" placeholder="e.g. Min. 50% off" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Subtitle / Description</label>
+                  <input type="text" id="hero-m-sub" class="ap-input" value="${esc(existingCard?.sub || '')}" placeholder="e.g. Fresh finds" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Brand Name (Optional)</label>
+                  <input type="text" id="hero-m-brand" class="ap-input" value="${esc(existingCard?.brand || '')}" placeholder="e.g. SYMBOL PREMIUM" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Bottom Cashback Pill Text</label>
+                  <input type="text" id="hero-m-pill" class="ap-input" value="${esc(existingCard?.pill || 'Unlimited 5% cashback*')}" style="width:100%;" />
+                </div>
+                <div>
+                  <label class="ap-cms-label" style="display:block; font-size:12px; font-weight:800; margin-bottom:4px;">Destination Link</label>
+                  <input type="text" id="hero-m-link" class="ap-input" value="${esc(existingCard?.link || '#deals')}" placeholder="#fashion-deals" style="width:100%;" />
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                  <button type="button" class="ap-btn ghost" id="ap-hero-m-cancel">Cancel</button>
+                  <button type="button" class="ap-btn primary" id="ap-hero-m-save" style="padding:8px 20px; font-weight:800; background:#FF9400 !important; color:#000000 !important;">Save Card</button>
+                </div>
+              </div>
+            </div>
+          `;
+          const mount = document.getElementById('admin-panel-overlay') || document.body;
+          mount.appendChild(backdrop);
+          const closeModal = () => backdrop.remove();
+          backdrop.querySelector('#ap-hero-m-close')?.addEventListener('click', closeModal);
+          backdrop.querySelector('#ap-hero-m-cancel')?.addEventListener('click', closeModal);
+          backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+          const imgInput = backdrop.querySelector('#hero-m-img');
+          imgInput?.addEventListener('input', () => {
+            const prev = backdrop.querySelector('#hero-m-img-preview');
+            if (prev && imgInput.value.trim()) prev.src = imgInput.value.trim();
+          });
+
+          backdrop.querySelector('#ap-hero-m-save')?.addEventListener('click', async () => {
+            const image = imgInput?.value.trim();
+            if (!image) return showToast('Please enter an image URL.', 'error');
+            const badge = backdrop.querySelector('#hero-m-badge')?.value.trim() || '';
+            const sub = backdrop.querySelector('#hero-m-sub')?.value.trim() || '';
+            const brand = backdrop.querySelector('#hero-m-brand')?.value.trim() || '';
+            const pill = backdrop.querySelector('#hero-m-pill')?.value.trim() || '';
+            const link = backdrop.querySelector('#hero-m-link')?.value.trim() || '#deals';
+
+            try {
+              if (isEdit) {
+                await adminFetch(`/cms/hero-promo-cards/${existingCard._id || existingCard.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ image, badge, sub, brand, pill, link }),
+                });
+                showToast('Top promo card updated!', 'success');
+              } else {
+                await adminFetch('/cms/hero-promo-cards', {
+                  method: 'POST',
+                  body: JSON.stringify({ image, badge, sub, brand, pill, link }),
+                });
+                showToast('Top promo card created!', 'success');
+              }
+              window._fetchStorefrontCMS?.();
+              closeModal();
+              load();
+            } catch (err) {
+              showToast(err.message, 'error');
+            }
+          });
+        }
+
+        
+    showHeroPromoModal({
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100',
+      badge: 'Min. 50% off',
+      sub: 'Fresh finds',
+      brand: 'SYMBOL PREMIUM',
+      pill: 'Unlimited 5% cashback*',
+      link: '#deals'
+    });
+  </script>
+</body>
+</html>

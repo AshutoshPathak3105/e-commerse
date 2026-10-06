@@ -175,6 +175,7 @@ router.get('/dashboard', async (req, res) => {
 
     const [
       totalUsers,
+      totalAdmins,
       totalSellers,
       totalProducts,
       inventoryStatsAgg,
@@ -186,8 +187,15 @@ router.get('/dashboard', async (req, res) => {
       recentOrders,
       allOrderItems,
       allTimeOrderStatsAgg,
+      adminsList,
+      usersList,
+      topCustomersAgg,
+      supportTicketAgg,
+      payoutAgg,
+      prevRevenueTimeline,
     ] = await Promise.all([
       User.countDocuments({ role: { $ne: 'admin' } }),
+      User.countDocuments({ role: 'admin' }),
       User.countDocuments({ sellerProfile: { $ne: null } }),
       Product.countDocuments({}),
       Product.aggregate([
@@ -303,6 +311,48 @@ router.get('/dashboard', async (req, res) => {
           },
         },
       ]),
+      // Admins and Staff
+      User.find({ role: 'admin' }).select('name email role createdAt').sort({ createdAt: -1 }).lean(),
+      // Registered Customers (latest non-admins)
+      User.find({ role: { $ne: 'admin' } }).select('name email role sellerProfile createdAt isVerified').sort({ createdAt: -1 }).limit(10).lean(),
+      // Top spending buyers
+      Order.aggregate([
+        { $match: { status: { $nin: ['Cancelled'] } } },
+        {
+          $group: {
+            _id: '$user',
+            ordersCount: { $sum: 1 },
+            totalSpent: { $sum: '$totalPrice' },
+            lastOrder: { $max: '$createdAt' },
+          },
+        },
+        { $sort: { totalSpent: -1 } },
+        { $limit: 8 },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'u' } },
+        { $unwind: { path: '$u', preserveNullAndEmptyArrays: true } },
+      ]),
+      // Support tickets breakdown
+      SupportTicket.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      // Seller payouts breakdown
+      Payout.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$amount' } } },
+      ]),
+      // Prior period timeline (for comparative chart overlay)
+      (prevStart && prevEnd)
+        ? Order.aggregate([
+            { $match: { ...prevOrderMatch, status: { $nin: ['Cancelled'] } } },
+            {
+              $group: {
+                _id: { $dateToString: { format: dateFormat, date: '$createdAt', timezone: tz } },
+                revenue: { $sum: '$totalPrice' },
+                orders: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ])
+        : Promise.resolve([]),
     ]);
 
     const stats = orderStatsAgg[0] || {
@@ -325,6 +375,7 @@ router.get('/dashboard', async (req, res) => {
     };
 
     const aov = stats.totalOrders > 0 ? Math.round(stats.totalRevenue / stats.totalOrders) : 0;
+    const prevAov = prevStats.totalOrders > 0 ? Math.round(prevStats.totalRevenue / prevStats.totalOrders) : 0;
 
     // Growth rates
     const revenueGrowth = prevStats.totalRevenue > 0
@@ -334,6 +385,10 @@ router.get('/dashboard', async (req, res) => {
     const ordersGrowth = prevStats.totalOrders > 0
       ? Number((((stats.totalOrders - prevStats.totalOrders) / prevStats.totalOrders) * 100).toFixed(1))
       : (stats.totalOrders > 0 ? 100 : 0);
+
+    const aovGrowth = prevAov > 0
+      ? Number((((aov - prevAov) / prevAov) * 100).toFixed(1))
+      : 0;
 
     // Top selling products calculated dynamically from order items in this timeframe
     const topProductMap = {};
@@ -393,6 +448,7 @@ router.get('/dashboard', async (req, res) => {
         },
         kpis: {
           totalUsers,
+          totalAdmins,
           totalSellers,
           totalOrders: stats.totalOrders,
           totalRevenue: stats.totalRevenue,
@@ -409,8 +465,21 @@ router.get('/dashboard', async (req, res) => {
           outOfStock: invStats.outOfStock,
           revenueGrowth,
           ordersGrowth,
+          aovGrowth,
           lifetimeOrders: allTimeStats.lifetimeOrders,
           lifetimeRevenue: allTimeStats.lifetimeRevenue,
+        },
+        comparison: {
+          prevPeriodLabel,
+          prevRevenue: prevStats.totalRevenue,
+          prevOrders: prevStats.totalOrders,
+          prevAov,
+          revenueGrowth,
+          ordersGrowth,
+          aovGrowth,
+          revenueDelta: stats.totalRevenue - prevStats.totalRevenue,
+          ordersDelta: stats.totalOrders - prevStats.totalOrders,
+          prevTimeline: prevRevenueTimeline || [],
         },
         sparkline: revenueTimeline,
         breakdown,
@@ -426,6 +495,40 @@ router.get('/dashboard', async (req, res) => {
           percentage: totalProducts > 0 ? Math.round((c.count / totalProducts) * 100) : 0,
         })),
         topProducts,
+        topCustomers: (topCustomersAgg || []).map(c => ({
+          _id: c._id,
+          name: c.u?.name || 'Customer',
+          email: c.u?.email || 'N/A',
+          ordersCount: c.ordersCount,
+          totalSpent: c.totalSpent,
+          lastOrder: c.lastOrder,
+        })),
+        usersList: (usersList || []).map(u => ({
+          _id: u._id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          isSeller: !!u.sellerProfile,
+          sellerStore: u.sellerProfile?.storeName || '',
+          isVerified: u.sellerProfile?.isVerified || false,
+          createdAt: u.createdAt,
+        })),
+        adminsList: (adminsList || []).map(a => ({
+          _id: a._id,
+          name: a.name,
+          email: a.email,
+          role: a.role,
+          createdAt: a.createdAt,
+        })),
+        supportStats: {
+          total: (supportTicketAgg || []).reduce((acc, t) => acc + t.count, 0),
+          byStatus: supportTicketAgg || [],
+        },
+        payoutsStats: {
+          total: (payoutAgg || []).reduce((acc, p) => acc + p.count, 0),
+          totalAmount: (payoutAgg || []).reduce((acc, p) => acc + (p.total || 0), 0),
+          byStatus: payoutAgg || [],
+        },
         recentOrders: recentOrders.map(o => ({
           _id: o._id,
           orderId: `XM-${o._id.toString().slice(-8).toUpperCase()}`,

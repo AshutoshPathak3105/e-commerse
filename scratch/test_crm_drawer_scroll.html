@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Drawer Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div id="ap-dispute-drawer-container">
+    <div class="ap-crm-drawer-backdrop" id="ap-drawer-backdrop">
+      <div class="ap-crm-drawer" style="max-width:620px;">
+        <!-- Drawer Header -->
+        <div class="ap-crm-drawer-header" style="background:#022f43 !important; color:#ffffff !important; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div style="flex:1 1 auto; min-width:0;">
+            <div class="ap-crm-drawer-tags-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="ap-crm-drawer-tkt-id" style="font-family:monospace;font-weight:800;color:#38bdf8;font-size:13.5px;white-space:nowrap;display:inline-block;letter-spacing:0.02em;">TKT-XMCC135200</span>
+              <div class="ap-crm-badges-group" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;">
+                <span class="ap-badge orange" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">● Medium</span>
+                <span class="ap-badge green" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;">● Resolved</span>
+              </div>
+            </div>
+            <h3 style="margin:6px 0 0;font-size:15px;font-weight:800;color:#ffffff !important;line-height:1.35;word-break:break-word;">Order Cancellation Request</h3>
+          </div>
+          <button id="ap-drawer-close-btn" style="border:none;background:rgba(255,255,255,0.15);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;color:#ffffff;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;margin-top:2px;">✕</button>
+        </div>
+
+        <!-- Drawer Quick KPIs -->
+        <div class="ap-crm-drawer-kpis" style="grid-template-columns:repeat(3,1fr);background:#f8fafc;padding:12px 0;border-bottom:1px solid #e2e8f0;">
+          <div class="ap-crm-drawer-kpi-col">
+            <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;">SLA Timer</div>
+            <div style="font-size:13.5px;font-weight:800;color:#059669;margin-top:2px;">Resolved</div>
+          </div>
+          <div class="ap-crm-drawer-kpi-col">
+            <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;">Dispute Value</div>
+            <div style="font-size:13.5px;font-weight:800;color:#0f172a;margin-top:2px;">₹3,539</div>
+          </div>
+          <div class="ap-crm-drawer-kpi-col">
+            <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;">Assigned Agent</div>
+            <div style="font-size:12px;font-weight:700;color:#2563eb;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Support Desk</div>
+          </div>
+        </div>
+
+        <!-- Drawer Body -->
+        <div class="ap-crm-drawer-body" style="padding:20px 24px;gap:18px;">
+          <!-- Customer & Order Cards -->
+          <div class="ap-crm-drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px;">Customer Profile</div>
+              <div style="font-weight:800;color:#0f172a;font-size:13px;">Ashutosh Pathak</div>
+              <div style="font-size:11.5px;color:#475569;margin-top:2px;">ashutoshbxr03@gmail.com</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">1234567890</div>
+              <span style="font-size:10px;font-weight:700;background:#eff6ff;color:#1d4ed8;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:6px;">Regular Buyer</span>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px;">Linked Order</div>
+              <div style="font-weight:800;color:#2563eb;font-size:13px;font-family:monospace;">XM-CC135200</div>
+              <div style="font-size:12px;color:#0f172a;font-weight:600;margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">Under Armour...</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">Value: <strong>₹3,539</strong></div>
+              <div style="font-size:10.5px;color:#059669;margin-top:4px;font-weight:600;">Verified Storefront Transaction</div>
+            </div>
+          </div>
+
+          <!-- Dispute Timeline & Communications -->
+          <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+            <div style="font-size:12px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+              <span>Dispute Thread &amp; Audit Logs</span>
+              <span style="font-size:11px;color:#64748b;font-weight:500;">1 messages</span>
+            </div>
+            <div style="max-height:220px;overflow-y:auto;padding-right:6px;">
+              <div style="display:flex;flex-direction:column;align-items:flex-start;margin-bottom:14px;">
+                <div style="font-size:11px;color:#64748b;margin-bottom:3px;display:flex;align-items:center;gap:6px;">
+                  <strong>Ashutosh Pathak</strong>
+                  <span>03:37 AM</span>
+                </div>
+                <div style="max-width:85%;padding:10px 14px;border-radius:12px 12px 12px 2px;background:#f8fafc;border:1px solid #e2e8f0;color:#1e293b;font-size:12.5px;line-height:1.45;">
+                  Pre-dispatch order cancellation requested by customer.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Official Resolution & Response Form -->
+          <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(15,23,42,0.04);">
+            <div style="font-size:12px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">
+              Post Official Resolution Response
+            </div>
+            <div style="margin-bottom:8px;">
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Quick Action Template:</label>
+              <select style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;cursor:pointer;">
+                <option value="">-- Choose a pre-approved resolution template --</option>
+              </select>
+            </div>
+            <div style="margin-bottom:10px;">
+              <textarea rows="3" placeholder="Type your response to the customer or select a template above..." style="width:100%;padding:9px 12px;font-size:12.5px;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:12px;">
+              <div style="flex:1;">
+                <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Update Status:</label>
+                <select style="width:100%;padding:6px 10px;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;font-weight:700;">
+                  <option>Resolved</option>
+                </select>
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Adjust Priority:</label>
+                <select style="width:100%;padding:6px 10px;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;font-weight:700;">
+                  <option>Medium</option>
+                </select>
+              </div>
+            </div>
+            <div class="ap-crm-drawer-action-row" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
+              <button class="ap-btn primary" id="ap-drawer-send-reply-btn" style="background:#ff9400 !important; color:#000000 !important; font-size:12px;font-weight:700;padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">
+                Send Response &amp; Update Case
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+window.addEventListener('load', () => {
+  const b = document.querySelector('.ap-crm-drawer-body');
+  if (b) {
+    b.scrollTop = 9999;
+  }
+});
+</script></body>
+</html>

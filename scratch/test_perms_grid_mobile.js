@@ -1,0 +1,128 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const htmlPath = path.resolve(__dirname, 'test_perms_grid_mobile.html');
+const outPng375 = path.resolve(__dirname, 'test_perms_grid_375.png');
+const outPng768 = path.resolve(__dirname, 'test_perms_grid_768.png');
+
+const RBAC_MODULES = [
+  { id: 'Orders',    name: 'Orders & Fulfillment' },
+  { id: 'Catalog',   name: 'Products & Inventory' },
+  { id: 'Stores',    name: 'Merchant Stores' },
+  { id: 'CMS',       name: 'CMS & Promotions' },
+  { id: 'Users',     name: 'Customer Directory' },
+  { id: 'Analytics', name: 'Analytics & Revenue' },
+  { id: 'Settings',  name: 'Platform Settings' },
+  { id: 'Staff',     name: 'Staff & Security' }
+];
+
+const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Permissions Grid Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    /* Test 2-column grid on mobile/tablet (<= 991px) */
+    @media (max-width: 991px) {
+      #admin-panel-overlay .ap-staff-window #ap-staff-perms-grid,
+      .ap-staff-window #ap-staff-perms-grid,
+      .ap-staff-perms-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-auto-rows: 1fr !important;
+        gap: 8px !important;
+      }
+
+      #admin-panel-overlay .ap-staff-window #ap-staff-perms-grid .ap-perm-item,
+      .ap-staff-window #ap-staff-perms-grid .ap-perm-item,
+      .ap-staff-perms-grid .ap-perm-item {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 48px !important;
+        padding: 8px 10px !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #admin-panel-overlay .ap-staff-window #ap-staff-perms-grid,
+      .ap-staff-window #ap-staff-perms-grid,
+      .ap-staff-perms-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+      }
+
+      #admin-panel-overlay .ap-staff-window #ap-staff-perms-grid .ap-perm-item,
+      .ap-staff-window #ap-staff-perms-grid .ap-perm-item,
+      .ap-staff-perms-grid .ap-perm-item {
+        padding: 8px 8px !important;
+        min-height: 46px !important;
+        gap: 6px !important;
+      }
+
+      #admin-panel-overlay .ap-staff-window #ap-staff-perms-grid .ap-perm-item span,
+      .ap-staff-window #ap-staff-perms-grid .ap-perm-item span,
+      .ap-staff-perms-grid .ap-perm-item span {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        font-size: 11.5px !important;
+        line-height: 1.25 !important;
+      }
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="ap-staff-window" style="width: 100%; margin: 0 auto;">
+    <!-- Granular Permissions Matrix -->
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+        <div>
+          <div style="font-weight:800; color:#0f172a; font-size:12.5px;">Authorized Operational Modules (Granular Access):</div>
+          <div style="font-size:11px; color:#64748b; font-weight:600;">Module-level security authorization granted to this staff account</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button type="button" id="ap-perm-select-all" class="ap-btn-tiny" style="background:#ff9400 !important; border:1px solid #e08300 !important; color:#000000 !important; font-size:11px; font-weight:800 !important; padding:5px 12px; border-radius:6px; cursor:pointer;">Select All</button>
+          <button type="button" id="ap-perm-clear-all" class="ap-btn-tiny" style="background:#ff9400 !important; border:1px solid #e08300 !important; color:#000000 !important; font-size:11px; font-weight:800 !important; padding:5px 12px; border-radius:6px; cursor:pointer;">Clear</button>
+        </div>
+      </div>
+
+      <div id="ap-staff-perms-grid" class="ap-staff-perms-grid">
+        ${RBAC_MODULES.map(m => `
+          <label class="ap-perm-item" style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:7px; padding:9px 12px; cursor:pointer; transition:all 0.15s; user-select:none;">
+            <input type="checkbox" class="ap-perm-checkbox" value="${m.id}" style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
+            <span style="font-size:12px; font-weight:700; color:#0f172a; line-height:1.25;">${m.name}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+fs.writeFileSync(htmlPath, html, 'utf8');
+
+const cmd375 = `"${chromePath}" --headless=new --disable-gpu --window-size=390,750 --screenshot="${outPng375}" "file://${htmlPath}"`;
+execSync(cmd375);
+console.log('Saved 390px screenshot to', outPng375);
+
+const cmd768 = `"${chromePath}" --headless=new --disable-gpu --window-size=768,600 --screenshot="${outPng768}" "file://${htmlPath}"`;
+execSync(cmd768);
+console.log('Saved 768px screenshot to', outPng768);

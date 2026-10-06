@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin: 0; padding: 10px; background: #f1f5f9; font-family: sans-serif; }
+    #admin-panel-overlay { display: block !important; position: static !important; }
+  </style>
+</head>
+<body>
+  <div id="admin-panel-overlay">
+    <div class="ap-view-inner ap-staff-window">
+      <style>
+            /* All buttons in Staff & RBAC window: #ff9400 background and black font colour (except Edit and Refresh buttons) */
+            .ap-staff-window button:not(.ap-toggle-status-btn):not(#ap-edit-modal-close):not(#ap-role-sim-close):not(.ap-sim-select-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn),
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn),
+            .ap-staff-window input[type="button"],
+            .ap-staff-window input[type="submit"] {
+              background-color: #ff9400 !important;
+              background: #ff9400 !important;
+              color: #000000 !important;
+              font-weight: 800 !important;
+              border: 1.5px solid #e08300 !important;
+              border-radius: 6px !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(255, 148, 0, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn):hover,
+            .ap-staff-window .ap-btn:not(.ap-toggle-status-btn):not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn):hover {
+              background-color: #e68500 !important;
+              background: #e68500 !important;
+              color: #000000 !important;
+              border-color: #d97706 !important;
+              box-shadow: 0 3px 8px rgba(255, 148, 0, 0.42) !important;
+            }
+            .ap-staff-window button:not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn) svg,
+            .ap-staff-window .ap-btn:not(.ap-edit-staff-btn):not(#ap-staff-refresh-btn) svg {
+              stroke: #000000 !important;
+              color: #000000 !important;
+            }
+
+            /* Edit Staff Button: #022f43 bg and white font colour */
+            .ap-staff-window button.ap-edit-staff-btn,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn {
+              background-color: #022f43 !important;
+              background: #022f43 !important;
+              color: #ffffff !important;
+              border: 1px solid #022f43 !important;
+              border-color: #022f43 !important;
+              border-radius: 6px !important;
+              font-weight: 800 !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(2, 47, 67, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button.ap-edit-staff-btn:hover,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn:hover {
+              background-color: #04435f !important;
+              background: #04435f !important;
+              border-color: #04435f !important;
+              color: #ffffff !important;
+              box-shadow: 0 3px 8px rgba(2, 47, 67, 0.42) !important;
+            }
+            .ap-staff-window button.ap-edit-staff-btn svg,
+            .ap-staff-window .ap-btn.ap-edit-staff-btn svg {
+              stroke: #ffffff !important;
+              color: #ffffff !important;
+            }
+
+            /* Staff Refresh Button: #022f43 bg and white font colour & icon */
+            .ap-staff-window button#ap-staff-refresh-btn,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn,
+            .ap-staff-window #ap-staff-refresh-btn {
+              background-color: #022f43 !important;
+              background: #022f43 !important;
+              color: #ffffff !important;
+              border: 1px solid #022f43 !important;
+              border-color: #022f43 !important;
+              border-radius: 6px !important;
+              font-weight: 800 !important;
+              transition: all 0.15s ease-in-out !important;
+              box-shadow: 0 1px 3px rgba(2, 47, 67, 0.28) !important;
+              cursor: pointer !important;
+            }
+            .ap-staff-window button#ap-staff-refresh-btn:hover,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn:hover,
+            .ap-staff-window #ap-staff-refresh-btn:hover {
+              background-color: #04435f !important;
+              background: #04435f !important;
+              border-color: #04435f !important;
+              color: #ffffff !important;
+              box-shadow: 0 3px 8px rgba(2, 47, 67, 0.42) !important;
+            }
+            .ap-staff-window button#ap-staff-refresh-btn svg,
+            .ap-staff-window .ap-btn#ap-staff-refresh-btn svg,
+            .ap-staff-window #ap-staff-refresh-btn svg {
+              stroke: #ffffff !important;
+              color: #ffffff !important;
+            }
+
+            /* Operational Modules Checkboxes Grid: 2 rows of 4 boxes each in desktop view only */
+            #ap-staff-perms-grid,
+            .ap-staff-perms-grid {
+              display: grid !important;
+              gap: 8px !important;
+            }
+            @media (min-width: 992px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+              }
+            }
+            @media (max-width: 991px) and (min-width: 561px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+              }
+            }
+            @media (max-width: 560px) {
+              #ap-staff-perms-grid,
+              .ap-staff-perms-grid {
+                grid-template-columns: 1fr !important;
+              }
+            }
+
+            /* Staff Directory Toolbar: Desktop styling */
+            .ap-staff-toolbar {
+              padding: 14px 18px;
+              border-bottom: 1px solid rgba(255,255,255,0.15);
+              background: #022f43 !important;
+              color: #ffffff !important;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 14px;
+            }
+            .ap-staff-search-wrap {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex: 1;
+              min-width: 240px;
+              max-width: 440px;
+            }
+            .ap-staff-filters-row {
+              display: flex;
+              align-items: center;
+              gap: 14px;
+              flex-wrap: wrap;
+            }
+            .ap-staff-filter-item {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .ap-staff-filter-label {
+              font-size: 12px;
+              font-weight: 800;
+              color: #ffffff !important;
+              display: inline-block;
+            }
+
+            /* Mobile & Tablet view (<= 1024px): 
+               - Align Refresh & Simulate Role Constraint buttons in the SAME line
+               - Searchbar 100% width
+               - Align both select boxes in the SAME line
+               - Remove "Role:" and "Status:" text labels
+            */
+            @media (max-width: 1024px) {
+              .ap-staff-window .ap-view-actions {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 100% !important;
+                gap: 8px !important;
+                align-items: center !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-refresh-btn,
+              .ap-staff-window #ap-hr-test-role-btn {
+                flex: 1 1 50% !important;
+                min-width: 0 !important;
+                width: 50% !important;
+                display: inline-flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                padding: 10px 8px !important;
+                font-size: 12px !important;
+                box-sizing: border-box !important;
+              }
+
+              .ap-staff-window .ap-staff-toolbar {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window .ap-staff-search-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-search-input {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+              }
+
+              .ap-staff-window .ap-staff-filters-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 100% !important;
+                gap: 10px !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window .ap-staff-filter-item {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 0 !important;
+                flex: 1 1 50% !important;
+                min-width: 0 !important;
+                max-width: 50% !important;
+                width: 50% !important;
+                box-sizing: border-box !important;
+              }
+              .ap-staff-window #ap-staff-filter-role,
+              .ap-staff-window #ap-staff-filter-status {
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: 1 1 100% !important;
+                box-sizing: border-box !important;
+                padding: 8px 10px !important;
+                font-size: 12px !important;
+                border-radius: 7px !important;
+              }
+
+              .ap-staff-window .ap-staff-filter-label {
+                display: none !important;
+              }
+            }
+          </style>
+      <div class="ap-table-card" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden;">
+        <!-- Toolbar for Search and Filtering (First row of the header part: #022f43 bg and white font as in Image 2) -->
+            <div class="ap-staff-toolbar" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+              <div class="ap-staff-search-wrap" style="display:flex; align-items:center; gap:8px; flex:1; min-width:240px; max-width:440px;">
+                <input type="text" id="ap-staff-search-input" value="${esc(staffSearchTerm)}" placeholder="Search staff by name, email, or role..." style="width:100%; padding:9px 14px; border:1.5px solid rgba(255,255,255,0.25); border-radius:7px; font-size:13px; font-weight:600; outline:none; background:#ffffff; color:#0f172a;" />
+              </div>
+
+              <div class="ap-staff-filters-row" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:8px;">
+                  <span class="ap-staff-filter-label" style="font-size:12px; font-weight:800; color:#ffffff !important;">Role:</span>
+                  <select id="ap-staff-filter-role" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
+                    <option value="all" ${staffRoleFilter === 'all' ? 'selected' : ''}>All Roles</option>
+                    <option value="Human Resources (HR)" ${staffRoleFilter === 'Human Resources (HR)' ? 'selected' : ''}>Human Resources (HR)</option>
+                    <option value="Super Administrator" ${staffRoleFilter === 'Super Administrator' ? 'selected' : ''}>Super Administrator</option>
+                    <option value="Operations Lead" ${staffRoleFilter === 'Operations Lead' ? 'selected' : ''}>Operations Lead</option>
+                    <option value="Catalog Specialist" ${staffRoleFilter === 'Catalog Specialist' ? 'selected' : ''}>Catalog Specialist</option>
+                    <option value="Support Escalations" ${staffRoleFilter === 'Support Escalations' ? 'selected' : ''}>Support Escalations</option>
+                    <option value="Financial Auditor" ${staffRoleFilter === 'Financial Auditor' ? 'selected' : ''}>Financial Auditor</option>
+                  </select>
+                </div>
+
+                <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:8px;">
+                  <span class="ap-staff-filter-label" style="font-size:12px; font-weight:800; color:#ffffff !important;">Status:</span>
+                  <select id="ap-staff-filter-status" style="padding:7px 12px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer;">
+                    <option value="all" ${staffStatusFilter === 'all' ? 'selected' : ''}>All States</option>
+                    <option value="active" ${staffStatusFilter === 'active' ? 'selected' : ''}>Active Only</option>
+                    <option value="suspended" ${staffStatusFilter === 'suspended' ? 'selected' : ''}>Suspended Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            
+      </div>
+    </div>
+  </div>
+</body>
+</html>

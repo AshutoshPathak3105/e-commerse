@@ -5507,12 +5507,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             totalRevenue: 0,
             totalOrders: 0,
             totalUsers: 0,
+            totalAdmins: 0,
             totalSellers: 0,
             pendingOrders: 0,
             pendingReturns: 0,
           },
+          comparison: {},
           sparkline: [],
-          topSellers: [],
+          breakdown: [],
+          paymentMethods: [],
+          categoryDistribution: [],
+          topProducts: [],
+          topCustomers: [],
+          usersList: [],
+          adminsList: [],
+          supportStats: { total: 0, byStatus: [] },
+          payoutsStats: { total: 0, totalAmount: 0, byStatus: [] },
           recentOrders: [],
         },
       };
@@ -6078,10 +6088,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
     /* ══════════════════════════════════════════════════════
      TAB: DASHBOARD — Stitch Marketplace Command Centre
      ══════════════════════════════════════════════════════ */
-  let _dashFilter = { timeframe: 'day', range: 'all', startDate: '', endDate: '' };
+    let _dashFilter = { timeframe: 'day', range: 'all', startDate: '', endDate: '' };
   let _dashShowBreakdown = false;
   let _dashOrderStatusFilter = 'all'; // 'all','Pending','Confirmed','Processing','Shipped','Delivered','Cancelled','Returned'
   let _dashOrderSearch = '';
+  let _dashCharts = { revenue: null, channels: null };
 
   async function renderDashboard(container) {
     container.innerHTML = `<div class="ap-dash-inner">${loadingHTML()}</div>`;
@@ -6103,10 +6114,16 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         paymentMethods = [],
         categoryDistribution = [],
         topProducts = [],
+        topCustomers = [],
+        usersList = [],
+        adminsList = [],
+        supportStats = { total: 0, byStatus: [] },
+        payoutsStats = { total: 0, totalAmount: 0, byStatus: [] },
+        comparison = {},
         recentOrders = []
       } = res.data || {};
 
-      const user = Auth.getUser();
+      const user = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
       const greeting = (() => {
         const h = new Date().getHours();
         return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -6119,6 +6136,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const totalOrders = kpis.totalOrders || 0;
       const aov = kpis.aov || (totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0);
       const totalUsers = kpis.totalUsers || 0;
+      const totalAdmins = kpis.totalAdmins || adminsList.length || 0;
+      const totalSellers = kpis.totalSellers || 0;
       const totalProducts = kpis.totalProducts || 0;
       const inStock = kpis.inStock || totalProducts;
       const lowStock = kpis.lowStock || 0;
@@ -6130,24 +6149,21 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       const processingOrders = kpis.processingOrders || 0;
       const deliveredOrders = kpis.deliveredOrders || 0;
       const cancelledOrReturned = kpis.cancelledOrReturned || 0;
-      const totalSellers = kpis.totalSellers || 0;
 
-      const revenueGrowth = kpis.revenueGrowth;
-      const ordersGrowth = kpis.ordersGrowth;
-      const prevPeriodLabel = activeFilter.prevPeriodLabel || '';
+      // Month-over-month / Period-over-period Comparisons
+      const revenueGrowth = comparison.revenueGrowth !== undefined ? comparison.revenueGrowth : (kpis.revenueGrowth || 0);
+      const ordersGrowth = comparison.ordersGrowth !== undefined ? comparison.ordersGrowth : (kpis.ordersGrowth || 0);
+      const aovGrowth = comparison.aovGrowth !== undefined ? comparison.aovGrowth : (kpis.aovGrowth || 0);
+      const prevPeriodLabel = comparison.prevPeriodLabel || activeFilter.prevPeriodLabel || 'vs Prior Window';
+      const revenueDelta = comparison.revenueDelta !== undefined ? comparison.revenueDelta : 0;
+      const ordersDelta = comparison.ordersDelta !== undefined ? comparison.ordersDelta : 0;
 
-      /* ── Authentic Revenue Sparkline SVG ─────────────────── */
+      /* ── Timeline Points for Charts ───────────────────────── */
       const chartPoints = (sparkline && sparkline.length > 0) ? sparkline : [
         { _id: new Date().toISOString().slice(0, 10), revenue: totalRevenue, orders: totalOrders }
       ];
 
-      const maxRev = Math.max(...chartPoints.map(d => d.revenue || 0), 10000);
-      const W = 620, H = 170, pad = { l: 72, r: 24, t: 20, b: 34 };
-      const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
-
       const pts = chartPoints.map((d, i) => {
-        const x = chartPoints.length === 1 ? pad.l + iW / 2 : pad.l + (i / Math.max(chartPoints.length - 1, 1)) * iW;
-        const y = pad.t + iH - ((d.revenue || 0) / maxRev) * iH;
         let dateStr = d._id || `Point ${i + 1}`;
         if (_dashFilter.timeframe === 'year') {
           dateStr = `Year ${d._id}`;
@@ -6163,60 +6179,10 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             dateStr = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
           }
         }
-        return { x, y, d, dateStr };
+        return { d, dateStr };
       });
 
-      const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-      const areaPath = pts.length === 1
-        ? `M${pad.l},${(pad.t + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} L${W - pad.r},${(pad.t + iH).toFixed(1)} Z`
-        : `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${(pad.t + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pad.t + iH).toFixed(1)} Z`;
-
-      const yLines = [0, 0.5, 1].map(pct => {
-        const y = pad.t + iH - pct * iH;
-        const val = Math.round(maxRev * pct);
-        const label = val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}K` : `₹${val}`;
-        return `
-          <line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W - pad.r}" y2="${y.toFixed(1)}" stroke="#f1f5f9" stroke-width="1.2" stroke-dasharray="3 3"/>
-          <text x="${pad.l - 10}" y="${(y + 4.5).toFixed(1)}" text-anchor="end" font-size="14" fill="#334155" font-weight="700" style="stroke:none !important; fill:#334155; font-size:14px; font-weight:700; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${label}</text>
-        `;
-      }).join('');
-
-      const step = Math.max(1, Math.floor(pts.length / 5));
-      const xLabels = pts.filter((_, idx) => idx % step === 0 || idx === pts.length - 1).map(p => {
-        return `<text x="${p.x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="13.5" fill="#334155" font-weight="700" style="stroke:none !important; fill:#334155; font-size:13.5px; font-weight:700; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${p.dateStr}</text>`;
-      }).join('');
-
-      const dots = pts.map(p => `
-        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="2.5" style="cursor:pointer;">
-          <title>${p.dateStr}: ${fmtPrice(p.d.revenue || 0)} (${p.d.orders || 0} order${(p.d.orders || 0) === 1 ? '' : 's'})</title>
-        </circle>
-      `).join('');
-
-      const chartSVG = `
-        <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block; overflow:visible;">
-          <defs>
-            <linearGradient id="authenticRevGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22"/>
-              <stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>
-            </linearGradient>
-          </defs>
-          ${yLines}
-          <path d="${areaPath}" fill="url(#authenticRevGrad)"/>
-          <path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-          ${dots}
-          ${xLabels}
-        </svg>
-      `;
-
-      /* ── Pipeline Percentages ─────────────────────────────── */
-      const totSafe = Math.max(totalOrders, 1);
-      const pendingPct = Math.round((pendingOrders / totSafe) * 100);
-      const confirmedPct = Math.round((confirmedOrders / totSafe) * 100);
-      const processingPct = Math.round((processingOrders / totSafe) * 100);
-      const deliveredPct = Math.round((deliveredOrders / totSafe) * 100);
-      const cancelledPct = Math.round((cancelledOrReturned / totSafe) * 100);
-
-      /* ── Authentic Recent Orders Rows (filtered by search + status) ── */
+      /* ── Authentic Recent Orders Filtered ── */
       const _ordStat = _dashOrderStatusFilter || 'all';
       const _ordSrch = (_dashOrderSearch || '').trim().toLowerCase();
       const filteredOrders = recentOrders.filter(o => {
@@ -6231,6 +6197,84 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         return true;
       });
       const statusOptions = ['all','Pending','Confirmed','Processing','Shipped','Delivered','Cancelled','Returned'];
+
+      /* ── Timeframe Pills Builder ─────────────────────────── */
+      const tf = _dashFilter.timeframe || 'day';
+      const rng = _dashFilter.range || 'all';
+
+      const isSpecificDay = (rng === 'custom' && _dashFilter.startDate && _dashFilter.startDate === _dashFilter.endDate);
+      let specificDayLabel = 'Pick Specific Day';
+      if (isSpecificDay) {
+        try {
+          const dParts = _dashFilter.startDate.split('-');
+          if (dParts.length === 3) {
+            const dObj = new Date(parseInt(dParts[0]), parseInt(dParts[1]) - 1, parseInt(dParts[2]));
+            specificDayLabel = dObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          }
+        } catch (_) {
+          specificDayLabel = _dashFilter.startDate;
+        }
+      }
+
+      const calIconSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px; flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+
+      let pillsHTML = '';
+      if (tf === 'day') {
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Time</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'today' ? 'active' : ''}" data-rng="today">Today</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'yesterday' ? 'active' : ''}" data-rng="yesterday" title="Track previous day's metrics">
+            Yesterday (Previous Day)
+          </button>
+          <button type="button" class="ap-timeframe-pill ${rng === '7d' ? 'active' : ''}" data-rng="7d">Last 7 Days</button>
+          <button type="button" class="ap-timeframe-pill ${rng === '30d' ? 'active' : ''}" data-rng="30d">Last 30 Days</button>
+          <div class="ap-specific-date-wrap" style="position:relative; display:inline-flex; align-items:center;">
+            <button type="button" class="ap-timeframe-pill ${isSpecificDay ? 'active' : ''}" id="ap-pill-specific-day" title="Open calendar to view specific day metrics" style="position:relative;">
+              ${calIconSVG}
+              <span>${specificDayLabel}</span>
+            </button>
+            <input type="date" id="ap-specific-day-input" title="Choose specific day from calendar" value="${isSpecificDay ? _dashFilter.startDate : ''}" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2;" />
+          </div>
+          <button type="button" class="ap-timeframe-pill ${(rng === 'custom' && !isSpecificDay) ? 'active' : ''}" data-rng="custom" id="ap-pill-custom">
+            ${calIconSVG}
+            <span>Custom Date / Range</span>
+          </button>
+        `;
+      } else if (tf === 'month') {
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Months</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_month' ? 'active' : ''}" data-rng="this_month">This Month</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_month' ? 'active' : ''}" data-rng="last_month" title="Track previous month's metrics">
+            Last Month (Previous Month)
+          </button>
+          <button type="button" class="ap-timeframe-pill ${rng === '6m' ? 'active' : ''}" data-rng="6m">Last 6 Months</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year</button>
+        `;
+      } else {
+        pillsHTML = `
+          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Years</button>
+          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year (${new Date().getFullYear()})</button>
+          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_year' ? 'active' : ''}" data-rng="last_year" title="Track previous year's metrics">
+            Last Year (${new Date().getFullYear() - 1})
+          </button>
+        `;
+      }
+
+      /* ── Growth Badges Helper ───────────────────────────── */
+      const growthBadge = (val, label) => {
+        if (val === undefined || val === null) return '';
+        const isPos = val > 0;
+        const isNeg = val < 0;
+        const sign = isPos ? '+' : '';
+        const arrow = isPos ? '▲ ' : isNeg ? '▼ ' : '';
+        return `
+          <span class="dash-highlight-badge" title="${esc(label || prevPeriodLabel)}">
+            ${arrow}${sign}${val}%
+          </span>
+        `;
+      };
+
+      /* ── Build Recent Orders Table Rows ──────────────────── */
       const ordersHTML = `
         <div class="ap-dash-orders-toolbar">
           <div class="ap-dash-orders-search-wrap">
@@ -6240,22 +6284,52 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <select id="ap-dash-order-status-filter" class="ap-dash-order-status-select">
             ${statusOptions.map(s => `<option value="${s}" ${_ordStat === s ? 'selected' : ''}>${s === 'all' ? 'All Statuses' : s}</option>`).join('')}
           </select>
-          <span style="font-size:11.5px; color:#64748b; white-space:nowrap; font-weight:600;">${filteredOrders.length} of ${recentOrders.length} orders</span>
+          <button class="ap-btn ghost" id="ap-dash-export-csv" style="font-size:11.5px; font-weight:700; display:flex; align-items:center; gap:5px;" title="Export filtered orders to CSV">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+          <button class="ap-btn" id="ap-dash-view-all-orders" style="font-size:11.5px; font-weight:700;">
+            View All Orders
+          </button>
         </div>
-        <div class="ap-table-wrap">
-          <table class="ap-table ${!filteredOrders.length ? 'ap-table-empty' : ''}">
+        <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+          <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+            <colgroup>
+              <col style="width:14%;">
+              <col style="width:20%;">
+              <col style="width:18%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:8%;">
+            </colgroup>
             <thead>
               <tr>
-                <th>Order Ref</th>
-                <th>Customer</th>
-                <th>Items Preview</th>
-                <th>City</th>
-                <th>Payment</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th style="text-align:right;">Action</th>
+                <th style="text-align:center !important;">Order Ref</th>
+                <th style="text-align:center !important;">Customer</th>
+                <th style="text-align:center !important;">Items Preview</th>
+                <th style="text-align:center !important;">City</th>
+                <th style="text-align:center !important;">Payment</th>
+                <th style="text-align:center !important;">Total</th>
+                <th style="text-align:center !important;">Status</th>
+                <th style="text-align:center !important;">Action</th>
               </tr>
             </thead>
+          </table>
+        </div>
+        <div class="dash-scrollable-body" style="max-height: 380px; overflow-y:auto;">
+          <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+            <colgroup>
+              <col style="width:14%;">
+              <col style="width:20%;">
+              <col style="width:18%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:10%;">
+              <col style="width:8%;">
+            </colgroup>
             <tbody>
               ${filteredOrders.length ? filteredOrders.map(o => {
                 const name = o.user?.name || 'Customer';
@@ -6268,14 +6342,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 return `
                   <tr>
                     <td>
-                      <span style="font-family:monospace; font-weight:800; color:#2563eb; font-size:12px;">${ordId}</span>
+                      <span style="font-family:monospace; font-weight:800; color:#022f43; font-size:12px;">${ordId}</span>
                       <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${fmtDate(o.date)}</div>
                     </td>
                     <td>
                       <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="ap-dash-avatar">${initials}</div>
+                        <div class="ap-dash-avatar" style="background:#022f43;">${initials}</div>
                         <div style="min-width:0;">
-                          <div style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(name)}</div>
+                          <div style="font-weight:700; color:#0f172a; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(name)}</div>
                           <div style="font-size:10.5px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(o.user?.email || '')}</div>
                         </div>
                       </div>
@@ -6292,7 +6366,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                       </span>
                     </td>
                     <td>
-                      <div style="font-weight:800; color:#0f172a; font-size:13px;">${fmtPrice(o.total || 0)}</div>
+                      <div style="font-weight:800; color:#022f43; font-size:13px;">${fmtPrice(o.total || 0)}</div>
                     </td>
                     <td>
                       <span class="ap-badge ${statusBadgeClass}">${o.status || 'Pending'}</span>
@@ -6316,152 +6390,172 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         </div>
       `;
 
-      /* ── Timeframe Pills Builder ─────────────────────────── */
-      const tf = _dashFilter.timeframe || 'day';
-      const rng = _dashFilter.range || 'all';
-
-      let pillsHTML = '';
-      if (tf === 'day') {
-        pillsHTML = `
-          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Time</button>
-          <button type="button" class="ap-timeframe-pill ${rng === 'today' ? 'active' : ''}" data-rng="today">Today</button>
-          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'yesterday' ? 'active' : ''}" data-rng="yesterday" title="Track previous day's metrics">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Yesterday (Previous Day)
-          </button>
-          <button type="button" class="ap-timeframe-pill ${rng === '7d' ? 'active' : ''}" data-rng="7d">Last 7 Days</button>
-          <button type="button" class="ap-timeframe-pill ${rng === '30d' ? 'active' : ''}" data-rng="30d">Last 30 Days</button>
-          <button type="button" class="ap-timeframe-pill ${rng === 'custom' ? 'active' : ''}" data-rng="custom" id="ap-pill-custom">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Custom Date / Range
-          </button>
-        `;
-      } else if (tf === 'month') {
-        pillsHTML = `
-          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Months</button>
-          <button type="button" class="ap-timeframe-pill ${rng === 'this_month' ? 'active' : ''}" data-rng="this_month">This Month</button>
-          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_month' ? 'active' : ''}" data-rng="last_month" title="Track previous month's metrics">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Last Month (Previous Month)
-          </button>
-          <button type="button" class="ap-timeframe-pill ${rng === '6m' ? 'active' : ''}" data-rng="6m">Last 6 Months</button>
-          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year</button>
-        `;
-      } else {
-        // year
-        pillsHTML = `
-          <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Years</button>
-          <button type="button" class="ap-timeframe-pill ${rng === 'this_year' ? 'active' : ''}" data-rng="this_year">This Year (${new Date().getFullYear()})</button>
-          <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'last_year' ? 'active' : ''}" data-rng="last_year" title="Track previous year's metrics">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Last Year (${new Date().getFullYear() - 1})
-          </button>
-        `;
-      }
-
-      /* ── Growth Badges ───────────────────────────────────── */
-      const growthHTML = (growthVal) => {
-        if (growthVal === undefined || growthVal === null || !prevPeriodLabel) return '';
-        const isPos = growthVal > 0;
-        const isNeg = growthVal < 0;
-        const cls = isPos ? 'positive' : isNeg ? 'negative' : 'neutral';
-        const sign = isPos ? '+' : '';
-        const arrow = isPos ? '▲ ' : isNeg ? '▼ ' : '';
+      /* ── Build Users List Table Rows ─────────────────────── */
+      const usersRows = usersList.length ? usersList.map(u => {
+        const initials = (u.name || 'User').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+        const roleBadge = u.isSeller
+          ? `<span class="dash-highlight-badge" style="font-size:10px;">Seller: ${esc(u.sellerStore || 'Store')}</span>`
+          : `<span class="ap-badge blue" style="font-size:10px;">Customer</span>`;
         return `
-          <div style="margin-top:6px;">
-            <span class="ap-growth-badge ${cls}" title="${prevPeriodLabel}">
-              ${arrow}${sign}${growthVal}% ${prevPeriodLabel}
-            </span>
-          </div>
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="ap-dash-avatar" style="background:#022f43;">${initials}</div>
+                <div>
+                  <div style="font-weight:700; color:#0f172a; font-size:12px;">${esc(u.name || 'Customer')}</div>
+                  <div style="font-size:10.5px; color:#64748b;">${esc(u.email || '')}</div>
+                </div>
+              </div>
+            </td>
+            <td>${roleBadge}</td>
+            <td>
+              <span style="font-size:11px; color:#64748b;">${fmtDate(u.createdAt)}</span>
+            </td>
+            <td style="text-align:right;">
+              <button class="ap-btn ghost ap-dash-open-user" style="padding:3px 8px; font-size:10.5px; font-weight:700;" onclick="switchTab('users')">
+                View &rarr;
+              </button>
+            </td>
+          </tr>
         `;
-      };
-
-      /* ── Detailed Breakdown Table Rows ───────────────────── */
-      const breakdownRows = (breakdown && breakdown.length > 0) ? breakdown.map(item => `
+      }).join('') : `
         <tr>
-          <td>
-            <div style="font-weight:700; color:#0f172a;">${esc(item.label)}</div>
-            <div style="font-size:10.5px; color:#64748b; font-family:monospace;">${esc(item.periodKey)}</div>
-          </td>
-          <td>
-            <span class="ap-badge" style="background:#eff6ff; color:#2563eb; font-weight:800; font-size:11px;">
-              ${item.orders} order${item.orders === 1 ? '' : 's'}
-            </span>
-          </td>
-          <td>
-            <span style="font-weight:800; color:#0f172a; font-size:13px;">${fmtPrice(item.revenue)}</span>
-          </td>
-          <td>
-            <span style="color:#059669; font-weight:700;">${fmtPrice(item.aov)}</span>
-          </td>
-          <td>
-            <span style="color:#1e293b;">${item.delivered} delivered</span>
-          </td>
-          <td style="text-align:right;">
-            <button type="button" class="ap-btn ghost ap-inspect-period-btn" data-key="${item.periodKey}" data-tf="${tf}" style="padding:3px 8px; font-size:11px; font-weight:700;">
-              Filter to Period &rarr;
-            </button>
-          </td>
-        </tr>
-      `).join('') : `
-        <tr>
-          <td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">
-            No telemetry data recorded for this timeframe.
-          </td>
+          <td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">No registered customers loaded.</td>
         </tr>
       `;
 
-      /* ── Layout Assembly ─────────────────────────────────── */
+      /* ── Build Admins List Table Rows ────────────────────── */
+      const adminsRows = adminsList.length ? adminsList.map(a => {
+        const initials = (a.name || 'Admin').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'A';
+        const isSuper = (a.role === 'admin');
+        return `
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="ap-dash-avatar" style="background:#022f43; color:#ffffff; font-weight:800;">${initials}</div>
+                <div>
+                  <div style="font-weight:700; color:#0f172a; font-size:12px;">${esc(a.name || 'Admin Staff')}</div>
+                  <div style="font-size:10.5px; color:#64748b;">${esc(a.email || '')}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="dash-highlight-badge" style="font-size:10px;">${isSuper ? 'Super Admin' : 'Admin Staff'}</span>
+            </td>
+            <td>
+              <span style="font-size:11px; color:#64748b;">${fmtDate(a.createdAt)}</span>
+            </td>
+            <td style="text-align:right;">
+              <span class="ap-badge green" style="font-size:10px;">Active</span>
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">No administrator accounts found.</td>
+        </tr>
+      `;
+
+      /* ── Build Top Customers Table Rows ──────────────────── */
+      const topCustomersRows = topCustomers.length ? topCustomers.map((c, idx) => {
+        return `
+          <tr>
+            <td>
+              <span class="dash-highlight-badge" style="padding:2px 6px; font-size:10.5px;">#${idx + 1}</span>
+            </td>
+            <td>
+              <div style="font-weight:700; color:#0f172a; font-size:12px;">${esc(c.name || 'Customer')}</div>
+              <div style="font-size:10.5px; color:#64748b;">${esc(c.email || 'N/A')}</div>
+            </td>
+            <td>
+              <span class="ap-badge blue" style="font-size:11px; font-weight:700;">${c.ordersCount || 0} orders</span>
+            </td>
+            <td>
+              <span style="font-weight:800; color:#022f43; font-size:13px;">${fmtPrice(c.totalSpent || 0)}</span>
+            </td>
+            <td style="font-size:11px; color:#64748b;">
+              ${fmtDate(c.lastOrder)}
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">No customer purchase data available.</td>
+        </tr>
+      `;
+
+      /* ── Build Support Ticket Status Cards ───────────────── */
+      const supportByStatus = supportStats.byStatus || [];
+      const supportStatusHTML = supportByStatus.length ? supportByStatus.map(st => `
+        <div class="dash-status-item">
+          <span style="font-weight:700; color:#022f43;">● ${esc(st._id || 'Open')}</span>
+          <span class="dash-highlight-badge">${st.count} tickets</span>
+        </div>
+      `).join('') : `
+        <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No active support tickets.</div>
+      `;
+
+      /* ── Build Payouts Breakdown Cards ───────────────────── */
+      const payoutsByStatus = payoutsStats.byStatus || [];
+      const payoutsStatusHTML = payoutsByStatus.length ? payoutsByStatus.map(p => `
+        <div class="dash-status-item">
+          <div>
+            <span style="font-weight:700; color:#022f43;">● ${esc(p._id || 'Pending')}</span>
+            <span style="font-size:11px; color:#64748b; margin-left:4px;">(${p.count} records)</span>
+          </div>
+          <span class="dash-highlight-badge">${fmtPrice(p.total || 0)}</span>
+        </div>
+      `).join('') : `
+        <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No payouts recorded.</div>
+      `;
+
+      /* ── Assemble Full Modern Dashboard HTML ─────────────── */
       container.innerHTML = `
-        <div class="ap-dash-inner">
-          <!-- 1. Header Command Banner -->
-          <div class="ap-modern-header">
-            <div class="ap-modern-greeting-group">
-              <h2 class="ap-modern-greeting">
-                ${greeting}, ${(user?.name || 'Admin').split(' ')[0]}
-                <span class="ap-super-badge">Super Admin</span>
+        <div class="dash-modern-container">
+          <!-- 1. Header Command Banner (#022f43 background, #ff9400 highlight) -->
+          <div class="dash-command-banner">
+            <div>
+              <h2>
+                <span>${greeting}, ${(user?.name || 'Admin').split(' ')[0]}</span>
+                <span class="dash-highlight-badge">Super Admin Console</span>
               </h2>
-              <p class="ap-modern-sub">
+              <p>
                 Enterprise Command Intelligence &amp; Live Operations. Real-time metrics powered 100% by active database telemetry.
               </p>
             </div>
-            <div class="ap-modern-quick-actions">
-              <div class="ap-dash-meta-item" title="Live Server Timestamp">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); padding:6px 12px; border-radius:8px; font-size:12px; color:#ffffff;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span>${todayStr}</span>
               </div>
-              <button class="ap-btn ghost" id="ap-dash-quick-prod" style="font-size:12px; font-weight:700;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Product
+              <button class="ap-btn ghost" id="ap-dash-quick-prod" style="font-size:12px; font-weight:700; background:#ff9400; color:#000000; border-color:#ff9400;">
+                + Add Product
               </button>
-              <button class="ap-btn ghost" id="ap-dash-quick-orders" style="font-size:12px; font-weight:700;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              <button class="ap-btn ghost" id="ap-dash-quick-orders" style="font-size:12px; font-weight:700; background:#ff9400; color:#000000; border-color:#ff9400;">
                 Manage Orders
               </button>
-              <button class="ap-btn primary" id="ap-dash-quick-refresh" style="font-size:12px; font-weight:700;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Refresh Data
+              <button class="dash-highlight-badge" id="ap-dash-quick-refresh" style="font-size:12px; padding:7px 14px; cursor:pointer; background:#0094ff; color:#ffffff; border-color:#0094ff;">
+                ↻ Refresh Live Data
               </button>
             </div>
           </div>
 
           <!-- 2. Interactive Timeframe & Historical Analytics Controller -->
-          <div class="ap-timeframe-bar">
-            <div class="ap-timeframe-top">
+          <div class="dash-timeframe-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
               <!-- Mode Tabs -->
               <div class="ap-timeframe-modes">
                 <button type="button" class="ap-timeframe-mode-btn ${tf === 'day' ? 'active' : ''}" data-tf="day">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Day-wise
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  <span>Day-wise</span>
                 </button>
-                <button type="button" class="ap-timeframe-mode-btn ${tf === 'month' ? 'active' : ''}" data-tf="month">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                  Month-wise
-                </button>
-                <button type="button" class="ap-timeframe-mode-btn ${tf === 'year' ? 'active' : ''}" data-tf="year">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                  Year-wise
-                </button>
+                <button type="button" class="ap-timeframe-mode-btn ${tf === 'month' ? 'active' : ''}" data-tf="month">Month-wise</button>
+                <button type="button" class="ap-timeframe-mode-btn ${tf === 'year' ? 'active' : ''}" data-tf="year">Year-wise</button>
               </div>
 
               <!-- Filter Pills -->
@@ -6472,421 +6566,519 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
             <!-- Custom Date Range Box (If custom selected) -->
             <div class="ap-custom-date-box ${rng === 'custom' ? 'is-open' : ''}" id="ap-custom-date-container">
-              <span style="font-size:12px; font-weight:700; color:#475569;">Pick Date / Range:</span>
+              <span style="font-size:12px; font-weight:700; color:#022f43;">Pick Date / Range:</span>
               <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:4px;">
-                From:
-                <input type="date" class="ap-custom-date-input" id="ap-custom-date-start" value="${_dashFilter.startDate || ''}" />
+                From: <input type="date" class="ap-custom-date-input" id="ap-custom-date-start" value="${_dashFilter.startDate || ''}" />
               </label>
               <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:4px;">
-                To:
-                <input type="date" class="ap-custom-date-input" id="ap-custom-date-end" value="${_dashFilter.endDate || ''}" />
+                To: <input type="date" class="ap-custom-date-input" id="ap-custom-date-end" value="${_dashFilter.endDate || ''}" />
               </label>
-              <button type="button" class="ap-btn primary" id="ap-custom-date-apply" style="padding:4px 10px; font-size:11.5px; font-weight:700;">
-                Apply Filter
+              <button type="button" class="dash-highlight-badge" id="ap-custom-date-apply" style="padding:6px 12px; cursor:pointer;">
+                Apply Range
               </button>
             </div>
 
-            <!-- Active Filter Banner -->
-            <div class="ap-timeframe-banner">
-              <div class="ap-timeframe-banner-left">
-                <span class="ap-timeframe-banner-badge">${tf.toUpperCase()}WISE</span>
-                <span>Active Period: <strong>${esc(activeFilter.label || 'All Time History')}</strong></span>
+            <!-- Active Filter Comparison Banner -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-top:6px; border-top:1px solid #f1f5f9; font-size:12px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span class="dash-highlight-badge">${tf.toUpperCase()}WISE</span>
+                <span style="color:#022f43; font-weight:700;">Active Window: ${esc(activeFilter.label || 'All Time History')}</span>
                 <span style="color:#94a3b8;">•</span>
-                <span>${totalOrders} order${totalOrders === 1 ? '' : 's'} recorded</span>
+                <span>Revenue Growth: ${growthBadge(revenueGrowth, prevPeriodLabel)}</span>
                 <span style="color:#94a3b8;">•</span>
-                <span>Net Sales: <strong style="color:#2563eb;">${revFormatted}</strong></span>
+                <span>Orders Growth: ${growthBadge(ordersGrowth, prevPeriodLabel)}</span>
+                <span style="color:#94a3b8;">•</span>
+                <span>Delta: <strong style="color:#022f43;">${revenueDelta >= 0 ? '+' : ''}${fmtPrice(revenueDelta)}</strong></span>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                ${rng !== 'all' || tf !== 'day' ? `
-                  <button type="button" class="ap-btn ghost" id="ap-timeframe-reset-btn" style="padding:3px 9px; font-size:11px; font-weight:700;">
-                    Reset to All Time ✕
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Primary 6-Metric Grid (Authentic Live Metrics) -->
-          <div class="ap-modern-metrics ap-modern-metrics-6">
-            <!-- Tile 1: Total Revenue -->
-            <div class="ap-metric-tile ap-metric-tile--revenue">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Gross Revenue (GMV)</span>
-                <div class="ap-metric-tile-icon" style="background:#eff6ff; color:#2563eb;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${revFormatted}</div>
-              <div class="ap-metric-tile-foot">
-                <span>AOV</span>
-                <span style="color:#059669; font-weight:800;">${fmtPrice(aov)}</span>
-              </div>
-              ${growthHTML(revenueGrowth)}
-            </div>
-
-            <!-- Tile 2: Total Orders -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Total Orders</span>
-                <div class="ap-metric-tile-icon" style="background:#f0fdf4; color:#16a34a;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalOrders.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>${pendingOrders} Pending</span>
-                <span style="color:#2563eb; font-weight:800;">${confirmedOrders} Confirmed</span>
-              </div>
-              ${growthHTML(ordersGrowth)}
-            </div>
-
-            <!-- Tile 3: Delivered Orders -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Delivered Orders</span>
-                <div class="ap-metric-tile-icon" style="background:#ecfdf5; color:#059669;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${deliveredOrders.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Success rate</span>
-                <span style="color:#059669; font-weight:800;">${totalOrders > 0 ? Math.round((deliveredOrders/totalOrders)*100) : 0}%</span>
-              </div>
-            </div>
-
-            <!-- Tile 4: Pending Revenue (GMV at risk) -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Pending Revenue</span>
-                <div class="ap-metric-tile-icon" style="background:#fffbeb; color:#d97706;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val" style="color:#d97706;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</div>
-              <div class="ap-metric-tile-foot">
-                <span>Awaiting verification</span>
-                <span style="color:#d97706; font-weight:800;">${pendingOrders} orders</span>
-              </div>
-            </div>
-
-            <!-- Tile 5: Cataloged Products -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Products</span>
-                <div class="ap-metric-tile-icon" style="background:#f5f3ff; color:#7c3aed;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalProducts.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>${lowStock} low stock</span>
-                <span style="color:${outOfStock>0?'#ef4444':'#059669'}; font-weight:800;">${outOfStock} out of stock</span>
-              </div>
-            </div>
-
-            <!-- Tile 6: Registered Customers -->
-            <div class="ap-metric-tile">
-              <div class="ap-metric-tile-top">
-                <span class="ap-metric-tile-lbl">Customers</span>
-                <div class="ap-metric-tile-icon" style="background:#fdf2f8; color:#a21caf;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-              </div>
-              <div class="ap-metric-tile-val">${totalUsers.toLocaleString('en-IN')}</div>
-              <div class="ap-metric-tile-foot">
-                <span>${totalSellers || 0} sellers</span>
-                <span style="color:#a21caf; font-weight:800;">Active</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 4. Hero Section: Authentic Revenue Timeline & Order Operations Pipeline -->
-          <div class="ap-hero-grid">
-            <!-- Left: Real Daily / Monthly / Yearly Revenue Stream -->
-            <div class="ap-hero-revenue-card">
-              <div class="ap-hero-rev-header">
-                <div class="ap-hero-rev-title-group">
-                  <div class="ap-hero-rev-eyebrow">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    <span>Authentic Sales Velocity (${tf === 'year' ? 'Year-wise' : tf === 'month' ? 'Month-wise' : 'Day-wise'} MongoDB Orders)</span>
-                  </div>
-                  <div class="ap-hero-rev-val-row">
-                    <span class="ap-hero-rev-val">${revFormatted}</span>
-                    <span class="ap-badge blue" style="font-size:11px; padding:3px 8px;">
-                      ${sparkline.length || 1} Active ${tf === 'year' ? 'Years' : tf === 'month' ? 'Months' : 'Days'} Recorded
-                    </span>
-                  </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button type="button" class="ap-btn ghost ${_dashShowBreakdown ? 'active ap-btn-clicked' : ''}" id="ap-toggle-breakdown-btn" style="font-size:11px; font-weight:700; padding:4px 8px;">
-                    ${_dashShowBreakdown ? 'Hide Ledger ▲' : 'Show Detailed Ledger ▼'}
-                  </button>
-                </div>
-              </div>
-
-              <!-- SVG Area Chart -->
-              <div style="padding:4px 0 0;">
-                ${chartSVG}
-              </div>
-
-              <!-- Mini Summary Strip (Authentic Numbers) -->
-              <div class="ap-hero-summary-strip">
-                <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Average Order Value (AOV)</span>
-                  <span class="ap-hero-summary-val">${fmtPrice(aov)}</span>
-                  <span class="ap-hero-summary-sub">Across ${totalOrders} purchases in window</span>
-                </div>
-                <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Order Success Rate</span>
-                  <span class="ap-hero-summary-val" style="color:#059669;">
-                    ${totalOrders > 0 ? Math.round(((totalOrders - cancelledOrReturned) / totalOrders) * 100) : 100}%
-                  </span>
-                  <span class="ap-hero-summary-sub">${totalOrders - cancelledOrReturned} active non-cancelled</span>
-                </div>
-                <div class="ap-hero-summary-item">
-                  <span class="ap-hero-summary-lbl">Catalog Health</span>
-                  <span class="ap-hero-summary-val" style="color:#2563eb;">${totalProducts} SKUs</span>
-                  <span class="ap-hero-summary-sub">${lowStock} low stock • ${outOfStock} out of stock</span>
-                </div>
-              </div>
-
-              <!-- Collapsible Detailed Breakdown Ledger Table -->
-              ${_dashShowBreakdown ? `
-                <div class="ap-breakdown-card">
-                  <div class="ap-breakdown-header">
-                    <span>${tf === 'year' ? 'Year-by-Year' : tf === 'month' ? 'Month-by-Month' : 'Day-by-Day'} Historical Breakdown</span>
-                    <span style="font-size:11px; color:#64748b; font-weight:600;">${breakdown.length} intervals recorded</span>
-                  </div>
-                  <table class="ap-breakdown-table">
-                    <thead>
-                      <tr>
-                        <th>Interval</th>
-                        <th>Orders</th>
-                        <th>Gross GMV</th>
-                        <th>AOV</th>
-                        <th>Delivered</th>
-                        <th style="text-align:right;">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${breakdownRows}
-                    </tbody>
-                  </table>
-                </div>
+              ${rng !== 'all' || tf !== 'day' ? `
+                <button type="button" class="ap-btn ghost" id="ap-timeframe-reset-btn" style="padding:2px 8px; font-size:11px; font-weight:700;">
+                  Reset to All Time ✕
+                </button>
               ` : ''}
             </div>
+          </div>
 
-            <!-- Right: Real Operations & Fulfillment Pipeline -->
-            <div class="ap-hero-ops-card">
-              <div class="ap-ops-header">
-                <h3 class="ap-ops-title">
-                  <span style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>
-                  Order Fulfillment Pipeline
-                </h3>
-                <span class="ap-badge green" style="font-size:10.5px;">Live DB Status</span>
-              </div>
-
-              <!-- Visual Multi-segment Progress Bar -->
-              <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
-                <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:800; color:#334155; margin-bottom:8px;">
-                  <span>Status Distribution</span>
-                  <span style="color:#0f172a;">${totalOrders} Orders in Window</span>
-                </div>
-                <div style="display:flex; gap:3px; height:8px; border-radius:99px; overflow:hidden; background:#e2e8f0;">
-                  <div style="width:${Math.max(pendingPct, 4)}%; background:#f59e0b;" title="Pending: ${pendingOrders} (${pendingPct}%)"></div>
-                  <div style="width:${Math.max(confirmedPct, 4)}%; background:#2563eb;" title="Confirmed: ${confirmedOrders} (${confirmedPct}%)"></div>
-                  <div style="width:${Math.max(processingPct, 2)}%; background:#8b5cf6;" title="In-Transit: ${processingOrders} (${processingPct}%)"></div>
-                  <div style="width:${Math.max(deliveredPct, 2)}%; background:#10b981;" title="Delivered: ${deliveredOrders} (${deliveredPct}%)"></div>
-                  <div style="width:${Math.max(cancelledPct, 2)}%; background:#94a3b8;" title="Cancelled/Returned: ${cancelledOrReturned} (${cancelledPct}%)"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:#64748b; margin-top:6px; flex-wrap:wrap; gap:4px;">
-                  <span style="color:#d97706; font-weight:700;">● Pending: ${pendingOrders}</span>
-                  <span style="color:#2563eb; font-weight:700;">● Confirmed: ${confirmedOrders}</span>
-                  <span style="color:#8b5cf6; font-weight:700;">● Transit: ${processingOrders}</span>
-                  <span style="color:#059669; font-weight:700;">● Delivered: ${deliveredOrders}</span>
+          <!-- 3. Primary 8-KPI Cards Grid (#022f43 & #ff9400 accents) -->
+          <div class="dash-grid-4">
+            <!-- Card 1: Gross Sales GMV -->
+            <div class="dash-kpi-card highlight">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Gross Revenue (GMV)</span>
+                <div class="dash-kpi-icon" style="background:#022f43; color:#ffffff;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 </div>
               </div>
+              <div class="dash-kpi-val">${revFormatted}</div>
+              <div class="dash-kpi-footer">
+                <span>AOV: <strong>${fmtPrice(aov)}</strong></span>
+                <span style="margin-left:auto;">${growthBadge(revenueGrowth)}</span>
+              </div>
+            </div>
 
-              <div class="ap-ops-list">
-                <!-- Action 1: Pending Orders -->
-                <div class="ap-ops-item" id="ap-dash-act-pending">
-                  <div class="ap-ops-item-left">
-                    <div class="ap-ops-icon-wrap" style="background:#fef3c7; color:#d97706;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </div>
-                    <div>
-                      <div class="ap-ops-item-title">${pendingOrders} Orders Awaiting Verification</div>
-                      <div class="ap-ops-item-sub">Revenue at risk: <strong style="color:#d97706;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</strong></div>
-                    </div>
-                  </div>
-                  <button type="button" class="ap-ops-btn">Process &rarr;</button>
+            <!-- Card 2: Total Orders Placed -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Total Orders</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 </div>
+              </div>
+              <div class="dash-kpi-val">${totalOrders.toLocaleString('en-IN')}</div>
+              <div class="dash-kpi-footer">
+                <span>${pendingOrders} Pending • ${confirmedOrders} Confirmed</span>
+                <span style="margin-left:auto;">${growthBadge(ordersGrowth)}</span>
+              </div>
+            </div>
 
-                <!-- Action 2: Confirmed Orders -->
-                <div class="ap-ops-item" id="ap-dash-act-confirmed">
-                  <div class="ap-ops-item-left">
-                    <div class="ap-ops-icon-wrap" style="background:#eff6ff; color:#2563eb;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    </div>
-                    <div>
-                      <div class="ap-ops-item-title">${confirmedOrders} Orders Confirmed</div>
-                      <div class="ap-ops-item-sub">In queue for dispatch &amp; delivery</div>
-                    </div>
-                  </div>
-                  <button type="button" class="ap-ops-btn">View &rarr;</button>
+            <!-- Card 3: Average Order Value -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Avg Order Value (AOV)</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 </div>
+              </div>
+              <div class="dash-kpi-val">${fmtPrice(aov)}</div>
+              <div class="dash-kpi-footer">
+                <span>Per transaction spend</span>
+                <span style="margin-left:auto;">${growthBadge(aovGrowth)}</span>
+              </div>
+            </div>
 
-                <!-- Action 3: Cancelled / Returns -->
-                <div class="ap-ops-item" id="ap-dash-act-returns">
-                  <div class="ap-ops-item-left">
-                    <div class="ap-ops-icon-wrap" style="background:#fee2e2; color:#dc2626;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                    </div>
-                    <div>
-                      <div class="ap-ops-item-title">${cancelledOrReturned} Cancelled / Returned</div>
-                      <div class="ap-ops-item-sub">Processed customer return requests</div>
-                    </div>
-                  </div>
-                  <button type="button" class="ap-ops-btn">Inspect &rarr;</button>
+            <!-- Card 4: Registered Customers -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Total Customers</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
+              </div>
+              <div class="dash-kpi-val">${totalUsers.toLocaleString('en-IN')}</div>
+              <div class="dash-kpi-footer">
+                <span>Active buyer community</span>
+                <span class="dash-highlight-badge" style="margin-left:auto;">${usersList.length} Active</span>
+              </div>
+            </div>
 
-                <!-- Action 4: Products Catalog -->
-                <div class="ap-dash-act-products ap-ops-item" id="ap-dash-act-products">
-                  <div class="ap-ops-item-left">
-                    <div class="ap-ops-icon-wrap" style="background:#f5f3ff; color:#7c3aed;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    </div>
-                    <div>
-                      <div class="ap-ops-item-title">${totalProducts} Products in Catalog</div>
-                      <div class="ap-ops-item-sub">All SKUs currently in stock</div>
-                    </div>
-                  </div>
-                  <button type="button" class="ap-ops-btn">Catalog &rarr;</button>
+            <!-- Card 5: Admin & Privileged Staff -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Admins &amp; Staff</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
+                </div>
+              </div>
+              <div class="dash-kpi-val">${totalAdmins.toLocaleString('en-IN')}</div>
+              <div class="dash-kpi-footer">
+                <span>Enterprise access granted</span>
+                <span class="dash-highlight-badge" style="margin-left:auto;">Full Access</span>
+              </div>
+            </div>
+
+            <!-- Card 6: Verified Marketplace Sellers -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Active Sellers</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+              </div>
+              <div class="dash-kpi-val">${totalSellers.toLocaleString('en-IN')}</div>
+              <div class="dash-kpi-footer">
+                <span>Store merchants on platform</span>
+                <span class="ap-badge green" style="margin-left:auto;">Verified</span>
+              </div>
+            </div>
+
+            <!-- Card 7: Catalog Inventory -->
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Catalog SKUs</span>
+                <div class="dash-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                </div>
+              </div>
+              <div class="dash-kpi-val">${totalProducts.toLocaleString('en-IN')}</div>
+              <div class="dash-kpi-footer">
+                <span>${inStock} in stock • ${lowStock} low</span>
+                <span class="ap-badge ${outOfStock > 0 ? 'red' : 'green'}" style="margin-left:auto;">${outOfStock} OOS</span>
+              </div>
+            </div>
+
+            <!-- Card 8: Pending Revenue (At Risk) -->
+            <div class="dash-kpi-card highlight">
+              <div class="dash-kpi-top">
+                <span class="dash-kpi-title">Pending Revenue</span>
+                <div class="dash-kpi-icon" style="background:#022f43; color:#ffffff;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              </div>
+              <div class="dash-kpi-val" style="color:#ff9400;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</div>
+              <div class="dash-kpi-footer">
+                <span>${pendingOrders} orders awaiting fulfillment</span>
+                <span class="dash-highlight-badge" style="margin-left:auto;">In Queue</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Interactive Chart.js Visualizations (Dual-Chart Section) -->
+          <div class="dash-grid-2">
+            <!-- Left Chart: Revenue & Orders Timeline -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Sales Velocity &amp; Revenue Trajectory</h3>
+                <span class="dash-highlight-badge">Chart.js Analytics</span>
+              </div>
+              <div class="dash-chart-card-body">
+                <canvas id="ap-dash-chart-revenue" style="width:100%; height:260px;"></canvas>
+              </div>
+            </div>
+
+            <!-- Right Chart: Payment Channels & Operations Mix -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Payment Methods &amp; Order Mix</h3>
+                <span class="dash-highlight-badge">Distribution</span>
+              </div>
+              <div class="dash-chart-card-body">
+                <canvas id="ap-dash-chart-channels" style="width:100%; height:260px;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Support Tickets & Marketplace Payouts Status Command Center -->
+          <div class="dash-grid-2">
+            <!-- Left: Support Desk Status -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Support Desk Intelligence</h3>
+                <span class="dash-highlight-badge">${supportStats.total || 0} Total Tickets</span>
+              </div>
+              <div class="dash-scrollable-body" style="padding:16px; display:flex; flex-direction:column; gap:10px; max-height:260px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#475569; margin-bottom:4px;">
+                  <span>Live Resolution Status</span>
+                  <span style="font-weight:700; color:#022f43;">${supportStats.total || 0} Customer Tickets</span>
+                </div>
+                ${supportStatusHTML}
+                <div style="margin-top:auto; padding-top:8px; display:flex; justify-content:flex-end;">
+                  <button class="ap-btn ghost" onclick="switchTab('support')" style="font-size:11.5px; font-weight:700;">
+                    Open Support Desk &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Seller Payouts Disbursals -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Seller Payouts &amp; Disbursal Status</h3>
+                <span class="dash-highlight-badge">${payoutsStats.total || 0} Payouts</span>
+              </div>
+              <div class="dash-scrollable-body" style="padding:16px; display:flex; flex-direction:column; gap:10px; max-height:260px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#475569; margin-bottom:4px;">
+                  <span>Financial Settlement Status</span>
+                  <span style="font-weight:700; color:#022f43;">Total: ${fmtPrice(payoutsStats.totalAmount || 0)}</span>
+                </div>
+                ${payoutsStatusHTML}
+                <div style="margin-top:auto; padding-top:8px; display:flex; justify-content:flex-end;">
+                  <button class="ap-btn ghost" onclick="switchTab('payouts')" style="font-size:11.5px; font-weight:700;">
+                    Inspect Payouts Ledger &rarr;
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 5. Split 2-Column Section: Orders Flow & Real Store Insights -->
-          <div class="ap-workspace-split">
-            <!-- Left: Orders Flow Ledger -->
-            <div class="ap-card ap-orders-stream-card">
-              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
-                <div>
-                  <h3 style="margin:0; font-size:14.5px; font-weight:800; color:#0f172a;">Live Customer Order Stream</h3>
-                  <p style="margin:2px 0 0; font-size:11.5px; color:#64748b;">
-                    ${esc(activeFilter.label ? `Showing orders matching ${activeFilter.label}` : 'Real chronological checkouts from MongoDB database.')}
-                  </p>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button class="ap-btn ghost" id="ap-dash-export-csv" style="font-size:11.5px; font-weight:700; display:flex; align-items:center; gap:5px;" title="Export filtered orders to CSV">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Export CSV
-                  </button>
-                  <button class="ap-btn ghost" id="ap-dash-view-all-orders" style="font-size:11.5px; font-weight:700;">
-                    View All Orders &rarr;
-                  </button>
-                </div>
+          <!-- 6. User and Admin Directory Grids with overflow-y: auto -->
+          <div class="dash-grid-2">
+            <!-- Left: Admins and Privileged Staff -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Administrators &amp; Privileged Staff</h3>
+                <span class="dash-highlight-badge">${adminsList.length} Active Admins</span>
               </div>
-              ${ordersHTML}
+              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                  <colgroup>
+                    <col style="width:35%;">
+                    <col style="width:22%;">
+                    <col style="width:23%;">
+                    <col style="width:20%;">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th style="text-align:center !important;">Administrator</th>
+                      <th style="text-align:center !important;">Access Tier</th>
+                      <th style="text-align:center !important;">Created</th>
+                      <th style="text-align:center !important;">Status</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              <div class="dash-scrollable-body" style="max-height: 310px; overflow-y:auto;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                  <colgroup>
+                    <col style="width:35%;">
+                    <col style="width:22%;">
+                    <col style="width:23%;">
+                    <col style="width:20%;">
+                  </colgroup>
+                  <tbody>
+                    ${adminsRows}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <!-- Right: Authentic Insights (Top Products, Payment Methods, Categories) -->
-            <div style="display:flex; flex-direction:column; gap:16px;">
-              <!-- Top Performing Products by Revenue with visual bars -->
-              <div class="ap-card" style="padding:18px 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Top Selling Products</h4>
-                  <span class="ap-badge blue" style="font-size:10.5px;">by Revenue</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Right: Registered Customers -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Registered Customers &amp; Merchants</h3>
+                <span class="dash-highlight-badge">${usersList.length} Accounts</span>
+              </div>
+              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                  <colgroup>
+                    <col style="width:35%;">
+                    <col style="width:25%;">
+                    <col style="width:22%;">
+                    <col style="width:18%;">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th style="text-align:center !important;">Customer Profile</th>
+                      <th style="text-align:center !important;">Account Role</th>
+                      <th style="text-align:center !important;">Joined</th>
+                      <th style="text-align:center !important;">Action</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              <div class="dash-scrollable-body" style="max-height: 310px; overflow-y:auto;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                  <colgroup>
+                    <col style="width:35%;">
+                    <col style="width:25%;">
+                    <col style="width:22%;">
+                    <col style="width:18%;">
+                  </colgroup>
+                  <tbody>
+                    ${usersRows}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7. High-Value Customers & Live Orders Stream -->
+          <div class="dash-grid-2">
+            <!-- Left: Top High-Value Customers (LTV) -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Top Spending Customers</h3>
+                <span class="dash-highlight-badge">High Lifetime Value</span>
+              </div>
+              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                  <colgroup>
+                    <col style="width:12%;">
+                    <col style="width:30%;">
+                    <col style="width:18%;">
+                    <col style="width:22%;">
+                    <col style="width:18%;">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th style="text-align:center !important;">Rank</th>
+                      <th style="text-align:center !important;">Customer</th>
+                      <th style="text-align:center !important;">Orders</th>
+                      <th style="text-align:center !important;">Total Spend</th>
+                      <th style="text-align:center !important;">Last Order</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              <div class="dash-scrollable-body" style="max-height: 440px; overflow-y:auto;">
+                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                  <colgroup>
+                    <col style="width:12%;">
+                    <col style="width:30%;">
+                    <col style="width:18%;">
+                    <col style="width:22%;">
+                    <col style="width:18%;">
+                  </colgroup>
+                  <tbody>
+                    ${topCustomersRows}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: Top Selling Products & Catalog Health -->
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h3>Top Selling Catalog Products</h3>
+                <span class="dash-highlight-badge">By Revenue</span>
+              </div>
+              <div class="dash-scrollable-body" style="padding:16px 20px; max-height:440px;">
+                <div style="display:flex; flex-direction:column; gap:12px;">
                   ${topProducts.length ? (() => {
                     const maxRev2 = Math.max(...topProducts.map(p => p.revenue || 0), 1);
                     return topProducts.map((p, idx) => `
                       <div class="ap-dash-top-prod-row">
-                        <span class="ap-dash-rank">#${idx + 1}</span>
+                        <span class="dash-highlight-badge" style="width:24px; justify-content:center;">#${idx + 1}</span>
                         <img src="${esc(p.image || 'logo-square.png')}" alt="${esc(p.name)}" class="ap-dash-prod-img" onerror="this.src='logo-square.png'" />
                         <div style="flex:1; min-width:0;">
-                          <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
-                          <div style="margin-top:4px; height:4px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                            <div style="width:${Math.round((p.revenue/maxRev2)*100)}%; height:100%; background:linear-gradient(90deg,#2563eb,#7c3aed); border-radius:99px;"></div>
+                          <div style="font-size:12.5px; font-weight:700; color:#022f43; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
+                          <div style="margin-top:4px; height:5px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                            <div style="width:${Math.round((p.revenue/maxRev2)*100)}%; height:100%; background:linear-gradient(90deg, #022f43, #ff9400); border-radius:99px;"></div>
                           </div>
                           <div style="font-size:10.5px; color:#64748b; margin-top:2px;">${p.count} unit${p.count>1?'s':''} sold</div>
                         </div>
-                        <div style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; margin-left:8px;">${fmtPrice(p.revenue)}</div>
+                        <div style="font-weight:800; font-size:13px; color:#022f43; white-space:nowrap; margin-left:8px;">${fmtPrice(p.revenue)}</div>
                       </div>
                     `).join('');
                   })() : `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No sales data in this window.</div>`}
                 </div>
               </div>
-
-              <!-- Payment Method Breakdown with colored icons -->
-              <div class="ap-card" style="padding:18px 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Payment Channels Mix</h4>
-                  <span class="ap-badge green" style="font-size:10.5px;">${totalOrders} Purchases</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                  ${paymentMethods.length ? paymentMethods.map(pm => {
-                    const barColor = pm.method.toLowerCase().includes('cod') ? '#f59e0b' : pm.method.toLowerCase().includes('card') ? '#2563eb' : pm.method.toLowerCase().includes('upi') ? '#10b981' : '#7c3aed';
-                    return `
-                      <div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                          <div style="display:flex; align-items:center; gap:7px;">
-                            <span style="width:10px; height:10px; border-radius:50%; background:${barColor}; flex-shrink:0; display:inline-block;"></span>
-                            <span style="font-size:12px; font-weight:700; color:#334155;">${esc(pm.method)}</span>
-                          </div>
-                          <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:11.5px; font-weight:800; color:${barColor};">${pm.percentage}%</span>
-                            <span style="font-size:11px; color:#94a3b8;">${pm.count} orders</span>
-                          </div>
-                        </div>
-                        <div style="height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                          <div style="width:${Math.max(pm.percentage, 3)}%; height:100%; background:${barColor}; border-radius:99px; transition:width 0.4s ease;"></div>
-                        </div>
-                      </div>
-                    `;
-                  }).join('') : `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No payment records found.</div>`}
-                </div>
-              </div>
-
-              <!-- Catalog Category Breakdown with colored bars -->
-              <div class="ap-card" style="padding:18px 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                  <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a;">Category Distribution</h4>
-                  <span class="ap-badge" style="font-size:10.5px; background:#f1f5f9; color:#475569;">${totalProducts} SKUs</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:9px;">
-                  ${(() => {
-                    const catColors = ['#2563eb','#7c3aed','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
-                    return categoryDistribution.slice(0,6).map((cat, ci) => `
-                      <div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                          <span style="font-size:12px; font-weight:700; color:#0f172a;">${esc(cat.category)}</span>
-                          <span style="font-size:11.5px; font-weight:800; color:${catColors[ci%catColors.length]};">${cat.count} (${cat.percentage}%)</span>
-                        </div>
-                        <div style="height:5px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
-                          <div style="width:${Math.max(cat.percentage,2)}%; height:100%; background:${catColors[ci%catColors.length]}; border-radius:99px;"></div>
-                        </div>
-                      </div>
-                    `).join('');
-                  })()}
-                </div>
-              </div>
             </div>
+          </div>
+
+          <!-- 8. Live Customer Order Stream (Full width, with overflow-y: auto) -->
+          <div class="dash-panel">
+            <div class="dash-panel-header">
+              <h3>Live Customer Order Stream</h3>
+              <span class="dash-highlight-badge">${filteredOrders.length} of ${recentOrders.length} Orders</span>
+            </div>
+            ${ordersHTML}
           </div>
         </div>
       `;
 
-      /* ── Interactive Action Handlers ─────────────────────── */
-      container.querySelectorAll('.ap-modern-quick-actions .ap-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          container.querySelectorAll('.ap-modern-quick-actions .ap-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-        });
-      });
+      /* ── Initialize Chart.js Instances ─────────────────────── */
+      if (_dashCharts.revenue) { try { _dashCharts.revenue.destroy(); } catch(e){} }
+      if (_dashCharts.channels) { try { _dashCharts.channels.destroy(); } catch(e){} }
 
+      function initDashCharts() {
+        if (typeof Chart === 'undefined') {
+          return;
+        }
+
+        // 1. Revenue & Order Trajectory Chart
+        const revCanvas = container.querySelector('#ap-dash-chart-revenue');
+        if (revCanvas) {
+          const revCtx = revCanvas.getContext('2d');
+          const labels = pts.map(p => p.dateStr);
+          const revData = pts.map(p => p.d?.revenue || 0);
+          const ordData = pts.map(p => p.d?.orders || 0);
+
+          _dashCharts.revenue = new Chart(revCtx, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                {
+                  type: 'line',
+                  label: 'Gross Sales (₹)',
+                  data: revData,
+                  borderColor: '#022f43',
+                  backgroundColor: 'rgba(2, 47, 67, 0.08)',
+                  borderWidth: 2.5,
+                  fill: true,
+                  tension: 0.35,
+                  yAxisID: 'y',
+                  pointBackgroundColor: '#ff9400',
+                  pointBorderColor: '#022f43',
+                  pointRadius: 4,
+                  pointHoverRadius: 6
+                },
+                {
+                  type: 'bar',
+                  label: 'Order Volume',
+                  data: ordData,
+                  backgroundColor: 'rgba(255, 148, 0, 0.65)',
+                  borderColor: '#ff9400',
+                  borderWidth: 1.5,
+                  borderRadius: 4,
+                  yAxisID: 'y1'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: { font: { weight: 'bold', size: 11 } }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      if (ctx.dataset.yAxisID === 'y') {
+                        return ' Gross Sales: ₹' + Number(ctx.raw || 0).toLocaleString('en-IN');
+                      }
+                      return ' Order Volume: ' + ctx.raw + ' orders';
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: {
+                  type: 'linear',
+                  position: 'left',
+                  ticks: {
+                    callback: v => v >= 100000 ? '₹' + (v/100000).toFixed(1) + 'L' : v >= 1000 ? '₹' + (v/1000).toFixed(0) + 'k' : '₹' + v,
+                    font: { size: 10 }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: { font: { size: 10 }, stepSize: 1 }
+                }
+              }
+            }
+          });
+        }
+
+        // 2. Payment & Pipeline Mix Chart
+        const chanCanvas = container.querySelector('#ap-dash-chart-channels');
+        if (chanCanvas) {
+          const chanCtx = chanCanvas.getContext('2d');
+          const pmLabels = paymentMethods.map(p => p.method);
+          const pmData = paymentMethods.map(p => p.count);
+          _dashCharts.channels = new Chart(chanCtx, {
+            type: 'doughnut',
+            data: {
+              labels: pmLabels.length ? pmLabels : ['Online', 'COD'],
+              datasets: [{
+                data: pmData.length ? pmData : [1, 0],
+                backgroundColor: ['#022f43', '#ff9400', '#10b981', '#2563eb', '#7c3aed', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right',
+                  labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      setTimeout(initDashCharts, 60);
+
+      /* ── Interactive Action Handlers ─────────────────────── */
       container.querySelector('#ap-dash-quick-prod')?.addEventListener('click', () => switchTab('products'));
       container.querySelector('#ap-dash-quick-orders')?.addEventListener('click', () => switchTab('orders'));
       container.querySelector('#ap-dash-quick-refresh')?.addEventListener('click', () => renderDashboard(container));
@@ -6958,12 +7150,6 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         });
       });
 
-      container.querySelectorAll('.ap-ops-btn, .ap-inspect-period-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          btn.classList.add('active');
-        });
-      });
-
       // Custom Date Range Apply
       container.querySelector('#ap-custom-date-apply')?.addEventListener('click', () => {
         const startVal = container.querySelector('#ap-custom-date-start')?.value;
@@ -6984,41 +7170,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         renderDashboard(container);
       });
 
-      // Toggle Detailed Breakdown Table
-      container.querySelector('#ap-toggle-breakdown-btn')?.addEventListener('click', () => {
-        _dashShowBreakdown = !_dashShowBreakdown;
-        renderDashboard(container);
-      });
-
-      // Inspect period button from breakdown table
-      container.querySelectorAll('.ap-inspect-period-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const periodKey = btn.dataset.key;
-          const periodTf = btn.dataset.tf;
-          if (periodTf === 'day') {
-            _dashFilter.range = 'custom';
-            _dashFilter.startDate = periodKey;
-            _dashFilter.endDate = periodKey;
-          } else if (periodTf === 'month') {
-            const [y, m] = periodKey.split('-');
-            const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-            _dashFilter.range = 'custom';
-            _dashFilter.startDate = `${periodKey}-01`;
-            _dashFilter.endDate = `${periodKey}-${String(lastDay).padStart(2, '0')}`;
-          } else {
-            _dashFilter.range = 'custom';
-            _dashFilter.startDate = `${periodKey}-01-01`;
-            _dashFilter.endDate = `${periodKey}-12-31`;
-          }
-          renderDashboard(container);
-        });
-      });
-
-      container.querySelector('#ap-dash-act-pending')?.addEventListener('click', () => switchTab('orders'));
-      container.querySelector('#ap-dash-act-confirmed')?.addEventListener('click', () => switchTab('orders'));
-      container.querySelector('#ap-dash-act-returns')?.addEventListener('click', () => switchTab('orders'));
-      container.querySelector('#ap-dash-act-products')?.addEventListener('click', () => switchTab('products'));
-
+      // Inspect order button
       container.querySelectorAll('.ap-dash-inspect-order').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -7064,6 +7216,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.innerHTML = `<div class="ap-dash-inner">${emptyHTML('', `Failed to load dashboard: ${err.message}`)}</div>`;
     }
   }
+
   /* ══════════════════════════════════════════════════════
      TAB: CUSTOMER ACCOUNTS & SEGMENTATION (CRM SUITE)
      ══════════════════════════════════════════════════════ */

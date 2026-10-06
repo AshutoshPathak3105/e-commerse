@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admins Tab Fix Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>* { box-sizing: border-box; } body { margin: 0; padding: 0; background: #f1f5f9; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }</style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div style="padding:20px;">
+    <div class="ap-table-card" id="ap-crm-directory-card" style="margin-bottom:24px;">
+      <!-- Dark header bar -->
+      <div class="ap-crm-main-tags-bar" style="padding:14px 18px; background:#022f43 !important; color:#fff !important; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:#fff; letter-spacing:0.06em; display:flex; align-items:center; gap:6px;">Directory Tags:</div>
+          <div class="ap-toolbar-tabs" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); padding:3px; border-radius:8px; display:inline-flex; gap:4px;">
+            <button class="ap-tab-pill ap-main-dir-tag" style="cursor:pointer; color:#fff;">Users <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#fff;">2</span></button>
+            <button class="ap-tab-pill ap-main-dir-tag active" style="cursor:pointer; color:#fff; background:#7c3aed !important;">Admins <span class="ap-tab-count" style="background:rgba(255,255,255,0.25); color:#fff;">3</span></button>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#fff; font-weight:500;">Viewing: <strong style="color:#fff;">3</strong> active admin accounts</div>
+      </div>
+
+      <!-- Tag body -->
+      <div id="ap-crm-tag-body">
+        <!-- Admin Sub-Tabs Bar -->
+        <div class="ap-crm-sub-tabs-bar ap-crm-segment-sub-bar" style="padding:10px 18px 8px; background:#ff9400 !important; color:#000 !important; font-weight:800; border-bottom:1.5px solid #e08300; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div class="ap-toolbar-tabs" style="background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.15);">
+            <button class="ap-tab-pill ap-admin-sub-tab active" style="background:#fff !important; color:#000 !important; font-weight:800 !important;">All Admins <span class="ap-tab-count" style="background:#000; color:#fff;">3</span></button>
+            <button class="ap-tab-pill ap-admin-sub-tab" style="color:#000 !important; font-weight:700 !important;">Active Authorities <span class="ap-tab-count" style="background:#000; color:#fff;">3</span></button>
+            <button class="ap-tab-pill ap-admin-sub-tab" style="color:#000 !important; font-weight:700 !important;">Restricted <span class="ap-tab-count" style="background:#000; color:#fff;">0</span></button>
+          </div>
+          <div style="font-size:11.5px; color:#000 !important; font-weight:800;">Authority Governance: <strong style="color:#000 !important; text-transform:uppercase; font-weight:900;">ALL</strong></div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#fff;">
+          <div style="display:grid; grid-template-columns: 2.5fr 1.2fr 1.2fr; gap:10px; margin-bottom:10px;">
+            <div style="position:relative;">
+              <input class="ap-search" id="ap-crm-admin-search" placeholder="Search administrators by name, email, phone, #ADMIN ID..." style="width:100%; padding-right:28px; border-color:#ddd6fe;" />
+            </div>
+            <select class="ap-select" id="ap-crm-admin-metro-select" style="font-size:12px;">
+              <option value="">All Locations</option>
+              <option>Delhi NCR</option>
+            </select>
+            <select class="ap-select" id="ap-crm-admin-status-select" style="font-size:12px;">
+              <option value="">All Statuses</option>
+              <option>Active Authorities</option>
+            </select>
+          </div>
+
+          <!-- Batch Action Strip -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; padding-top:4px;">
+            <div id="ap-crm-admin-batch-row" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+              <span style="color:#64748b;">Selected: <strong style="color:#0f172a;">0 accounts</strong></span>
+              <span style="color:#cbd5e1;">|</span>
+              <button class="ap-btn ghost" style="padding:3px 8px; font-size:11px;">
+                <svg viewBox="0 0 24 24" style="width:12px; height:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Admins
+              </button>
+            </div>
+            <div><button class="ap-btn ghost" style="font-size:11px; color:#7c3aed; border:none; background:transparent; cursor:pointer;">Reset Admin Filters</button></div>
+          </div>
+        </div>
+
+        <!-- Table footer -->
+        <div class="ap-table-footer" style="padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
+          <span>Displaying 3 administrator accounts</span>
+          <span style="font-size:11px; color:#7c3aed; font-weight:600;">X-Mart Admin Authority Directory</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

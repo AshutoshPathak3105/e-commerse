@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banner Modal Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { margin: 0; background: rgba(15, 23, 42, 0.6); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="ap-modal-backdrop" style="position:fixed; inset:0; z-index:100050; display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,0.65);">
+    <div class="ap-modal-dialog" style="max-width:580px; width:95%; background:#ffffff; border-radius:14px; box-shadow:0 25px 60px rgba(15,23,42,0.25); overflow:hidden; display:flex; flex-direction:column;">
+      <div class="ap-modal-header" style="background:#022f43 !important; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12);">
+        <div>
+          <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800; margin:0;">
+            Add New Featured Banner
+          </h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1;">Provide banner image URL or upload an image file, headline, and link for customer storefront.</p>
+        </div>
+        <button type="button" class="ap-modal-close-btn" id="ap-banner-modal-close" style="width:32px; height:32px; background:#022f43; border:1px solid rgba(255,255,255,0.25); color:#ffffff; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+      </div>
+
+      <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
+        <!-- Headline -->
+        <div class="ap-form-group" style="margin-bottom:14px;">
+          <label for="banner-modal-title" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Banner Headline</label>
+          <input type="text" id="banner-modal-title" class="ap-input" value="" style="width:100%; color:#000000; font-weight:600;" placeholder="e.g. Flagship Smartphone Mega Launch" />
+        </div>
+
+        <!-- Subtitle -->
+        <div class="ap-form-group" style="margin-bottom:14px;">
+          <label for="banner-modal-subtitle" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Subtitle / Tagline</label>
+          <input type="text" id="banner-modal-subtitle" class="ap-input" value="" style="width:100%; color:#000000; font-weight:600;" placeholder="e.g. Starting from ₹14,999 with No Cost EMI" />
+        </div>
+
+        <!-- Image URL + Live Preview -->
+        <div class="ap-form-group" style="margin-bottom:14px;">
+          <label for="banner-modal-image" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Banner Image URL</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="url" id="banner-modal-image" class="ap-input" value="" placeholder="https://images.unsplash.com/... or upload image" style="flex:1; width:auto; color:#000000; font-weight:600;" />
+            <button type="button" class="ap-btn" id="banner-upload-img-btn" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:8px 14px; background:#f1f5f9; color:#022f43; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload Image
+            </button>
+            <input type="file" id="banner-file-input" accept="image/*" style="display:none;" />
+          </div>
+          
+          <div style="margin-top:6px;">
+            <span style="font-size:11.5px; color:#000000; font-weight:800;">One-click high-res presets:</span>
+            <div class="ap-preset-pills">
+              <button type="button" class="ap-preset-pill">Flagship Electronics</button>
+              <button type="button" class="ap-preset-pill">Audio &amp; Headphones</button>
+              <button type="button" class="ap-preset-pill">Designer Fashion</button>
+              <button type="button" class="ap-preset-pill">Modern Living</button>
+              <button type="button" class="ap-preset-pill">Gaming Battle Station</button>
+            </div>
+          </div>
+
+          <!-- Live Image Preview Container -->
+          <div class="banner-preview-box" style="margin-top:12px; text-align:center;">
+            <img id="banner-modal-preview-img" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" style="max-width:100%; height:180px; object-fit:cover; border-radius:10px;" alt="Banner Live Preview" />
+            <div style="font-size:11.5px; color:#000000; font-weight:700; margin-top:6px;">Live Image Preview</div>
+          </div>
+        </div>
+
+        <!-- Destination Link & Sequence Order -->
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:14px;">
+          <div class="ap-form-group">
+            <label for="banner-modal-link" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Destination Link / Hash</label>
+            <input type="text" id="banner-modal-link" class="ap-input" value="#category/Electronics" style="width:100%; color:#000000;" />
+          </div>
+          <div class="ap-form-group">
+            <label for="banner-modal-order" class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800;">Display Order</label>
+            <input type="number" id="banner-modal-order" class="ap-input" value="6" min="0" style="width:100%; color:#000000;" />
+          </div>
+        </div>
+
+        <!-- Active Toggle -->
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+          <input type="checkbox" id="banner-modal-active" checked style="width:16px; height:16px; cursor:pointer;" />
+          <label for="banner-modal-active" style="font-size:13px; font-weight:700; color:#000000; cursor:pointer;">
+            Publish and make live on storefront immediately
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="ap-btn ghost" id="ap-banner-modal-cancel">Cancel</button>
+          <button type="button" class="ap-btn primary" id="ap-banner-modal-save" style="padding:8px 22px; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:1.5px solid #e08300;">
+            Publish Banner
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

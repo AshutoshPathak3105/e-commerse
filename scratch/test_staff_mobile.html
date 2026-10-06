@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 10px; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .mobile-frame { width: 360px; max-width: 100%; margin: 0 auto; border: 1px dashed #cbd5e1; padding: 10px; background: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="mobile-frame">
+    <div style="font-weight:bold; font-size:12px; margin-bottom:8px; color:#475569;">Simulated 360px Mobile Screen - Staff & RBAC</div>
+
+    <div class="ap-view-inner ap-staff-window">
+      <!-- Page Header with Actions -->
+      <div class="ap-view-header">
+        <div class="ap-view-title-group">
+          <h2 class="ap-view-title" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span>Staff &amp; Role-Based Access Control (RBAC)</span>
+          </h2>
+          <p class="ap-view-sub" style="margin:4px 0 10px; font-size:12px; color:#64748b;">Manage administrator credentials, assign granular operational module privileges, and enforce organizational security access policies.</p>
+        </div>
+        <div class="ap-view-actions">
+          <button type="button" class="ap-btn" id="ap-hr-test-role-btn">
+            Simulate Role Constraint
+          </button>
+          <button type="button" class="ap-btn" id="ap-staff-refresh-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" style="stroke:#ffffff !important; color:#ffffff !important;" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Staff Directory Table Card -->
+      <div class="ap-table-card" style="margin-top:16px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.04);">
+        <!-- Toolbar for Search and Filtering -->
+        <div class="ap-staff-toolbar" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.15); background:#022f43 !important; color:#ffffff !important; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+          <div class="ap-staff-search-wrap" style="display:flex; align-items:center; gap:8px; flex:1 1 300px; min-width:200px; max-width:100%;">
+            <input type="text" id="ap-staff-search-input" value="" placeholder="Search staff by name, email, or role..." style="width:100%; padding:9px 14px; border:1.5px solid rgba(255,255,255,0.25); border-radius:7px; font-size:13px; font-weight:600; outline:none; background:#ffffff; color:#0f172a; box-sizing:border-box;" />
+          </div>
+
+          <div class="ap-staff-filters-row" style="display:flex; align-items:center; gap:10px; flex-wrap:nowrap; width:100%; max-width:100%; box-sizing:border-box;">
+            <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:6px; flex:1 1 50%; min-width:0; max-width:50%; box-sizing:border-box;">
+              <span style="font-size:12px; font-weight:800; color:#ffffff !important; white-space:nowrap; flex-shrink:0;">Role:</span>
+              <select id="ap-staff-filter-role" style="width:100%; min-width:0; flex:1 1 auto; padding:7px 8px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; box-sizing:border-box;">
+                <option value="all" selected>All Roles</option>
+                <option value="Human Resources (HR)">Human Resources (HR)</option>
+                <option value="Super Administrator">Super Administrator</option>
+                <option value="Operations Lead">Operations Lead</option>
+              </select>
+            </div>
+
+            <div class="ap-staff-filter-item" style="display:flex; align-items:center; gap:6px; flex:1 1 50%; min-width:0; max-width:50%; box-sizing:border-box;">
+              <span style="font-size:12px; font-weight:800; color:#ffffff !important; white-space:nowrap; flex-shrink:0;">Status:</span>
+              <select id="ap-staff-filter-status" style="width:100%; min-width:0; flex:1 1 auto; padding:7px 8px; border:1.5px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; font-weight:700; color:#0f172a; outline:none; background:#ffffff; cursor:pointer; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; box-sizing:border-box;">
+                <option value="all" selected>All States</option>
+                <option value="active">Active Only</option>
+                <option value="suspended">Suspended Only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Placeholder -->
+        <div style="padding:12px; font-size:12px; color:#475569;">
+          Table body preview
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+</body>
+</html>

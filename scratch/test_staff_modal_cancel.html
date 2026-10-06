@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Modal Cancel Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div style="position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px);">
+    <div class="ap-modal-dialog" style="max-width:580px; width:100%; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.25); border:1px solid #cbd5e1;">
+      <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#ffffff;">Edit Staff Account &amp; Module Privileges</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#94a3b8;">Raj &bull; mitralokcolonybuxar@gmail.com</p>
+        </div>
+        <button type="button" id="ap-edit-modal-close" style="background:transparent; border:none; color:#ffffff; font-size:18px; cursor:pointer; font-weight:700;">&times;</button>
+      </div>
+
+      <div style="padding:20px; max-height:75vh; overflow-y:auto;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Staff Member Name</label>
+            <input type="text" value="Raj" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Assigned Role</label>
+            <select style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box; cursor:pointer;">
+              <option selected>Super Administrator</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Account Status</label>
+            <select style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box; cursor:pointer;">
+              <option selected>Active (Authorized Access)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:5px;">Reset Login Password <span style="font-size:11px; color:#64748b;">(Optional)</span></label>
+            <input type="text" placeholder="Leave empty to keep current password" style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;" />
+          </div>
+        </div>
+
+        <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:800; color:#0f172a; font-size:12px;">Authorized Operational Modules:</div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" style="background:#022f43 !important; color:#ffffff !important; font-weight:800 !important; border:1px solid #011f2d !important; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">Select All</button>
+              <button type="button" style="background:#022f43 !important; color:#ffffff !important; font-weight:800 !important; border:1px solid #011f2d !important; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">Clear</button>
+            </div>
+          </div>
+
+          <div id="ap-edit-perms-grid" class="ap-perms-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+            <label class="ap-edit-perm-item" style="display:flex; align-items:center; gap:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:7px; padding:9px 12px; cursor:pointer; user-select:none;">
+              <input type="checkbox" checked style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
+              <span style="font-size:12px; font-weight:700; color:#0f172a;">Orders & Fulfillment</span>
+            </label>
+            <label class="ap-edit-perm-item" style="display:flex; align-items:center; gap:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:7px; padding:9px 12px; cursor:pointer; user-select:none;">
+              <input type="checkbox" checked style="accent-color:#ff9400; width:15px; height:15px; cursor:pointer;" />
+              <span style="font-size:12px; font-weight:700; color:#0f172a;">Products & Inventory</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:14px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="ap-btn ghost ap-modal-cancel-btn" id="ap-edit-modal-cancel" style="padding:8px 18px; border:1.5px solid #cbd5e1 !important; background:#ffffff !important; color:#000000 !important; font-size:13px; font-weight:700 !important; border-radius:6px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Cancel</button>
+        <button type="button" id="ap-edit-modal-save" style="padding:8px 22px; border:1.5px solid #e08300 !important; background:#ff9400 !important; color:#000000 !important; font-size:13px; font-weight:800 !important; border-radius:6px; cursor:pointer; box-shadow:0 2px 6px rgba(255,148,0,0.3);">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html><body>
+<script>
+  localStorage.setItem("xmart_user", JSON.stringify({ name: "Super Admin", role: "admin", email: "admin@xmart.com" }));
+  localStorage.setItem("xmart_token", "mock_token_admin");
+  localStorage.setItem("xmart_admin_active", "1");
+  sessionStorage.setItem("xmart_admin_active", "1");
+  localStorage.setItem("xmart_admin_active_tab", "cms");
+  window.location.href = "http://localhost:8000/#admin-cms";
+</script>
+</body></html>

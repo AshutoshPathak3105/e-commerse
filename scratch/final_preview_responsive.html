@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Announcement Card - Responsive Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; padding: 20px; }
+    .demo-section { margin-bottom: 40px; }
+    .demo-label { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; text-transform: uppercase; }
+    .demo-desktop { width: 1100px; max-width: 100%; }
+    .demo-tablet  { width: 768px; max-width: 100%; }
+    .demo-mobile  { width: 375px; max-width: 100%; }
+    .ap-card-header { padding: 16px 20px; background: #022f43; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; position: relative; border-radius: 12px 12px 0 0; }
+    .ap-title-group { width: 100%; flex: 1 1 100%; min-width: 0; position: relative; }
+    .ap-card-header h3 { margin: 0; font-size: 15px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .title-text { font-size: 14px; font-weight: 800; color: #fff; flex: 0 0 auto; }
+    .ap-badge-green { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; font-weight: 800; font-size: 10.5px; padding: 2.5px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; }
+    .ap-card-header p { margin: 6px 0 0; font-size: 12px; color: #cbd5e1; font-weight: 600; line-height: 1.45; width: 100%; display: block; }
+    .ap-card-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: 100%; }
+    .ap-btn-primary { padding: 8px 16px; font-size: 12px; font-weight: 800; background: #ff9400; color: #000; border: 1px solid #e08300; border-radius: 8px; cursor: pointer; }
+    .ap-toolbar { padding: 12px 20px; background: #ff9400; font-size: 12px; font-weight: 700; color: #000; border-radius: 0 0 12px 12px; }
+    /* Desktop */
+    .demo-desktop .ap-card-header { flex-wrap: nowrap; gap: 16px; }
+    .demo-desktop .ap-title-group { flex: 1 1 auto; width: auto; }
+    .demo-desktop .ap-card-header-actions { flex-shrink: 0; width: auto; }
+    .demo-desktop .ap-badge-green { position: static; margin-left: 4px; }
+    .demo-desktop .ap-card-header h3 { width: auto; }
+    .demo-desktop .ap-card-header p { padding-right: 0; }
+    /* Tablet/Mobile */
+    .demo-tablet .ap-badge-green, .demo-mobile .ap-badge-green { position: absolute; top: 14px; right: 16px; margin: 0; font-size: 10px; padding: 2px 7px; z-index: 5; }
+    .demo-tablet .ap-card-header h3, .demo-mobile .ap-card-header h3 { display: block; width: 100%; padding-right: 130px; }
+    .demo-tablet .ap-card-header p, .demo-mobile .ap-card-header p { padding-right: 0; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2 style="color:#022f43;margin-bottom:24px;font-size:20px;">Announcement Card - Responsive Layout Preview</h2>
+
+  <div class="demo-section">
+    <div class="demo-label">Desktop (1025px+) - badge inline next to title</div>
+    <div class="demo-desktop">
+      <div class="ap-card-header">
+        <div class="ap-title-group">
+          <h3><span class="title-text">Top Navigation Announcement Bar</span><span class="ap-badge-green">&#9679; 3 Live on Production</span></h3>
+          <p>Manage all marquee announcement messages displayed at the top-left utility bar of the customer-facing storefront.</p>
+        </div>
+        <div class="ap-card-header-actions"><button class="ap-btn-primary">Add Announcement</button></div>
+      </div>
+      <div class="ap-toolbar">All Announcements (3) | Active Only (3) | Paused (0)</div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <div class="demo-label">Tablet (768px) - badge pinned top-right corner</div>
+    <div class="demo-tablet">
+      <div class="ap-card-header">
+        <div class="ap-title-group">
+          <h3><span class="title-text">Top Navigation Announcement Bar</span><span class="ap-badge-green">&#9679; 3 Live on Production</span></h3>
+          <p>Manage all marquee announcement messages displayed at the top-left utility bar of the customer-facing storefront.</p>
+        </div>
+        <div class="ap-card-header-actions"><button class="ap-btn-primary">Add Announcement</button></div>
+      </div>
+      <div class="ap-toolbar">All Announcements (3) | Active Only (3) | Paused (0)</div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <div class="demo-label">Mobile (375px) - badge pinned top-right corner</div>
+    <div class="demo-mobile">
+      <div class="ap-card-header">
+        <div class="ap-title-group">
+          <h3><span class="title-text">Top Navigation Announcement Bar</span><span class="ap-badge-green">&#9679; 3 Live on Production</span></h3>
+          <p>Manage all marquee announcement messages displayed at the top-left utility bar of the customer-facing storefront.</p>
+        </div>
+        <div class="ap-card-header-actions"><button class="ap-btn-primary">Add Announcement</button></div>
+      </div>
+      <div class="ap-toolbar">All Announcements (3) | Active Only (3) | Paused (0)</div>
+    </div>
+  </div>
+</body>
+</html>

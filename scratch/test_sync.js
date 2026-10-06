@@ -1,0 +1,12 @@
+const fs = require('fs');
+let html = fs.readFileSync('scratch/test_verified_fix.html', 'utf8');
+html = html.replace("window.addEventListener('DOMContentLoaded', () => {", '(() => {');
+html = html.replace('});\n</script>', '})();\n</script>');
+fs.writeFileSync('scratch/test_verified_fix_sync.html', html, 'utf8');
+const { execSync } = require('child_process');
+const path = require('path');
+const p = path.resolve('scratch/test_verified_fix_sync.html').replace(/\\/g, '/');
+execSync(`"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --headless=new --disable-gpu --window-size=390,2600 --dump-dom "file:///${p}" > scratch/dump_sync.html`);
+const dump = fs.readFileSync('scratch/dump_sync.html', 'utf8');
+const m = dump.match(/<div id="verified-fix-metrics">([\s\S]*?)<\/div>/);
+console.log('SYNC METRICS:\n', m ? m[1] : 'not found');

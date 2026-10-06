@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promo Modal Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #1e293b;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="ap-promo-full-window">
+    <!-- Top App Bar / Complete Window Header -->
+    <div class="ap-promo-modal-header" style="background:#022F43 !important; color:#ffffff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 3px 12px rgba(0,0,0,0.18); flex-shrink:0; z-index:10;">
+      <div style="flex:1; min-width:0; padding-right:12px;">
+        <h2 style="color:#ffffff !important; font-size:15px; font-weight:800; margin:0; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          Edit Promotional Offer / Voucher
+        </h2>
+        <p style="margin:2px 0 0; font-size:11px; color:#cbd5e1; line-height:1.3; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          Create customer vouchers, bank card discounts, or UPI app cashbacks with duration and store targeting.
+        </p>
+      </div>
+      <div style="display:flex; align-items:center; flex-shrink:0;">
+        <button type="button" class="ap-modal-close-btn" id="ap-promo-modal-close" style="color:#ffffff; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); border-radius:8px; width:32px; height:32px; font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Close Window">✕</button>
+      </div>
+    </div>
+
+    <!-- Full Window Scrollable Content Canvas -->
+    <div class="ap-promo-modal-body-canvas" style="flex:1; overflow-y:auto; padding:20px 16px 60px; display:flex; justify-content:center; align-items:flex-start; background:#f1f5f9;">
+      <div id="ap-promo-modal-card" class="ap-promo-modal-card" style="width:100%; max-width:1150px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:24px 28px; box-shadow:0 4px 20px rgba(0,0,0,0.06); box-sizing:border-box; height:fit-content; min-height:min-content;">
+
+        <!-- Offer Type Selector -->
+        <div class="ap-promo-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div class="ap-form-group">
+            <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800; font-size:12px;">OFFER / PROMOTION CATEGORY</label>
+            <select class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+              <option selected>Bank Card Instant Discount</option>
+            </select>
+          </div>
+          <div class="ap-form-group">
+            <label class="ap-cms-label" style="display:block; margin-bottom:5px; color:#000000; font-weight:800; font-size:12px;">TARGET SCOPE</label>
+            <select class="ap-input" style="width:100%; font-weight:700; color:#000000;">
+              <option selected>Specific Merchant Store</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Conditional Bank Partner Field -->
+        <div id="promo-bank-section" class="ap-form-group" style="margin-bottom:22px; display:block;">
+          <div class="ap-promo-field-header" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
+            <label class="ap-cms-label" style="color:#000000; font-weight:800; font-size:12px;">ELIGIBLE BANK PARTNER(S) — TOP 10 MOST VALUED BANKS OF INDIA</label>
+            <span style="font-size:11px; color:#475569; font-weight:600;">Select banks from dropdown window below</span>
+          </div>
+
+          <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-weight:800; color:#0f172a; font-size:12.5px;">Selected Bank Card Eligibility:</div>
+                <div style="font-size:11px; color:#475569; font-weight:600;">Set Debit, Credit, or Both for each bank</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; color:#475569; font-weight:700;">Set all to:</span>
+                <div style="display:flex; gap:4px;">
+                  <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Both</button>
+                  <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Debit Only</button>
+                  <button type="button" class="ap-btn-tiny" style="background:#ffffff; border:1px solid #cbd5e1; color:#0f172a; font-weight:700; border-radius:4px; padding:2px 8px;">Credit Only</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="promo-bank-rule-item" style="border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; background:#fff; margin-bottom:6px;">
+              <div class="promo-bank-rule-top">
+                <span style="font-weight:800; font-size:12px;">Bank of Baroda</span>
+                <span class="mobile-remove-btn" style="color:#94a3b8; cursor:pointer;">✕</span>
+              </div>
+              <div class="rule-type-toggle-group">
+                <button type="button" class="rule-type-btn" style="border:1px solid #cbd5e1; background:#fff;">Both Cards</button>
+                <button type="button" class="rule-type-btn" style="border:1px solid #cbd5e1; background:#fff;">Debit Only</button>
+                <button type="button" class="rule-type-btn" style="border:1px solid #FF9400; background:#fff7ed; color:#c2410c;">Credit Only</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div style="margin-bottom:14px;">
+          <span style="font-size:11.5px; color:#000000; font-weight:800;">Quick Expiry Presets:</span>
+          <div class="ap-preset-pills" id="promo-duration-presets" style="margin-top:4px;">
+            <button type="button" class="ap-preset-pill ap-duration-preset-btn">24 Hours</button>
+            <button type="button" class="ap-preset-pill ap-duration-preset-btn">3 Days</button>
+            <button type="button" class="ap-preset-pill ap-duration-preset-btn">7 Days</button>
+            <button type="button" class="ap-preset-pill ap-duration-preset-btn">30 Days</button>
+            <button type="button" class="ap-preset-pill ap-duration-preset-btn">No Expiry</button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ap-promo-modal-actions">
+          <button type="button" class="ap-btn ghost" id="ap-promo-modal-cancel">Cancel</button>
+          <button type="button" class="ap-btn primary" id="ap-promo-modal-save">Save Offer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

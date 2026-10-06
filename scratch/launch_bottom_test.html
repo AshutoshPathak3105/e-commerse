@@ -1,0 +1,16 @@
+
+<!DOCTYPE html>
+<html>
+<body style="margin:0; padding:0;">
+  <iframe id="f" src="http://localhost:8000/admin_test_bridge.html" style="width:100vw; height:100vh; border:none;"></iframe>
+  <script>
+    const f = document.getElementById('f');
+    setTimeout(() => {
+      try {
+        const w = f.contentWindow;
+        w.scrollTo({ top: 1200, behavior: 'instant' });
+      } catch(e) {}
+    }, 6000);
+  </script>
+</body>
+</html>

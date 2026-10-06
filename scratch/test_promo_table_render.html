@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promo Table Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open ap-cms-view">
+  <div class="ap-view-inner ap-cms-view" style="width:100%;">
+    <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+      <div class="ap-card-header" style="padding:16px 20px; background:#022f43; color:#fff;">
+        <h3 style="margin:0; color:#fff;">Promotional Offers, Bank Cards &amp; Vouchers</h3>
+      </div>
+      <div class="ap-cms-toolbar" style="background:#ff9400; padding:12px;">
+        <div class="ap-cms-pills">
+          <button class="ap-cms-pill active">All Offers (2)</button>
+        </div>
+      </div>
+      <div class="ap-table-wrap">
+        <table class="ap-table" id="ap-promos-table">
+          <thead style="background:#ff9400;">
+            <tr style="background:#ff9400 !important;">
+              <th>Voucher Code &amp; Type</th>
+              <th>Offer Title &amp; Terms</th>
+              <th>Scope / Target Store</th>
+              <th>Discount Rate</th>
+              <th>Min Bag Value</th>
+              <th>Bank / UPI Partner</th>
+              <th>Duration / Expiry</th>
+              <th>Status</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ap-promos-table-body">
+            
+              <tr data-promo-id="p1">
+                <td>
+                  <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">ABC10</div>
+                  <div style="margin-top:2px;"><span class="offer-type-tag voucher">Voucher</span></div>
+                </td>
+                <td>
+                  <div style="font-weight:700; color:#000000; font-size:13px;">Festival 10% Flat Savings</div>
+                  <div style="font-size:11.5px; color:#334155; margin-top:2px; max-width:240px; line-height:1.35;">Get extra 10% instant discount on cart</div>
+                </td>
+                <td><span class="ap-badge green" title="Storewide across all sellers">Storewide</span></td>
+                <td><strong style="color:#000000;">10% OFF</strong></td>
+                <td><strong style="color:#000000; font-size:12.5px;">₹1,999</strong></td>
+                <td><div style="font-size:12px; color:#000000;">
+                <div class="ap-promo-cyclic-ticker-wrap" data-count="2" title="Cycling 2 offer details. Hover to pause.">
+                  
+                    <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+                      
+                  <div style="display:flex; align-items:flex-start; gap:8px;">
+                    <div style="width:22px; height:22px; border-radius:4px; background:#fff7ed; border:1px solid #fed7aa; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#ea580c"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-weight:700; color:#000000; font-size:12px;">All Customers (Storewide Cart Voucher)</div>
+                      <span class="ap-offer-ticker-badge voucher-all" style="font-size:10px; font-weight:800; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:4px; border:1px solid #fde68a; display:inline-block; margin-top:2px; white-space:nowrap;">Storewide Coupon Code</span>
+                    </div>
+                  </div>
+                
+                      <span class="ap-cyclic-ticker-indicator">1/2</span>
+                    </div>
+                  
+                    <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+                      
+                  <div style="display:flex; align-items:flex-start; gap:8px;">
+                    <div style="width:22px; height:22px; border-radius:4px; background:#f0fdf4; border:1px solid #bbf7d0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-weight:700; color:#000000; font-size:12px;">Min Bag Value: ₹1,999+</div>
+                      <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Auto-Apply Eligible</span>
+                    </div>
+                  </div>
+                
+                      <span class="ap-cyclic-ticker-indicator">2/2</span>
+                    </div>
+                  
+                </div>
+              </div></td>
+                <td>
+                  <div>
+                    <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">Expired</span>
+                    <div style="font-size:11px; color:#b91c1c; font-weight:700; margin-top:3px;">Ended: 30 Sept 2026, 02:52 am</div>
+                  </div>
+                </td>
+                <td>
+                  
+                    <span class="ap-badge red" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5;">
+                      Expired
+                    </span>
+                  
+                </td>
+                <td style="white-space:nowrap; text-align:right;">
+                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="p1" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="p1" style="padding:4px 10px; font-size:12px;">Delete</button>
+                </td>
+              </tr>
+            
+              <tr data-promo-id="p2">
+                <td>
+                  <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13.5px; letter-spacing:0.04em;">ICICICARD</div>
+                  <div style="margin-top:2px;"><span class="offer-type-tag bank">Bank Card</span></div>
+                </td>
+                <td>
+                  <div style="font-weight:700; color:#000000; font-size:13px;">ICICI Bank Instant 10% Offer</div>
+                  <div style="font-size:11.5px; color:#334155; margin-top:2px; max-width:240px; line-height:1.35;">Exclusive instant savings on all ICICI Bank credit &amp; debit cards</div>
+                </td>
+                <td><span class="ap-badge green" title="Storewide across all sellers">Storewide</span></td>
+                <td><strong style="color:#000000;">10% OFF</strong><div style="font-size:11px; color:#1e293b; font-weight:600;">Max ₹1,500</div></td>
+                <td><strong style="color:#000000; font-size:12.5px;">₹4,999</strong></td>
+                <td><div style="font-size:12px; color:#000000;">
+                <div class="ap-promo-cyclic-ticker-wrap" data-count="5" title="Cycling 5 offer details. Hover to pause.">
+                  
+                    <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+                      
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-Logo.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:#000000; font-size:12px;">ICICI Bank</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit Cards</span>
+                      </div>
+                    </div>
+                  
+                      <span class="ap-cyclic-ticker-indicator">1/5</span>
+                    </div>
+                  
+                    <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+                      
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-Logo.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:#000000; font-size:12px;">HDFC Bank</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit Cards</span>
+                      </div>
+                    </div>
+                  
+                      <span class="ap-cyclic-ticker-indicator">2/5</span>
+                    </div>
+                  
+                    <div class="ap-promo-cyclic-slide " data-slide-idx="2">
+                      
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-Logo.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:#000000; font-size:12px;">SBI Card</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit Cards</span>
+                      </div>
+                    </div>
+                  
+                      <span class="ap-cyclic-ticker-indicator">3/5</span>
+                    </div>
+                  
+                    <div class="ap-promo-cyclic-slide " data-slide-idx="3">
+                      
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-Logo.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:#000000; font-size:12px;">Axis Bank</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit Cards</span>
+                      </div>
+                    </div>
+                  
+                      <span class="ap-cyclic-ticker-indicator">4/5</span>
+                    </div>
+                  
+                    <div class="ap-promo-cyclic-slide " data-slide-idx="4">
+                      
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0; margin-top:2px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-Logo.svg" alt="Bank" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.src='logo.png'" />
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:#000000; font-size:12px;">Kotak Bank</div>
+                        <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px; white-space:nowrap;">Debit & Credit Cards</span>
+                      </div>
+                    </div>
+                  
+                      <span class="ap-cyclic-ticker-indicator">5/5</span>
+                    </div>
+                  
+                </div>
+              </div></td>
+                <td>
+                  <div>
+                    <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (7d left)</span>
+                    <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: 9 Oct 2026, 10:07 pm</div>
+                  </div>
+                </td>
+                <td>
+                  
+                    <button type="button" class="ap-btn-tiny ap-promo-toggle-btn ap-badge gray" data-id="p2" data-active="false" style="cursor:pointer; border:none; font-weight:800;">
+                      ○ Paused
+                    </button>
+                  
+                </td>
+                <td style="white-space:nowrap; text-align:right;">
+                  <button type="button" class="ap-btn ghost ap-edit-promo-btn" data-id="p2" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button>
+                  <button type="button" class="ap-btn danger ap-delete-promo-btn" data-id="p2" style="padding:4px 10px; font-size:12px;">Delete</button>
+                </td>
+              </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

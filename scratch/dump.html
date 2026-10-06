@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMS Verified Preview</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; }
+    #admin-panel-overlay { width: 100%; max-width: 1360px; margin: 0 auto; }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  
+          <div class="ap-view-inner ap-cms-view">
+            <div class="ap-view-header">
+              <div class="ap-view-title-group">
+                <h2 class="ap-view-title" style="color:#000000;">
+                  CMS &amp; Storefront Control
+                  <span class="ap-super-badge" style="background:#ecfdf5; color:#059669; border-color:#a7f3d0;">Storefront Live</span>
+                </h2>
+                <p class="ap-view-sub" style="color:#000000; font-weight:600;">Manage featured hero carousels with custom images, storewide discount vouchers, bank card instant discounts, and UPI app offers.</p>
+              </div>
+              <div class="ap-view-actions">
+                <button class="ap-btn ghost" id="ap-cms-refresh-btn">
+                  <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                  Refresh
+                </button>
+                <button class="ap-btn primary" id="ap-top-add-quad-btn" style="background:#2563eb; border-color:#1d4ed8; color:#ffffff !important; font-weight:800;">
+                  <span>+ Add Homepage Card</span>
+                </button>
+                <button class="ap-btn primary" id="ap-top-add-banner-btn" style="color:#000000; font-weight:800;">
+                  <span style="color:#000000; font-weight:800;">+ Add Featured Banner</span>
+                </button>
+                <button class="ap-btn primary" id="ap-top-add-promo-btn" style="background:#ea580c; border-color:#c2410c; color:#000000; font-weight:800;">
+                  <span style="color:#000000; font-weight:800;">+ Create Offer / Voucher</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Global Announcement Ticker Manager -->
+            <div class="ap-form-card" style="margin-bottom:24px; padding:0; overflow:hidden;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">Top Navigation Announcement Bar</h3>
+                  <p style="font-size:12px; color:#cbd5e1 !important; font-weight:600; margin:2px 0 0;">This marquee message is pinned at the top-left utility bar of the customer-facing storefront.</p>
+                </div>
+                <span class="ap-badge green" style="background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important; font-weight:800;">● Live on Production</span>
+              </div>
+              <div style="padding:18px 20px;">
+                <div class="ap-form-group" style="margin-bottom:12px;">
+                  <label for="ap-cms-announcement-input" class="ap-cms-label" style="display:block; margin-bottom:6px; color:#000000; font-weight:800;">Ticker Announcement Text</label>
+                  <input type="text" id="ap-cms-announcement-input" class="ap-input" value="Mega Festive Super Sale: Up to 10% OFF Across All Electronics &amp; Fashion!" style="width:100%; font-size:13px; font-weight:700; color:#000000; padding:10px 14px;">
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                  <button class="ap-btn primary" id="ap-save-cms-announcement-btn" style="padding:8px 20px; background:#022f43; color:#ffffff !important; font-weight:800;">
+                    Save Announcement Bar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Homepage 4-Quadrant Category Cards Manager -->
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;" id="ap-quad-cards-section">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important; display:flex; align-items:center; gap:8px;">
+                    Homepage 4-Quadrant Category Cards
+                    <span class="ap-badge blue" id="ap-quad-count-badge" style="font-weight:800; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important; padding:3px 10px; border-radius:12px; font-size:11px;">28 Cards</span>
+                  </h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Full control over all 4-item category cards on the customer homepage. Change titles, swap images, edit deal badges, and add/remove cards.</p>
+                </div>
+                <div class="ap-card-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                  <button type="button" class="ap-btn ghost" id="ap-cms-reset-quad-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:#ffffff; color:#022f43 !important; border:1px solid #cbd5e1; white-space:nowrap;" title="Restore original factory preset cards">
+                    ↺ Reset to Defaults
+                  </button>
+                  <button type="button" class="ap-btn primary" id="ap-cms-add-quad-btn" style="padding:6px 16px; font-size:12px; font-weight:800; background:#2563eb; color:#ffffff !important; border-color:#1d4ed8; white-space:nowrap;">
+                    + Add New Homepage Card
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Toolbar with Search & Row Filters -->
+              <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1.5px solid #e08300; background:#ff9400; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="ap-cms-pills" id="ap-quad-row-pills">
+                  <button type="button" class="ap-cms-pill active" data-row="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Rows (28)</button>
+                  <button type="button" class="ap-cms-pill" data-row="1" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 1</button>
+                  <button type="button" class="ap-cms-pill" data-row="2" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 2</button>
+                  <button type="button" class="ap-cms-pill" data-row="3" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 3</button>
+                  <button type="button" class="ap-cms-pill" data-row="4" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 4</button>
+                  <button type="button" class="ap-cms-pill" data-row="5" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 5</button>
+                  <button type="button" class="ap-cms-pill" data-row="6" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 6</button>
+                  <button type="button" class="ap-cms-pill" data-row="7" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Row 7</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input type="text" id="ap-quad-search-input" placeholder="Search cards by title or item..." style="width:240px; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; background:#ffffff; color:#000000;">
+                </div>
+              </div>
+
+              <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:980px; width:100%;">
+                  <!-- Pinned orange header (strictly NO scrollbar here) -->
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:110px;">
+                        <col style="width:35%;">
+                        <col style="width:15%;">
+                        <col style="width:18%;">
+                        <col style="width:10%;">
+                        <col style="width:130px;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:left;">4 Tile Preview</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:left;">Card Title &amp; Items Summary</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:left;">Row &amp; Order</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:left;">Destination &amp; Footer</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px; text-align:left;">Status</th>
+                          <th style="text-align:right; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:12px 14px;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <!-- Scrollable body (scrollbar appears strictly below the orange header) -->
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="overflow-y:auto; overflow-x:hidden; width:100%; background:#ffffff; -webkit-overflow-scrolling:touch;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:110px;">
+                        <col style="width:35%;">
+                        <col style="width:15%;">
+                        <col style="width:18%;">
+                        <col style="width:10%;">
+                        <col style="width:130px;">
+                      </colgroup>
+                      <tbody id="ap-quad-table-body">
+                        
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #1</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 1</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-1</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #2</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 2</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-2</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #3</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 3</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-3</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #4</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 4</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-4</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #5</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 5</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-5</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #6</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 6</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-6</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #7</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 7</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-7</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #8</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 8</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-8</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #9</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 9</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-9</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+  <tr>
+    <td style="text-align:center;"><div style="width:48px; height:48px; background:#e2e8f0; border-radius:6px; margin:0 auto;"></div></td>
+    <td><strong style="color:#000000; font-size:13px;">Item Category Card #10</strong><div style="font-size:11.5px; color:#475569;">Air conditioners, Refrigerators, Microwaves, Washing machines</div></td>
+    <td style="text-align:center;"><span class="ap-badge blue">Row 1 · Order 10</span></td>
+    <td style="text-align:center;"><span style="font-size:12px; font-weight:600;">/category/item-10</span></td>
+    <td style="text-align:center;"><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quad-btn" style="padding:4px 10px; font-size:12px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 10px; font-size:12px;">Delete</button></td>
+  </tr>
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Hero Promo Cards & Quick Browse Strip Grid -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
+              <!-- Top Hero Cards (4 Cards) -->
+              <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+                <div class="ap-card-header" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Top Hero Promo Cards</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The 4 showcase cards below the main banner slider.</p>
+                  </div>
+                  <button type="button" class="ap-btn primary" id="ap-add-hero-promo-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#2563eb; color:#ffffff !important; border-color:#1d4ed8;">+ Add</button>
+                </div>
+                <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                  <div style="min-width:480px; width:100%;">
+                    <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                      <table class="ap-table" style="width:100%; min-width:480px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                        <colgroup>
+                          <col style="width:65px;">
+                          <col style="width:50%;">
+                          <col style="width:18%;">
+                          <col style="width:120px;">
+                        </colgroup>
+                        <thead style="background:#ff9400;">
+                          <tr style="background:#ff9400 !important;">
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Image</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Details &amp; Badge</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Status</th>
+                            <th style="text-align:right; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px;">Actions</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div class="ap-cms-body-scroll ap-table-body-scroll" style="overflow-y:auto; overflow-x:hidden; width:100%; background:#ffffff; -webkit-overflow-scrolling:touch;">
+                      <table class="ap-table" style="width:100%; min-width:480px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                        <colgroup>
+                          <col style="width:65px;">
+                          <col style="width:50%;">
+                          <col style="width:18%;">
+                          <col style="width:120px;">
+                        </colgroup>
+                        <tbody id="ap-hero-promo-table-body">
+                          
+  <tr>
+    <td><div style="width:40px; height:40px; background:#e2e8f0; border-radius:4px;"></div></td>
+    <td><div style="font-weight:700; color:#000000;">Mega Brand Days</div><span class="ap-badge orange">Hot Deal</span></td>
+    <td><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-hero-btn" style="padding:4px 8px; font-size:11px; margin-right:2px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+  </tr>
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Browse Items (7 Items) -->
+              <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+                <div class="ap-card-header" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h3 style="margin:0; font-size:14px; font-weight:800; color:#ffffff !important;">Quick-Browse Strip Items</h3>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#cbd5e1 !important; font-weight:600;">The mini horizontal browse items above the quad grid.</p>
+                  </div>
+                  <button type="button" class="ap-btn primary" id="ap-add-quick-browse-btn" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#2563eb; color:#ffffff !important; border-color:#1d4ed8;">+ Add</button>
+                </div>
+                <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                  <div style="min-width:480px; width:100%;">
+                    <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                      <table class="ap-table" style="width:100%; min-width:480px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                        <colgroup>
+                          <col style="width:60px;">
+                          <col style="width:52%;">
+                          <col style="width:18%;">
+                          <col style="width:120px;">
+                        </colgroup>
+                        <thead style="background:#ff9400;">
+                          <tr style="background:#ff9400 !important;">
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Image</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Title &amp; Badge</th>
+                            <th style="background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px; text-align:left;">Status</th>
+                            <th style="text-align:right; background:#ff9400 !important; color:#000000 !important; font-weight:800; border:none; padding:10px 12px;">Actions</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div class="ap-cms-body-scroll ap-table-body-scroll" style="overflow-y:auto; overflow-x:hidden; width:100%; background:#ffffff; -webkit-overflow-scrolling:touch;">
+                      <table class="ap-table" style="width:100%; min-width:480px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                        <colgroup>
+                          <col style="width:60px;">
+                          <col style="width:52%;">
+                          <col style="width:18%;">
+                          <col style="width:120px;">
+                        </colgroup>
+                        <tbody id="ap-quick-browse-table-body">
+                          
+  <tr>
+    <td><div style="width:36px; height:36px; background:#e2e8f0; border-radius:4px;"></div></td>
+    <td><div style="font-weight:700; color:#000000;">Smartphones</div></td>
+    <td><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-quick-btn" style="padding:4px 8px; font-size:11px; margin-right:2px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+  </tr>
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Featured Banners Table Card -->
+            <div class="ap-table-card" style="margin-bottom:24px; border-radius:12px; overflow:hidden;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Active Featured Banners</h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Hero slider images, headlines, and category callouts shown on the homepage.</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span class="ap-badge gray" id="ap-banner-count-badge" style="font-weight:700; background:#0f2744 !important; color:#93c5fd !important; border:1px solid #1e40af !important;">5 Banners</span>
+                  <button class="ap-btn primary" id="ap-cms-add-banner-btn" style="padding:6px 14px; font-size:12px; color:#ffffff !important; font-weight:800; background:#2563eb; border-color:#1d4ed8;">
+                    + Add Featured Banner
+                  </button>
+                </div>
+              </div>
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:980px; width:100%;">
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:100px;">
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:16%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:130px;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Image Preview</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Banner Headline &amp; Subtitle</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Tag Badge</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Destination Link</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Order</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Status</th>
+                          <th style="text-align:right; color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="overflow-y:auto; overflow-x:hidden; width:100%; background:#ffffff; -webkit-overflow-scrolling:touch;">
+                    <table class="ap-table" style="width:100%; min-width:980px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:100px;">
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:16%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:130px;">
+                      </colgroup>
+                      <tbody id="ap-banners-table-body">
+                        
+  <tr>
+    <td><div style="width:80px; height:40px; background:#e2e8f0; border-radius:4px;"></div></td>
+    <td><strong style="color:#000000;">Big Festival Bonanza</strong><div style="font-size:11px; color:#475569;">Up to 70% off on all trending styles</div></td>
+    <td><span class="ap-badge blue">Hero Slider</span></td>
+    <td><code>/deals</code></td>
+    <td>#1</td>
+    <td><span class="ap-badge green">● Active</span></td>
+    <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-banner-btn" style="padding:4px 8px; font-size:11px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+  </tr>
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Promotional Offers, Bank Cards & UPI Vouchers -->
+            <div class="ap-table-card" style="border-radius:12px; overflow:hidden;">
+              <div class="ap-card-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022f43; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Promotional Offers, Bank Cards &amp; Vouchers</h3>
+                  <p style="margin:2px 0 0; font-size:12px; color:#cbd5e1 !important; font-weight:600;">Manage storewide vouchers, bank instant discounts, UPI cashback, and store-specific campaigns.</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span class="ap-badge green" id="ap-promo-count-badge" style="font-weight:700; background:#064e3b !important; color:#6ee7b7 !important; border:1px solid #059669 !important;">14 Offers</span>
+                  <button class="ap-btn primary" id="ap-cms-add-promo-btn" style="background:#ea580c; border-color:#c2410c; padding:6px 14px; font-size:12px; color:#ffffff !important; font-weight:800;">
+                    + Create Offer / Voucher
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Toolbar with Dedicated Searchbar for Stores -->
+              <div class="ap-cms-toolbar" style="background:#ff9400; border-bottom:1.5px solid #e08300;">
+                <div class="ap-cms-pills">
+                  <button type="button" class="ap-cms-pill active" data-filter="all" style="background:#022f43 !important; color:#ffffff !important; border-color:#022f43 !important; font-weight:800;">All Offers (14)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="voucher" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Vouchers (5)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="bank" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Bank Cards (4)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="upi" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">UPI Offers (3)</button>
+                  <button type="button" class="ap-cms-pill" data-filter="store" style="background:#ffffff; color:#000000; border:1px solid rgba(0,0,0,0.15); font-weight:700;">Store-Specific (2)</button>
+                </div>
+
+                <div class="ap-cms-searches">
+                  <!-- DEDICATED SEARCHBAR FOR STORES -->
+                  <div class="ap-cms-search-field">
+                    <label for="ap-cms-store-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search by Store / Merchant</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                      <input type="text" id="ap-cms-store-search-input" style="color:#000000; font-weight:600; background:transparent;">
+                      <button type="button" id="ap-cms-clear-store-search" class="ap-cms-clear-btn" style="display:none;" title="Clear store search">✕</button>
+                    </div>
+                  </div>
+
+                  <!-- Offer Code & Title Search -->
+                  <div class="ap-cms-search-field">
+                    <label for="ap-cms-offer-search-input" class="ap-cms-label" style="color:#000000; font-weight:800;">Search Voucher / Code</label>
+                    <div class="ap-cms-input-box" style="background:#ffffff; border-radius:6px; border:1px solid #cbd5e1;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                      <input type="text" id="ap-cms-offer-search-input" style="color:#000000; font-weight:600; background:transparent;">
+                      <button type="button" id="ap-cms-clear-offer-search" class="ap-cms-clear-btn" style="display:none;" title="Clear search">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ap-cms-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:1150px; width:100%;">
+                  <div class="ap-table-header-part ap-cms-table-header" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" id="ap-promos-table-header" style="width:100%; min-width:1150px; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                        <col style="width:12%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:13%;">
+                        <col style="width:11%;">
+                        <col style="width:10%;">
+                        <col style="width:120px;">
+                      </colgroup>
+                      <thead style="background:#ff9400;">
+                        <tr style="background:#ff9400 !important;">
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Voucher Code &amp; Type</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Offer Title &amp; Terms</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Scope / Target Store</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Discount Rate</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Min Bag Value</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Bank / UPI Partner</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Duration / Expiry</th>
+                          <th style="color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px; text-align:left;">Status</th>
+                          <th style="text-align:right; color:#000000 !important; font-weight:800; background:#ff9400 !important; border:none; padding:12px 14px;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="ap-cms-body-scroll ap-table-body-scroll" style="overflow-y:auto; overflow-x:hidden; width:100%; background:#ffffff; -webkit-overflow-scrolling:touch;">
+                    <table class="ap-table" id="ap-promos-table" style="width:100%; min-width:1150px; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                        <col style="width:12%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:13%;">
+                        <col style="width:11%;">
+                        <col style="width:10%;">
+                        <col style="width:120px;">
+                      </colgroup>
+                      <tbody id="ap-promos-table-body">
+                        
+      <tr>
+        <td style="text-align:center;">
+          <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13px;">ABC10</div>
+          <span class="offer-type-tag voucher" style="margin-top:2px;">voucher</span>
+        </td>
+        <td><strong style="color:#000000;">Festival 10% Flat Savings</strong></td>
+        <td><span class="ap-badge green">Storewide</span></td>
+        <td><strong style="color:#000000;">10% OFF</strong></td>
+        <td>₹1999</td>
+        <td>
+      <div class="ap-promo-cyclic-ticker-wrap" data-count="2" title="Cycling 2 offer details. Hover to pause.">
+        
+          <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+            
+        <div style="display:flex; align-items:flex-start; gap:8px;">
+          <div style="width:22px; height:22px; border-radius:4px; background:#fff7ed; border:1px solid #fed7aa; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <span style="font-size:10px; font-weight:bold;">🏷️</span>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#000000; font-size:12px;">All Customers</div>
+            <span class="ap-offer-ticker-badge voucher-all" style="font-size:10px; font-weight:800; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:4px; border:1px solid #fde68a; display:inline-block; margin-top:2px;">Storewide Coupon Code</span>
+          </div>
+        </div>
+      
+            <span class="ap-cyclic-ticker-indicator">1/2</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+            
+        <div style="display:flex; align-items:flex-start; gap:8px;">
+          <div style="width:22px; height:22px; border-radius:4px; background:#f0fdf4; border:1px solid #bbf7d0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <span style="font-size:10px; font-weight:bold;">✨</span>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#000000; font-size:12px;">Min Bag Value: ₹2,499+</div>
+            <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Auto-Apply Eligible</span>
+          </div>
+        </div>
+      
+            <span class="ap-cyclic-ticker-indicator">2/2</span>
+          </div>
+        
+      </div>
+    </td>
+        <td>
+      <div>
+        <span class="ap-badge red" style="font-weight:800; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">Expired</span>
+        <div style="font-size:11px; color:#b91c1c; font-weight:700; margin-top:3px;">Ended: 30 Sept 2026, 02:52 am</div>
+      </div>
+    </td>
+        <td style="text-align:center;">
+          <span class="ap-badge red">● Expired</span>
+        </td>
+        <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-promo-btn" style="padding:4px 8px; font-size:11px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+      </tr>
+    
+      <tr>
+        <td style="text-align:center;">
+          <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13px;">MEGAFESTIVE</div>
+          <span class="offer-type-tag bank" style="margin-top:2px;">bank</span>
+        </td>
+        <td><strong style="color:#000000;">10% Instant Card Discount</strong></td>
+        <td><span class="ap-badge green">Storewide</span></td>
+        <td><strong style="color:#000000;">10% OFF</strong></td>
+        <td>₹4999</td>
+        <td>
+      <div class="ap-promo-cyclic-ticker-wrap" data-count="4" title="Cycling 4 offer details. Hover to pause.">
+        
+          <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">🏛️</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">HDFC Bank</div>
+              <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Debit &amp; Credit Cards</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">1/4</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">🏛️</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">ICICI Bank</div>
+              <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Debit &amp; Credit Cards</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">2/4</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="2">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">🏛️</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">SBI Card</div>
+              <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Debit &amp; Credit Cards</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">3/4</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="3">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">🏛️</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">Axis Bank</div>
+              <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Debit &amp; Credit Cards</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">4/4</span>
+          </div>
+        
+      </div>
+    </td>
+        <td>
+      <div>
+        <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (7d left)</span>
+        <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: 10 Oct 2026, 01:49 am</div>
+      </div>
+    </td>
+        <td style="text-align:center;">
+          <span class="ap-badge green">● Active</span>
+        </td>
+        <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-promo-btn" style="padding:4px 8px; font-size:11px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+      </tr>
+    
+      <tr>
+        <td style="text-align:center;">
+          <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13px;">UPIPAYBACK</div>
+          <span class="offer-type-tag upi" style="margin-top:2px;">upi</span>
+        </td>
+        <td><strong style="color:#000000;">₹100 Instant Cashback</strong></td>
+        <td><span class="ap-badge green">Storewide</span></td>
+        <td><strong style="color:#000000;">100% OFF</strong></td>
+        <td>₹999</td>
+        <td>
+      <div class="ap-promo-cyclic-ticker-wrap" data-count="3" title="Cycling 3 offer details. Hover to pause.">
+        
+          <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">📱</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">Google Pay</div>
+              <span class="ap-offer-ticker-badge upi" style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px;">UPI Cashback</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">1/3</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">📱</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">PhonePe</div>
+              <span class="ap-offer-ticker-badge upi" style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px;">UPI Cashback</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">2/3</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="2">
+            
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <div style="width:22px; height:22px; border-radius:4px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+              <span style="font-size:10px; font-weight:bold;">📱</span>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#000000; font-size:12px;">Paytm UPI</div>
+              <span class="ap-offer-ticker-badge upi" style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd; display:inline-block; margin-top:2px;">UPI Cashback</span>
+            </div>
+          </div>
+        
+            <span class="ap-cyclic-ticker-indicator">3/3</span>
+          </div>
+        
+      </div>
+    </td>
+        <td>
+      <div>
+        <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (7d left)</span>
+        <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: 10 Oct 2026, 01:49 am</div>
+      </div>
+    </td>
+        <td style="text-align:center;">
+          <span class="ap-badge green">● Active</span>
+        </td>
+        <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-promo-btn" style="padding:4px 8px; font-size:11px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+      </tr>
+    
+      <tr>
+        <td style="text-align:center;">
+          <div style="font-family:monospace; font-weight:800; color:#000000; font-size:13px;">RELIANCE10</div>
+          <span class="offer-type-tag voucher" style="margin-top:2px;">voucher</span>
+        </td>
+        <td><strong style="color:#000000;">10% Exclusive Store Voucher</strong></td>
+        <td><span class="ap-badge green">Storewide</span></td>
+        <td><strong style="color:#000000;">10% OFF</strong></td>
+        <td>₹10000</td>
+        <td>
+      <div class="ap-promo-cyclic-ticker-wrap" data-count="2" title="Cycling 2 offer details. Hover to pause.">
+        
+          <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+            
+        <div style="display:flex; align-items:flex-start; gap:8px;">
+          <div style="width:22px; height:22px; border-radius:4px; background:#fff7ed; border:1px solid #fed7aa; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <span style="font-size:10px; font-weight:bold;">🏷️</span>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#000000; font-size:12px;">All Customers</div>
+            <span class="ap-offer-ticker-badge voucher-all" style="font-size:10px; font-weight:800; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:4px; border:1px solid #fde68a; display:inline-block; margin-top:2px;">Storewide Coupon Code</span>
+          </div>
+        </div>
+      
+            <span class="ap-cyclic-ticker-indicator">1/2</span>
+          </div>
+        
+          <div class="ap-promo-cyclic-slide " data-slide-idx="1">
+            
+        <div style="display:flex; align-items:flex-start; gap:8px;">
+          <div style="width:22px; height:22px; border-radius:4px; background:#f0fdf4; border:1px solid #bbf7d0; display:flex; align-items:center; justify-content:center; padding:2px; flex-shrink:0;">
+            <span style="font-size:10px; font-weight:bold;">✨</span>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#000000; font-size:12px;">Min Bag Value: ₹2,499+</div>
+            <span class="ap-offer-ticker-badge bank" style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; border:1px solid #86efac; display:inline-block; margin-top:2px;">Auto-Apply Eligible</span>
+          </div>
+        </div>
+      
+            <span class="ap-cyclic-ticker-indicator">2/2</span>
+          </div>
+        
+      </div>
+    </td>
+        <td>
+      <div>
+        <span class="ap-badge green" style="font-weight:800; background:#dcfce7; color:#15803d; border:1px solid #86efac;">Active (7d left)</span>
+        <div style="font-size:11px; color:#000000; font-weight:600; margin-top:3px;">Expires: 10 Oct 2026, 01:49 am</div>
+      </div>
+    </td>
+        <td style="text-align:center;">
+          <span class="ap-badge green">● Active</span>
+        </td>
+        <td style="text-align:right; white-space:nowrap;"><button class="ap-btn ghost ap-edit-promo-btn" style="padding:4px 8px; font-size:11px; margin-right:4px;">Edit</button><button class="ap-btn danger" style="padding:4px 8px; font-size:11px;">Delete</button></td>
+      </tr>
+    
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        
+
+<script>
+window.addEventListener('load', () => {
+  const data = {};
+  document.querySelectorAll('.ap-cms-table-outer').forEach((outer, i) => {
+    const inner = outer.firstElementChild;
+    const header = outer.querySelector('.ap-cms-table-header');
+    const headerTable = header ? header.querySelector('table') : null;
+    const bodyScroll = outer.querySelector('.ap-cms-body-scroll');
+    const bodyTable = bodyScroll ? bodyScroll.querySelector('table') : null;
+    
+    data['table_' + i] = {
+      outer: { offsetWidth: outer.offsetWidth, scrollWidth: outer.scrollWidth, clientWidth: outer.clientWidth },
+      inner: inner ? { offsetWidth: inner.offsetWidth, scrollWidth: inner.scrollWidth } : null,
+      header: header ? { offsetWidth: header.offsetWidth, scrollWidth: header.scrollWidth } : null,
+      headerTable: headerTable ? { offsetWidth: headerTable.offsetWidth, scrollWidth: headerTable.scrollWidth } : null,
+      bodyScroll: bodyScroll ? { offsetWidth: bodyScroll.offsetWidth, scrollWidth: bodyScroll.scrollWidth, clientWidth: bodyScroll.clientWidth } : null,
+      bodyTable: bodyTable ? { offsetWidth: bodyTable.offsetWidth, scrollWidth: bodyTable.scrollWidth } : null,
+    };
+  });
+  
+  const fsDiv = document.createElement('div');
+  fsDiv.id = 'debug-results';
+  fsDiv.textContent = JSON.stringify(data, null, 2);
+  document.body.appendChild(fsDiv);
+});
+</script>
+
+<div id="debug-results">{
+  "table_0": {
+    "outer": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422,
+      "clientWidth": 1422
+    },
+    "inner": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "header": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "headerTable": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "bodyScroll": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1415,
+      "clientWidth": 1415
+    },
+    "bodyTable": {
+      "offsetWidth": 1415,
+      "scrollWidth": 1415
+    }
+  },
+  "table_1": {
+    "outer": {
+      "offsetWidth": 700,
+      "scrollWidth": 700,
+      "clientWidth": 700
+    },
+    "inner": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "header": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "headerTable": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "bodyScroll": {
+      "offsetWidth": 700,
+      "scrollWidth": 700,
+      "clientWidth": 700
+    },
+    "bodyTable": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    }
+  },
+  "table_2": {
+    "outer": {
+      "offsetWidth": 700,
+      "scrollWidth": 700,
+      "clientWidth": 700
+    },
+    "inner": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "header": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "headerTable": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    },
+    "bodyScroll": {
+      "offsetWidth": 700,
+      "scrollWidth": 700,
+      "clientWidth": 700
+    },
+    "bodyTable": {
+      "offsetWidth": 700,
+      "scrollWidth": 700
+    }
+  },
+  "table_3": {
+    "outer": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422,
+      "clientWidth": 1422
+    },
+    "inner": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "header": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "headerTable": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "bodyScroll": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422,
+      "clientWidth": 1422
+    },
+    "bodyTable": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    }
+  },
+  "table_4": {
+    "outer": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422,
+      "clientWidth": 1422
+    },
+    "inner": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1422
+    },
+    "header": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1480
+    },
+    "headerTable": {
+      "offsetWidth": 1480,
+      "scrollWidth": 1480
+    },
+    "bodyScroll": {
+      "offsetWidth": 1422,
+      "scrollWidth": 1480,
+      "clientWidth": 1422
+    },
+    "bodyTable": {
+      "offsetWidth": 1480,
+      "scrollWidth": 1480
+    }
+  }
+}</div></body></html>

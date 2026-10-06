@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { background: #0f172a; padding: 20px; font-family: sans-serif; }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="ap-table-card" style="margin-bottom:24px; border-radius:14px; overflow:hidden; border:1px solid rgba(2,47,67,0.12); box-shadow:0 4px 16px -2px rgba(2,47,67,0.08); background:#ffffff; width:100%; box-sizing:border-box;" id="ap-quad-cards-section">
+      <div class="ap-card-header" style="padding:16px 20px; border-bottom:2.5px solid #FF9400; background:linear-gradient(135deg, #022F43 0%, #043e5a 100%); display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff !important;">Homepage 4-Quadrant Category Cards</h3>
+        </div>
+      </div>
+      <div class="ap-cms-toolbar" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.12); background:#022F43 !important; display:flex; justify-content:space-between; align-items:center;">
+        <div class="ap-cms-pills" style="display:flex; gap:6px;">
+          <button type="button" class="ap-cms-pill active" style="background:#ff9400; color:#000;">All Rows (12)</button>
+          <button type="button" class="ap-cms-pill">Row 1</button>
+        </div>
+        <div>
+          <input type="text" placeholder="Search cards by title or item..." style="width:240px; padding:7px 12px; font-size:12px; border-radius:8px; border:1px solid #cbd5e1;" />
+        </div>
+      </div>
+      <div class="ap-table-wrap ap-cms-table-outer" style="overflow-x:auto; width:100%; background:#ffffff !important; padding:0 !important; border:none !important;">
+        <div style="min-width:925px; width:100%;">
+          <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+            <table class="ap-table" style="width:100%; min-width:925px; table-layout:fixed; border-collapse:collapse; margin-bottom:0; background:#ff9400;">
+              <colgroup>
+                <col style="width:110px;">
+                <col style="min-width:280px;">
+                <col style="width:120px;">
+                <col style="width:170px;">
+                <col style="width:100px;">
+                <col style="width:145px;">
+              </colgroup>
+              <thead>
+                <tr style="background:#ff9400 !important;">
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800;">4 TILE PREVIEW</th>
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:left; padding:10px 14px; font-weight:800;">CARD TITLE &amp; ITEMS SUMMARY</th>
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800;">ROW &amp; ORDER</th>
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800;">DESTINATION &amp; FOOTER</th>
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800;">STATUS</th>
+                  <th style="background:#FF9400 !important; color:#000000 !important; text-align:center; padding:10px 8px; font-weight:800;">ACTIONS</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div class="ap-table-wrap ap-cms-body-scroll" style="overflow-y:auto; max-height:200px;">
+            <table class="ap-table" style="width:100%; min-width:925px; table-layout:fixed; border-collapse:collapse;">
+              <colgroup>
+                <col style="width:110px;">
+                <col style="min-width:280px;">
+                <col style="width:120px;">
+                <col style="width:170px;">
+                <col style="width:100px;">
+                <col style="width:145px;">
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td style="text-align:center; padding:10px;">[Img]</td>
+                  <td style="padding:10px 14px;">Appliances for your home</td>
+                  <td style="text-align:center; padding:10px;">Row 1 • Pos 1</td>
+                  <td style="text-align:center; padding:10px;">See more</td>
+                  <td style="text-align:center; padding:10px;"><span style="color:green;font-weight:700;">Active</span></td>
+                  <td style="text-align:center; padding:10px;"><button>Edit</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

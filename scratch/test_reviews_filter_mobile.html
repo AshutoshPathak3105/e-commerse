@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reviews Filter Toolbar Mobile Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="ap-view-inner" style="max-width: 100%;">
+    <!-- Stat card mimic -->
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+      <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#1e293b; text-transform:uppercase;">PENDING MODERATION</div>
+          <div style="font-size:24px; font-weight:800; color:#4338ca;">277</div>
+        </div>
+        <div style="width:36px; height:36px; border-radius:8px; background:#e0e7ff; display:flex; align-items:center; justify-content:center; color:#4338ca;">⏱</div>
+      </div>
+      <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#1e293b; text-transform:uppercase;">FLAGGED / SPAM</div>
+          <div style="font-size:24px; font-weight:800; color:#ef4444;">110</div>
+        </div>
+        <div style="width:36px; height:36px; border-radius:8px; background:#fee2e2; display:flex; align-items:center; justify-content:center; color:#ef4444;">⚑</div>
+      </div>
+    </div>
+
+    <!-- Products Filter & Sort Toolbar -->
+    <div class="ap-prod-filter-bar ap-reviews-filter-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; padding:12px 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
+      <div class="ap-prod-filter-group ap-prod-filter-group-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
+        <!-- Product Search Bar -->
+        <div class="ap-prod-search-wrap ap-reviews-search-wrap" style="position:relative; width:260px; max-width:100%;">
+          <input type="text" id="ap-prod-search-input" value="" placeholder="Filter products by title..." style="width:100%; padding:7px 10px 7px 30px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; outline:none; box-sizing:border-box;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Category Filter -->
+        <select id="ap-prod-cat-filter" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+          <option value="all">All Categories (8)</option>
+          <option value="shoes">Shoes</option>
+          <option value="apparel">Apparel</option>
+        </select>
+
+        <!-- Star Rating Filter -->
+        <select id="ap-prod-rating-filter" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+          <option value="all">All Ratings</option>
+          <option value="5">5 Stars Only ★★★★★</option>
+          <option value="4">4+ Stars ★★★★☆</option>
+          <option value="3">3+ Stars ★★★☆☆</option>
+          <option value="2">2+ Stars ★★☆☆☆</option>
+          <option value="1">1+ Star ★☆☆☆☆</option>
+        </select>
+      </div>
+
+      <div class="ap-prod-filter-group ap-prod-filter-group-right" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <!-- Sort -->
+        <select id="ap-prod-sort-by" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+          <option value="rating-desc">Highest Rating First</option>
+          <option value="reviews-desc">Most Reviews First</option>
+          <option value="rating-asc">Lowest Rating First</option>
+          <option value="name-asc">Product Name (A-Z)</option>
+        </select>
+
+        <!-- Page Size -->
+        <select id="ap-prod-page-size" class="ap-prod-filter-select" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#334155; font-weight:600; cursor:pointer;">
+          <option value="20">20 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
+          <option value="all">Show All</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Product Catalog Header Card -->
+    <div class="ap-table-card" style="margin-top:14px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#ffffff; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+      <div style="background:#FF9400; padding:12px 14px; font-size:12px; font-weight:800; color:#000000; text-transform:uppercase;">
+        PRODUCT CATALOG ITEM
+      </div>
+      <div style="padding:16px; color:#64748b; font-size:12px;">Table content preview...</div>
+    </div>
+  </div>
+</body>
+</html>

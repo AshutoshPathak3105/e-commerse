@@ -1,0 +1,28 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0;">
+  <iframe id="app-frame" src="http://localhost:8000" style="width:100vw; height:100vh; border:none;"></iframe>
+  <script>
+    const iframe = document.getElementById('app-frame');
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          const w = iframe.contentWindow;
+          if (w.openAdminPanel) {
+            w.openAdminPanel();
+          } else if (w._openAdminPanelModal) {
+            w._openAdminPanelModal();
+          }
+        } catch(e) {
+          console.error(e);
+        }
+      }, 1500);
+    };
+  </script>
+</body>
+</html>

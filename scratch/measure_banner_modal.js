@@ -1,0 +1,82 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #022F43; }
+  </style>
+</head>
+<body id="admin-panel-overlay" class="ap-open">
+  <div class="ap-modal-backdrop">
+    <div class="ap-modal-dialog" style="max-width:880px; width:95%;">
+      <div class="ap-modal-header" style="background:#022F43 !important; color:#ffffff;">
+        <div>
+          <h3 class="ap-modal-title" style="color:#ffffff; font-size:15px; font-weight:800;">Add New Featured Banner</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#e2e8f0;">Provide banner image URL or upload a local image file...</p>
+        </div>
+        <button type="button" class="ap-modal-close-btn">✕</button>
+      </div>
+      <div class="ap-modal-content" style="padding:22px; max-height:80vh; overflow-y:auto; color:#000000;">
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-weight:800; font-size:12px; margin-bottom:4px;">Destination Link / Hash</label>
+          <input type="text" value="#deals" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-weight:800; font-size:12px; margin-bottom:4px;">Display Order (0 = First)</label>
+          <input type="number" value="0" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;" />
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+          <input type="checkbox" checked />
+          <label style="font-size:13px; font-weight:700;">Publish and make live on storefront immediately</label>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="ap-btn ghost ap-modal-cancel-btn" id="ap-banner-modal-cancel" style="background:#ffffff !important; border:1.5px solid #cbd5e1 !important; color:#000000 !important; font-weight:700; font-size:13px; padding:8px 20px; border-radius:6px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+            Cancel
+          </button>
+          <button type="button" class="ap-btn" id="ap-banner-modal-save" style="background:#FF9400 !important; color:#000000 !important; font-weight:800; font-size:13px; border:none; padding:8px 22px; border-radius:6px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
+            Publish Banner
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const d = document.querySelector('.ap-modal-dialog');
+      const c = document.querySelector('.ap-modal-content');
+      const b1 = document.querySelector('#ap-banner-modal-cancel');
+      const b2 = document.querySelector('#ap-banner-modal-save');
+      const debugDiv = document.createElement('div');
+      debugDiv.id = 'layout-debug';
+      debugDiv.style.position = 'fixed';
+      debugDiv.style.top = '0';
+      debugDiv.style.left = '0';
+      debugDiv.style.background = 'yellow';
+      debugDiv.style.color = 'black';
+      debugDiv.style.zIndex = '999999';
+      debugDiv.style.fontSize = '11px';
+      debugDiv.textContent = JSON.stringify({
+        win: window.innerWidth,
+        dialog: { left: d.getBoundingClientRect().left, right: d.getBoundingClientRect().right, width: d.getBoundingClientRect().width },
+        cancel: { left: b1.getBoundingClientRect().left, right: b1.getBoundingClientRect().right, width: b1.getBoundingClientRect().width },
+        save: { left: b2.getBoundingClientRect().left, right: b2.getBoundingClientRect().right, width: b2.getBoundingClientRect().width }
+      });
+      document.body.appendChild(debugDiv);
+    });
+  </script>
+</body>
+</html>`;
+
+const htmlPath = path.resolve(__dirname, 'measure_banner_modal.html');
+fs.writeFileSync(htmlPath, html);
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const outPng = path.resolve(__dirname, 'banner_modal_measured.png');
+execSync(`"${chromePath}" --headless=new --disable-gpu --window-size=390,844 --screenshot="${outPng}" "file://${htmlPath}"`);
+console.log('Saved to', outPng);

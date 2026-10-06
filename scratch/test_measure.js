@@ -1,0 +1,62 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  </style>
+</head>
+<body>
+  <table>
+    <tr>
+      <td style="text-align:center; width: 180px;">
+        <div style="width:100%; display:flex; justify-content:center; align-items:center; font-size:12px; color:#000000;">
+          <div class="ap-promo-cyclic-ticker-wrap" data-count="2">
+            <div class="ap-promo-cyclic-slide is-active" data-slide-idx="0">
+              <div>HDFC Bank</div>
+              <span class="ap-cyclic-ticker-indicator">1/2</span>
+            </div>
+            <div class="ap-promo-cyclic-slide" data-slide-idx="1">
+              <div>SBI Bank</div>
+              <span class="ap-cyclic-ticker-indicator">2/2</span>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <div id="output"></div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const wrap = document.querySelector('.ap-promo-cyclic-ticker-wrap');
+      const slide = document.querySelector('.ap-promo-cyclic-slide.is-active');
+      const td = document.querySelector('td');
+      const inlineDiv = td.firstElementChild;
+      const res = {
+        tdW: td.offsetWidth,
+        inlineDivW: inlineDiv.offsetWidth,
+        inlineDivH: inlineDiv.offsetHeight,
+        wrapW: wrap.offsetWidth,
+        wrapH: wrap.offsetHeight,
+        slideW: slide.offsetWidth,
+        slideH: slide.offsetHeight,
+        slideDisplay: window.getComputedStyle(slide).display,
+        slideOpacity: window.getComputedStyle(slide).opacity,
+        slideVisibility: window.getComputedStyle(slide).visibility,
+        slidePosition: window.getComputedStyle(slide).position,
+      };
+      document.getElementById('output').textContent = JSON.stringify(res);
+    });
+  </script>
+</body>
+</html>`;
+
+fs.writeFileSync(path.resolve(__dirname, 'test_measure.html'), html);
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const out = execSync(`"${chromePath}" --headless --dump-dom "file:///${path.resolve(__dirname, 'test_measure.html').replace(/\\/g, '/')}"`).toString();
+const match = out.match(/<div id="output">([\s\S]*?)<\/div>/);
+console.log('RESULTS:', match ? match[1] : 'no match');
