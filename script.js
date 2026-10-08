@@ -2897,7 +2897,7 @@ function buildAuthModal() {
       } catch (verifyErr) {
         if (verifyErr.message && verifyErr.message.includes('Cannot connect to backend server')) {
           const activeUser = Auth.getUser();
-          const mockUser = activeUser || { name: _pendingEmail.split('@')[0] || 'Merchant', email: _pendingEmail, role: 'seller' };
+          const mockUser = activeUser || { name: _pendingEmail.split('@')[0] || (window._activeAuthType === 'seller' ? 'Merchant' : 'User'), email: _pendingEmail, role: (window._activeAuthType === 'seller' ? 'seller' : 'user') };
           data = { data: mockUser, token: 'mock_token_' + Date.now() };
         } else {
           throw verifyErr;
@@ -2905,32 +2905,54 @@ function buildAuthModal() {
       }
 
       Auth.setSession(data.data, data.data.token || data.token);
+
+      const isSellerAuth = (window._activeAuthType === 'seller');
       try {
-        sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+        if (isSellerAuth) {
+          sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+        }
       } catch (e) {}
 
-      showToast(`Welcome back, ${data.data.name || 'Merchant'}!`, 'success');
+      const userName = data.data?.name || (isSellerAuth ? 'Merchant' : 'User');
+      showToast(`Welcome back, ${userName}!`, 'success');
       modal._close();
 
-      const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
-      window._pendingSellerTab = null;
-      window._currentSellerTab = targetTab;
+      const action = window._onAuthSuccessAction;
+      window._onAuthSuccessAction = null;
 
-      if (typeof window._onAuthSuccessAction === 'function') {
-        const action = window._onAuthSuccessAction;
-        window._onAuthSuccessAction = null;
-        if (typeof window._openSellerPortal === 'function') {
-          window._openSellerPortal(false, true, targetTab);
+      if (isSellerAuth) {
+        const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
+        window._pendingSellerTab = null;
+        window._currentSellerTab = targetTab;
+
+        if (typeof action === 'function') {
+          if (typeof window._openSellerPortal === 'function') {
+            window._openSellerPortal(false, true, targetTab);
+          }
+          setTimeout(() => {
+            try { action(); } catch (e) {}
+            activateSellerTab(targetTab);
+          }, 150);
+        } else {
+          setTimeout(() => {
+            window._openSellerPortal?.(true, true, targetTab);
+            activateSellerTab(targetTab);
+          }, 150);
         }
-        setTimeout(() => {
-          if (typeof action === 'function') action();
-          activateSellerTab(targetTab);
-        }, 150);
-      } else if (window._activeAuthType === 'seller' || targetTab === 'account') {
-        setTimeout(() => {
-          window._openSellerPortal?.(true, true, targetTab);
-          activateSellerTab(targetTab);
-        }, 150);
+      } else {
+        // Customer login flow (Image 1 or standard customer actions)
+        window._pendingSellerTab = null;
+        if (typeof action === 'function') {
+          setTimeout(() => {
+            try { action(); } catch (e) {}
+          }, 150);
+        } else {
+          setTimeout(() => {
+            if (typeof window._openAccountPage === 'function') {
+              window._openAccountPage();
+            }
+          }, 150);
+        }
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -3156,28 +3178,49 @@ function buildAuthModal() {
       Auth.setSession(data.data, data.data.token);
       showToast(`Account verified! Welcome to X-Mart, ${data.data.name}!`, 'success');
       modal._close();
-      const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
-      window._pendingSellerTab = null;
-      window._currentSellerTab = targetTab;
+      const isSellerAuth = (window._activeAuthType === 'seller');
       try {
-        sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+        if (isSellerAuth) {
+          sessionStorage.setItem('xmart_seller_session_authenticated', 'true');
+        }
       } catch (e) {}
 
-      if (typeof window._onAuthSuccessAction === 'function') {
-        const action = window._onAuthSuccessAction;
-        window._onAuthSuccessAction = null;
-        if (typeof window._openSellerPortal === 'function') {
-          window._openSellerPortal(false, true, targetTab);
+      const action = window._onAuthSuccessAction;
+      window._onAuthSuccessAction = null;
+
+      if (isSellerAuth) {
+        const targetTab = window._pendingSellerTab || window._currentSellerTab || 'account';
+        window._pendingSellerTab = null;
+        window._currentSellerTab = targetTab;
+
+        if (typeof action === 'function') {
+          if (typeof window._openSellerPortal === 'function') {
+            window._openSellerPortal(false, true, targetTab);
+          }
+          setTimeout(() => {
+            try { action(); } catch (e) {}
+            activateSellerTab(targetTab);
+          }, 150);
+        } else {
+          setTimeout(() => {
+            window._openSellerPortal?.(true, true, targetTab);
+            activateSellerTab(targetTab);
+          }, 150);
         }
-        setTimeout(() => {
-          if (typeof action === 'function') action();
-          activateSellerTab(targetTab);
-        }, 150);
-      } else if (window._activeAuthType === 'seller' || targetTab === 'account') {
-        setTimeout(() => {
-          window._openSellerPortal?.(true, true, targetTab);
-          activateSellerTab(targetTab);
-        }, 150);
+      } else {
+        // Customer registration flow (Image 1 or customer registration)
+        window._pendingSellerTab = null;
+        if (typeof action === 'function') {
+          setTimeout(() => {
+            try { action(); } catch (e) {}
+          }, 150);
+        } else {
+          setTimeout(() => {
+            if (typeof window._openAccountPage === 'function') {
+              window._openAccountPage();
+            }
+          }, 150);
+        }
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -5241,6 +5284,15 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       if (cleanEp.includes('/shipping/dispatch')) {
         return { success: true, message: 'Order marked as dispatched via ' + (bodyData.carrier || 'Delhivery') };
       }
+      if (cleanEp.includes('/shipping/checkpoint')) {
+        return { success: true, message: 'Consignment checkpoint updated successfully' };
+      }
+      if (cleanEp.includes('/shipping/sync')) {
+        return { success: true, message: '3PL carrier telemetry synchronized successfully' };
+      }
+      if (cleanEp.includes('/return-action')) {
+        return { success: true, message: 'Return action processed successfully' };
+      }
       if (cleanEp.includes('/refund')) {
         return { success: true, message: 'Refund approved successfully' };
       }
@@ -5485,6 +5537,29 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         data: {
           staff: [],
         },
+      };
+    }
+
+    if (cleanEp.includes('/refund-receipt')) {
+      const orderId = cleanEp.split('/orders/')[1]?.split('/')[0] || 'XM-DEMO';
+      return {
+        success: true,
+        data: {
+          receipt: {
+            orderId: orderId.startsWith('XM-') ? orderId : `XM-${orderId.slice(-8).toUpperCase()}`,
+            rmaNumber: `RMA-${orderId.startsWith('XM-') ? orderId : `XM-${orderId.slice(-8).toUpperCase()}`}`,
+            customerName: 'Customer',
+            customerEmail: 'customer@xmart.in',
+            customerPhone: '+91 98201 44821',
+            itemsPrice: 4999,
+            taxPrice: 250,
+            totalPrice: 5249,
+            refundAmount: 5249,
+            refundMethod: 'wallet',
+            refundUtr: 'UTR' + Date.now().toString().slice(-8),
+            refundedAt: new Date().toISOString()
+          }
+        }
       };
     }
 
@@ -5840,6 +5915,34 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       return getAdminFallbackData(endpoint, opts);
     }
   }
+
+  /* ── Universal Admin Refresh Trigger Helper ───────────── */
+  async function triggerAdminRefresh(btn, loadFn, moduleName = 'Data') {
+    if (!btn || btn.disabled) return;
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('ap-refreshing');
+    btn.style.opacity = '0.75';
+    btn.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="ap-spin" style="animation: apSpin 0.75s linear infinite; display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refreshing...
+    `;
+    try {
+      await loadFn();
+      showToast(`${moduleName} refreshed successfully.`, 'success');
+    } catch (err) {
+      console.error(`[Admin Refresh Error] ${moduleName}:`, err);
+      showToast(`Failed to refresh ${moduleName}: ${err.message || 'Error'}`, 'error');
+    } finally {
+      if (document.body.contains(btn)) {
+        btn.disabled = false;
+        btn.classList.remove('ap-refreshing');
+        btn.style.opacity = '1';
+        btn.innerHTML = originalHTML;
+      }
+    }
+  }
+  window._triggerAdminRefresh = triggerAdminRefresh;
 
   /* ── Status badge helper ─────────────────────────────── */
   function statusBadge(status) {
@@ -6224,11 +6327,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <button type="button" class="ap-timeframe-pill ${rng === 'all' ? 'active' : ''}" data-rng="all">All Time</button>
           <button type="button" class="ap-timeframe-pill ${rng === 'today' ? 'active' : ''}" data-rng="today">Today</button>
           <button type="button" class="ap-timeframe-pill highlight-prev ${rng === 'yesterday' ? 'active' : ''}" data-rng="yesterday" title="Track previous day's metrics">
-            Yesterday (Previous Day)
+            Previous Day
           </button>
           <button type="button" class="ap-timeframe-pill ${rng === '7d' ? 'active' : ''}" data-rng="7d">Last 7 Days</button>
           <button type="button" class="ap-timeframe-pill ${rng === '30d' ? 'active' : ''}" data-rng="30d">Last 30 Days</button>
-          <div class="ap-specific-date-wrap" style="position:relative; display:inline-flex; align-items:center;">
+          <div class="ap-specific-date-wrap" style="position:relative; display:inline-flex;">
             <button type="button" class="ap-timeframe-pill ${isSpecificDay ? 'active' : ''}" id="ap-pill-specific-day" title="Open calendar to view specific day metrics" style="position:relative;">
               ${calIconSVG}
               <span>${specificDayLabel}</span>
@@ -6292,101 +6395,105 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             View All Orders
           </button>
         </div>
-        <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
-          <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
-            <colgroup>
-              <col style="width:14%;">
-              <col style="width:20%;">
-              <col style="width:18%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:8%;">
-            </colgroup>
-            <thead>
-              <tr>
-                <th style="text-align:center !important;">Order Ref</th>
-                <th style="text-align:center !important;">Customer</th>
-                <th style="text-align:center !important;">Items Preview</th>
-                <th style="text-align:center !important;">City</th>
-                <th style="text-align:center !important;">Payment</th>
-                <th style="text-align:center !important;">Total</th>
-                <th style="text-align:center !important;">Status</th>
-                <th style="text-align:center !important;">Action</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        <div class="dash-scrollable-body" style="max-height: 380px; overflow-y:auto;">
-          <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
-            <colgroup>
-              <col style="width:14%;">
-              <col style="width:20%;">
-              <col style="width:18%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:10%;">
-              <col style="width:8%;">
-            </colgroup>
-            <tbody>
-              ${filteredOrders.length ? filteredOrders.map(o => {
-                const name = o.user?.name || 'Customer';
-                const initials = name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
-                const ordId = o.orderId || `XM-${(o._id||'').slice(-8).toUpperCase()}`;
-                const statusBadgeClass = o.status === 'Delivered' ? 'green' : o.status === 'Confirmed' ? 'blue' : (o.status === 'Cancelled' || o.status === 'Returned') ? 'red' : 'orange';
-                const payColor = (o.paymentMethod||'').toLowerCase().includes('cod') ? '#f59e0b' : (o.paymentMethod||'').toLowerCase().includes('upi') ? '#10b981' : (o.paymentMethod||'').toLowerCase().includes('card') ? '#2563eb' : '#7c3aed';
-                const itemChips = (o.orderItems || []).slice(0, 2).map(it => `<span class="ap-dash-item-chip" title="${esc(it.name)}"><img src="${esc(it.image||'logo-square.png')}" onerror="this.src='logo-square.png'" />${esc(it.name.slice(0,14))}${it.name.length>14?'…':''} ×${it.qty||1}</span>`).join('');
-                const moreChips = (o.orderItems||[]).length > 2 ? `<span class="ap-dash-item-chip" style="background:#f1f5f9;color:#475569;">+${(o.orderItems.length-2)} more</span>` : '';
-                return `
-                  <tr>
-                    <td>
-                      <span style="font-family:monospace; font-weight:800; color:#022f43; font-size:12px;">${ordId}</span>
-                      <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${fmtDate(o.date)}</div>
-                    </td>
-                    <td>
-                      <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="ap-dash-avatar" style="background:#022f43;">${initials}</div>
-                        <div style="min-width:0;">
-                          <div style="font-weight:700; color:#0f172a; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(name)}</div>
-                          <div style="font-size:10.5px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(o.user?.email || '')}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="ap-dash-item-chips">${itemChips}${moreChips}</div>
-                    </td>
-                    <td>
-                      <span style="font-size:11.5px; font-weight:600; color:#334155;">${esc(o.city||'—')}</span>
-                    </td>
-                    <td>
-                      <span style="font-size:11.5px; font-weight:700; color:${payColor}; background:${payColor}18; padding:2px 8px; border-radius:6px; display:inline-block; white-space:nowrap;">
-                        ${esc(o.paymentMethod || 'Online')}
-                      </span>
-                    </td>
-                    <td>
-                      <div style="font-weight:800; color:#022f43; font-size:13px;">${fmtPrice(o.total || 0)}</div>
-                    </td>
-                    <td>
-                      <span class="ap-badge ${statusBadgeClass}">${o.status || 'Pending'}</span>
-                    </td>
-                    <td style="text-align:right;">
-                      <button class="ap-btn ghost ap-dash-inspect-order" data-id="${ordId}" style="padding:4px 9px; font-size:11px; font-weight:700;">
-                        View &rarr;
-                      </button>
-                    </td>
+        <div class="dash-table-sync-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+          <div style="min-width:1020px; width:100%;">
+            <div class="ap-table-header-part" style="background:#ff9400; width:100%; border-bottom:2px solid #e08300; box-sizing:border-box;">
+              <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                <colgroup>
+                  <col style="width:13%;">
+                  <col style="width:17%;">
+                  <col style="width:15%;">
+                  <col style="width:9%;">
+                  <col style="width:9%;">
+                  <col style="width:10%;">
+                  <col style="width:14%;">
+                  <col style="width:13%;">
+                </colgroup>
+                <thead>
+                  <tr style="background:#ff9400;">
+                    <th style="text-align:left !important; padding:12px 16px; color:#000000; font-weight:800;">Order Ref</th>
+                    <th style="text-align:left !important; padding:12px 16px; color:#000000; font-weight:800;">Customer</th>
+                    <th style="text-align:left !important; padding:12px 16px; color:#000000; font-weight:800;">Items Preview</th>
+                    <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">City</th>
+                    <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">Payment</th>
+                    <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">Total</th>
+                    <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">Status</th>
+                    <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">Action</th>
                   </tr>
-                `;
-              }).join('') : `
-                <tr>
-                  <td colspan="8" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
-                    ${recentOrders.length ? 'No orders match the current filter.' : 'No customer orders in this time window.'}
-                  </td>
-                </tr>
-              `}
-            </tbody>
-          </table>
+                </thead>
+              </table>
+            </div>
+            <div class="dash-scrollable-body" style="max-height: 380px; overflow-y:auto; overflow-x:hidden; width:100%;">
+              <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                <colgroup>
+                  <col style="width:13%;">
+                  <col style="width:17%;">
+                  <col style="width:15%;">
+                  <col style="width:9%;">
+                  <col style="width:9%;">
+                  <col style="width:10%;">
+                  <col style="width:14%;">
+                  <col style="width:13%;">
+                </colgroup>
+                <tbody>
+                  ${filteredOrders.length ? filteredOrders.map(o => {
+                    const name = o.user?.name || 'Customer';
+                    const initials = name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
+                    const ordId = o.orderId || `XM-${(o._id||'').slice(-8).toUpperCase()}`;
+                    const statusBadgeClass = o.status === 'Delivered' ? 'green' : o.status === 'Confirmed' ? 'blue' : (o.status === 'Cancelled' || o.status === 'Returned') ? 'red' : 'orange';
+                    const payColor = (o.paymentMethod||'').toLowerCase().includes('cod') ? '#f59e0b' : (o.paymentMethod||'').toLowerCase().includes('upi') ? '#10b981' : (o.paymentMethod||'').toLowerCase().includes('card') ? '#2563eb' : '#7c3aed';
+                    const itemChips = (o.orderItems || []).slice(0, 2).map(it => `<span class="ap-dash-item-chip" title="${esc(it.name)}"><img src="${esc(it.image||'logo-square.png')}" onerror="this.src='logo-square.png'" />${esc(it.name.slice(0,14))}${it.name.length>14?'…':''} ×${it.qty||1}</span>`).join('');
+                    const moreChips = (o.orderItems||[]).length > 2 ? `<span class="ap-dash-item-chip" style="background:#f1f5f9;color:#475569;">+${(o.orderItems.length-2)} more</span>` : '';
+                    return `
+                      <tr>
+                        <td>
+                          <span style="font-family:monospace; font-weight:800; color:#022f43; font-size:12px;">${ordId}</span>
+                          <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${fmtDate(o.date)}</div>
+                        </td>
+                        <td>
+                          <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ap-dash-avatar" style="background:#022f43;">${initials}</div>
+                            <div style="min-width:0;">
+                              <div style="font-weight:700; color:#0f172a; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(name)}</div>
+                              <div style="font-size:10.5px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${esc(o.user?.email || '')}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="ap-dash-item-chips">${itemChips}${moreChips}</div>
+                        </td>
+                        <td>
+                          <span style="font-size:11.5px; font-weight:600; color:#334155;">${esc(o.city||'—')}</span>
+                        </td>
+                        <td>
+                          <span style="font-size:11.5px; font-weight:700; color:${payColor}; background:${payColor}18; padding:2px 8px; border-radius:6px; display:inline-block; white-space:nowrap;">
+                            ${esc(o.paymentMethod || 'Online')}
+                          </span>
+                        </td>
+                        <td>
+                          <div style="font-weight:800; color:#022f43; font-size:13px;">${fmtPrice(o.total || 0)}</div>
+                        </td>
+                        <td style="text-align:center; padding:12px 14px 12px 8px;">
+                          <span class="ap-badge ${statusBadgeClass}" style="display:inline-flex; align-items:center; margin:0 auto;">${o.status || 'Pending'}</span>
+                        </td>
+                        <td style="text-align:center; padding:12px 14px 12px 16px;">
+                          <button class="ap-btn ap-dash-inspect-order" data-id="${ordId}" style="padding:5px 14px; font-size:11px; font-weight:700; background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border:1px solid #022f43 !important; border-radius:6px; cursor:pointer; margin:0 auto; display:inline-flex; align-items:center; justify-content:center;">
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('') : `
+                    <tr>
+                      <td colspan="8" style="text-align:center; padding:36px; color:#94a3b8; font-weight:600;">
+                        ${recentOrders.length ? 'No orders match the current filter.' : 'No customer orders in this time window.'}
+                      </td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       `;
 
@@ -6398,22 +6505,22 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           : `<span class="ap-badge blue" style="font-size:10px;">Customer</span>`;
         return `
           <tr>
-            <td>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <div class="ap-dash-avatar" style="background:#022f43;">${initials}</div>
+            <td style="padding:12px 20px; white-space:nowrap;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="ap-dash-avatar" style="background:#022f43; flex-shrink:0;">${initials}</div>
                 <div>
-                  <div style="font-weight:700; color:#0f172a; font-size:12px;">${esc(u.name || 'Customer')}</div>
-                  <div style="font-size:10.5px; color:#64748b;">${esc(u.email || '')}</div>
+                  <div style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap;">${esc(u.name || 'Customer')}</div>
+                  <div style="font-size:11px; color:#64748b; white-space:nowrap;">${esc(u.email || '')}</div>
                 </div>
               </div>
             </td>
-            <td>${roleBadge}</td>
-            <td>
-              <span style="font-size:11px; color:#64748b;">${fmtDate(u.createdAt)}</span>
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">${roleBadge}</td>
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">
+              <span style="font-size:11.5px; color:#64748b; white-space:nowrap;">${fmtDate(u.createdAt)}</span>
             </td>
-            <td style="text-align:right;">
-              <button class="ap-btn ghost ap-dash-open-user" style="padding:3px 8px; font-size:10.5px; font-weight:700;" onclick="switchTab('users')">
-                View &rarr;
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">
+              <button class="ap-btn ap-dash-open-user" style="padding:5px 13px; font-size:11px; font-weight:700; white-space:nowrap; background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border:1px solid #022f43 !important; border-radius:6px; cursor:pointer;" onclick="switchTab('users')">
+                View
               </button>
             </td>
           </tr>
@@ -6430,23 +6537,23 @@ window.openRazorpayCheckout = openRazorpayCheckout;
         const isSuper = (a.role === 'admin');
         return `
           <tr>
-            <td>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <div class="ap-dash-avatar" style="background:#022f43; color:#ffffff; font-weight:800;">${initials}</div>
+            <td style="padding:12px 20px; white-space:nowrap;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="ap-dash-avatar" style="background:#022f43; color:#ffffff; font-weight:800; flex-shrink:0;">${initials}</div>
                 <div>
-                  <div style="font-weight:700; color:#0f172a; font-size:12px;">${esc(a.name || 'Admin Staff')}</div>
-                  <div style="font-size:10.5px; color:#64748b;">${esc(a.email || '')}</div>
+                  <div style="font-weight:700; color:#0f172a; font-size:12.5px; white-space:nowrap;">${esc(a.name || 'Admin Staff')}</div>
+                  <div style="font-size:11px; color:#64748b; white-space:nowrap;">${esc(a.email || '')}</div>
                 </div>
               </div>
             </td>
-            <td>
-              <span class="dash-highlight-badge" style="font-size:10px;">${isSuper ? 'Super Admin' : 'Admin Staff'}</span>
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">
+              <span class="dash-highlight-badge" style="font-size:10.5px; white-space:nowrap;">${isSuper ? 'Super Admin' : 'Admin Staff'}</span>
             </td>
-            <td>
-              <span style="font-size:11px; color:#64748b;">${fmtDate(a.createdAt)}</span>
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">
+              <span style="font-size:11.5px; color:#64748b; white-space:nowrap;">${fmtDate(a.createdAt)}</span>
             </td>
-            <td style="text-align:right;">
-              <span class="ap-badge green" style="font-size:10px;">Active</span>
+            <td style="text-align:center; padding:12px 20px; white-space:nowrap;">
+              <span class="ap-badge green" style="font-size:10.5px; white-space:nowrap;">Active</span>
             </td>
           </tr>
         `;
@@ -6512,31 +6619,34 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       /* ── Assemble Full Modern Dashboard HTML ─────────────── */
       container.innerHTML = `
         <div class="dash-modern-container">
-          <!-- 1. Header Command Banner (#022f43 background, #ff9400 highlight) -->
-          <div class="dash-command-banner">
+          <div class="dash-command-banner" style="border-left: 6px solid #022f43 !important;">
             <div>
               <h2>
                 <span>${greeting}, ${(user?.name || 'Admin').split(' ')[0]}</span>
-                <span class="dash-highlight-badge">Super Admin Console</span>
+                <span class="dash-highlight-badge" style="white-space:nowrap; flex-shrink:0;">Super Admin Console</span>
               </h2>
               <p>
                 Enterprise Command Intelligence &amp; Live Operations. Real-time metrics powered 100% by active database telemetry.
               </p>
             </div>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <div style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); padding:6px 12px; border-radius:8px; font-size:12px; color:#ffffff;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>${todayStr}</span>
+            <div class="dash-command-actions">
+              <div class="dash-action-row dash-action-row-1">
+                <div class="dash-date-badge">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>${todayStr}</span>
+                </div>
+                <button class="ap-btn" id="ap-dash-quick-refresh">
+                  Refresh
+                </button>
               </div>
-              <button class="ap-btn ghost" id="ap-dash-quick-prod" style="font-size:12px; font-weight:700; background:#ff9400; color:#000000; border-color:#ff9400;">
-                + Add Product
-              </button>
-              <button class="ap-btn ghost" id="ap-dash-quick-orders" style="font-size:12px; font-weight:700; background:#ff9400; color:#000000; border-color:#ff9400;">
-                Manage Orders
-              </button>
-              <button class="dash-highlight-badge" id="ap-dash-quick-refresh" style="font-size:12px; padding:7px 14px; cursor:pointer; background:#0094ff; color:#ffffff; border-color:#0094ff;">
-                ↻ Refresh Live Data
-              </button>
+              <div class="dash-action-row dash-action-row-2">
+                <button class="ap-btn" id="ap-dash-quick-prod">
+                  Add Product
+                </button>
+                <button class="ap-btn" id="ap-dash-quick-orders">
+                  Manage Orders
+                </button>
+              </div>
             </div>
           </div>
 
@@ -6601,7 +6711,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
           <!-- 3. Primary 8-KPI Cards Grid (#022f43 & #ff9400 accents) -->
           <div class="dash-grid-4">
             <!-- Card 1: Gross Sales GMV -->
-            <div class="dash-kpi-card highlight">
+            <div class="dash-kpi-card" style="border-top: 3px solid #022f43 !important;">
               <div class="dash-kpi-top">
                 <span class="dash-kpi-title">Gross Revenue (GMV)</span>
                 <div class="dash-kpi-icon" style="background:#022f43; color:#ffffff;">
@@ -6706,14 +6816,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Card 8: Pending Revenue (At Risk) -->
-            <div class="dash-kpi-card highlight">
+            <div class="dash-kpi-card" style="border-top: 3px solid #022f43 !important;">
               <div class="dash-kpi-top">
                 <span class="dash-kpi-title">Pending Revenue</span>
                 <div class="dash-kpi-icon" style="background:#022f43; color:#ffffff;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
               </div>
-              <div class="dash-kpi-val" style="color:#ff9400;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</div>
+              <div class="dash-kpi-val" style="color:#dc2626 !important;">${pendingRevenue >= 100000 ? '₹'+(pendingRevenue/100000).toFixed(2)+' L' : fmtPrice(pendingRevenue)}</div>
               <div class="dash-kpi-footer">
                 <span>${pendingOrders} orders awaiting fulfillment</span>
                 <span class="dash-highlight-badge" style="margin-left:auto;">In Queue</span>
@@ -6727,7 +6837,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <div class="dash-panel">
               <div class="dash-panel-header">
                 <h3>Sales Velocity &amp; Revenue Trajectory</h3>
-                <span class="dash-highlight-badge">Chart.js Analytics</span>
+                <span class="dash-highlight-badge">Chart Analytics</span>
               </div>
               <div class="dash-chart-card-body">
                 <canvas id="ap-dash-chart-revenue" style="width:100%; height:260px;"></canvas>
@@ -6760,9 +6870,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <span style="font-weight:700; color:#022f43;">${supportStats.total || 0} Customer Tickets</span>
                 </div>
                 ${supportStatusHTML}
-                <div style="margin-top:auto; padding-top:8px; display:flex; justify-content:flex-end;">
-                  <button class="ap-btn ghost" onclick="switchTab('support')" style="font-size:11.5px; font-weight:700;">
-                    Open Support Desk &rarr;
+                <div style="margin-top:auto; padding-top:12px; display:flex; justify-content:center; align-items:center; width:100%;">
+                  <button class="ap-btn" id="ap-dash-open-support" onclick="if(window.switchAdminTab)window.switchAdminTab('support');else if(window.switchTab)window.switchTab('support');" style="background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1.5px solid #ff9400 !important; border-radius:8px !important; padding:8px 20px !important; font-size:11.5px !important; font-weight:800 !important; cursor:pointer !important; text-decoration:none !important; box-shadow:0 1px 3px rgba(255, 148, 0, 0.25) !important;">
+                    Open Support Desk
                   </button>
                 </div>
               </div>
@@ -6780,9 +6890,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   <span style="font-weight:700; color:#022f43;">Total: ${fmtPrice(payoutsStats.totalAmount || 0)}</span>
                 </div>
                 ${payoutsStatusHTML}
-                <div style="margin-top:auto; padding-top:8px; display:flex; justify-content:flex-end;">
-                  <button class="ap-btn ghost" onclick="switchTab('payouts')" style="font-size:11.5px; font-weight:700;">
-                    Inspect Payouts Ledger &rarr;
+                <div style="margin-top:auto; padding-top:12px; display:flex; justify-content:center; align-items:center; width:100%;">
+                  <button class="ap-btn" id="ap-dash-open-payouts" onclick="if(window.switchAdminTab)window.switchAdminTab('payouts');else if(window.switchTab)window.switchTab('payouts');" style="background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1.5px solid #ff9400 !important; border-radius:8px !important; padding:8px 20px !important; font-size:11.5px !important; font-weight:800 !important; cursor:pointer !important; text-decoration:none !important; box-shadow:0 1px 3px rgba(255, 148, 0, 0.25) !important;">
+                    Inspect Payouts Ledger
                   </button>
                 </div>
               </div>
@@ -6797,36 +6907,40 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <h3>Administrators &amp; Privileged Staff</h3>
                 <span class="dash-highlight-badge">${adminsList.length} Active Admins</span>
               </div>
-              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
-                  <colgroup>
-                    <col style="width:35%;">
-                    <col style="width:22%;">
-                    <col style="width:23%;">
-                    <col style="width:20%;">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th style="text-align:center !important;">Administrator</th>
-                      <th style="text-align:center !important;">Access Tier</th>
-                      <th style="text-align:center !important;">Created</th>
-                      <th style="text-align:center !important;">Status</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
-              <div class="dash-scrollable-body" style="max-height: 310px; overflow-y:auto;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
-                  <colgroup>
-                    <col style="width:35%;">
-                    <col style="width:22%;">
-                    <col style="width:23%;">
-                    <col style="width:20%;">
-                  </colgroup>
-                  <tbody>
-                    ${adminsRows}
-                  </tbody>
-                </table>
+              <div class="dash-table-sync-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <div style="min-width:620px; width:100%;">
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:35%;">
+                        <col style="width:23%;">
+                        <col style="width:22%;">
+                        <col style="width:20%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400;">
+                          <th style="text-align:left !important; padding:12px 20px; color:#000000; font-weight:800;">Administrator</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Access Tier</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Created</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Status</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="dash-scrollable-body" style="max-height: 330px; overflow-y:auto; overflow-x:hidden; width:100%;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:35%;">
+                        <col style="width:23%;">
+                        <col style="width:22%;">
+                        <col style="width:20%;">
+                      </colgroup>
+                      <tbody>
+                        ${adminsRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -6836,36 +6950,40 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <h3>Registered Customers &amp; Merchants</h3>
                 <span class="dash-highlight-badge">${usersList.length} Accounts</span>
               </div>
-              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
-                  <colgroup>
-                    <col style="width:35%;">
-                    <col style="width:25%;">
-                    <col style="width:22%;">
-                    <col style="width:18%;">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th style="text-align:center !important;">Customer Profile</th>
-                      <th style="text-align:center !important;">Account Role</th>
-                      <th style="text-align:center !important;">Joined</th>
-                      <th style="text-align:center !important;">Action</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
-              <div class="dash-scrollable-body" style="max-height: 310px; overflow-y:auto;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
-                  <colgroup>
-                    <col style="width:35%;">
-                    <col style="width:25%;">
-                    <col style="width:22%;">
-                    <col style="width:18%;">
-                  </colgroup>
-                  <tbody>
-                    ${usersRows}
-                  </tbody>
-                </table>
+              <div class="dash-table-sync-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <div style="min-width:620px; width:100%;">
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:35%;">
+                        <col style="width:25%;">
+                        <col style="width:22%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400;">
+                          <th style="text-align:left !important; padding:12px 20px; color:#000000; font-weight:800;">Customer Profile</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Account Role</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Joined</th>
+                          <th style="text-align:center !important; padding:12px 20px; color:#000000; font-weight:800;">Action</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="dash-scrollable-body" style="max-height: 330px; overflow-y:auto; overflow-x:hidden; width:100%;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:35%;">
+                        <col style="width:25%;">
+                        <col style="width:22%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <tbody>
+                        ${usersRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -6878,39 +6996,43 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 <h3>Top Spending Customers</h3>
                 <span class="dash-highlight-badge">High Lifetime Value</span>
               </div>
-              <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
-                  <colgroup>
-                    <col style="width:12%;">
-                    <col style="width:30%;">
-                    <col style="width:18%;">
-                    <col style="width:22%;">
-                    <col style="width:18%;">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th style="text-align:center !important;">Rank</th>
-                      <th style="text-align:center !important;">Customer</th>
-                      <th style="text-align:center !important;">Orders</th>
-                      <th style="text-align:center !important;">Total Spend</th>
-                      <th style="text-align:center !important;">Last Order</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
-              <div class="dash-scrollable-body" style="max-height: 440px; overflow-y:auto;">
-                <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
-                  <colgroup>
-                    <col style="width:12%;">
-                    <col style="width:30%;">
-                    <col style="width:18%;">
-                    <col style="width:22%;">
-                    <col style="width:18%;">
-                  </colgroup>
-                  <tbody>
-                    ${topCustomersRows}
-                  </tbody>
-                </table>
+              <div class="dash-table-sync-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <div style="min-width:650px; width:100%;">
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:12%;">
+                        <col style="width:30%;">
+                        <col style="width:18%;">
+                        <col style="width:22%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400;">
+                          <th style="text-align:center !important; padding:12px 14px; color:#000000; font-weight:800;">Rank</th>
+                          <th style="text-align:left !important; padding:12px 18px; color:#000000; font-weight:800;">Customer</th>
+                          <th style="text-align:center !important; padding:12px 16px; color:#000000; font-weight:800;">Orders</th>
+                          <th style="text-align:center !important; padding:12px 16px; color:#000000; font-weight:800;">Total Spend</th>
+                          <th style="text-align:center !important; padding:12px 16px; color:#000000; font-weight:800;">Last Order</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div class="dash-scrollable-body" style="max-height: 440px; overflow-y:auto; overflow-x:hidden; width:100%;">
+                    <table class="ap-table" style="width:100%; border-collapse:collapse; table-layout:fixed; margin:0;">
+                      <colgroup>
+                        <col style="width:12%;">
+                        <col style="width:30%;">
+                        <col style="width:18%;">
+                        <col style="width:22%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <tbody>
+                        ${topCustomersRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -6989,8 +7111,9 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   yAxisID: 'y',
                   pointBackgroundColor: '#ff9400',
                   pointBorderColor: '#022f43',
-                  pointRadius: 4,
-                  pointHoverRadius: 6
+                  pointRadius: 4.5,
+                  pointHoverRadius: 7,
+                  pointHitRadius: 24
                 },
                 {
                   type: 'bar',
@@ -7008,12 +7131,54 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               responsive: true,
               maintainAspectRatio: false,
               interaction: { mode: 'index', intersect: false },
+              onClick: (event, elements, ch) => {
+                const points = ch.getElementsAtEventForMode(event.native || event, 'index', { intersect: false }, true);
+                if (points && points.length > 0) {
+                  const idx = points[0].index;
+                  if (ch._activePointIndex === idx) {
+                    // Re-clicked on the same circle/point: close tooltip data window
+                    ch._activePointIndex = null;
+                    ch.tooltip.setActiveElements([], { x: 0, y: 0 });
+                    ch.setActiveElements([]);
+                    ch.update('none');
+                    return;
+                  }
+                  // First click: open tooltip data window for this point
+                  ch._activePointIndex = idx;
+                  const meta0 = ch.getDatasetMeta(0);
+                  const pt = meta0 && meta0.data && meta0.data[idx];
+                  const pos = pt ? { x: pt.x, y: pt.y } : { x: event.x, y: event.y };
+                  ch.tooltip.setActiveElements(
+                    [{ datasetIndex: 0, index: idx }, { datasetIndex: 1, index: idx }],
+                    pos
+                  );
+                  ch.update('none');
+                } else {
+                  // Clicked outside any points: dismiss tooltip
+                  ch._activePointIndex = null;
+                  ch.tooltip.setActiveElements([], { x: 0, y: 0 });
+                  ch.setActiveElements([]);
+                  ch.update('none');
+                }
+              },
               plugins: {
                 legend: {
                   position: 'top',
-                  labels: { font: { weight: 'bold', size: 11 } }
+                  labels: {
+                    boxWidth: 12,
+                    boxHeight: 12,
+                    borderRadius: 2,
+                    padding: 14,
+                    font: { weight: 'bold', size: 11 }
+                  }
                 },
                 tooltip: {
+                  filter: function(ctx) {
+                    if (_dashCharts.revenue && _dashCharts.revenue._activePointIndex !== undefined && _dashCharts.revenue._activePointIndex !== null) {
+                      return ctx.dataIndex === _dashCharts.revenue._activePointIndex;
+                    }
+                    return true;
+                  },
                   callbacks: {
                     label: function(ctx) {
                       if (ctx.dataset.yAxisID === 'y') {
@@ -7065,15 +7230,66 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              onClick: (event, elements, ch) => {
+                const elems = ch.getElementsAtEventForMode(event.native || event, 'nearest', { intersect: true }, true);
+                if (elems && elems.length > 0) {
+                  const idx = elems[0].index;
+                  if (ch._activeSegmentIndex === idx) {
+                    ch._activeSegmentIndex = null;
+                    ch.tooltip.setActiveElements([], { x: 0, y: 0 });
+                    ch.setActiveElements([]);
+                    ch.update('none');
+                    return;
+                  }
+                  ch._activeSegmentIndex = idx;
+                  const pt = elems[0].element;
+                  ch.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: pt.x, y: pt.y });
+                  ch.update('none');
+                } else {
+                  ch._activeSegmentIndex = null;
+                  ch.tooltip.setActiveElements([], { x: 0, y: 0 });
+                  ch.setActiveElements([]);
+                  ch.update('none');
+                }
+              },
               plugins: {
                 legend: {
                   position: 'right',
-                  labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                  labels: { boxWidth: 12, boxHeight: 12, borderRadius: 2, font: { size: 11, weight: 'bold' } }
+                },
+                tooltip: {
+                  filter: function(ctx) {
+                    if (_dashCharts.channels && _dashCharts.channels._activeSegmentIndex !== undefined && _dashCharts.channels._activeSegmentIndex !== null) {
+                      return ctx.dataIndex === _dashCharts.channels._activeSegmentIndex;
+                    }
+                    return true;
+                  }
                 }
               }
             }
           });
         }
+
+        // Global dismiss for chart data windows when clicking outside
+        const dismissChartTooltips = (e) => {
+          if (revCanvas && !revCanvas.contains(e.target) && _dashCharts.revenue && _dashCharts.revenue._activePointIndex !== null) {
+            _dashCharts.revenue._activePointIndex = null;
+            _dashCharts.revenue.tooltip?.setActiveElements([], { x: 0, y: 0 });
+            _dashCharts.revenue.setActiveElements([]);
+            _dashCharts.revenue.update('none');
+          }
+          if (chanCanvas && !chanCanvas.contains(e.target) && _dashCharts.channels && _dashCharts.channels._activeSegmentIndex !== null) {
+            _dashCharts.channels._activeSegmentIndex = null;
+            _dashCharts.channels.tooltip?.setActiveElements([], { x: 0, y: 0 });
+            _dashCharts.channels.setActiveElements([]);
+            _dashCharts.channels.update('none');
+          }
+        };
+        if (container._dashChartDismiss) {
+          document.removeEventListener('pointerdown', container._dashChartDismiss);
+        }
+        container._dashChartDismiss = dismissChartTooltips;
+        document.addEventListener('pointerdown', dismissChartTooltips);
       }
 
       setTimeout(initDashCharts, 60);
@@ -7083,6 +7299,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
       container.querySelector('#ap-dash-quick-orders')?.addEventListener('click', () => switchTab('orders'));
       container.querySelector('#ap-dash-quick-refresh')?.addEventListener('click', () => renderDashboard(container));
       container.querySelector('#ap-dash-view-all-orders')?.addEventListener('click', () => switchTab('orders'));
+      container.querySelector('#ap-dash-open-support')?.addEventListener('click', () => switchTab('support'));
+      container.querySelector('#ap-dash-open-payouts')?.addEventListener('click', () => switchTab('payouts'));
 
       // Export filtered orders to CSV
       container.querySelector('#ap-dash-export-csv')?.addEventListener('click', () => {
@@ -8829,23 +9047,50 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Table Card -->
-            <div class="ap-table-card">
-              <div class="ap-table-wrap">
-                <table class="ap-table" id="ap-sellers-table">
-                  <thead>
-                    <tr style="background:#ff9400 !important;">
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Storefront & Owner</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Legal Business & GSTIN</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Catalog</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Store Status</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${tableRows}
-                  </tbody>
-                </table>
+            <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div class="ap-table-wrap ap-sellers-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:1040px; width:100%;">
+                  <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:22%;">
+                        <col style="width:22%;">
+                        <col style="width:16%;">
+                        <col style="width:12%;">
+                        <col style="width:12%;">
+                        <col style="width:16%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Storefront & Owner</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Legal Business & GSTIN</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Catalog</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Store Status</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+
+                  <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                  <div class="ap-table-body-scroll ap-sellers-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                    <table class="ap-table" id="ap-sellers-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                      <colgroup>
+                        <col style="width:22%;">
+                        <col style="width:22%;">
+                        <col style="width:16%;">
+                        <col style="width:12%;">
+                        <col style="width:12%;">
+                        <col style="width:16%;">
+                      </colgroup>
+                      <tbody>
+                        ${tableRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
               <div class="ap-table-footer">
                 <span>Showing <strong>${sellers.length}</strong> of <strong>${totalSellers}</strong> registered sellers</span>
@@ -9037,32 +9282,36 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           return `
             <tr>
-              <td>
-                <span style="font-family:monospace; color:#2563eb; font-weight:700; font-size:13px;">${o.orderId}</span>
-                <div style="font-size:11px; color:#64748b;">${fmtDate(o.date)}</div>
+              <td style="text-align:center;">
+                <span style="font-family:monospace; color:#2563eb; font-weight:700; font-size:13px; display:block; text-align:center;">${o.orderId}</span>
+                <div style="font-size:11px; color:#64748b; text-align:center;">${fmtDate(o.date)}</div>
               </td>
-              <td>
-                <div style="font-weight:600; color:#0f172a;">${o.user.name || 'Anonymous Customer'}</div>
-                <div style="font-size:11px; color:#64748b;">${o.user.email || o.user.phone || '—'}</div>
+              <td style="text-align:center;">
+                <div style="font-weight:600; color:#0f172a; text-align:center;">${o.user.name || 'Anonymous Customer'}</div>
+                <div style="font-size:11px; color:#64748b; text-align:center;">${o.user.email || o.user.phone || '—'}</div>
               </td>
-              <td>
-                <strong style="color:#0f172a;">${itemsCount} item${itemsCount !== 1 ? 's' : ''}</strong>
-                <div style="font-size:11px; color:#64748b; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${itemsSummary}">${itemsSummary || 'Standard Order'}</div>
+              <td style="text-align:center;">
+                <strong style="color:#0f172a; display:block; text-align:center;">${itemsCount} item${itemsCount !== 1 ? 's' : ''}</strong>
+                <div style="font-size:11px; color:#64748b; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:0 auto; text-align:center;" title="${itemsSummary}">${itemsSummary || 'Standard Order'}</div>
               </td>
-              <td>
-                <div style="font-weight:800; color:#0f172a; font-size:13.5px;">${fmtPrice(o.total)}</div>
-                <span class="ap-badge gray" style="font-size:10px;">${o.payment || 'Prepaid'}</span>
+              <td style="text-align:center;">
+                <div style="font-weight:800; color:#0f172a; font-size:13.5px; text-align:center;">${fmtPrice(o.total)}</div>
+                <span class="ap-badge gray" style="font-size:10px; margin:0 auto; display:inline-flex;">${o.payment || 'Prepaid'}</span>
               </td>
-              <td>${statusBadge(o.status)}</td>
-              <td>
-                <div class="ap-btn-group">
-                  <select class="ap-select ap-order-status-sel" data-id="${o._id}" style="padding:4px 8px; font-size:11.5px; height:28px;">
+              <td style="text-align:center;">
+                <div style="display:flex; justify-content:center; align-items:center; width:100%;">
+                  ${statusBadge(o.status)}
+                </div>
+              </td>
+              <td style="text-align:center; vertical-align:middle;">
+                <div class="ap-btn-group ap-order-actions-group" style="display:flex !important; flex-direction:column !important; justify-content:center !important; align-items:center !important; gap:5px !important; width:100% !important; margin:0 auto !important;">
+                  <select class="ap-select ap-order-status-sel" data-id="${o._id}" style="width:90px !important; max-width:90px !important; min-width:90px !important; height:28px !important; padding:3px 6px !important; font-size:11.5px !important; text-align:center !important; box-sizing:border-box !important; border-radius:6px !important; margin:0 auto !important; flex:none !important;">
                     ${allStatuses.filter(s => s !== 'all').map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
                   </select>
-                  <button class="ap-btn primary ap-order-update-btn" data-id="${o._id}" style="padding:4px 10px; font-size:11.5px; height:28px;">
+                  <button class="ap-btn ap-order-update-btn" data-id="${o._id}" style="width:90px !important; max-width:90px !important; min-width:90px !important; height:28px !important; padding:3px 8px !important; font-size:11.5px !important; background:#ff9400 !important; background-color:#ff9400 !important; color:#000000 !important; border:1px solid #ff9400 !important; font-weight:700 !important; border-radius:6px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; margin:0 auto !important; box-sizing:border-box !important; white-space:nowrap !important; flex:none !important;">
                     Update
                   </button>
-                  <button class="ap-btn ghost ap-order-view-btn" data-idx="${idx}" style="padding:4px 9px; font-size:11.5px; height:28px;">
+                  <button class="ap-btn ap-order-view-btn" data-idx="${idx}" style="width:90px !important; max-width:90px !important; min-width:90px !important; height:28px !important; padding:3px 8px !important; font-size:11.5px !important; background:#022f43 !important; background-color:#022f43 !important; color:#ffffff !important; border:1px solid #022f43 !important; font-weight:700 !important; border-radius:6px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; margin:0 auto !important; box-sizing:border-box !important; white-space:nowrap !important; flex:none !important;">
                     View
                   </button>
                 </div>
@@ -9138,7 +9387,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             <!-- Toolbar & Status Tabs -->
             <div class="ap-toolbar">
               <div class="ap-toolbar-left">
-                <div class="ap-toolbar-tabs" style="overflow-x:auto; max-width:100%; scrollbar-width:none;">
+                <div class="ap-toolbar-tabs">
                   ${allStatuses.map(st => `
                     <button class="ap-tab-pill ${statusFilter === st ? 'active' : ''}" data-status="${st}">
                       ${st === 'all' ? 'All Orders' : st}
@@ -9146,29 +9395,57 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                   `).join('')}
                 </div>
               </div>
-              <div style="min-width: 240px;">
-                <input class="ap-search" id="ap-order-search-input" value="${search}" placeholder="Search orders by ID, customer, email..." style="width:100%;">
+              <div class="ap-toolbar-search-wrap">
+                <input class="ap-search" id="ap-order-search-input" value="${search}" placeholder="Search orders by ID, customer, email...">
               </div>
             </div>
 
             <!-- Table Card -->
-            <div class="ap-table-card">
-              <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID & Date</th>
-                      <th>Customer</th>
-                      <th>Items Summary</th>
-                      <th>Amount & Mode</th>
-                      <th>Lifecycle Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${tableRows}
-                  </tbody>
-                </table>
+            <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <!-- Outer Horizontal Scroll Container for Mobile / Tablet / Desktop -->
+              <div class="ap-table-wrap ap-orders-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:1040px; width:100%;">
+                  <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:16%;">
+                        <col style="width:18%;">
+                        <col style="width:20%;">
+                        <col style="width:14%;">
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Order ID & Date</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Customer</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Items Summary</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Amount & Mode</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Lifecycle Status</th>
+                          <th style="background:#ff9400 !important; color:#000000 !important; text-align:center !important; font-weight:800; font-size:11px; padding:12px 16px; text-transform:uppercase; letter-spacing:0.05em; border:none; white-space:nowrap;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+
+                  <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                  <div class="ap-table-body-scroll ap-orders-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                    <table class="ap-table" id="ap-orders-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                      <colgroup>
+                        <col style="width:16%;">
+                        <col style="width:18%;">
+                        <col style="width:20%;">
+                        <col style="width:14%;">
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <tbody>
+                        ${tableRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
               <div class="ap-table-footer" style="padding:12px 18px; border-top:2px solid #011d2a; background:#022f43; color:#ffffff; display:flex; justify-content:space-between; align-items:center; border-radius:0 0 12px 12px;">
                 <span style="color:#ffffff;">Showing <strong style="color:#ffffff;">${orders.length}</strong> of <strong style="color:#ffffff;">${total}</strong> total orders</span>
@@ -9665,6 +9942,14 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
         // 6. View Refund Credit Note
         body.querySelectorAll('.ap-view-refund-receipt-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            openRefundCreditNoteModal(id);
+          });
+        });
+
+        // 7. View Return & Refund Details / Dossier
+        body.querySelectorAll('.ap-open-rma-dossier-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const id = btn.dataset.id;
             openRefundCreditNoteModal(id);
@@ -11062,26 +11347,59 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Table Card -->
-            <div class="ap-table-card">
-              <div class="ap-table-wrap">
-                <table class="ap-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Category</th>
-                      <th>Price</th>
-                      <th>Inventory</th>
-                      <th>Merchant</th>
-                      <th>Bestseller Window</th>
-                      <th>Status</th>
-                      <th>Added</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${tableRows}
-                  </tbody>
-                </table>
+            <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div class="ap-table-wrap ap-products-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:1120px; width:100%;">
+                  <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:1120px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:20%;">
+                        <col style="width:12%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:12%;">
+                        <col style="width:12%;">
+                        <col style="width:8%;">
+                        <col style="width:8%;">
+                        <col style="width:8%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Product</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Price</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Inventory</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Merchant</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Bestseller Window</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Status</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Added</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+
+                  <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                  <div class="ap-table-body-scroll ap-products-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                    <table class="ap-table" id="ap-products-table" style="width:100%; min-width:1120px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                      <colgroup>
+                        <col style="width:20%;">
+                        <col style="width:12%;">
+                        <col style="width:10%;">
+                        <col style="width:10%;">
+                        <col style="width:12%;">
+                        <col style="width:12%;">
+                        <col style="width:8%;">
+                        <col style="width:8%;">
+                        <col style="width:8%;">
+                      </colgroup>
+                      <tbody>
+                        ${tableRows}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
               <div class="ap-table-footer">
                 <span>Showing <strong>${products.length}</strong> of <strong>${total}</strong> total catalog items</span>
@@ -12086,23 +12404,50 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Table Card -->
-            <div class="ap-table-card">
-              <div class="ap-table-wrap">
-                <table class="ap-table" id="ap-inventory-table">
-                  <thead>
-                    <tr style="background:#ff9400 !important;">
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Product Title &amp; Details</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Price</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Available Units</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Inventory Health</th>
-                      <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rowsHTML}
-                  </tbody>
-                </table>
+            <div class="ap-table-card" style="margin-top:16px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div class="ap-table-wrap ap-inventory-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+                <div style="min-width:1040px; width:100%;">
+                  <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                  <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                    <table class="ap-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                      <colgroup>
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:12%;">
+                        <col style="width:14%;">
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <thead>
+                        <tr style="background:#ff9400 !important;">
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Product Title &amp; Details</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Category</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Price</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Available Units</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Inventory Health</th>
+                          <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Actions</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+
+                  <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                  <div class="ap-table-body-scroll ap-inventory-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                    <table class="ap-table" id="ap-inventory-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                      <colgroup>
+                        <col style="width:28%;">
+                        <col style="width:14%;">
+                        <col style="width:12%;">
+                        <col style="width:14%;">
+                        <col style="width:14%;">
+                        <col style="width:18%;">
+                      </colgroup>
+                      <tbody>
+                        ${rowsHTML}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
               <div class="ap-table-footer">
                 <span>Showing <strong>${products.length}</strong> items in inventory ledger</span>
@@ -12285,7 +12630,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" style="stroke:#000000 !important; color:#000000 !important;" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Export CSV
             </button>
-            <button class="ap-btn ghost" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:1px solid #022F43 !important; border-radius:6px; padding:7px 14px; font-weight:800; cursor:pointer;">
+            <button class="ap-btn ghost ap-refresh-btn" id="ap-reviews-refresh-btn" style="font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#022F43 !important; color:#ffffff !important; border:1px solid #022F43 !important; border-radius:6px; padding:7px 14px; font-weight:800; cursor:pointer;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Refresh
             </button>
@@ -12370,7 +12715,8 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
     // Bind common header event listeners
     function bindHeaderEvents() {
-      document.getElementById('ap-reviews-refresh-btn')?.addEventListener('click', () => load(false));
+      const revRefBtn = document.getElementById('ap-reviews-refresh-btn');
+      revRefBtn?.addEventListener('click', () => triggerAdminRefresh(revRefBtn, () => load(false), 'Reviews & ratings'));
       document.getElementById('ap-new-review-btn')?.addEventListener('click', () => openAddReviewModal());
       document.getElementById('ap-export-reviews-btn')?.addEventListener('click', () => exportReviewsToCSV(cachedReviews));
 
@@ -12717,30 +13063,30 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </div>
 
             <!-- Pagination & Summary Footer -->
-            <div class="ap-table-footer" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-              <span style="font-size:12px; color:#64748b;">
-                Showing <strong>${totalItems === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + (productPageSize === 'all' ? totalItems : Number(productPageSize)), totalItems)}</strong> of <strong>${totalItems}</strong> products
-                ${productSearchQuery ? ` matching "<strong>${productSearchQuery}</strong>"` : ''}
+            <div class="ap-table-footer" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:#022f43; border-top:2px solid #011d2a; color:#ffffff; border-radius:0 0 12px 12px;">
+              <span style="font-size:12px; color:#cbd5e1;">
+                Showing <strong style="color:#ffffff;">${totalItems === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + (productPageSize === 'all' ? totalItems : Number(productPageSize)), totalItems)}</strong> of <strong style="color:#ffffff;">${totalItems}</strong> products
+                ${productSearchQuery ? ` matching "<strong style=\"color:#ffffff;\">${productSearchQuery}</strong>"` : ''}
               </span>
 
               <!-- Pagination Navigation -->
               ${totalPages > 1 && productPageSize !== 'all' ? `
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <button id="ap-prod-prev-page" ${productPage <= 1 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="ap-btn ghost" style="padding:5px 10px; font-size:11.5px; border-radius:5px; border:1px solid #cbd5e1; background:#ffffff;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button id="ap-prod-prev-page" ${productPage <= 1 ? 'disabled style="opacity:0.5; cursor:not-allowed; background:#ff9400 !important; color:#000000 !important; font-weight:700 !important; border:none; padding:6px 14px; font-size:12px; border-radius:6px;"' : 'style="cursor:pointer; background:#ff9400 !important; color:#000000 !important; font-weight:700 !important; border:none; padding:6px 14px; font-size:12px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.25);"'} class="ap-btn">
                     « Prev
                   </button>
-                  <span style="font-size:12px; font-weight:700; color:#0f172a; padding:0 8px;">
+                  <span style="font-size:12px; font-weight:700; color:#ffffff; padding:0 8px;">
                     Page ${productPage} of ${totalPages}
                   </span>
-                  <button id="ap-prod-next-page" ${productPage >= totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="ap-btn ghost" style="padding:5px 10px; font-size:11.5px; border-radius:5px; border:1px solid #cbd5e1; background:#ffffff;">
+                  <button id="ap-prod-next-page" ${productPage >= totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed; background:#ff9400 !important; color:#000000 !important; font-weight:700 !important; border:none; padding:6px 14px; font-size:12px; border-radius:6px;"' : 'style="cursor:pointer; background:#ff9400 !important; color:#000000 !important; font-weight:700 !important; border:none; padding:6px 14px; font-size:12px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.25);"'} class="ap-btn">
                     Next »
                   </button>
                 </div>
               ` : ''}
 
               <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:11px; color:#10b981; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
-                  <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Click any product to view all customer reviews
+                <span style="font-size:11.5px; color:#34d399; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                  <span style="width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 6px rgba(16,185,129,0.8);"></span> Click any product to view all customer reviews
                 </span>
               </div>
             </div>
@@ -12980,14 +13326,13 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                     </button>
                   ` : ''}
                   ${r.status !== 'Flagged' ? `
-                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Flagged" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;" title="Flag Review">
+                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Flagged" style="height:28px; min-height:28px; max-height:28px; width:72px; min-width:72px; padding:0; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1; transition:all 0.15s ease;" title="Flag Review">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
                       Flag
                     </button>
                   ` : ''}
                   ${r.status !== 'Pending' ? `
-                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Pending" style="padding:6px 12px; font-size:11.5px; font-weight:800; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;" title="Mark as Pending">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <button class="ap-modal-rev-action" data-id="${r.id}" data-action="Pending" style="height:28px; min-height:28px; max-height:28px; width:72px; min-width:72px; padding:0; font-size:11.5px; font-weight:800; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-align:center; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1; transition:all 0.15s ease;" title="Mark as Pending">
                       Re-queue
                     </button>
                   ` : ''}
@@ -13149,7 +13494,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Reviews Feed List -->
-                <div class="ap-modal-reviews-list">
+                <div class="ap-modal-reviews-list" style="overflow-y:auto; max-height:520px; padding-right:6px; -webkit-overflow-scrolling:touch;">
                   ${revItemsHTML}
                 </div>
               </div>
@@ -13383,11 +13728,11 @@ window.openRazorpayCheckout = openRazorpayCheckout;
             </td>
             <td>
               <div style="display:flex; align-items:center; gap:5px; flex-wrap:nowrap;">
-                ${r.status !== 'Approved' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Approved" title="Approve" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approve</button>` : ''}
-                ${r.status !== 'Flagged' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Flagged" title="Flag as Spam" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flag</button>` : ''}
-                ${r.status !== 'Pending' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Pending" title="Mark Pending" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:1px solid #022F43 !important; background:#022F43 !important; color:#ffffff !important; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Re-queue</button>` : ''}
-                <button class="ap-inspect-btn" data-id="${r.id}" title="Inspect Details & Reply" style="padding:5px 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer;">Inspect</button>
-                <button class="ap-delete-rev-btn" data-id="${r.id}" title="Delete Review" style="padding:5px 8px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center;">
+                ${r.status !== 'Approved' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Approved" title="Approve" style="height:28px; min-height:28px; max-height:28px; padding:0 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Approve</button>` : ''}
+                ${r.status !== 'Flagged' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Flagged" title="Flag as Spam" style="height:28px; min-height:28px; max-height:28px; padding:0 10px; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Flag</button>` : ''}
+                ${r.status !== 'Pending' ? `<button class="ap-rev-action" data-id="${r.id}" data-action="Pending" title="Mark Pending" style="height:28px; min-height:28px; max-height:28px; padding:0 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Re-queue</button>` : ''}
+                <button class="ap-inspect-btn" data-id="${r.id}" title="Inspect Details & Reply" style="height:28px; min-height:28px; max-height:28px; padding:0 10px; font-size:11.5px; border-radius:6px; border:none; background:#022F43 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1;">Inspect</button>
+                <button class="ap-delete-rev-btn" data-id="${r.id}" title="Delete Review" style="height:28px; min-height:28px; max-height:28px; width:28px; padding:0; font-size:11.5px; border-radius:6px; border:none; background:#dc2626 !important; color:#ffffff !important; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; box-sizing:border-box; flex-shrink:0; line-height:1;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
                 </button>
               </div>
@@ -13448,39 +13793,68 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
           <!-- Bulk Selection Bar -->
           ${hasSelection ? `
-            <div class="ap-bulk-bar" style="background:#022F43; color:#ffffff; padding:10px 16px; border-radius:8px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="ap-bulk-bar" style="background:#022F43; color:#ffffff; padding:10px 16px; border-radius:8px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 12px rgba(2,47,67,0.25);">
               <div style="font-size:12.5px; font-weight:700;">✓ <strong>${selectedIds.size}</strong> review(s) selected</div>
               <div style="display:flex; align-items:center; gap:8px;">
-                <button class="ap-btn success ap-bulk-action" data-action="Approved" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">Approve Selected</button>
-                <button class="ap-btn danger ap-bulk-action" data-action="Flagged" style="padding:5px 12px; font-size:11.5px; border-radius:5px;">Flag as Spam</button>
-                <button class="ap-btn ghost ap-bulk-action" data-action="Pending" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#ffffff; border-color:#475569;">Mark Pending</button>
-                <button class="ap-btn ghost ap-bulk-action" data-action="Delete" style="padding:5px 12px; font-size:11.5px; border-radius:5px; color:#f87171; border-color:#ef4444;">Delete Selected</button>
-                <button class="ap-btn ghost" id="ap-bulk-clear-btn" style="padding:5px 10px; font-size:11.5px; border-radius:5px; color:#94a3b8;">Deselect All</button>
+                <button class="ap-btn ap-bulk-action ap-bulk-approve-btn" data-action="Approved" style="padding:6px 14px; font-size:11.5px; border-radius:6px; background:#10b981 !important; color:#ffffff !important; border:1.5px solid #059669 !important; font-weight:800; cursor:pointer;">Approve Selected</button>
+                <button class="ap-btn ap-bulk-action ap-bulk-flag-btn" data-action="Flagged" style="padding:6px 14px; font-size:11.5px; border-radius:6px; background:#dc2626 !important; color:#ffffff !important; border:1.5px solid #b91c1c !important; font-weight:800; cursor:pointer;">Flag as Spam</button>
+                <button class="ap-btn ap-bulk-action ap-bulk-pending-btn" data-action="Pending" style="padding:6px 14px; font-size:11.5px; border-radius:6px; background:#1e293b !important; color:#ffffff !important; border:1.5px solid #475569 !important; font-weight:800; cursor:pointer;">Mark Pending</button>
+                <button class="ap-btn ap-bulk-action ap-bulk-delete-btn" data-action="Delete" style="padding:6px 14px; font-size:11.5px; border-radius:6px; background:rgba(220,38,38,0.2) !important; color:#fca5a5 !important; border:1.5px solid #ef4444 !important; font-weight:800; cursor:pointer;">Delete Selected</button>
+                <button class="ap-btn ap-bulk-clear-btn" id="ap-bulk-clear-btn" style="padding:6px 12px; font-size:11.5px; border-radius:6px; background:transparent !important; color:#cbd5e1 !important; border:1.5px solid #475569 !important; font-weight:700; cursor:pointer;">Deselect All</button>
               </div>
             </div>
           ` : ''}
 
           <!-- Reviews Table -->
-          <div class="ap-table-card" style="margin-top:12px;">
-            <div class="ap-table-wrap">
-              <table class="ap-table">
-                <thead>
-                  <tr>
-                    <th style="width:40px; text-align:center;">
-                      <input type="checkbox" id="ap-select-all-revs" ${allSelected ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#022F43;">
-                    </th>
-                    <th>Product Title</th>
-                    <th>Author</th>
-                    <th>Rating</th>
-                    <th>Feedback Snippet</th>
-                    <th>Status</th>
-                    <th>Moderation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rowsHTML}
-                </tbody>
-              </table>
+          <div class="ap-table-card" style="margin-top:12px; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+            <div class="ap-table-wrap ap-reviews-table-outer" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff; padding:0; border:none;">
+              <div style="min-width:1180px; width:100%;">
+                <!-- Pinned Header Part (Pure Orange #FF9400, strictly NO vertical scrollbar in this header section) -->
+                <div class="ap-table-header-part" style="background:#ff9400; width:100%; overflow:hidden; border-bottom:2px solid #e08300; box-sizing:border-box;">
+                  <table class="ap-table" style="width:100%; min-width:1180px; border-collapse:collapse; table-layout:fixed; margin-bottom:0; background:#ff9400;">
+                    <colgroup>
+                      <col style="width:42px;">
+                      <col style="width:20%;">
+                      <col style="width:13%;">
+                      <col style="width:10%;">
+                      <col style="width:20%;">
+                      <col style="width:10%;">
+                      <col style="width:24%;">
+                    </colgroup>
+                    <thead>
+                      <tr style="background:#ff9400 !important;">
+                        <th style="width:42px; text-align:center; background:#ff9400 !important; color:#000000 !important;">
+                          <input type="checkbox" id="ap-select-all-revs" ${allSelected ? 'checked' : ''} style="cursor:pointer; width:16px; height:16px; accent-color:#022F43;">
+                        </th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Product Title</th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Author</th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Rating</th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Feedback Snippet</th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Status</th>
+                        <th style="background-color: #ff9400 !important; color: #000000 !important; text-align: center !important;">Moderation</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+
+                <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
+                <div class="ap-table-body-scroll ap-reviews-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                  <table class="ap-table" id="ap-reviews-table" style="width:100%; min-width:1180px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
+                    <colgroup>
+                      <col style="width:42px;">
+                      <col style="width:20%;">
+                      <col style="width:13%;">
+                      <col style="width:10%;">
+                      <col style="width:20%;">
+                      <col style="width:10%;">
+                      <col style="width:24%;">
+                    </colgroup>
+                    <tbody>
+                      ${rowsHTML}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
             <div class="ap-table-footer" style="padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
               <span>Showing <strong>${reviews.length}</strong> of <strong>${cachedReviews.length}</strong> customer reviews</span>
@@ -14374,7 +14748,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
                 </div>
 
                 <!-- Scrollable Body Part: Vertical scrollbar slider is strictly BELOW the orange header section! -->
-                <div class="ap-table-wrap ap-support-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
+                <div class="ap-table-body-scroll ap-support-body-scroll" style="overflow-y:auto; overflow-x:hidden; max-height:480px; -webkit-overflow-scrolling:touch; width:100%; background:#ffffff;">
                   <table class="ap-table ap-support-table" id="ap-support-table" style="width:100%; min-width:1040px; border-collapse:collapse; table-layout:fixed; margin-top:0; background:#ffffff;">
                     <colgroup>
                       <col style="width:15%;">
@@ -20666,6 +21040,7 @@ window.openRazorpayCheckout = openRazorpayCheckout;
 
     // Expose tab switcher globally for navbar buttons and direct logo clicks
     window.switchAdminTab = switchTab;
+    window.switchTab = switchTab;
 
     // Logo Click Navigation: Clicking either mobile brand logo or sidebar brand logo opens Dashboard
     _overlay.querySelectorAll('#ap-topnav-brand-link, .ap-topnav-brand, #ap-mobile-brand-link, .ap-mobile-brand, #ap-sidebar-logo-link, .ap-sidebar-logo').forEach(logoEl => {

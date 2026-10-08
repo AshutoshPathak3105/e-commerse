@@ -19048,6 +19048,8 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-table-wrap {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Customer Service Returns & Refunds table — fixed layout so no horizontal scroll */
@@ -19084,7 +19086,7 @@ html.admin-mode-preload #admin-panel-overlay {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
-  text-align: left;
+  text-align: center;
 }
 .ap-table th {
   background: #ff9400;
@@ -19106,6 +19108,7 @@ html.admin-mode-preload #admin-panel-overlay {
   border-bottom: 1px solid #f1f5f9;
   color: #334155;
   vertical-align: middle;
+  text-align: center;
 }
 .ap-table tbody tr:last-child td { border-bottom: none; }
 .ap-table tbody tr {
@@ -19370,15 +19373,36 @@ html.admin-mode-preload #admin-panel-overlay {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 .ap-toolbar-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
   background: #e2e8f0;
-  padding: 4px;
-  border-radius: 10px;
+  padding: 4px !important;
+  border-radius: 10px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  flex-wrap: nowrap !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
+}
+.ap-toolbar-search-wrap {
+  flex: 1 1 auto;
+  min-width: 240px;
+}
+.ap-toolbar-search-wrap .ap-search,
+.ap-toolbar-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.ap-toolbar-tabs::-webkit-scrollbar {
+  display: none !important;
 }
 .ap-tab-pill {
   padding: 6px 12px;
@@ -19394,6 +19418,8 @@ html.admin-mode-preload #admin-panel-overlay {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 .ap-tab-pill:hover { color: #0f172a; }
 .ap-tab-pill.active {
@@ -19414,6 +19440,37 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-tab-pill.active .ap-tab-count {
   background: #eff6ff;
   color: #2563eb;
+}
+
+/* On Desktop: fit tab bar width strictly according to items, and expand search bar to fill remaining space */
+@media (min-width: 901px) {
+  .ap-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    flex-wrap: nowrap !important;
+  }
+  .ap-toolbar-left {
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    max-width: 100% !important;
+  }
+  .ap-toolbar-tabs {
+    width: max-content !important;
+    max-width: 100% !important;
+  }
+  .ap-toolbar-search-wrap {
+    flex: 1 1 auto !important;
+    min-width: 260px !important;
+    width: 100% !important;
+    display: flex !important;
+  }
+  .ap-toolbar-search-wrap .ap-search,
+  .ap-toolbar-search-wrap input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* Primary Directory Tags: Users vs Admins */
@@ -19574,6 +19631,154 @@ html.admin-mode-preload #admin-panel-overlay {
 .ap-btn.ghost:hover svg { stroke: currentColor !important; color: inherit !important; }
 .ap-btn:active  { transform: scale(0.98); }
 .ap-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Universal Admin Refresh Button ─────────────────────────────────────── */
+.ap-refresh-btn,
+button.ap-refresh-btn,
+.ap-btn.ap-refresh-btn {
+  font-size: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #022F43 !important;
+  background-color: #022F43 !important;
+  color: #ffffff !important;
+  border: 1px solid #022F43 !important;
+  border-radius: 6px !important;
+  padding: 7px 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 3px rgba(2, 47, 67, 0.25) !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.ap-refresh-btn:hover,
+button.ap-refresh-btn:hover,
+.ap-btn.ap-refresh-btn:hover {
+  background: #03425f !important;
+  background-color: #03425f !important;
+  border-color: #03425f !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(2, 47, 67, 0.35) !important;
+}
+
+.ap-refresh-btn:active,
+button.ap-refresh-btn:active,
+.ap-btn.ap-refresh-btn:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+.ap-refresh-btn svg,
+button.ap-refresh-btn svg,
+.ap-btn.ap-refresh-btn svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+}
+
+.ap-refresh-btn.ap-refreshing,
+.ap-refresh-btn:disabled,
+button.ap-refresh-btn:disabled {
+  opacity: 0.75 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ── Reviews Bulk Selection Header Bar & Buttons ────────────────────────── */
+.ap-bulk-bar {
+  background: #022F43 !important;
+  color: #ffffff !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  margin-top: 12px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 4px 12px rgba(2, 47, 67, 0.25) !important;
+}
+
+.ap-bulk-bar .ap-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 800 !important;
+  font-size: 11.5px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+}
+
+.ap-bulk-bar .ap-bulk-approve-btn {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #059669 !important;
+}
+.ap-bulk-bar .ap-bulk-approve-btn:hover {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4) !important;
+}
+
+.ap-bulk-bar .ap-bulk-flag-btn {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #b91c1c !important;
+}
+.ap-bulk-bar .ap-bulk-flag-btn:hover {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  border-color: #991b1b !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4) !important;
+}
+
+.ap-bulk-bar .ap-bulk-pending-btn {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border: 1.5px solid #475569 !important;
+}
+.ap-bulk-bar .ap-bulk-pending-btn:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(51, 65, 85, 0.4) !important;
+}
+
+.ap-bulk-bar .ap-bulk-delete-btn {
+  background: rgba(220, 38, 38, 0.25) !important;
+  color: #fca5a5 !important;
+  border: 1.5px solid #ef4444 !important;
+}
+.ap-bulk-bar .ap-bulk-delete-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4) !important;
+}
+
+.ap-bulk-bar .ap-bulk-clear-btn {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid #475569 !important;
+}
+.ap-bulk-bar .ap-bulk-clear-btn:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(30, 41, 59, 0.4) !important;
+}
 
 /* ── Modern Modal & Dialogs ──────────────────────────────────────────────── */
 .ap-modal-backdrop {
@@ -23674,7 +23879,7 @@ html.admin-mode-preload #admin-panel-overlay {
   }
 
   /* ── Filters, Toolbars, and Controls ─────────────────────────── */
-  .ap-table-toolbar, .ap-toolbar-row, .ap-filter-bar {
+  .ap-toolbar, .ap-table-toolbar, .ap-toolbar-row, .ap-filter-bar {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
@@ -23682,6 +23887,11 @@ html.admin-mode-preload #admin-panel-overlay {
     max-width: 100% !important;
     box-sizing: border-box !important;
     padding: 12px 14px !important;
+  }
+  .ap-toolbar-left {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
   .ap-toolbar-tabs {
     display: flex !important;
@@ -27065,6 +27275,7 @@ button[type="submit"] *,
 #ap-timeframe-reset-btn,
 #ap-toggle-breakdown-btn,
 .ap-dash-inspect-order,
+.ap-dash-open-user,
 .ap-ops-btn,
 .ap-inspect-period-btn,
 .ap-dash-btn,
@@ -27083,6 +27294,7 @@ button[type="submit"] *,
 #ap-timeframe-reset-btn svg,
 #ap-toggle-breakdown-btn svg,
 .ap-dash-inspect-order svg,
+.ap-dash-open-user svg,
 .ap-ops-btn svg,
 .ap-inspect-period-btn svg,
 .ap-dash-btn svg,
@@ -27099,6 +27311,7 @@ button[type="submit"] *,
 #ap-timeframe-reset-btn:hover:not(.active):not(.ap-btn-clicked),
 #ap-toggle-breakdown-btn:hover:not(.active):not(.ap-btn-clicked),
 .ap-dash-inspect-order:hover:not(.active):not(.ap-btn-clicked),
+.ap-dash-open-user:hover:not(.active):not(.ap-btn-clicked),
 .ap-ops-btn:hover:not(.active):not(.ap-btn-clicked),
 .ap-inspect-period-btn:hover:not(.active):not(.ap-btn-clicked),
 .ap-dash-btn:hover:not(.active):not(.ap-btn-clicked),
@@ -27513,20 +27726,24 @@ button[type="submit"] *,
   gap: 10px;
   padding: 12px 16px;
   background: #022f43 !important;
+  border-top: none !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   flex-wrap: wrap;
 }
 
-#ap-dash-view-all-orders {
+#ap-dash-view-all-orders,
+#ap-dash-open-support,
+#ap-dash-open-payouts {
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 6px !important;
   background: #ff9400 !important;
   background-color: #ff9400 !important;
   color: #000000 !important;
   border: 1.5px solid #ff9400 !important;
   border-radius: 8px !important;
-  padding: 6px 14px !important;
+  padding: 8px 18px !important;
   font-size: 11.5px !important;
   font-weight: 800 !important;
   cursor: pointer !important;
@@ -27535,7 +27752,9 @@ button[type="submit"] *,
   box-shadow: 0 1px 3px rgba(255, 148, 0, 0.25) !important;
 }
 
-#ap-dash-view-all-orders:hover {
+#ap-dash-view-all-orders:hover,
+#ap-dash-open-support:hover,
+#ap-dash-open-payouts:hover {
   background: #e08300 !important;
   background-color: #e08300 !important;
   border-color: #e08300 !important;
@@ -27543,7 +27762,9 @@ button[type="submit"] *,
   box-shadow: 0 2px 6px rgba(255, 148, 0, 0.35) !important;
 }
 
-#ap-dash-view-all-orders * {
+#ap-dash-view-all-orders *,
+#ap-dash-open-support *,
+#ap-dash-open-payouts * {
   color: #000000 !important;
   stroke: #000000 !important;
 }
@@ -29132,6 +29353,101 @@ button.ap-seller-details-btn:hover {
   }
 }
 
+/* Order Pipeline & Fulfillment: Mobile & Tablet Action Buttons Width Reduction & Centering */
+@media (max-width: 1024px) {
+  .ap-order-actions-group,
+  .ap-table td:has(.ap-order-status-sel) .ap-btn-group,
+  .ap-table td .ap-btn-group:has(.ap-order-status-sel) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  .ap-order-status-sel,
+  .ap-table .ap-order-status-sel,
+  .ap-btn-group .ap-order-status-sel,
+  .ap-order-actions-group .ap-order-status-sel {
+    width: 90px !important;
+    max-width: 90px !important;
+    min-width: 90px !important;
+    box-sizing: border-box !important;
+    height: 28px !important;
+    padding: 3px 6px !important;
+    font-size: 11.5px !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+    border-radius: 6px !important;
+    flex: none !important;
+  }
+
+  .ap-order-update-btn,
+  .ap-table .ap-order-update-btn,
+  .ap-btn-group .ap-order-update-btn,
+  .ap-order-actions-group .ap-order-update-btn,
+  .ap-order-view-btn,
+  .ap-table .ap-order-view-btn,
+  .ap-btn-group .ap-order-view-btn,
+  .ap-order-actions-group .ap-order-view-btn {
+    width: 90px !important;
+    max-width: 90px !important;
+    min-width: 90px !important;
+    box-sizing: border-box !important;
+    height: 28px !important;
+    padding: 3px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    flex: none !important;
+  }
+}
+
+/* Order Pipeline & Fulfillment Action Button Colors: Update (#ff9400 / black) and View (#022f43 / white) */
+.ap-order-update-btn,
+.ap-table button.ap-order-update-btn,
+.ap-order-actions-group .ap-order-update-btn {
+  background: #ff9400 !important;
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  border: 1px solid #ff9400 !important;
+  font-weight: 700 !important;
+}
+.ap-order-update-btn:hover,
+.ap-table button.ap-order-update-btn:hover,
+.ap-order-actions-group .ap-order-update-btn:hover {
+  background: #e08300 !important;
+  background-color: #e08300 !important;
+  color: #000000 !important;
+  border-color: #e08300 !important;
+}
+
+.ap-order-view-btn,
+.ap-table button.ap-order-view-btn,
+.ap-order-actions-group .ap-order-view-btn {
+  background: #022f43 !important;
+  background-color: #022f43 !important;
+  color: #ffffff !important;
+  border: 1px solid #022f43 !important;
+  font-weight: 700 !important;
+}
+.ap-order-view-btn:hover,
+.ap-table button.ap-order-view-btn:hover,
+.ap-order-actions-group .ap-order-view-btn:hover {
+  background: #034563 !important;
+  background-color: #034563 !important;
+  color: #ffffff !important;
+  border-color: #034563 !important;
+}
+
 /* Marketplace Sellers: Mobile Searchbar 100% Width */
 @media (max-width: 768px) {
   .ap-seller-toolbar,
@@ -29960,19 +30276,57 @@ button.ap-refresh-btn span,
     height: 13px !important;
   }
   .ap-timeframe-pills {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
     width: 100% !important;
   }
-  .ap-timeframe-pill {
-    flex: 1 1 calc(50% - 4px) !important;
+  .ap-timeframe-pills > .ap-timeframe-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
     justify-content: center !important;
-    padding: 8px 6px !important;
-    font-size: 11.5px !important;
     text-align: center !important;
+    white-space: nowrap !important;
     box-sizing: border-box !important;
     border-radius: 8px !important;
+  }
+  .ap-timeframe-pills > .ap-specific-date-wrap {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  .ap-timeframe-pills > .ap-specific-date-wrap > .ap-timeframe-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+  }
+  .ap-timeframe-pills #ap-pill-custom,
+  .ap-timeframe-pills > button[data-rng="custom"] {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
   }
   .ap-custom-date-box.is-open {
     flex-direction: column !important;
@@ -31626,14 +31980,16 @@ button.ap-refresh-btn span,
 .ap-table-header-part::-webkit-scrollbar-thumb,
 .ap-support-body-scroll::-webkit-scrollbar-thumb,
 .ap-support-table-outer::-webkit-scrollbar-thumb {
-  background: #ff9400;
-  border-radius: 99px;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 99px !important;
 }
 
 #admin-panel-overlay::-webkit-scrollbar-thumb:hover,
 .ap-table-wrap::-webkit-scrollbar-thumb:hover,
 .ap-support-body-scroll::-webkit-scrollbar-thumb:hover {
-  background: #e08300;
+  background: #f1f5f9 !important;
 }
 
 /* ═════════════════════════════════════════════════════════════
@@ -33520,8 +33876,7 @@ button.ap-refresh-btn span,
 #ap-announcements-section .ap-table-body-scroll,
 #ap-quad-cards-section .ap-cms-body-scroll,
 #ap-quad-cards-section .ap-table-body-scroll,
-.ap-table-card .ap-cms-body-scroll,
-.ap-table-card .ap-table-body-scroll {
+.ap-table-card .ap-cms-body-scroll {
   max-height: 300px !important;   /* ≈ 5 rows @ ~60px each */
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -33530,7 +33885,7 @@ button.ap-refresh-btn span,
   border-bottom: 1px solid #e2e8f0;
   background: #ffffff !important;
   scrollbar-width: thin;
-  scrollbar-color: #ff9400 #f1f5f9;
+  scrollbar-color: #ffffff #f1f5f9;
 }
 
 /* ≈ 3 rows on Mobile and Tablet (≤900px) */
@@ -33541,8 +33896,7 @@ button.ap-refresh-btn span,
   #ap-announcements-section .ap-table-body-scroll,
   #ap-quad-cards-section .ap-cms-body-scroll,
   #ap-quad-cards-section .ap-table-body-scroll,
-  .ap-table-card .ap-cms-body-scroll,
-  .ap-table-card .ap-table-body-scroll {
+  .ap-table-card .ap-cms-body-scroll {
     max-height: 180px !important;  /* ≈ 3 rows @ ~60px each */
   }
 }
@@ -33554,8 +33908,7 @@ button.ap-refresh-btn span,
 #ap-announcements-section .ap-table-body-scroll::-webkit-scrollbar,
 #ap-quad-cards-section .ap-cms-body-scroll::-webkit-scrollbar,
 #ap-quad-cards-section .ap-table-body-scroll::-webkit-scrollbar,
-.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar,
-.ap-table-card .ap-table-body-scroll::-webkit-scrollbar {
+.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar {
   width: 7px;
   height: 0px;   /* no horizontal scrollbar thumb */
 }
@@ -33565,8 +33918,7 @@ button.ap-refresh-btn span,
 #ap-announcements-section .ap-table-body-scroll::-webkit-scrollbar-track,
 #ap-quad-cards-section .ap-cms-body-scroll::-webkit-scrollbar-track,
 #ap-quad-cards-section .ap-table-body-scroll::-webkit-scrollbar-track,
-.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-track,
-.ap-table-card .ap-table-body-scroll::-webkit-scrollbar-track {
+.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 4px;
   margin-top: 0;
@@ -33577,11 +33929,11 @@ button.ap-refresh-btn span,
 #ap-announcements-section .ap-table-body-scroll::-webkit-scrollbar-thumb,
 #ap-quad-cards-section .ap-cms-body-scroll::-webkit-scrollbar-thumb,
 #ap-quad-cards-section .ap-table-body-scroll::-webkit-scrollbar-thumb,
-.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-thumb,
-.ap-table-card .ap-table-body-scroll::-webkit-scrollbar-thumb {
-  background: #ff9400;
-  border-radius: 4px;
-  border: 1px solid #e08300;
+.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+  border-radius: 99px !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 #admin-panel-overlay .ap-cms-view .ap-cms-body-scroll::-webkit-scrollbar-thumb:hover,
 #admin-panel-overlay .ap-cms-view .ap-table-body-scroll::-webkit-scrollbar-thumb:hover,
@@ -33589,9 +33941,8 @@ button.ap-refresh-btn span,
 #ap-announcements-section .ap-table-body-scroll::-webkit-scrollbar-thumb:hover,
 #ap-quad-cards-section .ap-cms-body-scroll::-webkit-scrollbar-thumb:hover,
 #ap-quad-cards-section .ap-table-body-scroll::-webkit-scrollbar-thumb:hover,
-.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-thumb:hover,
-.ap-table-card .ap-table-body-scroll::-webkit-scrollbar-thumb:hover {
-  background: #e08300;
+.ap-table-card .ap-cms-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: #f1f5f9 !important;
 }
 
 /* Ensure inner wrapper expands with table width */
@@ -34287,11 +34638,13 @@ button.ap-refresh-btn span,
   border-radius: 4px !important;
 }
 .ap-promos-card .ap-cms-table-outer::-webkit-scrollbar-thumb {
-  background: #ff9400 !important;
-  border-radius: 4px !important;
+  background: #ffffff !important;
+  border-radius: 99px !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 .ap-promos-card .ap-cms-table-outer::-webkit-scrollbar-thumb:hover {
-  background: #e08300 !important;
+  background: #f1f5f9 !important;
 }
 
 /* Universal Center-Alignment for all table column headings in the CMS window */
@@ -35265,7 +35618,7 @@ button.ap-edit-staff-btn svg,
   justify-content: space-between !important;
   border-top-left-radius: 12px !important;
   border-top-right-radius: 12px !important;
-  border-bottom: 2px solid #011b27 !important;
+  border-bottom: none !important;
 }
 
 .dash-panel-header h2,
@@ -35324,6 +35677,8 @@ button.ap-edit-staff-btn svg,
   border: 1px solid #86efac !important;
   font-weight: 700 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .dash-panel-header .dash-highlight-badge *,
@@ -35352,6 +35707,8 @@ button.ap-edit-staff-btn svg,
   padding: 3px 10px !important;
   display: inline-flex !important;
   align-items: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   gap: 4px !important;
   font-size: 11px !important;
   letter-spacing: 0.02em !important;
@@ -35392,13 +35749,15 @@ button#ap-custom-date-apply {
 .dash-modern-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  padding-bottom: 28px;
+  padding: 10px 10px 20px 10px;
+  box-sizing: border-box;
 }
 
 /* Header Banner with #022f43 theme */
 .dash-command-banner {
+  position: relative !important;
   background: linear-gradient(135deg, #022f43 0%, #03415c 100%) !important;
   color: #ffffff !important;
   border-radius: 14px;
@@ -35409,7 +35768,7 @@ button#ap-custom-date-apply {
   flex-wrap: wrap;
   gap: 16px;
   box-shadow: 0 4px 20px rgba(2, 47, 67, 0.18);
-  border-left: 6px solid #ff9400;
+  border-left: 6px solid #022f43 !important;
 }
 
 .dash-command-banner h2 {
@@ -35417,9 +35776,35 @@ button#ap-custom-date-apply {
   margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 800;
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
   gap: 10px;
+}
+
+.dash-command-banner .dash-highlight-badge {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  padding: 2px 8px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+@media (max-width: 900px) {
+  .dash-command-banner h2 {
+    font-size: 16px !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+  .dash-command-banner .dash-highlight-badge {
+    font-size: 10px !important;
+    padding: 2px 7px !important;
+    height: 20px !important;
+  }
 }
 
 .dash-command-banner p {
@@ -35514,13 +35899,49 @@ button#ap-custom-date-apply {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Scrollable Container with overflow-y: auto */
+/* Scrollable Container with overflow-y: auto (Vertical Scrollbar ONLY Below Header) */
 .dash-scrollable-body {
   overflow-y: auto !important;
-  overflow-x: auto !important;
+  overflow-x: hidden !important;
   max-height: 330px !important;
   -webkit-overflow-scrolling: touch !important;
   position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Horizontal Sync Container for Tables */
+.dash-table-sync-scroll {
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
+}
+
+.dash-table-sync-scroll::-webkit-scrollbar {
+  height: 6px !important;
+}
+.dash-table-sync-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+.dash-table-sync-scroll::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+  border-radius: 99px !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+.dash-table-sync-scroll::-webkit-scrollbar-thumb:hover {
+  background: #f1f5f9 !important;
+}
+
+.ap-table-header-part {
+  background: #ff9400 !important;
+  width: 100% !important;
+  border-bottom: 2px solid #e08300 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding-right: 6px !important;
 }
 
 /* Slim Custom Scrollbars */
@@ -35533,14 +35954,16 @@ button#ap-custom-date-apply {
   border-radius: 4px !important;
 }
 .dash-scrollable-body::-webkit-scrollbar-thumb {
-  background: #cbd5e1 !important;
-  border-radius: 4px !important;
+  background: #ffffff !important;
+  border-radius: 99px !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 .dash-scrollable-body::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8 !important;
+  background: #f1f5f9 !important;
 }
 
-/* Table Headers in dashboard tables: #ff9400 background, black font color, and centered text */
+/* Table Headers in dashboard tables: #ff9400 background, black font color, and sticky horizontal/vertical sync */
 .dash-scrollable-body table thead,
 .dash-scrollable-body table thead tr,
 .dash-panel table thead,
@@ -35558,16 +35981,265 @@ button#ap-custom-date-apply {
 .ap-table-header-part table thead tr th,
 .ap-table thead th,
 .ap-table th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
   background: #ff9400 !important;
+  background-color: #ff9400 !important;
   color: #000000 !important;
   font-size: 11.5px !important;
   font-weight: 800 !important;
-  padding: 10px 12px !important;
+  padding: 12px 18px !important;
   border: none !important;
   border-bottom: 2px solid #e08300 !important;
   letter-spacing: 0.04em !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+.dash-scrollable-body table tbody td {
+  padding: 12px 18px !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   GLOBAL ADMIN TABLES: UNIFIED CENTER ALIGNMENT FOR COLUMN DATA & HEADINGS
+   ══════════════════════════════════════════════════════════════════════ */
+.ap-table,
+.ap-table-wrap table,
+.dash-panel table,
+.dash-scrollable-body table {
+  text-align: center !important;
+}
+
+.ap-table th,
+.ap-table thead th,
+.ap-table thead tr th,
+.dash-panel table thead th,
+.dash-panel table thead tr th,
+.dash-scrollable-body table thead th,
+.dash-scrollable-body table thead tr th,
+.ap-table-header-part table thead th,
+.ap-table-header-part table thead tr th {
+  text-align: center !important;
+}
+
+.ap-table td,
+.ap-table tbody td,
+.ap-table tbody tr td,
+.ap-table-wrap table td,
+.ap-table-wrap table tbody td,
+.dash-panel table td,
+.dash-panel table tbody td,
+.dash-scrollable-body table td,
+.dash-scrollable-body table tbody td,
+#admin-panel-overlay .ap-table td {
   text-align: center !important;
   vertical-align: middle !important;
+}
+
+/* Ensure inner content elements inside cells align and center gracefully */
+.ap-table td > div,
+.ap-table tbody td > div,
+.ap-table-wrap table td > div,
+.dash-scrollable-body table td > div,
+.dash-panel table td > div {
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.ap-table td span,
+.ap-table tbody td span,
+.dash-scrollable-body table tbody td span {
+  text-align: center !important;
+}
+
+.ap-table td strong,
+.ap-table tbody td strong,
+.dash-scrollable-body table tbody td strong {
+  text-align: center !important;
+}
+
+.ap-table td .ap-badge,
+.ap-table tbody td .ap-badge,
+.dash-scrollable-body table tbody td .ap-badge {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  vertical-align: middle !important;
+}
+
+.ap-table td .ap-btn-group,
+.ap-table td .ap-seller-btn-group,
+.ap-table td .ap-order-actions-group,
+.ap-table tbody td .ap-btn-group,
+.dash-scrollable-body table tbody td .ap-btn-group {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   GLOBAL ADMIN TABLE SCROLLING: DISPLAY 8 ITEMS & VERTICAL OVERFLOW
+   (Vertical scrollbar strictly BELOW the orange header, thumb color: WHITE)
+   ══════════════════════════════════════════════════════════════════════ */
+.ap-table-wrap:not(.ap-table-body-scroll):not(.ap-support-body-scroll):not(.dash-scrollable-body):not(.ap-orders-body-scroll):not(.ap-products-body-scroll):not(.ap-inventory-body-scroll):not(.ap-sellers-body-scroll):not(.ap-reviews-body-scroll):not(.ap-cms-body-scroll),
+.ap-table-card .ap-table-wrap:not(.ap-table-body-scroll):not(.ap-support-body-scroll):not(.dash-scrollable-body):not(.ap-orders-body-scroll):not(.ap-products-body-scroll):not(.ap-inventory-body-scroll):not(.ap-sellers-body-scroll):not(.ap-reviews-body-scroll):not(.ap-cms-body-scroll),
+.ap-view-inner .ap-table-card .ap-table-wrap:not(.ap-table-body-scroll):not(.ap-support-body-scroll):not(.dash-scrollable-body):not(.ap-orders-body-scroll):not(.ap-products-body-scroll):not(.ap-inventory-body-scroll):not(.ap-sellers-body-scroll):not(.ap-reviews-body-scroll):not(.ap-cms-body-scroll),
+.ap-table-card > .ap-table-wrap:not(.ap-table-body-scroll):not(.ap-support-body-scroll):not(.dash-scrollable-body):not(.ap-orders-body-scroll):not(.ap-products-body-scroll):not(.ap-inventory-body-scroll):not(.ap-sellers-body-scroll):not(.ap-reviews-body-scroll):not(.ap-cms-body-scroll),
+#ap-tab-body .ap-table-wrap:not(.ap-table-body-scroll):not(.ap-support-body-scroll):not(.dash-scrollable-body):not(.ap-orders-body-scroll):not(.ap-products-body-scroll):not(.ap-inventory-body-scroll):not(.ap-sellers-body-scroll):not(.ap-reviews-body-scroll):not(.ap-cms-body-scroll) {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+/* Scrollable Body: Positioned strictly BELOW the header, displays 8 items at a time */
+.ap-table-body-scroll,
+.ap-support-body-scroll,
+.dash-scrollable-body,
+.ap-orders-body-scroll,
+.ap-products-body-scroll,
+.ap-inventory-body-scroll,
+.ap-sellers-body-scroll,
+.ap-reviews-body-scroll,
+#ap-tab-body .ap-table-body-scroll,
+#ap-tab-body .ap-orders-body-scroll,
+#ap-tab-body .ap-products-body-scroll,
+#ap-tab-body .ap-inventory-body-scroll,
+#ap-tab-body .ap-sellers-body-scroll,
+#ap-tab-body .ap-reviews-body-scroll,
+#ap-tab-body .ap-support-body-scroll,
+.ap-table-card .ap-table-body-scroll,
+.ap-table-card .ap-orders-body-scroll,
+.ap-table-card .ap-products-body-scroll,
+.ap-table-card .ap-inventory-body-scroll,
+.ap-table-card .ap-sellers-body-scroll,
+.ap-table-card .ap-reviews-body-scroll,
+.ap-table-card .ap-support-body-scroll {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  max-height: 480px !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  scroll-behavior: smooth !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #ffffff rgba(15, 31, 61, 0.25) !important;
+}
+
+@media (max-width: 900px) {
+  .ap-table-body-scroll,
+  .ap-support-body-scroll,
+  .dash-scrollable-body,
+  .ap-orders-body-scroll,
+  .ap-products-body-scroll,
+  .ap-inventory-body-scroll,
+  .ap-sellers-body-scroll,
+  .ap-reviews-body-scroll,
+  #ap-tab-body .ap-table-body-scroll,
+  #ap-tab-body .ap-orders-body-scroll,
+  #ap-tab-body .ap-products-body-scroll,
+  #ap-tab-body .ap-inventory-body-scroll,
+  #ap-tab-body .ap-sellers-body-scroll,
+  #ap-tab-body .ap-reviews-body-scroll,
+  #ap-tab-body .ap-support-body-scroll,
+  .ap-table-card .ap-table-body-scroll,
+  .ap-table-card .ap-orders-body-scroll,
+  .ap-table-card .ap-products-body-scroll,
+  .ap-table-card .ap-inventory-body-scroll,
+  .ap-table-card .ap-sellers-body-scroll,
+  .ap-table-card .ap-reviews-body-scroll,
+  .ap-table-card .ap-support-body-scroll {
+    max-height: 380px !important;
+  }
+}
+
+.ap-table-body-scroll::-webkit-scrollbar,
+.ap-support-body-scroll::-webkit-scrollbar,
+.dash-scrollable-body::-webkit-scrollbar,
+.ap-orders-body-scroll::-webkit-scrollbar,
+.ap-products-body-scroll::-webkit-scrollbar,
+.ap-inventory-body-scroll::-webkit-scrollbar,
+.ap-sellers-body-scroll::-webkit-scrollbar,
+.ap-reviews-body-scroll::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+}
+
+.ap-table-body-scroll::-webkit-scrollbar-track,
+.ap-support-body-scroll::-webkit-scrollbar-track,
+.dash-scrollable-body::-webkit-scrollbar-track,
+.ap-orders-body-scroll::-webkit-scrollbar-track,
+.ap-products-body-scroll::-webkit-scrollbar-track,
+.ap-inventory-body-scroll::-webkit-scrollbar-track,
+.ap-sellers-body-scroll::-webkit-scrollbar-track,
+.ap-reviews-body-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 31, 61, 0.12) !important;
+  border-radius: 99px !important;
+}
+
+.ap-table-body-scroll::-webkit-scrollbar-thumb,
+.ap-support-body-scroll::-webkit-scrollbar-thumb,
+.dash-scrollable-body::-webkit-scrollbar-thumb,
+.ap-orders-body-scroll::-webkit-scrollbar-thumb,
+.ap-products-body-scroll::-webkit-scrollbar-thumb,
+.ap-inventory-body-scroll::-webkit-scrollbar-thumb,
+.ap-sellers-body-scroll::-webkit-scrollbar-thumb,
+.ap-reviews-body-scroll::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(15, 31, 61, 0.35) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 99px !important;
+}
+
+.ap-table-body-scroll::-webkit-scrollbar-thumb:hover,
+.ap-support-body-scroll::-webkit-scrollbar-thumb:hover,
+.dash-scrollable-body::-webkit-scrollbar-thumb:hover,
+.ap-orders-body-scroll::-webkit-scrollbar-thumb:hover,
+.ap-products-body-scroll::-webkit-scrollbar-thumb:hover,
+.ap-inventory-body-scroll::-webkit-scrollbar-thumb:hover,
+.ap-sellers-body-scroll::-webkit-scrollbar-thumb:hover,
+.ap-reviews-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(15, 31, 61, 0.6) !important;
+}
+
+/* Ensure the pinned header has zero vertical scrollbar interference */
+.ap-table-header-part {
+  background: #ff9400 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  border-bottom: 2px solid #e08300 !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure sticky orange header stays firmly attached at the top of the scroll box */
+.ap-table th,
+.ap-table thead th,
+.ap-table thead tr th,
+.dash-panel table thead th,
+.dash-panel table thead tr th,
+.dash-scrollable-body table thead th,
+.dash-scrollable-body table thead tr th,
+.ap-table-header-part table thead th,
+.ap-table-header-part table thead tr th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
 }
 
 .dash-scrollable-body table thead th *,
@@ -35579,7 +36251,6 @@ button#ap-custom-date-apply {
 .ap-table thead th *,
 .ap-table th * {
   color: #000000 !important;
-  text-align: center !important;
 }
 
 .ap-table-header-part {
@@ -35588,6 +36259,18 @@ button#ap-custom-date-apply {
   overflow: hidden !important;
   border-bottom: 2px solid #e08300 !important;
   box-sizing: border-box !important;
+}
+
+/* Generous spacing between Status and Action columns in dashboard tables */
+.dash-scrollable-body table td:nth-last-child(2),
+.ap-table-header-part table th:nth-last-child(2) {
+  padding-right: 18px !important;
+  text-align: center !important;
+}
+.dash-scrollable-body table td:last-child,
+.ap-table-header-part table th:last-child {
+  padding-left: 18px !important;
+  text-align: center !important;
 }
 
 /* Chart Canvas wrapper */
@@ -35614,8 +36297,8 @@ button#ap-custom-date-apply {
 }
 
 .dash-kpi-card.highlight {
-  border-top: 3px solid #ff9400;
-  background: linear-gradient(180deg, rgba(255,148,0,0.03) 0%, #ffffff 100%);
+  border-top: 3px solid #022f43 !important;
+  background: #ffffff;
 }
 
 .dash-kpi-top {
@@ -35719,3 +36402,413 @@ button#ap-custom-date-apply {
   border-color: #86efac !important;
 }
 
+/* Quick Action Buttons in Header Command Banner: #ff9400 bg and black font */
+#admin-panel-overlay #ap-dash-quick-prod,
+#admin-panel-overlay #ap-dash-quick-orders,
+.dash-command-banner #ap-dash-quick-prod,
+.dash-command-banner #ap-dash-quick-orders {
+  background: #ff9400 !important;
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  border: 1px solid #ff9400 !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 7px 14px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.15s ease !important;
+}
+
+#admin-panel-overlay #ap-dash-quick-prod:hover,
+#admin-panel-overlay #ap-dash-quick-orders:hover,
+.dash-command-banner #ap-dash-quick-prod:hover,
+.dash-command-banner #ap-dash-quick-orders:hover {
+  background: #e08300 !important;
+  background-color: #e08300 !important;
+  border-color: #e08300 !important;
+  color: #000000 !important;
+}
+
+#admin-panel-overlay #ap-dash-quick-prod *,
+#admin-panel-overlay #ap-dash-quick-orders *,
+.dash-command-banner #ap-dash-quick-prod *,
+.dash-command-banner #ap-dash-quick-orders * {
+  color: #000000 !important;
+}
+
+/* Quick Refresh Button in Header Command Banner: 8px border-radius matching action buttons + crisp #ffffff bg and #022f43 text matching navy theme */
+#admin-panel-overlay #ap-dash-quick-refresh,
+.dash-command-banner #ap-dash-quick-refresh {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #022f43 !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 7px 14px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.15s ease !important;
+}
+
+#admin-panel-overlay #ap-dash-quick-refresh:hover,
+.dash-command-banner #ap-dash-quick-refresh:hover {
+  background: #e2e8f0 !important;
+  background-color: #e2e8f0 !important;
+  border-color: #e2e8f0 !important;
+  color: #022f43 !important;
+}
+
+#admin-panel-overlay #ap-dash-quick-refresh *,
+.dash-command-banner #ap-dash-quick-refresh * {
+  color: #022f43 !important;
+  stroke: #022f43 !important;
+}
+
+/* KPI Card Icon Badges: Force white icon stroke & font color on dark navy #022f43 background */
+#admin-panel-overlay .dash-kpi-icon,
+.dash-kpi-icon {
+  background: #022f43 !important;
+  color: #ffffff !important;
+}
+
+#admin-panel-overlay .dash-kpi-icon *,
+#admin-panel-overlay .dash-kpi-icon svg,
+#admin-panel-overlay .dash-kpi-icon svg path,
+#admin-panel-overlay .dash-kpi-icon svg line,
+#admin-panel-overlay .dash-kpi-icon svg polyline,
+#admin-panel-overlay .dash-kpi-icon svg circle,
+#admin-panel-overlay .dash-kpi-icon svg polygon,
+.dash-kpi-icon *,
+.dash-kpi-icon svg,
+.dash-kpi-icon svg path,
+.dash-kpi-icon svg line,
+.dash-kpi-icon svg polyline,
+.dash-kpi-icon svg circle,
+.dash-kpi-icon svg polygon {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+
+/* 2-Row Header Actions Layout */
+.dash-command-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  align-items: flex-start !important;
+}
+
+.dash-action-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+/* Row 1: Date badge + Refresh Live Data */
+.dash-action-row-1 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.dash-action-row-1 .dash-date-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.dash-action-row-1 #ap-dash-quick-refresh {
+  height: 36px !important;
+  padding: 0 14px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
+/* Row 2: Add Product & Manage Orders — identical height and width */
+.dash-action-row-2 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.dash-action-row-2 #ap-dash-quick-prod,
+.dash-action-row-2 #ap-dash-quick-orders {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 900px) {
+  .dash-command-actions {
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .dash-action-row {
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .dash-action-row-1 .dash-date-badge {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 32px !important;
+    font-size: 11.5px !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+  .dash-action-row-1 #ap-dash-quick-refresh {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 0 12px !important;
+    height: 32px !important;
+    font-size: 11.5px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+  .dash-action-row-2 #ap-dash-quick-prod,
+  .dash-action-row-2 #ap-dash-quick-orders {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: calc(50% - 4px) !important;
+    height: 32px !important;
+    font-size: 11px !important;
+    padding: 0 6px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+
+  .ap-timeframe-pills {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .ap-timeframe-pills > .ap-timeframe-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+  }
+  .ap-timeframe-pills > .ap-specific-date-wrap {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  .ap-timeframe-pills > .ap-specific-date-wrap > .ap-timeframe-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+  }
+  .ap-timeframe-pills #ap-pill-custom,
+  .ap-timeframe-pills > button[data-rng="custom"] {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .dash-panel-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+  .dash-panel-header h3 {
+    font-size: 13.5px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+  .dash-panel-header .dash-highlight-badge {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1 !important;
+  }
+
+  .dash-table-sync-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .dash-scrollable-body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .dash-scrollable-body table tbody td,
+  .ap-table-header-part table thead th {
+    padding: 12px 18px !important;
+    white-space: nowrap !important;
+  }
+  .dash-scrollable-body table tbody td:nth-last-child(2),
+  .ap-table-header-part table thead th:nth-last-child(2) {
+    padding-right: 22px !important;
+    text-align: center !important;
+  }
+  .dash-scrollable-body table tbody td:last-child,
+  .ap-table-header-part table thead th:last-child {
+    padding-left: 22px !important;
+    text-align: center !important;
+  }
+
+  /* Orders Toolbar Mobile/Tablet: 100% Searchbar on Row 1, All 3 Controls in Row 2 */
+  .ap-dash-orders-toolbar {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  .ap-dash-orders-search-wrap {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 0 !important;
+  }
+  .ap-dash-order-search-input {
+    width: 100% !important;
+    height: 100% !important;
+    font-size: 12px !important;
+  }
+  .ap-dash-order-status-select,
+  #ap-dash-export-csv,
+  #ap-dash-view-all-orders {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    padding: 0 4px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+    letter-spacing: -0.01em !important;
+  }
+  .ap-dash-order-status-select {
+    text-align-last: center !important;
+    padding: 0 2px !important;
+  }
+  #ap-dash-export-csv {
+    gap: 4px !important;
+  }
+  #ap-dash-export-csv svg {
+    flex-shrink: 0 !important;
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
+
+/* Reviews Table & Product Pagination Footer & Prev/Next Buttons */
+.ap-table-card:has(#ap-prod-prev-page) .ap-table-footer,
+.ap-table-card:has(#ap-reviews-table) .ap-table-footer,
+.ap-table-footer:has(#ap-prod-prev-page) {
+  background-color: #022f43 !important;
+  border-top: 2px solid #011d2a !important;
+  color: #ffffff !important;
+}
+
+.ap-table-footer:has(#ap-prod-prev-page) span {
+  color: #cbd5e1 !important;
+}
+
+.ap-table-footer:has(#ap-prod-prev-page) strong {
+  color: #ffffff !important;
+}
+
+#ap-prod-prev-page,
+#ap-prod-next-page {
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.15s ease !important;
+}
+
+#ap-prod-prev-page:hover:not(:disabled),
+#ap-prod-next-page:hover:not(:disabled) {
+  background-color: #ffa726 !important;
+  color: #000000 !important;
+  transform: translateY(-1px) !important;
+}
+
+#ap-prod-prev-page:disabled,
+#ap-prod-next-page:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background-color: #ff9400 !important;
+  color: #000000 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}

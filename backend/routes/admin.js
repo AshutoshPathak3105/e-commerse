@@ -5,6 +5,7 @@
  */
 const express   = require('express');
 const router    = express.Router();
+const mongoose  = require('mongoose');
 const adminAuth = require('../middleware/adminAuth');
 const User      = require('../models/User');
 const Order     = require('../models/Order');
@@ -28,6 +29,31 @@ router.use((req, res, next) => {
   });
   next();
 });
+
+// Universal Order Resolver (supports 24-hex ObjectId, custom orderId, and XM-XXXXXXXX derived suffix)
+async function findOrderDoc(idParam, populateUser = false) {
+  if (!idParam) return null;
+  const idStr = String(idParam).trim();
+  let query = null;
+  if (mongoose.isValidObjectId(idStr)) {
+    query = Order.findById(idStr);
+    if (populateUser) query = query.populate('user', 'name email phone');
+    const doc = await query;
+    if (doc) return doc;
+  }
+  query = Order.findOne({ orderId: idStr });
+  if (populateUser) query = query.populate('user', 'name email phone');
+  let doc = await query;
+  if (doc) return doc;
+
+  const clean = idStr.replace(/^XM-/i, '').toLowerCase();
+  if (clean.length >= 4) {
+    const list = await Order.find().sort({ createdAt: -1 }).limit(300).populate(populateUser ? { path: 'user', select: 'name email phone' } : []);
+    const match = list.find(o => o._id.toString().toLowerCase().endsWith(clean));
+    if (match) return match;
+  }
+  return null;
+}
 
 /* ─────────────────────────────────────────────────────
    DASHBOARD — GET /api/admin/dashboard
@@ -769,15 +795,14 @@ router.put('/orders/:id/status', async (req, res) => {
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status.' });
     }
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      {
-        status,
-        ...(status === 'Delivered' ? { isDelivered: true, deliveredAt: new Date() } : {}),
-      },
-      { new: true }
-    );
+    const order = await findOrderDoc(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    order.status = status;
+    if (status === 'Delivered') {
+      order.isDelivered = true;
+      order.deliveredAt = new Date();
+    }
+    await order.save();
     res.json({ success: true, data: { status: order.status }, message: `Order status updated to ${status}.` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -789,12 +814,12 @@ router.put('/orders/:id/status', async (req, res) => {
 ───────────────────────────────────────────────────── */
 router.put('/orders/:id/refund', async (req, res) => {
   try {
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status: 'Returned', refundApproved: true, refundAt: new Date() },
-      { new: true, strict: false }
-    );
+    const order = await findOrderDoc(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    order.status = 'Returned';
+    order.refundApproved = true;
+    order.refundAt = new Date();
+    await order.save();
     res.json({ success: true, message: 'Refund approved. Order marked as Returned.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -1376,7 +1401,7 @@ router.get('/customer-service', async (req, res) => {
 router.post('/orders/:id/return-action', async (req, res) => {
   try {
     const { action, notes, refundAmount, transferMode = 'IMPS' } = req.body;
-    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    const order = await findOrderDoc(req.params.id, true);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
@@ -1731,7 +1756,7 @@ router.post('/orders/:id/return-action', async (req, res) => {
 ───────────────────────────────────────────────────── */
 router.get('/orders/:id/refund-receipt', async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    const order = await findOrderDoc(req.params.id, true);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
@@ -1928,26 +1953,19 @@ router.put('/shipping/dispatch/:id', async (req, res) => {
     const { carrier = 'Delhivery Surface & Express', trackingNo } = req.body;
     const awb = trackingNo || `DEL-${Math.floor(100000000 + Math.random() * 900000000)}`;
 
-    const mongoose = require('mongoose');
-    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-      const order = await Order.findByIdAndUpdate(
-        req.params.id,
-        {
-          status: 'Shipped',
-          carrier,
-          trackingNo: awb,
-          trackingNumber: awb,
-          dispatchedAt: new Date(),
-        },
-        { new: true, strict: false }
-      );
-      if (order) {
-        return res.json({ success: true, message: `Dispatched via ${carrier} with AWB ${awb}` });
-      }
+    const order = await findOrderDoc(req.params.id);
+    if (order) {
+      order.status = 'Shipped';
+      order.carrier = carrier;
+      order.trackingNo = awb;
+      order.trackingNumber = awb;
+      order.dispatchedAt = new Date();
+      await order.save();
+      return res.json({ success: true, message: `Dispatched via ${carrier} with AWB ${awb}` });
     }
 
     // In-memory fallback
-    if (!_inMemoryShipments) _inMemoryShipments = getDefaultShipments();
+    if (!_inMemoryShipments) _inMemoryShipments = [];
     const existing = _inMemoryShipments.find(s => s._id === req.params.id || s.orderId === req.params.id);
     if (existing) {
       existing.carrier = carrier;
@@ -1986,43 +2004,24 @@ router.put('/shipping/dispatch/:id', async (req, res) => {
 router.put('/shipping/checkpoint/:id', async (req, res) => {
   try {
     const { stage, milestone, status } = req.body;
-    const mongoose = require('mongoose');
     const isOutOfDelivery = Number(stage) === 4 || status === 'Out for Delivery';
     const isDelivered = Number(stage) === 5 || status === 'Delivered';
 
-    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-      const updatePayload = {};
-      if (status) updatePayload.status = status;
+    const order = await findOrderDoc(req.params.id);
+    if (order) {
+      if (status) order.status = status;
       if (isOutOfDelivery) {
-        updatePayload.status = 'Out for Delivery';
-        updatePayload.deliveryOtp = String(Math.floor(1000 + Math.random() * 9000));
+        order.status = 'Out for Delivery';
+        order.deliveryOtp = String(Math.floor(1000 + Math.random() * 9000));
       } else if (isDelivered) {
-        updatePayload.status = 'Delivered';
-        updatePayload.isDelivered = true;
-        updatePayload.deliveredAt = new Date();
-        updatePayload.deliveryOtp = null; // Auto-delete OTP on delivery!
+        order.status = 'Delivered';
+        order.isDelivered = true;
+        order.deliveredAt = new Date();
+        order.deliveryOtp = null; // Auto-delete OTP on delivery!
       } else {
-        updatePayload.deliveryOtp = null; // Hidden for earlier stages
+        order.deliveryOtp = null; // Hidden for earlier stages
       }
-      await Order.findByIdAndUpdate(req.params.id, updatePayload);
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      const order = await Order.findOne({ orderId: req.params.id });
-      if (order) {
-        const updatePayload = {};
-        if (status) updatePayload.status = status;
-        if (isOutOfDelivery) {
-          updatePayload.status = 'Out for Delivery';
-          updatePayload.deliveryOtp = String(Math.floor(1000 + Math.random() * 9000));
-        } else if (isDelivered) {
-          updatePayload.status = 'Delivered';
-          updatePayload.isDelivered = true;
-          updatePayload.deliveredAt = new Date();
-          updatePayload.deliveryOtp = null;
-        }
-        await Order.findByIdAndUpdate(order._id, updatePayload);
-      }
+      await order.save();
     }
 
     res.json({
